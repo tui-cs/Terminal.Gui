@@ -1,5 +1,6 @@
 using NStack;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
@@ -476,6 +477,101 @@ static class Demo {
 		MessageBox.Query (60, 10, "Selected Animals", result == "" ? "No animals selected" : result, "Ok");
 	}
 
+	class MultiLineViewSource : IListDataSource {
+		class Item {
+			internal ustring Label;
+			internal ustring Sublabel;
+			internal bool Marked;
+			public Item (String label, String sub)
+			{
+				Label = label;
+				Sublabel = sub;
+			}
+		}
+
+		List<Item> items = new List<Item> () {
+			new Item ("CPU", "14% of 3.41Ghz"),
+			new Item ("Memory", "15.9/31.9 Gb (50%)"),
+			new Item ("Disk 0 - C:", "14%")
+		};
+
+		public int Count => items.Count;
+
+		public int Length => 40;
+
+		public bool IsMarked (int item)
+		{
+			return items [item].Marked;	
+		}
+
+		void Draw (ConsoleDriver driver, ustring ustr, int width)
+		{
+			int byteLen = ustr.Length;
+			int used = 0;
+			
+			for (int i = 0; i < byteLen;) {
+				(var rune, var size) = Utf8.DecodeRune (ustr, i, i - byteLen);
+				var count = Rune.ColumnWidth (rune);
+				if (used + count > width)
+					break;
+				driver.AddRune (rune);
+				used += count;
+				i += size;
+			}
+			for (; used < width; used++) {
+				driver.AddRune (' ');
+			}
+		}
+
+		public void Render (ListView container, ConsoleDriver driver, bool selected, int item, int col, int line, int width, int start = 0)
+		{
+			var height = container.ItemHeight;
+			
+			var t = items [item];
+			container.Move (col, line);
+			Draw (driver, t.Label, width);
+			container.Move (col, line+1);
+			Draw (driver, t.Sublabel, width);
+		}
+
+		public void SetMark (int item, bool value)
+		{
+			items [item].Marked = value;
+		}
+
+		public IList ToList ()
+		{
+			return items;
+		}
+	}
+
+	static void MultiLineDemo ()
+	{
+		var ok = new Button ("Ok", is_default: true);
+		ok.Clicked += () => { Application.RequestStop (); };
+		var cancel = new Button ("Cancel");
+		cancel.Clicked += () => { Application.RequestStop (); };
+		var d = new Dialog ("Multi-line Demo", 60, 20, ok, cancel);
+		
+		var msg = new Label ("Each item uses two lines") {
+			X = 1,
+			Y = 1,
+			Width = Dim.Fill () - 1,
+			Height = 1
+		};
+
+		var multiSource = new MultiLineViewSource ();
+		var list = new ListView (multiSource) {
+			X = 1,
+			Y = 3,
+			Width = Dim.Fill () - 4,
+			Height = Dim.Fill () - 4,
+		};
+		list.ItemHeight = 2;
+		d.Add (msg, list);
+		Application.Run (d);
+	}
+
 	static void ComboBoxDemo ()
 	{
 		//TODO: Duplicated code in ListsAndCombos.cs Consider moving to shared assembly
@@ -672,7 +768,8 @@ static class Demo {
 			new MenuBarItem ("_List Demos", new MenuItem [] {
 				new MenuItem ("Select _Multiple Items", "", () => ListSelectionDemo (true), null, null, Key.AltMask + 0.ToString () [0]),
 				new MenuItem ("Select _Single Item", "", () => ListSelectionDemo (false), null, null, Key.AltMask + 1.ToString () [0]),
-				new MenuItem ("Search Single Item", "", ComboBoxDemo, null, null, Key.AltMask + 2.ToString () [0])
+				new MenuItem ("Search Single Item", "", ComboBoxDemo, null, null, Key.AltMask + 2.ToString () [0]),
+				new MenuItem ("Multi-line item", "", MultiLineDemo, null, null, Key.AltMask + 3.ToString () [0])
 			}),
 			new MenuBarItem ("A_ssorted", new MenuItem [] {
 				new MenuItem ("_Show text alignments", "", () => ShowTextAlignments (), null, null, Key.AltMask | Key.CtrlMask | Key.G),
