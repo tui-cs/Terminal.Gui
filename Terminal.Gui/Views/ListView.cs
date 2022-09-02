@@ -108,9 +108,9 @@ namespace Terminal.Gui {
 	///   marking style set <see cref="AllowsMarking"/> to false and implement custom rendering.
 	/// </para>
 	/// <para>
-	///   By default ListViews render items that are one line tall.   To change, this set the
-	///   ItemHeigh property to a larger value.   This will allow cells to be rendered with additional
-	///   lines.    This is typically used when you have a custom renderer that can render cells
+	///   By default ListViews render items that are one line tall. To change, this set the
+	///   ItemHeight property to a larger value. This will allow cells to be rendered with additional
+	///   lines. This is typically used when you have a custom renderer that can render cells
 	///   larger that one line.
 	/// </para>
 	/// </remarks>
@@ -337,13 +337,13 @@ namespace Terminal.Gui {
 			AddCommand (Command.ToggleChecked, () => MarkUnmarkRow ());
 
 			// Default keybindings for all ListViews
-			AddKeyBinding (Key.CursorUp,Command.LineUp);
+			AddKeyBinding (Key.CursorUp, Command.LineUp);
 			AddKeyBinding (Key.P | Key.CtrlMask, Command.LineUp);
 
 			AddKeyBinding (Key.CursorDown, Command.LineDown);
 			AddKeyBinding (Key.N | Key.CtrlMask, Command.LineDown);
 
-			AddKeyBinding(Key.PageUp,Command.PageUp);
+			AddKeyBinding (Key.PageUp, Command.PageUp);
 
 			AddKeyBinding (Key.PageDown, Command.PageDown);
 			AddKeyBinding (Key.V | Key.CtrlMask, Command.PageDown);
@@ -412,15 +412,18 @@ namespace Terminal.Gui {
 				return itemHeight;
 			}
 			set {
-				if (itemHeight < 1)
+				if (value < 1)
 					throw new ArgumentOutOfRangeException ("Must be larger than one");
 				itemHeight = value;
 			}
 		}
 
-		int VisibleItems {
+		/// <summary>
+		/// The number of visible items that can occupied in the ListView height.
+		/// </summary>
+		public int VisibleItems {
 			get {
-				return itemHeight / Frame.Height;
+				return Frame.Height / itemHeight;
 			}
 		}
 
@@ -492,7 +495,7 @@ namespace Terminal.Gui {
 		/// <returns></returns>
 		public virtual bool MovePageUp ()
 		{
-			int n = (selected - Frame.Height);
+			int n = selected - VisibleItems;
 			if (n < 0)
 				n = 0;
 			if (n != selected) {
@@ -511,12 +514,12 @@ namespace Terminal.Gui {
 		/// <returns></returns>
 		public virtual bool MovePageDown ()
 		{
-			var n = (selected + Frame.Height);
+			var n = (selected + VisibleItems);
 			if (n >= source.Count)
 				n = source.Count - 1;
 			if (n != selected) {
 				selected = n;
-				if (source.Count >= Frame.Height)
+				if (source.Count * itemHeight >= top + VisibleItems)
 					top = selected;
 				else
 					top = 0;
@@ -547,9 +550,9 @@ namespace Terminal.Gui {
 			} else if (selected + 1 < source.Count) { //can move by down by one.
 				selected++;
 
-				if (selected >= top + Frame.Height) {
+				if (selected >= top + VisibleItems) {
 					top++;
-				} else if (selected < top) {
+				} else if (selected == top + VisibleItems) {
 					top = selected;
 				} else if (selected < top) {
 					top = selected;
@@ -643,7 +646,7 @@ namespace Terminal.Gui {
 		/// <param name="lines">Number of lines to scroll down.</param>
 		public virtual bool ScrollDown (int lines)
 		{
-			top = Math.Max (Math.Min (top + items*itemHeight, source.Count - 1), 0);
+			top = Math.Max (Math.Min (top + lines * itemHeight, source.Count - 1), 0);
 			SetNeedsDisplay ();
 			return true;
 		}
@@ -654,7 +657,7 @@ namespace Terminal.Gui {
 		/// <param name="lines">Number of lines to scroll up.</param>
 		public virtual bool ScrollUp (int lines)
 		{
-			top = Math.Max (top - items*itemHeight, 0);
+			top = Math.Max (top - lines * itemHeight, 0);
 			SetNeedsDisplay ();
 			return true;
 		}
@@ -756,8 +759,8 @@ namespace Terminal.Gui {
 			SuperView?.LayoutSubviews ();
 			if (selected < top) {
 				top = selected;
-			} else if (Frame.Height > 0 && selected >= top + Frame.Height) {
-				top = Math.Max (selected - Frame.Height + 1, 0);
+			} else if (VisibleItems > 0 && selected >= top + VisibleItems) {
+				top = Math.Max (selected - VisibleItems + 1, 0);
 			}
 		}
 
@@ -765,9 +768,9 @@ namespace Terminal.Gui {
 		public override void PositionCursor ()
 		{
 			if (allowsMarking)
-				Move (0, selected*itemHeight - top);
+				Move (0, selected * itemHeight - top);
 			else
-				Move (Bounds.Width - 1, selected*itemHeight - top);
+				Move (Bounds.Width - 1, selected * itemHeight - top);
 		}
 
 		///<inheritdoc/>
@@ -775,8 +778,10 @@ namespace Terminal.Gui {
 		{
 			if (!me.Flags.HasFlag (MouseFlags.Button1Clicked) && !me.Flags.HasFlag (MouseFlags.Button1DoubleClicked) &&
 				me.Flags != MouseFlags.WheeledDown && me.Flags != MouseFlags.WheeledUp &&
-				me.Flags != MouseFlags.WheeledRight && me.Flags != MouseFlags.WheeledLeft)
+				me.Flags != MouseFlags.WheeledRight && me.Flags != MouseFlags.WheeledLeft) {
+
 				return false;
+			}
 
 			if (!HasFocus && CanFocus) {
 				SetFocus ();
@@ -800,15 +805,18 @@ namespace Terminal.Gui {
 				return true;
 			}
 
-			if (me.Y + top >= source.Count) {
+			if (me.Y / itemHeight + top >= source.Count) {
 				return true;
 			}
 
-			selected = top + me.Y/itemHeight;
+			selected = top + me.Y / itemHeight;
 			if (AllowsAll ()) {
 				Source.SetMark (SelectedItem, !Source.IsMarked (SelectedItem));
 				SetNeedsDisplay ();
 				return true;
+			}
+			if (selected == top + VisibleItems) {
+				top++;
 			}
 			OnSelectedChanged ();
 			SetNeedsDisplay ();
@@ -818,8 +826,6 @@ namespace Terminal.Gui {
 
 			return true;
 		}
-
-
 	}
 
 	/// <summary>
@@ -865,12 +871,16 @@ namespace Terminal.Gui {
 			for (int i = 0; i < src.Count; i++) {
 				var t = src [i];
 				int l;
-				if (t is ustring u) {
-					l = u.RuneCount;
-				} else if (t is string s) {
-					l = s.Length;
+				if (t == null) {
+					l = 0;
 				} else {
-					l = t.ToString ().Length;
+					if (t is ustring u) {
+						l = u.RuneCount;
+					} else if (t is string s) {
+						l = s.Length;
+					} else {
+						l = t.ToString ().Length;
+					}
 				}
 
 				if (l > maxLength) {
@@ -912,23 +922,57 @@ namespace Terminal.Gui {
 		/// <param name="start">The index of the string to be displayed.</param>
 		public void Render (ListView container, ConsoleDriver driver, bool marked, int item, int col, int line, int width, int start = 0)
 		{
-			var height = container.itemHeight;
-			container.Move (col, line);
+			var height = container.ItemHeight;
+			//container.Move (col, line);
 			var t = src? [item];
+			ustring us;
 			if (t == null) {
-				RenderUstr (driver, ustring.Make (""), col, line, width);
+				us = ustring.Make ("");
+				//for (int i = 0; i < height; i++) {
+				//	if (line + i < container.Frame.Height) {
+				//		container.Move (col, line + i);
+				//		RenderUstr (driver, ustring.Make (""), col, height, width);
+				//	}
+				//}
 			} else {
+				//List<ustring> lines;
 				if (t is ustring u) {
-					RenderUstr (driver, u, col, line, width, start);
+					us = u;
+					//RenderUstr (driver, u, col, line, width, start);
 				} else if (t is string s) {
-					RenderUstr (driver, s, col, line, width, start);
+					us = ustring.Make (s);
+					//RenderUstr (driver, s, col, line, width, start);
 				} else {
-					RenderUstr (driver, t.ToString (), col, line, width, start);
+					us = ustring.Make (t.ToString ());
+					//RenderUstr (driver, t.ToString (), col, line, width, start);
 				}
 			}
-                        for (int l = 1; l < height; l++) {
-                                RenderUstr (driver, "", col, line, width);
-                        }
+			//var lines = TextFormatter.Format (us, us.ConsoleWidth, false, false);
+			//var lines = us.Split ("\n");
+			var lines = TextFormatter.SplitNewLine (us);
+
+			for (int i = 0; i < height; i++) {
+				if (i > lines.Count - 1) {
+					for (; i < height; i++) {
+						if (col == 2 && i > 0) {
+							container.Move (0, line + i);
+							driver.AddStr ("  ");
+						}
+						container.Move (col, line + i);
+						RenderUstr (driver, "", col, line + i, width);
+					}
+					break;
+				}
+				var l = lines [i];
+				if (line + i < container.Frame.Height) {
+					if (col == 2 && i > 0) {
+						container.Move (0, line + i);
+						driver.AddStr ("  ");
+					}
+					container.Move (col, line + i);
+					RenderUstr (driver, l, col, line + i, width);
+				}
+			}
 		}
 
 		/// <summary>
