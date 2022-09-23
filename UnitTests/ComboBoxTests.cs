@@ -22,6 +22,7 @@ namespace Terminal.Gui.Views {
 			Assert.False (cb.AutoSize);
 			Assert.Equal (new Rect (0, 0, 0, 2), cb.Frame);
 			Assert.Equal (-1, cb.SelectedItem);
+			Assert.Equal (2, cb.Subviews.Count);
 
 			cb = new ComboBox ("Test");
 			Assert.Equal ("Test", cb.Text);
@@ -29,6 +30,7 @@ namespace Terminal.Gui.Views {
 			Assert.False (cb.AutoSize);
 			Assert.Equal (new Rect (0, 0, 0, 2), cb.Frame);
 			Assert.Equal (-1, cb.SelectedItem);
+			Assert.Equal (2, cb.Subviews.Count);
 
 			cb = new ComboBox (new Rect (1, 2, 10, 20), new List<string> () { "One", "Two", "Three" });
 			Assert.Equal (string.Empty, cb.Text);
@@ -36,6 +38,7 @@ namespace Terminal.Gui.Views {
 			Assert.False (cb.AutoSize);
 			Assert.Equal (new Rect (1, 2, 10, 20), cb.Frame);
 			Assert.Equal (-1, cb.SelectedItem);
+			Assert.Equal (2, cb.Subviews.Count);
 
 			cb = new ComboBox (new List<string> () { "One", "Two", "Three" });
 			Assert.Equal (string.Empty, cb.Text);
@@ -43,6 +46,7 @@ namespace Terminal.Gui.Views {
 			Assert.False (cb.AutoSize);
 			Assert.Equal (new Rect (0, 0, 0, 2), cb.Frame);
 			Assert.Equal (-1, cb.SelectedItem);
+			Assert.Equal (2, cb.Subviews.Count);
 		}
 
 		[Fact]
@@ -57,6 +61,7 @@ namespace Terminal.Gui.Views {
 			Assert.False (cb.AutoSize);
 			Assert.Equal (new Rect (0, 0, 0, 2), cb.Frame);
 			Assert.Equal (1, cb.SelectedItem);
+			Assert.Equal (2, cb.Subviews.Count);
 		}
 
 		[Fact]
@@ -934,6 +939,181 @@ Three ", output);
 			Assert.False (cb.IsShow);
 			Assert.Equal (-1, cb.SelectedItem);
 			Assert.Equal ("", cb.Text);
+		}
+
+		[Fact, AutoInitShutdown]
+		public void HideDropdownListOnClick_True_With_Two_ComboBox_Highlight_On_Mouse_Move ()
+		{
+			var cb1 = new ComboBox (new List<string> { "One", "Two", "Three" }) {
+				Width = 6,
+				Height = 4,
+				HideDropdownListOnClick = true,
+				SelectedItem = 0
+			};
+
+			var cb2 = new ComboBox (new List<string> { "First", "Second", "Third" }) {
+				X = Pos.Right (cb1) + 2,
+				Width = 8,
+				Height = 4,
+				HideDropdownListOnClick = true,
+				SelectedItem = 0
+			};
+
+			Application.Top.Add (cb1, cb2);
+			Application.Begin (Application.Top);
+
+			Assert.Equal (2, cb1.Subviews.Count);
+			Assert.True (cb1.HideDropdownListOnClick);
+			Assert.False (cb1.IsShow);
+			Assert.Equal (0, cb1.SelectedItem);
+			Assert.Equal ("One", cb1.Text);
+			Assert.Equal (new Rect (0, 1, 5, 0), cb1.Subviews [1].Frame);
+
+			Assert.Equal (2, cb2.Subviews.Count);
+			Assert.True (cb2.HideDropdownListOnClick);
+			Assert.False (cb2.IsShow);
+			Assert.Equal (0, cb2.SelectedItem);
+			Assert.Equal ("First", cb2.Text);
+			Assert.Equal (new Rect (0, 1, 7, 0), cb2.Subviews [1].Frame);
+
+			Assert.True (cb1.MouseEvent (new MouseEvent {
+				X = cb1.Bounds.Right - 1,
+				Y = 0,
+				Flags = MouseFlags.Button1Pressed
+			}));
+			Assert.Equal (2, cb1.Subviews.Count);
+			Assert.True (cb1.IsShow);
+			Assert.Equal (0, cb1.SelectedItem);
+			Assert.Equal ("One", cb1.Text);
+			Assert.Equal (new Rect (0, 1, 5, 3), cb1.Subviews [1].Frame);
+			Application.Refresh ();
+			GraphViewTests.AssertDriverContentsWithFrameAre (@"
+One  ▼  First  ▼
+One             
+Two             
+Three           
+", output);
+
+			var attributes = new Attribute [] {
+				// 0
+				cb1.Subviews [0].ColorScheme.Focus,
+				// 1
+				cb1.Subviews [1].ColorScheme.HotFocus,
+				// 2
+				cb1.Subviews [1].GetNormalColor (),
+				// 3
+				cb1.Subviews [1].ColorScheme.Focus,
+				// 4
+				Application.Top.ColorScheme.Normal
+			};
+
+			GraphViewTests.AssertDriverColorsAre (@"
+0000004400000000
+33333
+22222
+22222", attributes);
+
+			Assert.True (cb1.Subviews [1].MouseEvent (new MouseEvent {
+				X = 0,
+				Y = 1,
+				Flags = MouseFlags.ReportMousePosition
+			}));
+			Assert.Equal (2, cb1.Subviews.Count);
+			Assert.True (cb1.IsShow);
+			Assert.Equal (0, cb1.SelectedItem);
+			Assert.Equal ("One", cb1.Text);
+			Assert.Equal (new Rect (0, 1, 5, 3), cb1.Subviews [1].Frame);
+			Application.Refresh ();
+			GraphViewTests.AssertDriverContentsWithFrameAre (@"
+One  ▼  First  ▼
+One             
+Two             
+Three           
+", output);
+			GraphViewTests.AssertDriverColorsAre (@"
+0000004400000000
+11111
+33333
+22222", attributes);
+
+			Assert.True (cb2.MouseEvent (new MouseEvent {
+				X = cb2.Bounds.Right - 1,
+				Y = 0,
+				Flags = MouseFlags.Button1Pressed
+			}));
+			Assert.Equal (2, cb1.Subviews.Count);
+			Assert.False (cb1.IsShow);
+			Assert.Equal (0, cb1.SelectedItem);
+			Assert.Equal ("One", cb1.Text);
+			Assert.Equal (new Rect (0, 1, 5, 0), cb1.Subviews [1].Frame);
+			Assert.Equal (2, cb2.Subviews.Count);
+			Assert.True (cb2.IsShow);
+			Assert.Equal (0, cb2.SelectedItem);
+			Assert.Equal ("First", cb2.Text);
+			Assert.Equal (new Rect (0, 1, 7, 3), cb2.Subviews [1].Frame);
+
+			Application.Refresh ();
+			GraphViewTests.AssertDriverContentsWithFrameAre (@"
+One  ▼  First  ▼
+        First   
+        Second  
+        Third   
+", output);
+
+			GraphViewTests.AssertDriverColorsAre (@"
+0000004400000000
+444444443333333
+444444442222222
+444444442222222", attributes);
+
+			Assert.True (cb2.Subviews [1].MouseEvent (new MouseEvent {
+				X = 0,
+				Y = 1,
+				Flags = MouseFlags.ReportMousePosition
+			}));
+			Assert.Equal (2, cb1.Subviews.Count);
+			Assert.False (cb1.IsShow);
+			Assert.Equal (0, cb1.SelectedItem);
+			Assert.Equal ("One", cb1.Text);
+			Assert.Equal (new Rect (0, 1, 5, 0), cb1.Subviews [1].Frame);
+			Assert.Equal (2, cb2.Subviews.Count);
+			Assert.True (cb2.IsShow);
+			Assert.Equal (0, cb2.SelectedItem);
+			Assert.Equal ("First", cb2.Text);
+			Assert.Equal (new Rect (0, 1, 7, 3), cb2.Subviews [1].Frame);
+
+			Application.Refresh ();
+			GraphViewTests.AssertDriverContentsWithFrameAre (@"
+One  ▼  First  ▼
+        First   
+        Second  
+        Third   
+", output);
+
+			GraphViewTests.AssertDriverColorsAre (@"
+0000004400000000
+444444441111111
+444444443333333
+444444442222222", attributes);
+		}
+
+		[Fact]
+		public void HideDropdownListOnClick_WantMousePositionReports ()
+		{
+			var cb = new ComboBox ();
+			Assert.False (cb.HideDropdownListOnClick);
+			Assert.False (cb.WantMousePositionReports);
+			Assert.False (cb.Subviews [1].WantMousePositionReports);
+
+			cb.HideDropdownListOnClick = true;
+			Assert.True (cb.HideDropdownListOnClick);
+			Assert.False (cb.WantMousePositionReports);
+			Assert.True (cb.Subviews [1].WantMousePositionReports);
+
+			cb.HideDropdownListOnClick = false;
+			Assert.False (cb.HideDropdownListOnClick);
+			Assert.False (cb.WantMousePositionReports);
+			Assert.False (cb.Subviews [1].WantMousePositionReports);
 		}
 	}
 }

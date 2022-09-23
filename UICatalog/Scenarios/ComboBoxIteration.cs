@@ -74,6 +74,15 @@ namespace UICatalog.Scenarios {
 				listview.SelectedItem = 0;
 			};
 			Win.Add (btnThree);
+
+			var comboBox2 = new ComboBox (new List<string> { "First", "Second", "Third" }) {
+				X = Pos.Right (btnThree) + 1,
+				Y = Pos.Top (btnThree),
+				Height = Dim.Fill (2),
+				Width = Dim.Percent (40),
+				HideDropdownListOnClick = true
+			};
+			Win.Add (comboBox2);
 		}
 	}
 }
