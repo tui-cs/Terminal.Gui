@@ -610,6 +610,10 @@ namespace UICatalog {
 			{
 				return Scenarios;
 			}
+
+			public void PreRender (ListView container, int width)
+			{
+			}
 		}
 
 		/// <summary>

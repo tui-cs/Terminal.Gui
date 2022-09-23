@@ -58,9 +58,9 @@ namespace UICatalog.Scenarios {
 			};
 
 			listview.DrawContent += (e) => {
-				_scrollBar.Size = listview.Source.Count - 1;
+				_scrollBar.Size = listview.Source.Count;
 				_scrollBar.Position = listview.TopItem;
-				_scrollBar.OtherScrollBarView.Size = listview.Maxlength - 1;
+				_scrollBar.OtherScrollBarView.Size = listview.Maxlength;
 				_scrollBar.OtherScrollBarView.Position = listview.LeftItem;
 				_scrollBar.Refresh ();
 			};
@@ -104,7 +104,7 @@ namespace UICatalog.Scenarios {
 			comboBox.DrawContent += (e) => {
 				scrollBarCbx.Size = comboBox.Source.Count;
 				scrollBarCbx.Position = ((ListView)comboBox.Subviews [1]).TopItem;
-				scrollBarCbx.OtherScrollBarView.Size = ((ListView)comboBox.Subviews [1]).Maxlength - 1;
+				scrollBarCbx.OtherScrollBarView.Size = ((ListView)comboBox.Subviews [1]).Maxlength;
 				scrollBarCbx.OtherScrollBarView.Position = ((ListView)comboBox.Subviews [1]).LeftItem;
 				scrollBarCbx.Refresh ();
 			};

@@ -545,6 +545,10 @@ static class Demo {
 		{
 			return items;
 		}
+
+		public void PreRender (ListView container, int width)
+		{
+		}
 	}
 
 	static void MultiLineDemo ()

@@ -11,22 +11,38 @@ namespace UICatalog.Scenarios {
 	[ScenarioCategory ("Controls"), ScenarioCategory ("ListView")]
 	public class ListViewWithMultiLine : Scenario {
 
-		public CheckBox _customRenderCB;
-		public CheckBox _allowMarkingCB;
-		public CheckBox _allowMultipleCB;
-		public ListView _listView;
+		private ComboBox _customRenderCB;
+		private CheckBox _allowMarkingCB;
+		private CheckBox _allowMultipleCB;
+		private ListView _listView;
+		private CheckBox _showColHeaders;
+		private TextField _txtItemHeight;
+		private ComboBox _headersAlignCB;
+		private ComboBox _membersAlignCB;
 
-		public List<Type> _scenarios = Scenario.GetDerivedClasses<Scenario> ().OrderBy (t => Scenario.ScenarioMetadata.GetName (t)).ToList ();
+		private List<Type> _scenarios = Scenario.GetDerivedClasses<Scenario> ().OrderBy (t => Scenario.ScenarioMetadata.GetName (t)).ToList ();
 
 		public override void Setup ()
 		{
-			_customRenderCB = new CheckBox ("Render with multi-lines") {
+			var listRender = new List<string> {
+				"Render with single-lines",
+				"Render with multi-lines",
+				"Render with multi-columns",
+				"Render string multi-columns",
+				"Render with null lines",
+				"Render null lines with header"};
+
+			_customRenderCB = new ComboBox (listRender) {
 				X = 0,
 				Y = 0,
-				Height = 1,
+				Height = listRender.Count + 1,
+				Width = 30,
+				ReadOnly = true,
+				HideDropdownListOnClick = true,
+				SelectedItem = 0
 			};
+			_customRenderCB.OpenSelectedItem += _customRenderCB_OpenSelectedItem;
 			Win.Add (_customRenderCB);
-			_customRenderCB.Toggled += _customRenderCB_Toggled;
 
 			_allowMarkingCB = new CheckBox ("Allow Marking") {
 				X = Pos.Right (_customRenderCB) + 1,
@@ -47,7 +63,7 @@ namespace UICatalog.Scenarios {
 
 			_listView = new ListView () {
 				X = 1,
-				Y = 3,
+				Y = 4,
 				Height = Dim.Fill (),
 				Width = Dim.Fill (1),
 				AllowsMarking = false,
@@ -88,14 +104,24 @@ namespace UICatalog.Scenarios {
 			_listView.DrawContent += (e) => {
 				if (_listView.Source == null)
 					return;
-				scrollBar.Size = GetSize (_listView.Source.Count, _listView.ItemHeight, 1);
+				scrollBar.Size = GetSize (_listView.Source.Count, _listView.ItemHeight, _listView.ShowColumnHeaders ? -1 : scrollBar.OtherScrollBarView.ShowScrollIndicator ? 1 : 0);
+				//if (scrollBar.OtherScrollBarView.ShowScrollIndicator && _listView.SelectedItem > _listView.TopItem + _listView.VisibleItems - 1) {
+				//	_listView.TopItem++;
+				//}
+				if (scrollBar.OtherScrollBarView.ShowScrollIndicator && _listView.SelectedItem > 0 &&
+					_listView.SelectedItem % (_listView.TopItem + _listView.VisibleItems - 1) == 0) {
+
+					_listView.TopItem++;
+				}
 				scrollBar.Position = GetPosition (_listView.TopItem, lastVertPos, scrollBar.Size, lastTop, _listView.ItemHeight);
-				scrollBar.OtherScrollBarView.Size = GetSize (_listView.Maxlength, 1, -1);
+				scrollBar.OtherScrollBarView.Size = GetSize (_listView.Maxlength, 1, scrollBar.ShowScrollIndicator ? 1 : 0);
+				//scrollBar.OtherScrollBarView.Size = GetSize (_listView.Maxlength);
+				//scrollBar.OtherScrollBarView.Size = _listView.Maxlength;
 				scrollBar.OtherScrollBarView.Position = GetPosition (_listView.LeftItem, lastHoriPos, scrollBar.OtherScrollBarView.Size, lastLeft);
 				scrollBar.Refresh ();
 			};
 
-			_listView.SetSource (_scenarios);
+			_listView.Source = new ListWrapper (_scenarios);
 
 			var k = "Keep Content Always In Viewport";
 			var keepCheckBox = new CheckBox (k, scrollBar.AutoHideScrollBars) {
@@ -104,6 +130,96 @@ namespace UICatalog.Scenarios {
 			};
 			keepCheckBox.Toggled += (_) => scrollBar.KeepContentAlwaysInViewport = keepCheckBox.Checked;
 			Win.Add (keepCheckBox);
+			keepCheckBox.SuperView.SendSubviewToBack (keepCheckBox);
+
+			_customRenderCB.Collapsed += () => keepCheckBox.SuperView.SendSubviewToBack (keepCheckBox);
+
+			_showColHeaders = new CheckBox ("Show Column Headers", _listView.ShowColumnHeaders) {
+				X = Pos.X (_allowMarkingCB),
+				Y = Pos.Bottom (_allowMultipleCB)
+			};
+			_showColHeaders.Toggled += (_) => _listView.ShowColumnHeaders = _showColHeaders.Checked;
+			Win.Add (_showColHeaders);
+
+			var label = new Label ("Item Height:") {
+				X = Pos.Right (_showColHeaders) + 4,
+				Y = Pos.Top (_showColHeaders)
+			};
+			Win.Add (label);
+
+			_txtItemHeight = new TextField ("1") {
+				X = Pos.Right (label),
+				Y = Pos.Top (label),
+				Width = 3
+			};
+			_txtItemHeight.TextChanging += (e) => {
+				if (!int.TryParse (e.NewText.ToString (), out _)) {
+					e.Cancel = true;
+				}
+			};
+			_txtItemHeight.TextChanged += (_) => {
+				try {
+					_listView.ItemHeight = int.Parse (_txtItemHeight.Text.ToString ());
+				} catch (Exception ex) {
+					MessageBox.ErrorQuery ("Error", ex.Message, "Ok");
+					_txtItemHeight.Text = "1";
+				}
+			};
+			Win.Add (_txtItemHeight);
+
+			label = new Label ("Headers Alignments:") {
+				X = Pos.X (_showColHeaders),
+				Y = Pos.Bottom (_showColHeaders)
+			};
+			Win.Add (label);
+
+			var alignments = Enum.GetNames<TextAlignment> ();
+
+			_headersAlignCB = new ComboBox (alignments) {
+				X = Pos.Right (label),
+				Y = Pos.Top (label),
+				Height = alignments.Length + 1,
+				Width = 10,
+				ReadOnly = true,
+				HideDropdownListOnClick = true,
+				SelectedItem = 0
+			};
+			_headersAlignCB.OpenSelectedItem += (e) => {
+				if (_listView.ColumnHeaders != null) {
+					foreach (var ch in _listView.ColumnHeaders) {
+						ch.HeaderAlignment = (TextAlignment)e.Item;
+					}
+				} else {
+					_listView.HeadersAlignment = (TextAlignment)e.Item;
+				}
+			};
+			Win.Add (_headersAlignCB);
+
+			label = new Label ("Members Alignments:") {
+				X = Pos.Right (_headersAlignCB) + 4,
+				Y = Pos.Top (_headersAlignCB)
+			};
+			Win.Add (label);
+
+			_membersAlignCB = new ComboBox (alignments) {
+				X = Pos.Right (label),
+				Y = Pos.Top (label),
+				Height = alignments.Length + 1,
+				Width = 10,
+				ReadOnly = true,
+				HideDropdownListOnClick = true,
+				SelectedItem = 0
+			};
+			_membersAlignCB.OpenSelectedItem += (e) => {
+				if (_listView.ColumnHeaders != null) {
+					foreach (var ch in _listView.ColumnHeaders) {
+						ch.MemberAlignment = (TextAlignment)e.Item;
+					}
+				} else {
+					_listView.ItemsAlignment = (TextAlignment)e.Item;
+				}
+			};
+			Win.Add (_membersAlignCB);
 		}
 
 		private int GetOffset (int pos, int lastOffset, int size, int lastPos, int step = 1)
@@ -140,7 +256,7 @@ namespace UICatalog.Scenarios {
 		private int GetSize (int size, int step = 1, int sizeOffset = 0)
 		{
 			var stp = GetStep (step);
-			return (size * stp) + (stp - 1) - sizeOffset;
+			return (size * stp) + (stp - 1) + sizeOffset;
 		}
 
 		private void ListView_RowRender (ListViewRowEventArgs obj)
@@ -159,19 +275,145 @@ namespace UICatalog.Scenarios {
 			}
 		}
 
-		private void _customRenderCB_Toggled (bool prev)
+		private void _customRenderCB_OpenSelectedItem (ListViewItemEventArgs obj)
 		{
-			if (prev) {
-				_listView.SetSource (_scenarios);
-				_listView.ItemHeight = 1;
-			} else {
-				var list = new List<ScenarioItem> ();
+			switch (obj.Item) {
+			case 0:
+				_listView.Source = new ListWrapper (_scenarios);
+				_txtItemHeight.Text = "1";
+				_listView.ShowColumnHeaders = _showColHeaders.Checked;
+				_listView.ColumnHeaders = null;
+				_headersAlignCB.SelectedItem = (int)_listView.HeadersAlignment;
+				_membersAlignCB.SelectedItem = (int)_listView.ItemsAlignment;
+				break;
+			case 1:
+				var listScenarioItem = new List<ScenarioItem> ();
 				foreach (var item in _scenarios) {
 					var si = new ScenarioItem (ScenarioMetadata.GetName (item), ScenarioMetadata.GetDescription (item));
-					list.Add (si);
+					listScenarioItem.Add (si);
 				}
-				_listView.SetSource (list);
-				_listView.ItemHeight = 2;
+				_listView.Source = new ListWrapper (listScenarioItem);
+				_txtItemHeight.Text = "2";
+				_listView.ShowColumnHeaders = _showColHeaders.Checked;
+				_listView.ColumnHeaders = new List<ListView.ColumnHeader> (){
+					new ListView.ColumnHeader () {
+						MemberName = "Name",
+						MemberType = typeof(string)
+					},
+					new ListView.ColumnHeader () {
+						MemberName = "Description",
+						MemberType = typeof(string)
+					}
+				};
+				_headersAlignCB.SelectedItem = (int)_listView.ColumnHeaders [0].HeaderAlignment;
+				_membersAlignCB.SelectedItem = (int)_listView.ColumnHeaders [0].MemberAlignment;
+				break;
+			case 2:
+				var listNumericItem = new List<NumericItem> ();
+				for (int i = 0; i < 100; i++) {
+					var ni = new NumericItem ($"Item{i}", i, i / 2f, i / 3d, i / 4, i / 5);
+					listNumericItem.Add (ni);
+				}
+				_listView.Source = new ListWrapper (listNumericItem);
+				_txtItemHeight.Text = "1";
+				_listView.ShowColumnHeaders = _showColHeaders.Checked;
+				_listView.ColumnHeaders = new List<ListView.ColumnHeader> (){
+					new ListView.ColumnHeader () {
+						MemberName = "Item",
+						MemberType = typeof(string)
+					},
+					new ListView.ColumnHeader () {
+						MemberName = "IntValue",
+						MemberType = typeof(int),
+						MemberAlignment = TextAlignment.Right
+					},
+					new ListView.ColumnHeader () {
+						MemberName = "FloatValue",
+						MemberType = typeof(float),
+						MemberFormat = "{0:F3}",
+						MemberAlignment = TextAlignment.Right
+					},
+					new ListView.ColumnHeader () {
+						MemberName = "DoubleValue",
+						MemberType = typeof(double),
+						MemberFormat = "{0:N4}",
+						MemberAlignment = TextAlignment.Right
+					},
+					new ListView.ColumnHeader () {
+						MemberName = "DecimalValue",
+						MemberType = typeof(decimal),
+						MemberFormat = "{0:N2}",
+						MemberAlignment = TextAlignment.Right
+					},
+					new ListView.ColumnHeader () {
+						MemberName = "CurrencyValue",
+						MemberType = typeof(decimal),
+						MemberFormat = "{0:C2}",
+						MemberAlignment = TextAlignment.Right
+					}
+				};
+				_headersAlignCB.SelectedItem = (int)_listView.ColumnHeaders [0].HeaderAlignment;
+				_membersAlignCB.SelectedItem = (int)_listView.ColumnHeaders [0].MemberAlignment;
+				break;
+			case 3:
+				var listStr = new List<string> ();
+				var idx = 0;
+				foreach (var item in _scenarios) {
+					listStr.Add ($"{idx}\n{ScenarioMetadata.GetName (item)}\n{ScenarioMetadata.GetDescription (item)}");
+					idx++;
+				}
+				_listView.Source = new ListWrapper (listStr);
+				_txtItemHeight.Text = "1";
+				_listView.ShowColumnHeaders = _showColHeaders.Checked;
+				_listView.ColumnHeaders = new List<ListView.ColumnHeader> (){
+					new ListView.ColumnHeader () {
+						HeaderName = "Index",
+						HeaderAlignment = TextAlignment.Centered,
+						MemberAlignment = TextAlignment.Centered,
+						MemberType = typeof(int),
+						MemberFormat = "{0:00}"
+					},
+					new ListView.ColumnHeader () {
+						HeaderName = "Name",
+						HeaderAlignment = TextAlignment.Centered,
+						MemberAlignment = TextAlignment.Left
+					},
+					new ListView.ColumnHeader () {
+						HeaderName = "Description",
+						HeaderAlignment = TextAlignment.Centered,
+						MemberAlignment = TextAlignment.Left
+					}
+				};
+				_headersAlignCB.SelectedItem = (int)_listView.ColumnHeaders [0].HeaderAlignment;
+				_membersAlignCB.SelectedItem = (int)_listView.ColumnHeaders [0].MemberAlignment;
+				break;
+			case 4:
+				_listView.Source = new ListWrapper (null);
+				_txtItemHeight.Text = "1";
+				_listView.ShowColumnHeaders = _showColHeaders.Checked;
+				_listView.ColumnHeaders = null;
+				_headersAlignCB.SelectedItem = (int)_listView.HeadersAlignment;
+				_membersAlignCB.SelectedItem = (int)_listView.ItemsAlignment;
+				break;
+			case 5:
+				_listView.Source = new ListWrapper (null);
+				_txtItemHeight.Text = "1";
+				_listView.ShowColumnHeaders = _showColHeaders.Checked;
+				_listView.ColumnHeaders = new List<ListView.ColumnHeader> (){
+					new ListView.ColumnHeader () {
+						HeaderName = "Name",
+						HeaderAlignment = TextAlignment.Centered,
+						MemberAlignment = TextAlignment.Left
+					},
+					new ListView.ColumnHeader () {
+						HeaderName = "Description",
+						HeaderAlignment = TextAlignment.Centered,
+						MemberAlignment = TextAlignment.Left
+					}
+				};
+				_headersAlignCB.SelectedItem = (int)_listView.HeadersAlignment;
+				_membersAlignCB.SelectedItem = (int)_listView.ItemsAlignment;
+				break;
 			}
 			Win.SetNeedsDisplay ();
 		}
@@ -190,17 +432,32 @@ namespace UICatalog.Scenarios {
 		}
 
 		internal class ScenarioItem {
-			private string name, description;
+			public string Name { get; set; }
+			public string Description { get; set; }
 
 			public ScenarioItem (string name, string description)
 			{
-				this.name = name;
-				this.description = description;
+				Name = name;
+				Description = description;
 			}
+		}
 
-			public override string ToString ()
+		internal class NumericItem {
+			public string Item { get; set; }
+			public int IntValue { get; set; }
+			public float FloatValue { get; set; }
+			public double DoubleValue { get; set; }
+			public decimal DecimalValue { get; set; }
+			public decimal CurrencyValue { get; set; }
+
+			public NumericItem (string item, int intValue, float floatValue, double doubleValue, decimal decimalValue, decimal currencyValue)
 			{
-				return name + "\n" + description;
+				Item = item;
+				IntValue = intValue;
+				FloatValue = floatValue;
+				DoubleValue = doubleValue;
+				DecimalValue = decimalValue;
+				CurrencyValue = currencyValue;
 			}
 		}
 
