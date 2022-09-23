@@ -981,6 +981,12 @@ Three ", output);
 				Y = 0,
 				Flags = MouseFlags.Button1Pressed
 			}));
+			Assert.True (cb1.Subviews [1].MouseEvent (new MouseEvent {
+				X = cb1.Bounds.Right - 1,
+				Y = 0,
+				Flags = MouseFlags.Button1Clicked
+			}));
+			Assert.Equal (cb1.Subviews [1], Application.mouseGrabView);
 			Assert.Equal (2, cb1.Subviews.Count);
 			Assert.True (cb1.IsShow);
 			Assert.Equal (0, cb1.SelectedItem);
@@ -1018,6 +1024,7 @@ Three
 				Y = 1,
 				Flags = MouseFlags.ReportMousePosition
 			}));
+			Assert.Equal (cb1.Subviews [1], Application.mouseGrabView);
 			Assert.Equal (2, cb1.Subviews.Count);
 			Assert.True (cb1.IsShow);
 			Assert.Equal (0, cb1.SelectedItem);
@@ -1041,6 +1048,12 @@ Three
 				Y = 0,
 				Flags = MouseFlags.Button1Pressed
 			}));
+			Assert.True (cb2.Subviews [1].MouseEvent (new MouseEvent {
+				X = cb2.Bounds.Right - 1,
+				Y = 0,
+				Flags = MouseFlags.Button1Clicked
+			}));
+			Assert.Equal (cb2.Subviews [1], Application.mouseGrabView);
 			Assert.Equal (2, cb1.Subviews.Count);
 			Assert.False (cb1.IsShow);
 			Assert.Equal (0, cb1.SelectedItem);
@@ -1071,6 +1084,7 @@ One  ▼  First  ▼
 				Y = 1,
 				Flags = MouseFlags.ReportMousePosition
 			}));
+			Assert.Equal (cb2.Subviews [1], Application.mouseGrabView);
 			Assert.Equal (2, cb1.Subviews.Count);
 			Assert.False (cb1.IsShow);
 			Assert.Equal (0, cb1.SelectedItem);
@@ -1095,6 +1109,61 @@ One  ▼  First  ▼
 444444441111111
 444444443333333
 444444442222222", attributes);
+
+			Assert.True (cb1.MouseEvent (new MouseEvent {
+				X = cb1.Bounds.Right - 1,
+				Y = 0,
+				Flags = MouseFlags.Button1Pressed
+			}));
+			Assert.True (cb1.Subviews [1].MouseEvent (new MouseEvent {
+				X = cb1.Bounds.Right - 1,
+				Y = 0,
+				Flags = MouseFlags.Button1Clicked
+			}));
+			Assert.Equal (cb1.Subviews [1], Application.mouseGrabView);
+			Assert.Equal (2, cb1.Subviews.Count);
+			Assert.True (cb1.IsShow);
+			Assert.Equal (0, cb1.SelectedItem);
+			Assert.Equal ("One", cb1.Text);
+			Assert.Equal (new Rect (0, 1, 5, 3), cb1.Subviews [1].Frame);
+			Application.Refresh ();
+			GraphViewTests.AssertDriverContentsWithFrameAre (@"
+One  ▼  First  ▼
+One             
+Two             
+Three           
+", output);
+
+			GraphViewTests.AssertDriverColorsAre (@"
+0000004400000000
+33333
+22222
+22222", attributes);
+
+			Assert.True (cb1.Subviews [1].MouseEvent (new MouseEvent {
+				X = 50,
+				Y = 1,
+				Flags = MouseFlags.Button1Clicked
+			}));
+			Assert.Null (Application.mouseGrabView);
+			Assert.Equal (2, cb1.Subviews.Count);
+			Assert.False (cb1.IsShow);
+			Assert.Equal (0, cb1.SelectedItem);
+			Assert.Equal ("One", cb1.Text);
+			Assert.Equal (new Rect (0, 1, 5, 0), cb1.Subviews [1].Frame);
+			Assert.Equal (2, cb2.Subviews.Count);
+			Assert.False (cb2.IsShow);
+			Assert.Equal (0, cb2.SelectedItem);
+			Assert.Equal ("First", cb2.Text);
+			Assert.Equal (new Rect (0, 1, 7, 0), cb2.Subviews [1].Frame);
+
+			Application.Refresh ();
+			GraphViewTests.AssertDriverContentsWithFrameAre (@"
+One  ▼  First  ▼
+", output);
+
+			GraphViewTests.AssertDriverColorsAre (@"
+0000004400000000", attributes);
 		}
 
 		[Fact]
@@ -1114,6 +1183,41 @@ One  ▼  First  ▼
 			Assert.False (cb.HideDropdownListOnClick);
 			Assert.False (cb.WantMousePositionReports);
 			Assert.False (cb.Subviews [1].WantMousePositionReports);
+		}
+
+		[Fact, AutoInitShutdown]
+		public void HideDropdownListOnClick_True_Height_Is_Zero ()
+		{
+			var cb1 = new ComboBox (new List<string> { "One", "Two", "Three" }) {
+				Width = 6,
+				Height = 4,
+				HideDropdownListOnClick = true,
+				SelectedItem = 0
+			};
+
+			var cb2 = new ComboBox (new List<string> { "First", "Second", "Third" }) {
+				X = Pos.Right (cb1) + 2,
+				Width = 8,
+				Height = 4,
+				HideDropdownListOnClick = true,
+				SelectedItem = 0
+			};
+
+			Application.Top.Add (cb1, cb2);
+			Application.Begin (Application.Top);
+
+			Assert.True (cb1.HasFocus);
+
+			ReflectionTools.InvokePrivate (
+				typeof (Application),
+				"ProcessMouseEvent",
+				new MouseEvent () {
+					X = 8,
+					Y = 1,
+					Flags = MouseFlags.Button1Clicked
+				});
+
+			Assert.False (cb2.HasFocus);
 		}
 	}
 }
