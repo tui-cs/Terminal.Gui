@@ -1123,11 +1123,9 @@ namespace Terminal.Gui {
 				}
 
 			} else if (mouseEvent.EventFlags == WindowsConsole.EventFlags.MouseMoved) {
+				mouseFlag = MouseFlags.ReportMousePosition;
 				if (mouseEvent.MousePosition.X != pointMove.X || mouseEvent.MousePosition.Y != pointMove.Y) {
-					mouseFlag = MouseFlags.ReportMousePosition;
 					pointMove = new Point (mouseEvent.MousePosition.X, mouseEvent.MousePosition.Y);
-				} else {
-					mouseFlag = 0;
 				}
 			} else if (mouseEvent.ButtonState == 0 && mouseEvent.EventFlags == 0) {
 				mouseFlag = 0;
