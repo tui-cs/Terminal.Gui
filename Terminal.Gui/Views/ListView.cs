@@ -120,6 +120,9 @@ namespace Terminal.Gui {
 	public class ListView : View {
 		int top, left;
 		int selected;
+		//int bottomOffset, rightOffset;
+		ScrollBarView.ScrollBarType scrollBarType;
+		ScrollBarView scrollBar;
 
 		public class ColumnHeader {
 			public string HeaderName { get; set; }
@@ -283,6 +286,155 @@ namespace Terminal.Gui {
 			}
 		}
 
+		/// <summary>
+		/// The bottom offset needed to use a horizontal scrollbar or for another reason.
+		/// This is only needed with the keyboard navigation.
+		/// </summary>
+		//public int BottomOffset {
+		//	get => bottomOffset;
+		//	set {
+		//		if (selected == Source.Count - 1 && bottomOffset > 0 && value == 0) {
+		//			top = Math.Max (top - bottomOffset, 0);
+		//		}
+		//		bottomOffset = value;
+		//		SetNeedsDisplay ();
+		//	}
+		//}
+
+		/// <summary>
+		/// The right offset needed to use a vertical scrollbar or for another reason.
+		/// This is only needed with the keyboard navigation.
+		/// </summary>
+		//public int RightOffset {
+		//	get => rightOffset;
+		//	set {
+		//		if (left == Maxlength && rightOffset > 0 && value == 0) {
+		//			left = Math.Max (left - rightOffset, 0);
+		//		}
+		//		rightOffset = value;
+		//		SetNeedsDisplay ();
+		//	}
+		//}
+
+		/// <summary>
+		/// Get the <see cref="ScrollBarView"/> used by this view or <see langword="null"/> if none are used.
+		/// </summary>
+		public ScrollBarView ScrollBar { get => scrollBar; }
+
+		/// <summary>
+		/// Gets or sets the <see cref="ScrollBarView.ScrollBarType"/> used by this view.
+		/// </summary>
+		public ScrollBarView.ScrollBarType ScrollBarType {
+			get => scrollBarType;
+			set {
+				if (scrollBarType != value) {
+					scrollBarType = value;
+					DisposeScrollBar ();
+					if (scrollBarType != ScrollBarView.ScrollBarType.None) {
+						if (!IsAdded) {
+							Added += ListView_Added;
+						} else {
+							CreateScrollBar ();
+						}
+					}
+					SetNeedsDisplay ();
+				}
+			}
+		}
+
+		private void ListView_Added (View obj)
+		{
+			CreateScrollBar ();
+		}
+
+		private void CreateScrollBar ()
+		{
+			scrollBar = new ScrollBarView (this, scrollBarType, false);
+			AddHandlers ();
+		}
+
+		private void AddHandlers ()
+		{
+			if (scrollBar != null) {
+				LayoutComplete += ListView_LayoutComplete;
+				scrollBar.ChangedPosition += ScrollBar_ChangedPosition;
+				//scrollBar.VisibleChanged += ScrollBar_VisibleChanged;
+				//if (scrollBar.IsVertical) {
+				//	BottomOffset = 1;
+				//} else {
+				//	RightOffset = 1;
+				//}
+				if (scrollBar.OtherScrollBarView != null) {
+					scrollBar.OtherScrollBarView.ChangedPosition += OtherScrollBarView_ChangedPosition;
+					//scrollBar.OtherScrollBarView.VisibleChanged += OtherScrollBarView_VisibleChanged;
+					//if (scrollBar.OtherScrollBarView.IsVertical) {
+					//	BottomOffset = 1;
+					//} else {
+					//	RightOffset = 1;
+					//}
+				}
+			}
+		}
+
+		private void ListView_LayoutComplete (LayoutEventArgs obj)
+		{
+			if (scrollBar != null) {
+				scrollBar.Refresh ();
+			}
+		}
+
+		private void DisposeScrollBar ()
+		{
+			if (scrollBar != null) {
+				scrollBar.ChangedPosition -= ScrollBar_ChangedPosition;
+				//scrollBar.VisibleChanged -= ScrollBar_VisibleChanged;
+				if (scrollBar.OtherScrollBarView != null) {
+					scrollBar.OtherScrollBarView.ChangedPosition -= OtherScrollBarView_ChangedPosition;
+					//scrollBar.OtherScrollBarView.VisibleChanged -= OtherScrollBarView_VisibleChanged;
+				}
+				scrollBar.RemoveAll ();
+				scrollBar = null;
+				//BottomOffset = 0;
+				//RightOffset = 0;
+			}
+		}
+
+		private void ScrollBar_ChangedPosition ()
+		{
+			TopItem = scrollBar.Position;
+			if (TopItem != scrollBar.Position) {
+				scrollBar.Position = TopItem;
+			}
+			SetNeedsDisplay ();
+		}
+
+		private void OtherScrollBarView_ChangedPosition ()
+		{
+			LeftItem = scrollBar.OtherScrollBarView.Position;
+			if (LeftItem != scrollBar.OtherScrollBarView.Position) {
+				scrollBar.OtherScrollBarView.Position = LeftItem;
+			}
+			SetNeedsDisplay ();
+		}
+
+		//private void ScrollBar_VisibleChanged ()
+		//{
+		//	if (scrollBar.Visible && RightOffset == 0) {
+		//		RightOffset = 1;
+		//	} else if (!scrollBar.Visible && RightOffset == 1) {
+		//		RightOffset = 0;
+		//	}
+		//}
+
+		//private void OtherScrollBarView_VisibleChanged ()
+		//{
+		//	if (scrollBar.OtherScrollBarView.Visible && BottomOffset == 0) {
+		//		BottomOffset = 1;
+		//	} else if (!scrollBar.OtherScrollBarView.Visible && BottomOffset == 1) {
+		//		BottomOffset = 0;
+		//	}
+		//}
+
 		static IListDataSource MakeWrapper (IList source)
 		{
 			return new ListWrapper (source);
@@ -356,6 +508,8 @@ namespace Terminal.Gui {
 			AddCommand (Command.BottomEnd, () => MoveEnd ());
 			AddCommand (Command.OpenSelectedItem, () => OnOpenSelectedItem ());
 			AddCommand (Command.ToggleChecked, () => MarkUnmarkRow ());
+			AddCommand (Command.ScrollRight, () => ScrollRight (1));
+			AddCommand (Command.ScrollLeft, () => ScrollLeft (1));
 
 			// Default keybindings for all ListViews
 			AddKeyBinding (Key.CursorUp, Command.LineUp);
@@ -380,6 +534,15 @@ namespace Terminal.Gui {
 		///<inheritdoc/>
 		public override void Redraw (Rect bounds)
 		{
+			if (scrollBar != null) {
+				scrollBar.Size = Source.Count - 1;
+				scrollBar.Position = TopItem;
+				scrollBar.Selected = SelectedItem;
+				scrollBar.OtherScrollBarView.Size = Maxlength - 1;
+				scrollBar.OtherScrollBarView.Position = LeftItem;
+				scrollBar.Refresh ();
+			}
+
 			var current = ColorScheme.Focus;
 			Driver.SetAttribute (current);
 			Move (0, 0);
@@ -428,7 +591,8 @@ namespace Terminal.Gui {
 			}
 		}
 
-		internal int itemHeight = 1;
+		private int itemHeight = 1;
+
 		/// <summary>
 		/// The number of lines occupied by a an item in the ListView, this defaults to one,
 		/// but can be change to a larger value for items that need to use more than one cell,
@@ -598,8 +762,6 @@ namespace Terminal.Gui {
 
 				if (selected >= top + VisibleItems) {
 					top++;
-				} else if (selected == top + VisibleItems) {
-					top = selected;
 				} else if (selected < top) {
 					top = selected;
 				}
@@ -714,7 +876,11 @@ namespace Terminal.Gui {
 		/// <param name="cols">Number of columns to scroll right.</param>
 		public virtual bool ScrollRight (int cols)
 		{
-			left = Math.Max (Math.Min (left + cols, Maxlength - 1), 0);
+			if (ScrollBar?.KeepContentAlwaysInViewport == true) {
+				left = Math.Max (Math.Max (cols, Maxlength - left), 0);
+			} else {
+				left = Math.Max (Math.Min (left + cols, Maxlength - 1), 0);
+			}
 			SetNeedsDisplay ();
 			return true;
 		}
@@ -1044,7 +1210,7 @@ namespace Terminal.Gui {
 						//if (ch != null && ch.Width == 0 && c == colHeadersCount - 1) {
 						//	maxLength [c] += colMargin;
 						//}
-					} 
+					}
 					//else if (colHeadersCount == 1 && maxLength [c] < width) {
 					//	maxLength [c] = width;
 					//}
@@ -1061,7 +1227,7 @@ namespace Terminal.Gui {
 							//	colWidth = maxLength [c];
 							//}
 							if (c < colHeadersCount - 1) {
-								colWidth = maxLength [c]; 
+								colWidth = maxLength [c];
 							}
 						} else {
 							colWidth = Math.Min (ch.Width, width);

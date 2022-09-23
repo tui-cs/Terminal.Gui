@@ -6,6 +6,7 @@
 //
 
 using System;
+using System.Runtime.CompilerServices;
 
 namespace Terminal.Gui {
 	/// <summary>
@@ -22,8 +23,30 @@ namespace Terminal.Gui {
 	/// </para>
 	/// </remarks>
 	public class ScrollBarView : View {
+		/// <summary>
+		/// The scroll bar types used by this <see cref="ScrollBarView"/>.
+		/// </summary>
+		public enum ScrollBarType {
+			/// <summary>
+			/// None scroll bar will be used and to avoid throwing an exception never use it in a constructor.
+			/// </summary>
+			None,
+			/// <summary>
+			/// Only the vertical scroll bar will be shown.
+			/// </summary>
+			Vertical,
+			/// <summary>
+			/// Only the horizontal scroll bar will be shown.
+			/// </summary>
+			Horizontal,
+			/// <summary>
+			/// Both vertical and horizontal scroll bars will be shown.
+			/// </summary>
+			Both
+		}
+
 		bool vertical;
-		int size, position;
+		int size, position, selected;
 		bool showScrollIndicator;
 		bool keepContentAlwaysInViewport = true;
 		bool autoHideScrollBars = true;
@@ -48,7 +71,7 @@ namespace Terminal.Gui {
 		/// <param name="isVertical">If set to <c>true</c> this is a vertical scrollbar, otherwise, the scrollbar is horizontal. Sets the <see cref="IsVertical"/> property.</param>
 		public ScrollBarView (Rect rect, int size, int position, bool isVertical) : base (rect)
 		{
-			Init (size, position, isVertical);
+			Initialize (size, position, isVertical);
 		}
 
 		/// <summary>
@@ -64,8 +87,117 @@ namespace Terminal.Gui {
 		/// <param name="isVertical">If set to <c>true</c> this is a vertical scrollbar, otherwise, the scrollbar is horizontal.</param>
 		public ScrollBarView (int size, int position, bool isVertical) : base ()
 		{
-			Init (size, position, isVertical);
+			Initialize (size, position, isVertical);
 		}
+
+		static (bool IsVertical, bool ShowBothScrollIndicator) GetHostScrollBar (ScrollBarType scrollBarType)
+		{
+			switch (scrollBarType) {
+			case ScrollBarType.Vertical:
+				return (true, false);
+			case ScrollBarType.Horizontal:
+				return (false, false);
+			case ScrollBarType.Both:
+				return (true, true);
+			}
+			throw new ArgumentException ("Cannot create an instance of ScrollBarType.None!", nameof (scrollBarType));
+		}
+
+		string lines, cols, line, col, top, left;// bottom, right;
+		//int savedBottom, savedRight;
+
+		/// <summary>
+		/// Initializes a new instance of the <see cref="Gui.ScrollBarView"/> class based on the <see cref="ScrollBarType"/>.
+		/// </summary>
+		/// <param name="host">The view that will host this scrollbar.</param>
+		/// <param name="scrollBarType">The <see cref="ScrollBarType"/> except the <see cref="ScrollBarType.None"/></param>
+		public ScrollBarView (View host, ScrollBarType scrollBarType, bool isBuiltIn,
+			[CallerMemberName] string lines = null, [CallerMemberName] string cols = null,
+			//[CallerMemberName] string line = null, [CallerMemberName] string col = null,
+			[CallerMemberName] string top = null, [CallerMemberName] string left = null)
+			//[CallerMemberName] string bottom = null, [CallerMemberName] string right = null)
+			: this (host, GetHostScrollBar (scrollBarType).IsVertical, GetHostScrollBar (scrollBarType).ShowBothScrollIndicator)
+		{
+			if (!isBuiltIn) {
+				return;
+			}
+
+			ChangedPosition += ScrollBarView_ChangedPosition;
+			//VisibleChanged += ScrollBarView_VisibleChanged;
+			if (OtherScrollBarView != null) {
+				OtherScrollBarView.ChangedPosition += OtherScrollBarView_ChangedPosition;
+				//OtherScrollBarView.VisibleChanged += OtherScrollBarView_VisibleChanged;
+			}
+			host.DrawContent += Host_DrawContent;
+			host.LayoutComplete += Host_LayoutComplete;
+			this.lines = lines;
+			this.cols = cols;
+			this.top = top;
+			this.left = left;
+			//this.bottom = bottom;
+			//this.right = right;
+			//savedBottom = GetPropertyValue (bottom);
+			//savedRight = GetPropertyValue (right);
+		}
+
+		private void Host_LayoutComplete (LayoutEventArgs obj)
+		{
+			Refresh ();
+		}
+
+		private int GetPropertyValue (string propertyName) =>
+			(int)Host.GetType ().GetProperty (propertyName).GetValue (Host, null);
+
+		private void SetPropertyValue (string propertyName, int value) =>
+			Host.GetType ().GetProperty (propertyName).SetValue (Host, value);
+
+		private void Host_DrawContent (Rect obj)
+		{
+			Size = GetPropertyValue (lines);
+			Position = GetPropertyValue (top);
+			if (OtherScrollBarView != null) {
+				OtherScrollBarView.Size = GetPropertyValue (cols);
+				OtherScrollBarView.Position = GetPropertyValue (left);
+			}
+			LayoutSubviews ();
+			Refresh ();
+		}
+
+		private void ScrollBarView_ChangedPosition ()
+		{
+			SetPropertyValue (top, position);
+			if (GetPropertyValue (top) != Position) {
+				Position = GetPropertyValue (top);
+			}
+			SetNeedsDisplay ();
+		}
+
+		//private void ScrollBarView_VisibleChanged ()
+		//{
+		//	if (Visible && GetPropertyValue (right) == 0) {
+		//		SetPropertyValue (right, savedRight);
+		//	} else if (!Visible && GetPropertyValue (right) == savedRight) {
+		//		SetPropertyValue (right, 0);
+		//	}
+		//}
+
+		private void OtherScrollBarView_ChangedPosition ()
+		{
+			SetPropertyValue (left, OtherScrollBarView.Position);
+			if (GetPropertyValue (left) != OtherScrollBarView.Position) {
+				OtherScrollBarView.Position = GetPropertyValue (left);
+			}
+			SetNeedsDisplay ();
+		}
+
+		//private void OtherScrollBarView_VisibleChanged ()
+		//{
+		//	if (OtherScrollBarView.Visible && GetPropertyValue (bottom) == 0) {
+		//		SetPropertyValue (bottom, savedBottom);
+		//	} else if (!OtherScrollBarView.Visible && GetPropertyValue (bottom) == savedBottom) {
+		//		SetPropertyValue (bottom, 0);
+		//	}
+		//}
 
 		/// <summary>
 		/// Initializes a new instance of the <see cref="Gui.ScrollBarView"/> class using <see cref="LayoutStyle.Computed"/> layout.
@@ -119,6 +251,19 @@ namespace Terminal.Gui {
 			ClearOnVisibleFalse = false;
 		}
 
+		public override void RemoveAll ()
+		{
+			if (Host != null) {
+				Host.SuperView.Remove (this);
+				if (OtherScrollBarView != null) {
+					OtherScrollBarView.Host.SuperView.Remove (OtherScrollBarView);
+				}
+				Host.SuperView.Remove (contentBottomRightCorner);
+			}
+
+			base.RemoveAll ();
+		}
+
 		private void Host_VisibleChanged ()
 		{
 			if (!Host.Visible) {
@@ -161,7 +306,7 @@ namespace Terminal.Gui {
 			}
 		}
 
-		void Init (int size, int position, bool isVertical)
+		void Initialize (int size, int position, bool isVertical)
 		{
 			vertical = isVertical;
 			this.position = position;
@@ -208,6 +353,7 @@ namespace Terminal.Gui {
 		public int Position {
 			get => position;
 			set {
+				//if (position != value || MustScroll (ref value, vertical)) {
 				if (position != value) {
 					if (CanScroll (value - position, out int max, vertical)) {
 						if (max == value - position) {
@@ -224,6 +370,38 @@ namespace Terminal.Gui {
 				}
 			}
 		}
+
+		/// <summary>
+		/// The current selected object from the <see cref="Host"/>.
+		/// </summary>
+		public int Selected {
+			get => selected;
+			set {
+				if (selected != value) {
+					selected = value;
+					var s = (vertical ? Host.Bounds.Height : Host.Bounds.Width)
+						- (otherScrollBarView != null && otherScrollBarView.showBothScrollIndicator ? 1 : 0);
+					//if (selected == size - 1 && position + s < size) {
+					if (selected - position == s) {
+						Position++;
+					}
+				}
+			}
+		}
+
+		//bool MustScroll (ref int value, bool isVertical = false)
+		//{
+		//	if (position != value) {
+		//		return false;
+		//	}
+		//	var s = isVertical ? Host.Bounds.Height + (otherScrollBarView != null && otherScrollBarView.showBothScrollIndicator ? 1 : 0) :
+		//		Host.Bounds.Width + (otherScrollBarView != null && otherScrollBarView.showBothScrollIndicator ? 1 : 0);
+		//	if (position + s > size) {
+		//		value++;
+		//		return true;
+		//	}
+		//	return false;
+		//}
 
 		/// <summary>
 		/// Get or sets the view that host this <see cref="View"/>
@@ -387,10 +565,14 @@ namespace Terminal.Gui {
 		bool CheckBothScrollBars (ScrollBarView scrollBarView, bool pending = false)
 		{
 			int barsize = scrollBarView.vertical ? scrollBarView.Bounds.Height : scrollBarView.Bounds.Width;
+			var isHostWidthOrHeightZero = (bool)(Host?.Bounds.Width == 0 || Host?.Bounds.Height == 0);
 
-			if (barsize == 0 || barsize >= scrollBarView.size) {
+			if (barsize == 0 || barsize >= scrollBarView.size || isHostWidthOrHeightZero) {
 				if (scrollBarView.showScrollIndicator) {
 					scrollBarView.ShowScrollIndicator = false;
+				}
+				if (isHostWidthOrHeightZero && scrollBarView.OtherScrollBarView.showScrollIndicator) {
+					scrollBarView.OtherScrollBarView.ShowScrollIndicator = false;
 				}
 				if (scrollBarView.Visible) {
 					scrollBarView.Visible = false;
