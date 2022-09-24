@@ -18,7 +18,6 @@ namespace Terminal.Gui {
 
 		private class ComboListView : ListView {
 			private int highlighted = -1;
-			private bool isFocusing;
 			private ComboBox container;
 			private bool hideDropdownListOnClick;
 
@@ -53,36 +52,49 @@ namespace Terminal.Gui {
 
 			public override bool MouseEvent (MouseEvent me)
 			{
-				var res = false;
-				var isMousePositionValid = IsMousePositionValid (me);
+				if (me.View == container) {
+					var newXY = new MouseEvent {
+						X = me.X,
+						Y = 0,
+						Flags = me.Flags,
+						View = me.View
+					};
+					if (container.MouseEvent (newXY)) {
+						if (me.View == container.search) {
+							return false;
+						}
+						return true;
+					}
+				}
 
-				if (isMousePositionValid) {
+				var res = false;
+				var isListViewPositionValid = IsListViewPositionValid (me);
+
+				if (isListViewPositionValid) {
 					res = base.MouseEvent (me);
 				}
 
-				if (HideDropdownListOnClick && me.Flags == MouseFlags.Button1Clicked) {
-					if (!isMousePositionValid && !isFocusing) {
-						container.isShow = false;
-						container.HideList ();
-					} else if (isMousePositionValid) {
-						OnOpenSelectedItem ();
-					} else {
-						isFocusing = false;
-					}
+				if (HideDropdownListOnClick && !isListViewPositionValid && me.Flags != MouseFlags.ReportMousePosition &&
+					me.View != container) {
+
+					container.isShow = false;
+					container.HideList ();
+					return false;
+				} else if (HideDropdownListOnClick && isListViewPositionValid && me.Flags == MouseFlags.Button1Clicked) {
+					OnOpenSelectedItem ();
 					return true;
-				} else if (me.Flags == MouseFlags.ReportMousePosition && HideDropdownListOnClick) {
-					if (isMousePositionValid) {
+				} else if (HideDropdownListOnClick && me.Flags == MouseFlags.ReportMousePosition) {
+					if (isListViewPositionValid) {
 						highlighted = Math.Min (TopItem + me.Y, Source.Count);
 						SetNeedsDisplay ();
 					}
-					isFocusing = false;
 					return true;
 				}
 
 				return res;
 			}
 
-			private bool IsMousePositionValid (MouseEvent me)
+			private bool IsListViewPositionValid (MouseEvent me)
 			{
 				if (me.X >= 0 && me.X < Frame.Width && me.Y >= 0 && me.Y < Frame.Height) {
 					return true;
@@ -139,19 +151,9 @@ namespace Terminal.Gui {
 				}
 			}
 
-			public override bool OnMouseEnter (MouseEvent mouseEvent)
-			{
-				if (hideDropdownListOnClick && HasFocus && Application.mouseGrabView != this) {
-					Application.GrabMouse (this);
-				}
-
-				return base.OnMouseEnter (mouseEvent);
-			}
-
 			public override bool OnEnter (View view)
 			{
 				if (hideDropdownListOnClick) {
-					isFocusing = true;
 					highlighted = container.SelectedItem;
 					Application.GrabMouse (this);
 				}
@@ -162,13 +164,12 @@ namespace Terminal.Gui {
 			public override bool OnLeave (View view)
 			{
 				if (hideDropdownListOnClick) {
-					isFocusing = false;
 					highlighted = container.SelectedItem;
 					if (container.IsShow) {
 						container.isShow = false;
 						container.HideList ();
 					}
-					if (Application.mouseGrabView == this) {
+					if (Application.MouseGrabView == this) {
 						Application.UngrabMouse ();
 					}
 				}
@@ -464,7 +465,7 @@ namespace Terminal.Gui {
 				}
 
 				return true;
-			} else if (me.Flags == MouseFlags.Button1Pressed) {
+			} else if (me.View == search && me.Flags != MouseFlags.ReportMousePosition) {
 				if (!search.HasFocus) {
 					search.SetFocus ();
 				}
