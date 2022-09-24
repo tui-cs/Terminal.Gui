@@ -581,7 +581,22 @@ namespace Terminal.Gui {
 			return top;
 		}
 
-		internal static View mouseGrabView;
+		static View mouseGrabView;
+
+		/// <summary>
+		/// The view that grabbed the mouse, to where will be routed all the mouse events.
+		/// </summary>
+		public static View MouseGrabView => mouseGrabView;
+
+		/// <summary>
+		/// Event to be invoked when a view grab the mouse.
+		/// </summary>
+		public static event Action<View> GrabbedMouse;
+
+		/// <summary>
+		/// Event to be invoked when a view ungrab the mouse.
+		/// </summary>
+		public static event Action<View> UnGrabbedMouse;
 
 		/// <summary>
 		/// Grabs the mouse, forcing all mouse events to be routed to the specified view until UngrabMouse is called.
@@ -592,6 +607,7 @@ namespace Terminal.Gui {
 		{
 			if (view == null)
 				return;
+			OnGrabbedMouse (view);
 			mouseGrabView = view;
 			Driver.UncookMouse ();
 		}
@@ -601,8 +617,25 @@ namespace Terminal.Gui {
 		/// </summary>
 		public static void UngrabMouse ()
 		{
+			if (mouseGrabView == null)
+				return;
+			OnUnGrabbedMouse (mouseGrabView);
 			mouseGrabView = null;
 			Driver.CookMouse ();
+		}
+
+		static void OnGrabbedMouse (View view)
+		{
+			if (view == null)
+				return;
+			GrabbedMouse?.Invoke (view);
+		}
+
+		static void OnUnGrabbedMouse (View view)
+		{
+			if (view == null)
+				return;
+			UnGrabbedMouse?.Invoke (view);
 		}
 
 		/// <summary>
@@ -656,7 +689,7 @@ namespace Terminal.Gui {
 					lastMouseOwnerView?.OnMouseLeave (me);
 				}
 				// System.Diagnostics.Debug.WriteLine ($"{nme.Flags};{nme.X};{nme.Y};{mouseGrabView}");
-				if (mouseGrabView != null && mouseGrabView.OnMouseEvent (nme)) {
+				if (mouseGrabView?.OnMouseEvent (nme) == true) {
 					return;
 				}
 			}

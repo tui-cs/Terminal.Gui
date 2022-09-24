@@ -249,9 +249,9 @@ namespace Terminal.Gui {
 		///<inheritdoc/>
 		public override bool OnLeave (View view)
 		{
-			if (Application.mouseGrabView != null && Application.mouseGrabView == this)
+			if (Application.MouseGrabView != null && Application.MouseGrabView == this)
 				Application.UngrabMouse ();
-			//if (SelectedLength != 0 && !(Application.mouseGrabView is MenuBar))
+			//if (SelectedLength != 0 && !(Application.MouseGrabView is MenuBar))
 			//	ClearAllSelection ();
 
 			return base.OnLeave (view);
@@ -1049,7 +1049,7 @@ namespace Terminal.Gui {
 				int x = PositionCursor (ev);
 				isButtonReleased = false;
 				PrepareSelection (x);
-				if (Application.mouseGrabView == null) {
+				if (Application.MouseGrabView == null) {
 					Application.GrabMouse (this);
 				}
 			} else if (ev.Flags == MouseFlags.Button1Released) {

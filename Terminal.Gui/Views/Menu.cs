@@ -1816,7 +1816,7 @@ namespace Terminal.Gui {
 
 		internal bool HandleGrabView (MouseEvent me, View current)
 		{
-			if (Application.mouseGrabView != null) {
+			if (Application.MouseGrabView != null) {
 				if (me.View is MenuBar || me.View is Menu) {
 					var mbar = GetMouseGrabViewInstance (me.View);
 					if (mbar != null) {
@@ -1890,7 +1890,7 @@ namespace Terminal.Gui {
 			//if (!(me.View is MenuBar) && !(me.View is Menu) && me.Flags != MouseFlags.Button1Pressed))
 			//	return false;
 
-			//if (Application.mouseGrabView != null) {
+			//if (Application.MouseGrabView != null) {
 			//	if (me.View is MenuBar || me.View is Menu) {
 			//		me.X -= me.OfX;
 			//		me.Y -= me.OfY;
@@ -1905,8 +1905,8 @@ namespace Terminal.Gui {
 			//	return true;
 			//}
 
-			//if (Application.mouseGrabView != null) {
-			//	if (Application.mouseGrabView == me.View && me.View == current) {
+			//if (Application.MouseGrabView != null) {
+			//	if (Application.MouseGrabView == me.View && me.View == current) {
 			//		me.X -= me.OfX;
 			//		me.Y -= me.OfY;
 			//	} else if (me.View != current && me.View is MenuBar && me.View is Menu) {
@@ -1927,7 +1927,7 @@ namespace Terminal.Gui {
 
 		MenuBar GetMouseGrabViewInstance (View view)
 		{
-			if (view == null || Application.mouseGrabView == null) {
+			if (view == null || Application.MouseGrabView == null) {
 				return null;
 			}
 
@@ -1938,7 +1938,7 @@ namespace Terminal.Gui {
 				hostView = ((Menu)view).host;
 			}
 
-			var grabView = Application.mouseGrabView;
+			var grabView = Application.MouseGrabView;
 			MenuBar hostGrabView = null;
 			if (grabView is MenuBar) {
 				hostGrabView = (MenuBar)grabView;

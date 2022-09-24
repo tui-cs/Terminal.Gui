@@ -1144,7 +1144,7 @@ namespace Terminal.Gui.Core {
 			Assert.NotNull (Application.Top);
 			var rs = Application.Begin (Application.Top);
 			Assert.Equal (Application.Top, rs.Toplevel);
-			Assert.Null (Application.mouseGrabView);
+			Assert.Null (Application.MouseGrabView);
 			Assert.Null (Application.WantContinuousButtonPressedView);
 			Assert.False (Application.DebugDrawBounds);
 			Assert.False (Application.ShowChild (Application.Top));
@@ -1428,7 +1428,7 @@ namespace Terminal.Gui.Core {
 				iterations++;
 				if (iterations == 0) {
 					Assert.True (tf.HasFocus);
-					Assert.Null (Application.mouseGrabView);
+					Assert.Null (Application.MouseGrabView);
 
 					ReflectionTools.InvokePrivate (
 						typeof (Application),
@@ -1439,13 +1439,13 @@ namespace Terminal.Gui.Core {
 							Flags = MouseFlags.ReportMousePosition
 						});
 
-					Assert.Equal (sv, Application.mouseGrabView);
+					Assert.Equal (sv, Application.MouseGrabView);
 
 					MessageBox.Query ("Title", "Test", "Ok");
 
-					Assert.Null (Application.mouseGrabView);
+					Assert.Null (Application.MouseGrabView);
 				} else if (iterations == 1) {
-					Assert.Equal (sv, Application.mouseGrabView);
+					Assert.Equal (sv, Application.MouseGrabView);
 
 					ReflectionTools.InvokePrivate (
 						typeof (Application),
@@ -1456,7 +1456,7 @@ namespace Terminal.Gui.Core {
 							Flags = MouseFlags.ReportMousePosition
 						});
 
-					Assert.Null (Application.mouseGrabView);
+					Assert.Null (Application.MouseGrabView);
 
 					ReflectionTools.InvokePrivate (
 						typeof (Application),
@@ -1467,7 +1467,7 @@ namespace Terminal.Gui.Core {
 							Flags = MouseFlags.ReportMousePosition
 						});
 
-					Assert.Null (Application.mouseGrabView);
+					Assert.Null (Application.MouseGrabView);
 
 					ReflectionTools.InvokePrivate (
 						typeof (Application),
@@ -1478,17 +1478,80 @@ namespace Terminal.Gui.Core {
 							Flags = MouseFlags.Button1Pressed
 						});
 
-					Assert.Null (Application.mouseGrabView);
+					Assert.Null (Application.MouseGrabView);
 
 					Application.RequestStop ();
 				} else if (iterations == 2) {
-					Assert.Null (Application.mouseGrabView);
+					Assert.Null (Application.MouseGrabView);
 
 					Application.RequestStop ();
 				}
 			};
 
 			Application.Run ();
+		}
+
+		[Fact, AutoInitShutdown]
+		public void MouseGrabView_GrabbedMouse_UnGrabbedMouse ()
+		{
+			View grabView = null;
+			var count = 0;
+
+			var view1 = new View ();
+			var view2 = new View ();
+
+			Application.GrabbedMouse += Application_GrabbedMouse;
+			Application.UnGrabbedMouse += Application_UnGrabbedMouse;
+
+			Application.GrabMouse (view1);
+			Assert.Equal (0, count);
+			Assert.Equal (grabView, view1);
+			Assert.Equal (view1, Application.MouseGrabView);
+
+			Application.UngrabMouse ();
+			Assert.Equal (1, count);
+			Assert.Equal (grabView, view1);
+			Assert.Null (Application.MouseGrabView);
+
+			Application.GrabbedMouse += Application_GrabbedMouse;
+			Application.UnGrabbedMouse += Application_UnGrabbedMouse;
+
+			Application.GrabMouse (view2);
+			Assert.Equal (1, count);
+			Assert.Equal (grabView, view2);
+			Assert.Equal (view2, Application.MouseGrabView);
+
+			Application.UngrabMouse ();
+			Assert.Equal (2, count);
+			Assert.Equal (grabView, view2);
+			Assert.Null (Application.MouseGrabView);
+
+			void Application_GrabbedMouse (View obj)
+			{
+				if (count == 0) {
+					Assert.Equal (view1, obj);
+					grabView = view1;
+				} else {
+					Assert.Equal (view2, obj);
+					grabView = view2;
+				}
+
+				Application.GrabbedMouse -= Application_GrabbedMouse;
+			}
+
+			void Application_UnGrabbedMouse (View obj)
+			{
+				if (count == 0) {
+					Assert.Equal (view1, obj);
+					Assert.Equal (grabView, obj);
+				} else {
+					Assert.Equal (view2, obj);
+					Assert.Equal (grabView, obj);
+				}
+				count++;
+
+				Application.UnGrabbedMouse -= Application_UnGrabbedMouse;
+			}
 		}
 	}
 }

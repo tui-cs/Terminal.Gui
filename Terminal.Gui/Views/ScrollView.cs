@@ -227,7 +227,7 @@ namespace Terminal.Gui {
 
 		void View_MouseLeave (MouseEventArgs e)
 		{
-			if (Application.mouseGrabView != null && Application.mouseGrabView != vertical && Application.mouseGrabView != horizontal) {
+			if (Application.MouseGrabView != null && Application.MouseGrabView != vertical && Application.MouseGrabView != horizontal) {
 				Application.UngrabMouse ();
 			}
 		}

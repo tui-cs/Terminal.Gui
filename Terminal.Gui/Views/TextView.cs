@@ -4328,7 +4328,7 @@ namespace Terminal.Gui {
 				}
 				lastWasKill = false;
 				columnTrack = currentColumn;
-				if (Application.mouseGrabView == null) {
+				if (Application.MouseGrabView == null) {
 					Application.GrabMouse (this);
 				}
 			} else if (ev.Flags.HasFlag (MouseFlags.Button1Released)) {
@@ -4407,7 +4407,7 @@ namespace Terminal.Gui {
 		///<inheritdoc/>
 		public override bool OnLeave (View view)
 		{
-			if (Application.mouseGrabView != null && Application.mouseGrabView == this) {
+			if (Application.MouseGrabView != null && Application.MouseGrabView == this) {
 				Application.UngrabMouse ();
 			}
 
