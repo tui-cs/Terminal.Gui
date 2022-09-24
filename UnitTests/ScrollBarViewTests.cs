@@ -947,7 +947,7 @@ This is a test
 					Flags = MouseFlags.Button1Clicked
 				});
 
-			Assert.Null (Application.mouseGrabView);
+			Assert.Null (Application.MouseGrabView);
 			Assert.True (clicked);
 
 			clicked = false;
@@ -974,7 +974,7 @@ This is a test
 					Flags = MouseFlags.Button1Clicked
 				});
 
-			Assert.Null (Application.mouseGrabView);
+			Assert.Null (Application.MouseGrabView);
 			Assert.True (clicked);
 			Assert.Equal (5, sbv.Size);
 			Assert.False (sbv.ShowScrollIndicator);
