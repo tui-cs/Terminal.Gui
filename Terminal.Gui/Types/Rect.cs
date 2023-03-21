@@ -130,7 +130,7 @@ namespace Terminal.Gui
 		///
 		/// <remarks>
 		///	Produces a new Rectangle by intersecting 2 existing 
-		///	Rectangles. Returns null if there is no	intersection.
+		///	Rectangles. Returns Empty if there is no intersection.
 		/// </remarks>
 
 		public static Rect Intersect (Rect a, Rect b)

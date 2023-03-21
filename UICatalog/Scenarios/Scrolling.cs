@@ -151,7 +151,7 @@ namespace UICatalog.Scenarios {
 			};
 			scrollView.Add (verticalRuler);
 
-			void Top_Loaded ()
+			void Top_Loaded (object sender, EventArgs args)
 			{
 				horizontalRuler.Text = rule.Repeat ((int)Math.Ceiling ((double)(horizontalRuler.Bounds.Width) / (double)rule.Length)) [0..(horizontalRuler.Bounds.Width)] +
 					"\n" + "|         ".Repeat ((int)Math.Ceiling ((double)(horizontalRuler.Bounds.Width) / (double)rule.Length)) [0..(horizontalRuler.Bounds.Width)];
@@ -164,7 +164,7 @@ namespace UICatalog.Scenarios {
 				X = 3,
 				Y = 3,
 			};
-			pressMeButton.Clicked += () => MessageBox.Query (20, 7, "MessageBox", "Neat?", "Yes", "No");
+			pressMeButton.Clicked += (s,e) => MessageBox.Query (20, 7, "MessageBox", "Neat?", "Yes", "No");
 			scrollView.Add (pressMeButton);
 
 			var aLongButton = new Button ("A very long button. Should be wide enough to demo clipping!") {
@@ -172,7 +172,7 @@ namespace UICatalog.Scenarios {
 				Y = 4,
 				Width = Dim.Fill (3),
 			};
-			aLongButton.Clicked += () => MessageBox.Query (20, 7, "MessageBox", "Neat?", "Yes", "No");
+			aLongButton.Clicked += (s,e) => MessageBox.Query (20, 7, "MessageBox", "Neat?", "Yes", "No");
 			scrollView.Add (aLongButton);
 
 			scrollView.Add (new TextField ("This is a test of...") {
@@ -202,7 +202,7 @@ namespace UICatalog.Scenarios {
 			};
 			// TODO: Use Pos.Width instead of (Right-Left) when implemented (#502)
 			anchorButton.X = Pos.AnchorEnd () - (Pos.Right (anchorButton) - Pos.Left (anchorButton));
-			anchorButton.Clicked += () => {
+			anchorButton.Clicked += (s,e) => {
 				// Ths demonstrates how to have a dynamically sized button
 				// Each time the button is clicked the button's text gets longer
 				// The call to Win.LayoutSubviews causes the Computed layout to
@@ -236,7 +236,7 @@ namespace UICatalog.Scenarios {
 				X = Pos.Left (scrollView) + (scrollView.Bounds.Width / 2) - (k.Length / 2),
 				Y = Pos.Bottom (scrollView) + 4,
 			};
-			hCheckBox.Toggled += (_) => {
+			hCheckBox.Toggled += (s, e) => {
 				if (ahCheckBox.Checked == false) {
 					scrollView.ShowHorizontalScrollIndicator = (bool)hCheckBox.Checked;
 				} else {
@@ -244,7 +244,7 @@ namespace UICatalog.Scenarios {
 					MessageBox.Query ("Message", "Disable Auto Hide Scrollbars first.", "Ok");
 				}
 			};
-			vCheckBox.Toggled += (_) => {
+			vCheckBox.Toggled += (s, e) => {
 				if (ahCheckBox.Checked == false) {
 					scrollView.ShowVerticalScrollIndicator = (bool)vCheckBox.Checked;
 				} else {
@@ -252,14 +252,14 @@ namespace UICatalog.Scenarios {
 					MessageBox.Query ("Message", "Disable Auto Hide Scrollbars first.", "Ok");
 				}
 			};
-			ahCheckBox.Toggled += (_) => {
+			ahCheckBox.Toggled += (s, e) => {
 				scrollView.AutoHideScrollBars = (bool)ahCheckBox.Checked;
 				hCheckBox.Checked = true;
 				vCheckBox.Checked = true;
 			};
 			Win.Add (ahCheckBox);
 
-			keepCheckBox.Toggled += (_) => scrollView.KeepContentAlwaysInViewport = (bool)keepCheckBox.Checked;
+			keepCheckBox.Toggled += (s,e) => scrollView.KeepContentAlwaysInViewport = (bool)keepCheckBox.Checked;
 			Win.Add (keepCheckBox);
 
 			var scrollView2 = new ScrollView (new Rect (55, 2, 20, 8)) {
@@ -270,7 +270,7 @@ namespace UICatalog.Scenarios {
 			};
 			var filler = new Filler (new Rect (0, 0, 60, 40));
 			scrollView2.Add (filler);
-			scrollView2.DrawContent += (r) => {
+			scrollView2.DrawContent += (s,e) => {
 				scrollView2.ContentSize = filler.GetContentSize ();
 			};
 			Win.Add (scrollView2);
@@ -310,7 +310,7 @@ namespace UICatalog.Scenarios {
 			}
 			Application.MainLoop.AddTimeout (TimeSpan.FromMilliseconds (300), timer);
 
-			void Top_Unloaded ()
+			void Top_Unloaded (object sender, EventArgs args)
 			{
 				pulsing = false;
 				Application.Top.Unloaded -= Top_Unloaded;

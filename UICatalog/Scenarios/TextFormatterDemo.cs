@@ -80,10 +80,10 @@ namespace UICatalog.Scenarios {
 				label = multipleLines [(int)alignment];
 			}
 
-			unicodeCheckBox.Toggled += (previous) => {
+			unicodeCheckBox.Toggled += (s,e) => {
 				foreach (var alignment in alignments) {
-					singleLines [(int)alignment].Text = previous == true ? text : unicode;
-					multipleLines [(int)alignment].Text = previous == true ? text : unicode;
+					singleLines [(int)alignment].Text = e.OldValue == true ? text : unicode;
+					multipleLines [(int)alignment].Text = e.OldValue == true ? text : unicode;
 				}
 			};
 		}

@@ -58,14 +58,14 @@ namespace UICatalog.Scenarios {
 
 			Point mousePos = default;
 
-			Win.KeyPress += (e) => {
+			Win.KeyPress += (s, e) => {
 				if (e.KeyEvent.Key == (Key.Space | Key.CtrlMask)) {
 					ShowContextMenu (mousePos.X, mousePos.Y);
 					e.Handled = true;
 				}
 			};
 
-			Win.MouseClick += (e) => {
+			Win.MouseClick += (s, e) => {
 				if (e.MouseEvent.Flags == contextMenu.MouseFlags) {
 					ShowContextMenu (e.MouseEvent.X, e.MouseEvent.Y);
 					e.Handled = true;
@@ -81,7 +81,7 @@ namespace UICatalog.Scenarios {
 
 			Win.WantMousePositionReports = true;
 
-			Application.Top.Closed += (_) => {
+			Application.Top.Closed += (s,e) => {
 				Thread.CurrentThread.CurrentUICulture = new CultureInfo ("en-US");
 				Application.RootMouseEvent -= Application_RootMouseEvent;
 			};

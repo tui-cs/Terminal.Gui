@@ -64,7 +64,7 @@ namespace UICatalog.Scenarios {
 			Application.Top.Add (statusBar);
 		}
 
-		private void _hexView_PositionChanged (HexView.HexViewEventArgs obj)
+		private void _hexView_PositionChanged (object sender, HexViewEventArgs obj)
 		{
 			siPositionChanged.Title = $"Position: {obj.Position} Line: {obj.CursorPosition.Y} Col: {obj.CursorPosition.X} Line length: {obj.BytesPerLine}";
 			statusBar.SetNeedsDisplay ();
@@ -75,7 +75,7 @@ namespace UICatalog.Scenarios {
 			_hexView.AllowEdits = (bool)(miAllowEdits.Checked = !miAllowEdits.Checked);
 		}
 
-		private void _hexView_Edited (System.Collections.Generic.KeyValuePair<long, byte> obj)
+		private void _hexView_Edited (object sender, HexViewEditEventArgs e)
 		{
 			_saved = false;
 		}

@@ -74,18 +74,18 @@ namespace Terminal.Gui {
 			}
 		}
 
-		private void Top_Removed (View obj)
+		private void Top_Removed (object sender, SuperViewChangedEventArgs e)
 		{
 			Visible = false;
 			ManipulatePopup ();
 		}
 
-		private void Top_DrawContentComplete (Rect obj)
+		private void Top_DrawContentComplete (object sender, DrawEventArgs e)
 		{
 			ManipulatePopup ();
 		}
 
-		private void Top_DrawContent (Rect obj)
+		private void Top_DrawContent (object sender, DrawEventArgs e)
 		{
 			if (!closed) {
 				ReopenSuggestions ();

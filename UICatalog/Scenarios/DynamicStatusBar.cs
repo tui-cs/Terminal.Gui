@@ -77,7 +77,7 @@ namespace UICatalog.Scenarios {
 					X = Pos.Center (),
 					Width = 2,
 				};
-				_txtDelimiter.TextChanged += (_) => StatusBar.ShortcutDelimiter = _txtDelimiter.Text;
+				_txtDelimiter.TextChanged += (s, _) => StatusBar.ShortcutDelimiter = _txtDelimiter.Text;
 				_frmDelimiter.Add (_txtDelimiter);
 
 				Add (_frmDelimiter);
@@ -142,7 +142,7 @@ namespace UICatalog.Scenarios {
 				};
 				Add (_frmStatusBarDetails);
 
-				_btnUp.Clicked += () => {
+				_btnUp.Clicked += (s,e) => {
 					var i = _lstItems.SelectedItem;
 					var statusItem = DataContext.Items.Count > 0 ? DataContext.Items [i].StatusItem : null;
 					if (statusItem != null) {
@@ -158,7 +158,7 @@ namespace UICatalog.Scenarios {
 					}
 				};
 
-				_btnDown.Clicked += () => {
+				_btnDown.Clicked += (s,e) => {
 					var i = _lstItems.SelectedItem;
 					var statusItem = DataContext.Items.Count > 0 ? DataContext.Items [i].StatusItem : null;
 					if (statusItem != null) {
@@ -184,16 +184,16 @@ namespace UICatalog.Scenarios {
 					X = Pos.Right (_btnOk) + 3,
 					Y = Pos.Top (_btnOk),
 				};
-				_btnCancel.Clicked += () => {
+				_btnCancel.Clicked += (s,e) => {
 					SetFrameDetails (_currentEditStatusItem);
 				};
 				Add (_btnCancel);
 
-				_lstItems.SelectedItemChanged += (e) => {
+				_lstItems.SelectedItemChanged += (s, e) => {
 					SetFrameDetails ();
 				};
 
-				_btnOk.Clicked += () => {
+				_btnOk.Clicked += (s,e) => {
 					if (ustring.IsNullOrEmpty (_frmStatusBarDetails._txtTitle.Text) && _currentEditStatusItem != null) {
 						MessageBox.ErrorQuery ("Invalid title", "Must enter a valid title!.", "Ok");
 					} else if (_currentEditStatusItem != null) {
@@ -206,7 +206,7 @@ namespace UICatalog.Scenarios {
 					}
 				};
 
-				_btnAdd.Clicked += () => {
+				_btnAdd.Clicked += (s,e) => {
 					if (StatusBar == null) {
 						MessageBox.ErrorQuery ("StatusBar Bar Error", "Must add a StatusBar first!", "Ok");
 						_btnAddStatusBar.SetFocus ();
@@ -227,7 +227,7 @@ namespace UICatalog.Scenarios {
 					SetFrameDetails ();
 				};
 
-				_btnRemove.Clicked += () => {
+				_btnRemove.Clicked += (s,e) => {
 					var statusItem = DataContext.Items.Count > 0 ? DataContext.Items [_lstItems.SelectedItem].StatusItem : null;
 					if (statusItem != null) {
 						_statusBar.RemoveItem (_currentSelectedStatusBar);
@@ -240,12 +240,12 @@ namespace UICatalog.Scenarios {
 					}
 				};
 
-				_lstItems.Enter += (_) => {
+				_lstItems.Enter += (s, e) => {
 					var statusItem = DataContext.Items.Count > 0 ? DataContext.Items [_lstItems.SelectedItem].StatusItem : null;
 					SetFrameDetails (statusItem);
 				};
 
-				_btnAddStatusBar.Clicked += () => {
+				_btnAddStatusBar.Clicked += (s,e) => {
 					if (_statusBar != null) {
 						return;
 					}
@@ -254,7 +254,7 @@ namespace UICatalog.Scenarios {
 					Add (_statusBar);
 				};
 
-				_btnRemoveStatusBar.Clicked += () => {
+				_btnRemoveStatusBar.Clicked += (s,e) => {
 					if (_statusBar == null) {
 						return;
 					}
@@ -401,7 +401,7 @@ namespace UICatalog.Scenarios {
 					Width = Dim.Fill (),
 					ReadOnly = true
 				};
-				_txtShortcut.KeyDown += (e) => {
+				_txtShortcut.KeyDown += (s, e) => {
 					if (!ProcessKey (e.KeyEvent)) {
 						return;
 					}
@@ -445,7 +445,7 @@ namespace UICatalog.Scenarios {
 					return true;
 				}
 
-				_txtShortcut.KeyUp += (e) => {
+				_txtShortcut.KeyUp += (s, e) => {
 					var k = ShortcutHelper.GetModifiersKey (e.KeyEvent);
 					if (CheckShortcut (k, false)) {
 						e.Handled = true;
@@ -457,7 +457,7 @@ namespace UICatalog.Scenarios {
 					X = Pos.X (_lblShortcut),
 					Y = Pos.Bottom (_txtShortcut) + 1
 				};
-				_btnShortcut.Clicked += () => {
+				_btnShortcut.Clicked += (s,e) => {
 					_txtShortcut.Text = "";
 				};
 				Add (_btnShortcut);
@@ -479,7 +479,7 @@ namespace UICatalog.Scenarios {
 				var _btnOk = new Button ("Ok") {
 					IsDefault = true,
 				};
-				_btnOk.Clicked += () => {
+				_btnOk.Clicked += (s,e) => {
 					if (ustring.IsNullOrEmpty (_txtTitle.Text)) {
 						MessageBox.ErrorQuery ("Invalid title", "Must enter a valid title!.", "Ok");
 					} else {
@@ -492,7 +492,7 @@ namespace UICatalog.Scenarios {
 					}
 				};
 				var _btnCancel = new Button ("Cancel");
-				_btnCancel.Clicked += () => {
+				_btnCancel.Clicked += (s,e) => {
 					_txtTitle.Text = ustring.Empty;
 					Application.RequestStop ();
 				};

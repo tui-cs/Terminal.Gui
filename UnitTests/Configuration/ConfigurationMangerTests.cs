@@ -775,7 +775,7 @@ namespace Terminal.Gui.ConfigurationTests {
 
 			ConfigurationManager.Updated += ConfigurationManager_Updated;
 			bool fired = false;
-			void ConfigurationManager_Updated (ConfigurationManager.ConfigurationManagerEventArgs obj)
+			void ConfigurationManager_Updated (object sender, ConfigurationManagerEventArgs obj)
 			{
 				fired = true;
 				// assert
@@ -801,7 +801,7 @@ namespace Terminal.Gui.ConfigurationTests {
 			ConfigurationManager.Reset ();
 			ConfigurationManager.Applied += ConfigurationManager_Applied;
 			bool fired = false;
-			void ConfigurationManager_Applied (ConfigurationManager.ConfigurationManagerEventArgs obj)
+			void ConfigurationManager_Applied (object sender, ConfigurationManagerEventArgs obj)
 			{
 				fired = true;
 				// assert

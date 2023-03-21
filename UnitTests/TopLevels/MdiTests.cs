@@ -67,31 +67,31 @@ namespace Terminal.Gui.TopLevelTests {
 			// top1, top2, top3, d1 = 4
 			var iterations = 4;
 
-			top1.Ready += () => {
+			top1.Ready += (s, e) => {
 				Assert.Null (Application.MdiChildes);
 				Application.Run (top2);
 			};
-			top2.Ready += () => {
+			top2.Ready += (s, e) => {
 				Assert.Null (Application.MdiChildes);
 				Application.Run (top3);
 			};
-			top3.Ready += () => {
+			top3.Ready += (s, e) => {
 				Assert.Null (Application.MdiChildes);
 				Application.Run (top4);
 			};
-			top4.Ready += () => {
+			top4.Ready += (s, e) => {
 				Assert.Null (Application.MdiChildes);
 				Application.Run (d);
 			};
 
-			d.Ready += () => {
+			d.Ready += (s, e) => {
 				Assert.Null (Application.MdiChildes);
 				// This will close the d because on a not MdiContainer the Application.Current it always used.
 				Application.RequestStop (top1);
 				Assert.True (Application.Current == d);
 			};
 
-			d.Closed += (e) => Application.RequestStop (top1);
+			d.Closed += (s,e) => Application.RequestStop (top1);
 
 			Application.Iteration += () => {
 				Assert.Null (Application.MdiChildes);
@@ -130,32 +130,32 @@ else 					Assert.True (Application.Current == top1);
 			// d1 = 1
 			var iterations = 4;
 
-			mdi.Ready += () => {
+			mdi.Ready += (s, e) => {
 				Assert.Empty (Application.MdiChildes);
 				Application.Run (c1);
 			};
-			c1.Ready += () => {
+			c1.Ready += (s, e) => {
 				Assert.Single (Application.MdiChildes);
 				Application.Run (c2);
 			};
-			c2.Ready += () => {
+			c2.Ready += (s, e) => {
 				Assert.Equal (2, Application.MdiChildes.Count);
 				Application.Run (c3);
 			};
-			c3.Ready += () => {
+			c3.Ready += (s, e) => {
 				Assert.Equal (3, Application.MdiChildes.Count);
 				Application.Run (d);
 			};
 
 			// More easy because the Mdi Container handles all at once
-			d.Ready += () => {
+			d.Ready += (s, e) => {
 				Assert.Equal (3, Application.MdiChildes.Count);
 				// This will not close the MdiContainer because d is a modal toplevel and will be closed.
 				mdi.RequestStop ();
 			};
 
 			// Now this will close the MdiContainer propagating through the MdiChildes.
-			d.Closed += (e) => {
+			d.Closed += (s,e) => {
 				mdi.RequestStop ();
 			};
 
@@ -190,32 +190,32 @@ else 					Assert.True (Application.Current == top1);
 			// d1 = 1
 			var iterations = 4;
 
-			mdi.Ready += () => {
+			mdi.Ready += (s, e) => {
 				Assert.Empty (Application.MdiChildes);
 				Application.Run (c1);
 			};
-			c1.Ready += () => {
+			c1.Ready += (s, e) => {
 				Assert.Single (Application.MdiChildes);
 				Application.Run (c2);
 			};
-			c2.Ready += () => {
+			c2.Ready += (s, e) => {
 				Assert.Equal (2, Application.MdiChildes.Count);
 				Application.Run (c3);
 			};
-			c3.Ready += () => {
+			c3.Ready += (s, e) => {
 				Assert.Equal (3, Application.MdiChildes.Count);
 				Application.Run (d);
 			};
 
 			// Also easy because the Mdi Container handles all at once
-			d.Ready += () => {
+			d.Ready += (s, e) => {
 				Assert.Equal (3, Application.MdiChildes.Count);
 				// This will not close the MdiContainer because d is a modal toplevel
 				Application.RequestStop (mdi);
 			};
 
 			// Now this will close the MdiContainer propagating through the MdiChildes.
-			d.Closed += (e) => Application.RequestStop (mdi);
+			d.Closed += (s,e) => Application.RequestStop (mdi);
 
 			Application.Iteration += () => {
 				if (iterations == 4) {
@@ -248,32 +248,32 @@ else 					Assert.True (Application.Current == top1);
 			// d1 = 1
 			var iterations = 4;
 
-			mdi.Ready += () => {
+			mdi.Ready += (s, e) => {
 				Assert.Empty (Application.MdiChildes);
 				Application.Run (c1);
 			};
-			c1.Ready += () => {
+			c1.Ready += (s, e) => {
 				Assert.Single (Application.MdiChildes);
 				Application.Run (c2);
 			};
-			c2.Ready += () => {
+			c2.Ready += (s, e) => {
 				Assert.Equal (2, Application.MdiChildes.Count);
 				Application.Run (c3);
 			};
-			c3.Ready += () => {
+			c3.Ready += (s, e) => {
 				Assert.Equal (3, Application.MdiChildes.Count);
 				Application.Run (d);
 			};
 
 			//More harder because it's sequential.
-			d.Ready += () => {
+			d.Ready += (s, e) => {
 				Assert.Equal (3, Application.MdiChildes.Count);
 				// Close the Dialog
 				Application.RequestStop ();
 			};
 
 			// Now this will close the MdiContainer propagating through the MdiChildes.
-			d.Closed += (e) => Application.RequestStop (mdi);
+			d.Closed += (s, e) => Application.RequestStop (mdi);
 
 			Application.Iteration += () => {
 				if (iterations == 4) {
@@ -331,28 +331,28 @@ else 					Assert.True (Application.Current == top1);
 			// d1, d2 = 2
 			var iterations = 5;
 
-			mdi.Ready += () => {
+			mdi.Ready += (s, e) => {
 				Assert.Empty (Application.MdiChildes);
 				Application.Run (c1);
 			};
-			c1.Ready += () => {
+			c1.Ready += (s, e) => {
 				Assert.Single (Application.MdiChildes);
 				Application.Run (c2);
 			};
-			c2.Ready += () => {
+			c2.Ready += (s, e) => {
 				Assert.Equal (2, Application.MdiChildes.Count);
 				Application.Run (c3);
 			};
-			c3.Ready += () => {
+			c3.Ready += (s, e) => {
 				Assert.Equal (3, Application.MdiChildes.Count);
 				Application.Run (d1);
 			};
-			d1.Ready += () => {
+			d1.Ready += (s, e) => {
 				Assert.Equal (3, Application.MdiChildes.Count);
 				Application.Run (d2);
 			};
 
-			d2.Ready += () => {
+			d2.Ready += (s, e) => {
 				Assert.Equal (3, Application.MdiChildes.Count);
 				Assert.True (Application.Current == d2);
 				Assert.True (Application.Current.Running);
@@ -361,7 +361,7 @@ else 					Assert.True (Application.Current == top1);
 			};
 
 			// Now this will close the MdiContainer propagating through the MdiChildes.
-			d1.Closed += (e) => {
+			d1.Closed += (s, e) => {
 				Assert.True (Application.Current == d1);
 				Assert.False (Application.Current.Running);
 				mdi.RequestStop ();
@@ -406,35 +406,35 @@ else 					Assert.True (Application.Current == top1);
 			// d1 = 1
 			var iterations = 5;
 
-			mdi.Ready += () => {
+			mdi.Ready += (s, e) => {
 				Assert.Empty (Application.MdiChildes);
 				Application.Run (c1);
 			};
-			c1.Ready += () => {
+			c1.Ready += (s, e) => {
 				Assert.Single (Application.MdiChildes);
 				Application.Run (c2);
 			};
-			c2.Ready += () => {
+			c2.Ready += (s, e) => {
 				Assert.Equal (2, Application.MdiChildes.Count);
 				Application.Run (c3);
 			};
-			c3.Ready += () => {
+			c3.Ready += (s, e) => {
 				Assert.Equal (3, Application.MdiChildes.Count);
 				Application.Run (d1);
 			};
-			d1.Ready += () => {
+			d1.Ready += (s, e) => {
 				Assert.Equal (3, Application.MdiChildes.Count);
 				Application.Run (c4);
 			};
 
-			c4.Ready += () => {
+			c4.Ready += (s, e) => {
 				Assert.Equal (4, Application.MdiChildes.Count);
 				// Trying to close the Dialog1
 				d1.RequestStop ();
 			};
 
 			// Now this will close the MdiContainer propagating through the MdiChildes.
-			d1.Closed += (e) => {
+			d1.Closed += (s, e) => {
 				mdi.RequestStop ();
 			};
 
@@ -471,25 +471,25 @@ else 					Assert.True (Application.Current == top1);
 			// MdiChild = c1, c2, c3
 			var iterations = 3;
 
-			mdi.Ready += () => {
+			mdi.Ready += (s, e) => {
 				Assert.Empty (Application.MdiChildes);
 				Application.Run (c1);
 			};
-			c1.Ready += () => {
+			c1.Ready += (s, e) => {
 				Assert.Single (Application.MdiChildes);
 				Application.Run (c2);
 			};
-			c2.Ready += () => {
+			c2.Ready += (s, e) => {
 				Assert.Equal (2, Application.MdiChildes.Count);
 				Application.Run (c3);
 			};
-			c3.Ready += () => {
+			c3.Ready += (s, e) => {
 				Assert.Equal (3, Application.MdiChildes.Count);
 				c3.RequestStop ();
 				c1.RequestStop ();
 			};
 			// Now this will close the MdiContainer propagating through the MdiChildes.
-			c1.Closed += (e) => {
+			c1.Closed += (s, e) => {
 				mdi.RequestStop ();
 			};
 			Application.Iteration += () => {
@@ -532,7 +532,7 @@ else 					Assert.True (Application.Current == top1);
 			var mdi = new Mdi ();
 			var mdi2 = new Mdi ();
 
-			mdi.Ready += () => {
+			mdi.Ready += (s, e) => {
 				Assert.Throws<InvalidOperationException> (() => Application.Run (mdi2));
 				mdi.RequestStop ();
 			};
@@ -553,24 +553,24 @@ else 					Assert.True (Application.Current == top1);
 			var allStageClosed = false;
 			var mdiRequestStop = false;
 
-			mdi.Ready += () => {
+			mdi.Ready += (s, e) => {
 				Assert.Empty (Application.MdiChildes);
 				Application.Run (logger);
 			};
 
-			logger.Ready += () => Assert.Single (Application.MdiChildes);
+			logger.Ready += (s, e) => Assert.Single (Application.MdiChildes);
 
 			Application.Iteration += () => {
 				if (stageCompleted && running) {
 					stageCompleted = false;
 					var stage = new Window () { Modal = true };
 
-					stage.Ready += () => {
+					stage.Ready += (s, e) => {
 						Assert.Equal (iterations, Application.MdiChildes.Count);
 						stage.RequestStop ();
 					};
 
-					stage.Closed += (_) => {
+					stage.Closed += (_, _) => {
 						if (iterations == 11) 							allStageClosed = true;
 						Assert.Equal (iterations, Application.MdiChildes.Count);
 						if (running) {
@@ -578,7 +578,7 @@ else 					Assert.True (Application.Current == top1);
 
 							var rpt = new Window ();
 
-							rpt.Ready += () => {
+							rpt.Ready += (s, e) => {
 								iterations++;
 								Assert.Equal (iterations, Application.MdiChildes.Count);
 							};
@@ -618,26 +618,26 @@ else if (!mdiRequestStop && !running && allStageClosed) {
 			// MdiChild = c1, c2, c3
 			var iterations = 3;
 
-			mdi.Ready += () => {
+			mdi.Ready += (s, e) => {
 				Assert.Empty (Application.MdiChildes);
 				Application.Run (c1);
 			};
-			c1.Ready += () => {
+			c1.Ready += (s, e) => {
 				Assert.Single (Application.MdiChildes);
 				Application.Run (c2);
 			};
-			c2.Ready += () => {
+			c2.Ready += (s, e) => {
 				Assert.Equal (2, Application.MdiChildes.Count);
 				Application.Run (c3);
 			};
-			c3.Ready += () => {
+			c3.Ready += (s, e) => {
 				Assert.Equal (3, Application.MdiChildes.Count);
 				c3.RequestStop ();
 				c2.RequestStop ();
 				c1.RequestStop ();
 			};
 			// Now this will close the MdiContainer when all MdiChildes was closed
-			mdi.AllChildClosed += () => {
+			mdi.AllChildClosed += (s, e) => {
 				mdi.RequestStop ();
 			};
 			Application.Iteration += () => {

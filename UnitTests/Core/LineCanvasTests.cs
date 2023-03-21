@@ -15,20 +15,6 @@ namespace Terminal.Gui.CoreTests {
 			this.output = output;
 		}
 
-		[Fact, AutoInitShutdown]
-		public void TestLineCanvas_Dot ()
-		{
-			var v = GetCanvas (out var canvas);
-			canvas.AddLine (new Point (0, 0), 0, Orientation.Horizontal, BorderStyle.Single);
-
-			v.Redraw (v.Bounds);
-
-			string looksLike =
-@"    
-.";
-			TestHelpers.AssertDriverContentsAre (looksLike, output);
-		}
-
 		[InlineData (BorderStyle.Single)]
 		[InlineData (BorderStyle.Rounded)]
 		[Theory, AutoInitShutdown]
@@ -311,7 +297,119 @@ namespace Terminal.Gui.CoreTests {
 ";
 			TestHelpers.AssertDriverContentsAre (looksLike, output);
 		}
+		[Fact, AutoInitShutdown]
+		public void TestLineCanvas_ClipArea_Intersections ()
+		{
+			// Draw at 1,1 within client area of View (i.e. leave a top and left margin of 1)
+			var v = GetCanvas (out var lc);
+			v.Width = 10;
+			v.Height = 1;
+			v.Bounds = new Rect (0, 0, 10, 1);
 
+			// ╔╡ Title ╞═════╗
+			// Add a short horiz line for ╔╡
+			lc.AddLine (new Point (0, 0), 1, Orientation.Horizontal, BorderStyle.Double);
+			//LHS line down
+			lc.AddLine (new Point (0, 0), 5, Orientation.Vertical, BorderStyle.Double);
+
+			//Vertical line before Title, results in a ╡
+			lc.AddLine (new Point (1, 0), 0, Orientation.Vertical, BorderStyle.Single);
+			//Vertical line after Title, results in a ╞
+			lc.AddLine (new Point (6, 0), 0, Orientation.Vertical, BorderStyle.Single);
+
+			// remainder of title
+			lc.AddLine (new Point (6, 0), 3, Orientation.Horizontal, BorderStyle.Double);
+			//RHS line down
+			lc.AddLine (new Point (9, 0), 5, Orientation.Vertical, BorderStyle.Double);
+
+			v.Redraw (v.Bounds);
+
+			string looksLike =
+		@"
+╔╡    ╞══╗
+";
+			TestHelpers.AssertDriverContentsAre (looksLike, output);
+		}
+
+		[InlineData(0,0,0, Orientation.Horizontal,BorderStyle.Double,"═")]
+		[InlineData(0,0,0, Orientation.Vertical,BorderStyle.Double,"║")]
+		[InlineData(0,0,0, Orientation.Horizontal,BorderStyle.Single,"─")]
+		[InlineData(0,0,0, Orientation.Vertical,BorderStyle.Single,"│")]
+		[AutoInitShutdown, Theory]
+		public void TestLineCanvas_1LineTests(
+			int x1, int y1,int l1, Orientation o1, BorderStyle s1,
+			string expected
+		)
+		{
+			var v = GetCanvas (out var lc);
+			v.Width = 10;
+			v.Height = 10;
+			v.Bounds = new Rect (0, 0, 10, 10);
+
+			lc.AddLine (new Point (x1, y1), l1, o1, s1);
+
+			v.Redraw (v.Bounds);
+		
+			TestHelpers.AssertDriverContentsAre (expected, output);
+		}
+
+
+		[Theory, AutoInitShutdown]
+		[InlineData(
+			0,0,1,Orientation.Horizontal,BorderStyle.Double,
+			1,0,0, Orientation.Vertical,BorderStyle.Single, "═╡"
+		)]
+		[InlineData(
+			0,0,0, Orientation.Vertical,BorderStyle.Single,
+			0,0,1,Orientation.Horizontal,BorderStyle.Double,
+			 "╞═"
+		)]
+		[InlineData(
+			0,0,1, Orientation.Vertical,BorderStyle.Single,
+			0,0,0,Orientation.Horizontal,BorderStyle.Double,
+@"
+╤
+│"
+		)]
+		[InlineData(
+			0,0,1, Orientation.Vertical,BorderStyle.Single,
+			0,1,0,Orientation.Horizontal,BorderStyle.Double,
+			@"
+│
+╧
+"
+		)]
+		[InlineData(
+			0,0,0, Orientation.Vertical,BorderStyle.Single,
+			0,0,0,Orientation.Horizontal,BorderStyle.Single,
+			@"┼
+"
+		)]
+		[InlineData(
+			0,0,0, Orientation.Vertical,BorderStyle.Double,
+			0,0,0,Orientation.Horizontal,BorderStyle.Double,
+			@"╬
+"
+		)]
+		public void TestLineCanvas_2LineTests(
+			int x1, int y1,int l1, Orientation o1, BorderStyle s1,
+			int x2, int y2, int l2, Orientation o2, BorderStyle s2,
+			string expected
+		)
+		{
+			var v = GetCanvas (out var lc);
+			v.Width = 10;
+			v.Height = 10;
+			v.Bounds = new Rect (0, 0, 10, 10);
+
+			lc.AddLine (new Point (x1, y1), l1, o1, s1);
+			lc.AddLine (new Point (x2, y2), l2, o2, s2);
+
+			v.Redraw (v.Bounds);
+		
+			TestHelpers.AssertDriverContentsAre (expected, output);
+		}
+		
 
 		/// <summary>
 		/// Creates a new <see cref="View"/> into which a <see cref="LineCanvas"/> is rendered
@@ -330,7 +428,7 @@ namespace Terminal.Gui.CoreTests {
 			};
 
 			var canvasCopy = canvas = new LineCanvas ();
-			v.DrawContentComplete += (r) => {
+			v.DrawContentComplete += (s, e) => {
 					foreach(var p in canvasCopy.GenerateImage(v.Bounds))
 					{
 						v.AddRune(

@@ -492,8 +492,8 @@ namespace Terminal.Gui.ViewTests {
 			bool called = false;
 
 			// register for the event
-			tree.ObjectActivated += (s) => {
-				activated = s.ActivatedObject;
+			tree.ObjectActivated += (s,e) => {
+				activated = e.ActivatedObject;
 				called = true;
 			};
 
@@ -565,8 +565,8 @@ namespace Terminal.Gui.ViewTests {
 			bool called = false;
 
 			// register for the event
-			tree.ObjectActivated += (s) => {
-				activated = s.ActivatedObject;
+			tree.ObjectActivated += (s,e) => {
+				activated = e.ActivatedObject;
 				called = true;
 			};
 
@@ -607,8 +607,8 @@ namespace Terminal.Gui.ViewTests {
 			bool called = false;
 
 			// register for the event
-			tree.ObjectActivated += (s) => {
-				activated = s.ActivatedObject;
+			tree.ObjectActivated += (s, e) => {
+				activated = e.ActivatedObject;
 				called = true;
 			};
 
@@ -638,8 +638,8 @@ namespace Terminal.Gui.ViewTests {
 			bool called = false;
 
 			// register for the event
-			tree.ObjectActivated += (s) => {
-				activated = s.ActivatedObject;
+			tree.ObjectActivated += (s,e) => {
+				activated = e.ActivatedObject;
 				called = true;
 			};
 
@@ -670,8 +670,8 @@ namespace Terminal.Gui.ViewTests {
 			bool called = false;
 
 			// register for the event
-			tree.ObjectActivated += (s) => {
-				activated = s.ActivatedObject;
+			tree.ObjectActivated += (s,e) => {
+				activated = e.ActivatedObject;
 				called = true;
 			};
 

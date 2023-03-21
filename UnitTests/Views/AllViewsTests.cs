@@ -152,10 +152,10 @@ namespace Terminal.Gui.ViewTests {
 				var viewEnter = 0;
 				var viewLeave = 0;
 
-				vType.Enter += _ => vTypeEnter++;
-				vType.Leave += _ => vTypeLeave++;
-				view.Enter += _ => viewEnter++;
-				view.Leave += _ => viewLeave++;
+				vType.Enter += (s,e) => vTypeEnter++;
+				vType.Leave += (s, e) => vTypeLeave++;
+				view.Enter += (s, e) => viewEnter++;
+				view.Leave += (s, e) => viewLeave++;
 
 				top.Add (vType, view);
 				Application.Begin (top);

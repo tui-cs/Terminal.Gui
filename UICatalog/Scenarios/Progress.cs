@@ -58,17 +58,17 @@ namespace UICatalog.Scenarios {
 					X = Pos.Right (LeftFrame) + 1,
 					Y = 0,
 				};
-				startButton.Clicked += () => Start ();
+				startButton.Clicked += (s,e) => Start ();
 				var pulseButton = new Button ("Pulse") {
 					X = Pos.Right (startButton) + 2,
 					Y = Pos.Y (startButton),
 				};
-				pulseButton.Clicked += () => Pulse ();
+				pulseButton.Clicked += (s,e) => Pulse ();
 				var stopbutton = new Button ("Stop Timer") {
 					X = Pos.Right (pulseButton) + 2,
 					Y = Pos.Top (pulseButton),
 				};
-				stopbutton.Clicked += () => Stop ();
+				stopbutton.Clicked += (s,e) => Stop ();
 
 				Add (startButton);
 				Add (pulseButton);
@@ -167,7 +167,7 @@ namespace UICatalog.Scenarios {
 				systemTimerDemo.PulseProgressBar.Fraction = 1F;
 			};
 			systemTimerDemo.Speed.Text = $"{_systemTimerTick}";
-			systemTimerDemo.Speed.TextChanged += (a) => {
+			systemTimerDemo.Speed.TextChanged += (s, a) => {
 				uint result;
 				if (uint.TryParse (systemTimerDemo.Speed.Text.ToString(), out result)) {
 					_systemTimerTick = result;
@@ -210,7 +210,7 @@ namespace UICatalog.Scenarios {
 			};
 
 			mainLoopTimeoutDemo.Speed.Text = $"{_mainLooopTimeoutTick}";
-			mainLoopTimeoutDemo.Speed.TextChanged += (a) => {
+			mainLoopTimeoutDemo.Speed.TextChanged += (s, a) => {
 				uint result;
 				if (uint.TryParse (mainLoopTimeoutDemo.Speed.Text.ToString (), out result)) {
 					_mainLooopTimeoutTick = result;
@@ -225,7 +225,7 @@ namespace UICatalog.Scenarios {
 				X = Pos.Center (),
 				Y = Pos.Bottom(mainLoopTimeoutDemo) + 1,
 			};
-			startBoth.Clicked += () => {
+			startBoth.Clicked += (s,e) => {
 				systemTimerDemo.Start ();
 				mainLoopTimeoutDemo.Start ();
 			};

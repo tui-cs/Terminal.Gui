@@ -119,7 +119,7 @@ namespace Terminal.Gui {
 			ClearOnVisibleFalse = false;
 		}
 
-		private void Host_VisibleChanged ()
+		private void Host_VisibleChanged (object sender, EventArgs e)
 		{
 			if (!Host.Visible) {
 				Visible = Host.Visible;
@@ -132,7 +132,7 @@ namespace Terminal.Gui {
 			}
 		}
 
-		private void Host_EnabledChanged ()
+		private void Host_EnabledChanged (object sender, EventArgs e)
 		{
 			Enabled = Host.Enabled;
 			if (otherScrollBarView != null) {
@@ -149,7 +149,7 @@ namespace Terminal.Gui {
 		//	}
 		//}
 
-		void ContentBottomRightCorner_MouseClick (MouseEventArgs me)
+		void ContentBottomRightCorner_MouseClick (object sender, MouseEventEventArgs me)
 		{
 			if (me.MouseEvent.Flags == MouseFlags.WheeledDown || me.MouseEvent.Flags == MouseFlags.WheeledUp
 				|| me.MouseEvent.Flags == MouseFlags.WheeledRight || me.MouseEvent.Flags == MouseFlags.WheeledLeft) {
@@ -199,7 +199,7 @@ namespace Terminal.Gui {
 		/// <summary>
 		/// This event is raised when the position on the scrollbar has changed.
 		/// </summary>
-		public event Action ChangedPosition;
+		public event EventHandler ChangedPosition;
 
 		/// <summary>
 		/// The position, relative to <see cref="Size"/>, to set the scrollbar at.
@@ -312,7 +312,7 @@ namespace Terminal.Gui {
 		/// </summary>
 		public virtual void OnChangedPosition ()
 		{
-			ChangedPosition?.Invoke ();
+			ChangedPosition?.Invoke (this, EventArgs.Empty);
 		}
 
 		/// <summary>

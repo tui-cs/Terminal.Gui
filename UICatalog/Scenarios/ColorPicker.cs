@@ -78,7 +78,7 @@ namespace UICatalog.Scenarios {
 		/// <summary>
 		/// Fired when foreground color is changed.
 		/// </summary>
-		private void ForegroundColor_ColorChanged ()
+		private void ForegroundColor_ColorChanged (object sender, EventArgs e)
 		{
 			UpdateColorLabel (foregroundColorLabel, foregroundColorPicker);
 			UpdateDemoLabel ();
@@ -87,7 +87,7 @@ namespace UICatalog.Scenarios {
 		/// <summary>
 		/// Fired when background color is changed.
 		/// </summary>
-		private void BackgroundColor_ColorChanged ()
+		private void BackgroundColor_ColorChanged (object sender, EventArgs e)
 		{
 			UpdateColorLabel (backgroundColorLabel, backgroundColorPicker);
 			UpdateDemoLabel ();

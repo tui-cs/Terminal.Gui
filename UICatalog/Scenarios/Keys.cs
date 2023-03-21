@@ -95,7 +95,7 @@ namespace UICatalog.Scenarios {
 			};
 			Win.Add (labelKeypress);
 
-			Win.KeyPress += (a) => labelKeypress.Text = a.KeyEvent.ToString ();
+			Win.KeyPress += (s,e) => labelKeypress.Text = e.KeyEvent.ToString ();
 
 			// Key stroke log:
 			var keyLogLabel = new Label ("Key stroke log:") {
@@ -172,9 +172,9 @@ namespace UICatalog.Scenarios {
 				Height = Dim.Fill (),
 			};
 
-			Win.KeyDown += (a) => KeyDownPressUp (a.KeyEvent, "Down");
-			Win.KeyPress += (a) => KeyDownPressUp (a.KeyEvent, "Press");
-			Win.KeyUp += (a) => KeyDownPressUp (a.KeyEvent, "Up");
+			Win.KeyDown += (s,a) => KeyDownPressUp (a.KeyEvent, "Down");
+			Win.KeyPress += (s, a) => KeyDownPressUp (a.KeyEvent, "Press");
+			Win.KeyUp += (s, a) => KeyDownPressUp (a.KeyEvent, "Up");
 
 			void KeyDownPressUp (KeyEvent keyEvent, string updown)
 			{

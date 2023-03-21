@@ -268,7 +268,7 @@ namespace Terminal.Gui.TypeTests {
 			w.Add (v);
 			t.Add (w);
 
-			t.Ready += () => {
+			t.Ready += (s, e) => {
 				Assert.Equal (2, w.Width = 2);
 				Assert.Equal (2, w.Height = 2);
 				Assert.Throws<ArgumentException> (() => v.Width = 2);
@@ -298,7 +298,7 @@ namespace Terminal.Gui.TypeTests {
 			var w = new Window (new Rect (1, 2, 4, 5), "w");
 			t.Add (w);
 
-			t.Ready += () => {
+			t.Ready += (s, e) => {
 				Assert.Equal (3, w.Width = 3);
 				Assert.Equal (4, w.Height = 4);
 			};
@@ -328,7 +328,7 @@ namespace Terminal.Gui.TypeTests {
 			w.Add (v);
 			t.Add (w);
 
-			t.Ready += () => {
+			t.Ready += (s, e) => {
 				v.LayoutStyle = LayoutStyle.Absolute;
 				Assert.Equal (2, v.Width = 2);
 				Assert.Equal (2, v.Height = 2);
@@ -419,7 +419,7 @@ namespace Terminal.Gui.TypeTests {
 			w.Add (f1, f2, v1, v2, v3, v4, v5, v6);
 			t.Add (w);
 
-			t.Ready += () => {
+			t.Ready += (s, e) => {
 				Assert.Equal ("Absolute(100)", w.Width.ToString ());
 				Assert.Equal ("Absolute(100)", w.Height.ToString ());
 				Assert.Equal (100, w.Frame.Width);
@@ -565,7 +565,7 @@ namespace Terminal.Gui.TypeTests {
 			f.Width = Dim.Width (t) - Dim.Width (v2);
 			f.Height = Dim.Height (t) - Dim.Height (v2);
 
-			t.Ready += () => {
+			t.Ready += (s, e) => {
 				Assert.Equal (80, t.Frame.Width);
 				Assert.Equal (25, t.Frame.Height);
 				Assert.Equal (78, w.Frame.Width);
@@ -629,7 +629,7 @@ namespace Terminal.Gui.TypeTests {
 			var field = new TextField () { X = 0, Y = Pos.Bottom (view), Width = 20 };
 			var count = 0;
 
-			field.KeyDown += (k) => {
+			field.KeyDown += (s, k) => {
 				if (k.KeyEvent.Key == Key.Enter) {
 					field.Text = $"Label {count}";
 					var label = new Label (field.Text) { X = 0, Y = view.Bounds.Height, Width = 20 };
@@ -996,7 +996,7 @@ namespace Terminal.Gui.TypeTests {
 			var count = 0;
 			var listLabels = new List<Label> ();
 
-			field.KeyDown += (k) => {
+			field.KeyDown += (s, k) => {
 				if (k.KeyEvent.Key == Key.Enter) {
 					((FakeDriver)Application.Driver).SetBufferSize (22, count + 4);
 					var pos = TestHelpers.AssertDriverContentsWithFrameAre (expecteds [count], output);
@@ -1075,7 +1075,7 @@ namespace Terminal.Gui.TypeTests {
 				Assert.Equal ($"Absolute({i + 1})", view.Height.ToString ());
 			}
 
-			field.KeyDown += (k) => {
+			field.KeyDown += (s, k) => {
 				if (k.KeyEvent.Key == Key.Enter) {
 					Assert.Equal ($"Label {count - 1}", listLabels [count - 1].Text);
 					view.Remove (listLabels [count - 1]);
@@ -1140,7 +1140,7 @@ namespace Terminal.Gui.TypeTests {
 				}
 			}
 
-			field.KeyDown += (k) => {
+			field.KeyDown += (s, k) => {
 				if (k.KeyEvent.Key == Key.Enter) {
 					((FakeDriver)Application.Driver).SetBufferSize (22, count + 4);
 					var pos = TestHelpers.AssertDriverContentsWithFrameAre (expecteds [count], output);

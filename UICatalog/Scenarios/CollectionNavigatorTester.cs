@@ -142,8 +142,8 @@ namespace UICatalog.Scenarios {
 
 			_listView.SetSource (_items);
 
-			_listView.KeystrokeNavigator.SearchStringChanged += (state) => {
-				label.Text = $"ListView: {state.SearchString}";
+			_listView.KeystrokeNavigator.SearchStringChanged += (s,e) => {
+				label.Text = $"ListView: {e.SearchString}";
 			};
 		}
 
@@ -179,8 +179,8 @@ namespace UICatalog.Scenarios {
 			_treeView.ExpandAll ();
 			_treeView.GoToFirst ();
 
-			_treeView.KeystrokeNavigator.SearchStringChanged += (state) => {
-				label.Text = $"TreeView: {state.SearchString}";
+			_treeView.KeystrokeNavigator.SearchStringChanged += (s,e) => {
+				label.Text = $"TreeView: {e.SearchString}";
 			};
 		}
 

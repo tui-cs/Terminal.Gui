@@ -16,7 +16,7 @@ namespace Terminal.Gui {
 	class TextModel {
 		List<List<Rune>> lines = new List<List<Rune>> ();
 
-		public event Action LinesLoaded;
+		public event EventHandler LinesLoaded;
 
 		public bool LoadFile (string file)
 		{
@@ -120,7 +120,7 @@ namespace Terminal.Gui {
 
 		void OnLinesLoaded ()
 		{
-			LinesLoaded?.Invoke ();
+			LinesLoaded?.Invoke (this, EventArgs.Empty);
 		}
 
 		public override string ToString ()
@@ -515,40 +515,12 @@ namespace Terminal.Gui {
 		}
 	}
 
-	class HistoryText {
+	partial class HistoryText {
 		public enum LineStatus {
 			Original,
 			Replaced,
 			Removed,
 			Added
-		}
-
-		public class HistoryTextItem {
-			public List<List<Rune>> Lines;
-			public Point CursorPosition;
-			public LineStatus LineStatus;
-			public bool IsUndoing;
-			public Point FinalCursorPosition;
-			public HistoryTextItem RemovedOnAdded;
-
-			public HistoryTextItem (List<List<Rune>> lines, Point curPos, LineStatus linesStatus)
-			{
-				Lines = lines;
-				CursorPosition = curPos;
-				LineStatus = linesStatus;
-			}
-
-			public HistoryTextItem (HistoryTextItem historyTextItem)
-			{
-				Lines = new List<List<Rune>> (historyTextItem.Lines);
-				CursorPosition = new Point (historyTextItem.CursorPosition.X, historyTextItem.CursorPosition.Y);
-				LineStatus = historyTextItem.LineStatus;
-			}
-
-			public override string ToString ()
-			{
-				return $"(Count: {Lines.Count}, Cursor: {CursorPosition}, Status: {LineStatus})";
-			}
 		}
 
 		List<HistoryTextItem> historyTextItems = new List<HistoryTextItem> ();
@@ -559,7 +531,7 @@ namespace Terminal.Gui {
 
 		public bool HasHistoryChanges => idxHistoryText > -1;
 
-		public event Action<HistoryTextItem> ChangeText;
+		public event EventHandler<HistoryTextItem> ChangeText;
 
 		public void Add (List<List<Rune>> lines, Point curPos, LineStatus lineStatus = LineStatus.Original)
 		{
@@ -711,7 +683,7 @@ namespace Terminal.Gui {
 
 		void OnChangeText (HistoryTextItem lines)
 		{
-			ChangeText?.Invoke (lines);
+			ChangeText?.Invoke (this, lines);
 		}
 
 		public void Clear (ustring text)
@@ -1129,7 +1101,7 @@ namespace Terminal.Gui {
 	///   </item>
 	///  </list>
 	/// </remarks>
-	public class TextView : View {
+	public partial class TextView : View {
 		TextModel model = new TextModel ();
 		int topRow;
 		int leftColumn;
@@ -1156,7 +1128,7 @@ namespace Terminal.Gui {
 		/// set, not as the user types. To be notified as the user changes the contents of the TextView
 		/// see <see cref="IsDirty"/>.
 		/// </remarks>
-		public event Action TextChanged;
+		public event EventHandler TextChanged;
 
 		/// <summary>
 		///  Raised when the contents of the <see cref="TextView"/> are changed. 
@@ -1165,12 +1137,12 @@ namespace Terminal.Gui {
 		/// Unlike the <see cref="TextChanged"/> event, this event is raised whenever the user types or
 		/// otherwise changes the contents of the <see cref="TextView"/>.
 		/// </remarks>
-		public event Action<ContentsChangedEventArgs> ContentsChanged;
+		public event EventHandler<ContentsChangedEventArgs> ContentsChanged;
 
 		/// <summary>
 		/// Invoked with the unwrapped <see cref="CursorPosition"/>.
 		/// </summary>
-		public event Action<Point> UnwrappedCursorPosition;
+		public event EventHandler<PointEventArgs> UnwrappedCursorPosition;
 
 		/// <summary>
 		/// Provides autocomplete context menu based on suggestions at the current cursor
@@ -1378,12 +1350,12 @@ namespace Terminal.Gui {
 				});
 		}
 
-		private void ContextMenu_KeyChanged (Key obj)
+		private void ContextMenu_KeyChanged (object sender, KeyChangedEventArgs e)
 		{
-			ReplaceKeyBinding (obj, ContextMenu.Key);
+			ReplaceKeyBinding (e.OldKey, e.NewKey);
 		}
 
-		private void Model_LinesLoaded ()
+		private void Model_LinesLoaded (object sender, EventArgs e)
 		{
 			// This call is not needed. Model_LinesLoaded gets invoked when
 			// model.LoadString (value) is called. LoadString is called from one place
@@ -1393,7 +1365,7 @@ namespace Terminal.Gui {
 			//historyText.Clear (Text);
 		}
 
-		private void HistoryText_ChangeText (HistoryText.HistoryTextItem obj)
+		private void HistoryText_ChangeText (object sender, HistoryText.HistoryTextItem obj)
 		{
 			SetWrapModel ();
 
@@ -1446,14 +1418,14 @@ namespace Terminal.Gui {
 			OnContentsChanged ();
 		}
 
-		void Top_AlternateBackwardKeyChanged (Key obj)
+		void Top_AlternateBackwardKeyChanged (object sender, KeyChangedEventArgs e)
 		{
-			ReplaceKeyBinding (obj, Application.AlternateBackwardKey);
+			ReplaceKeyBinding (e.OldKey, e.NewKey);
 		}
 
-		void Top_AlternateForwardKeyChanged (Key obj)
+		void Top_AlternateForwardKeyChanged (object sender, KeyChangedEventArgs e)
 		{
-			ReplaceKeyBinding (obj, Application.AlternateForwardKey);
+			ReplaceKeyBinding (e.OldKey, e.NewKey);
 		}
 
 		/// <summary>
@@ -1492,7 +1464,7 @@ namespace Terminal.Gui {
 					wrapManager = new WordWrapManager (model);
 					model = wrapManager.WrapModel (frameWidth, out _, out _, out _, out _);
 				}
-				TextChanged?.Invoke ();
+				TextChanged?.Invoke (this, EventArgs.Empty);
 				SetNeedsDisplay ();
 
 				historyText.Clear (Text);
@@ -2364,7 +2336,7 @@ namespace Terminal.Gui {
 				row = wrapManager.GetModelLineFromWrappedLines (currentRow);
 				col = wrapManager.GetModelColFromWrappedLines (currentRow, currentColumn);
 			}
-			UnwrappedCursorPosition?.Invoke (new Point ((int)col, (int)row));
+			UnwrappedCursorPosition?.Invoke (this, new PointEventArgs(new Point ((int)col, (int)row)));
 		}
 
 		ustring GetSelectedRegion ()
@@ -2710,39 +2682,12 @@ namespace Terminal.Gui {
 		}
 
 		/// <summary>
-		/// Event arguments for events for when the contents of the TextView change. E.g. the <see cref="ContentsChanged"/> event.
-		/// </summary>
-		public class ContentsChangedEventArgs : EventArgs {
-			/// <summary>
-			/// Creates a new <see cref="ContentsChanged"/> instance.
-			/// </summary>
-			/// <param name="currentRow">Contains the row where the change occurred.</param>
-			/// <param name="currentColumn">Contains the column where the change occured.</param>
-			public ContentsChangedEventArgs (int currentRow, int currentColumn)
-			{
-				Row = currentRow;
-				Col = currentColumn;
-			}
-
-			/// <summary>
-			/// 
-			/// Contains the row where the change occurred.
-			/// </summary>
-			public int Row { get; private set; }
-
-			/// <summary>
-			/// Contains the column where the change occurred.
-			/// </summary>
-			public int Col { get; private set; }
-		}
-
-		/// <summary>
 		/// Called when the contents of the TextView change. E.g. when the user types text or deletes text. Raises
 		/// the <see cref="ContentsChanged"/> event.
 		/// </summary>
 		public virtual void OnContentsChanged ()
 		{
-			ContentsChanged?.Invoke (new ContentsChangedEventArgs (CurrentRow, CurrentColumn));
+			ContentsChanged?.Invoke (this, new ContentsChangedEventArgs (CurrentRow, CurrentColumn));
 		}
 
 		(int width, int height) OffSetBackground ()

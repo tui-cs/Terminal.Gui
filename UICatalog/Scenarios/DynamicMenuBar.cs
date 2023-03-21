@@ -89,7 +89,7 @@ namespace UICatalog.Scenarios {
 					X = Pos.Center (),
 					Width = 2,
 				};
-				_txtDelimiter.TextChanged += (_) => MenuBar.ShortcutDelimiter = _txtDelimiter.Text;
+				_txtDelimiter.TextChanged += (s, _) => MenuBar.ShortcutDelimiter = _txtDelimiter.Text;
 				_frmDelimiter.Add (_txtDelimiter);
 
 				Add (_frmDelimiter);
@@ -209,7 +209,7 @@ namespace UICatalog.Scenarios {
 				};
 				Add (_frmMenuDetails);
 
-				_btnMenuBarUp.Clicked += () => {
+				_btnMenuBarUp.Clicked += (s,e) => {
 					var i = _currentSelectedMenuBar;
 					var menuItem = _menuBar != null && _menuBar.Menus.Length > 0 ? _menuBar.Menus [i] : null;
 					if (menuItem != null) {
@@ -223,7 +223,7 @@ namespace UICatalog.Scenarios {
 					}
 				};
 
-				_btnMenuBarDown.Clicked += () => {
+				_btnMenuBarDown.Clicked += (s,e) => {
 					var i = _currentSelectedMenuBar;
 					var menuItem = _menuBar != null && _menuBar.Menus.Length > 0 ? _menuBar.Menus [i] : null;
 					if (menuItem != null) {
@@ -237,7 +237,7 @@ namespace UICatalog.Scenarios {
 					}
 				};
 
-				_btnUp.Clicked += () => {
+				_btnUp.Clicked += (s,e) => {
 					var i = _lstMenus.SelectedItem;
 					var menuItem = DataContext.Menus.Count > 0 ? DataContext.Menus [i].MenuItem : null;
 					if (menuItem != null) {
@@ -252,7 +252,7 @@ namespace UICatalog.Scenarios {
 					}
 				};
 
-				_btnDown.Clicked += () => {
+				_btnDown.Clicked += (s,e) => {
 					var i = _lstMenus.SelectedItem;
 					var menuItem = DataContext.Menus.Count > 0 ? DataContext.Menus [i].MenuItem : null;
 					if (menuItem != null) {
@@ -267,7 +267,7 @@ namespace UICatalog.Scenarios {
 					}
 				};
 
-				_btnPreviowsParent.Clicked += () => {
+				_btnPreviowsParent.Clicked += (s,e) => {
 					if (_currentMenuBarItem != null && _currentMenuBarItem.Parent != null) {
 						var mi = _currentMenuBarItem;
 						_currentMenuBarItem = _currentMenuBarItem.Parent as MenuBarItem;
@@ -297,16 +297,16 @@ namespace UICatalog.Scenarios {
 					X = Pos.Right (_btnOk) + 3,
 					Y = Pos.Top (_btnOk),
 				};
-				_btnCancel.Clicked += () => {
+				_btnCancel.Clicked += (s,e) => {
 					SetFrameDetails (_currentEditMenuBarItem);
 				};
 				Add (_btnCancel);
 
-				_lstMenus.SelectedItemChanged += (e) => {
+				_lstMenus.SelectedItemChanged += (s,e) => {
 					SetFrameDetails ();
 				};
 
-				_btnOk.Clicked += () => {
+				_btnOk.Clicked += (s,e) => {
 					if (ustring.IsNullOrEmpty (_frmMenuDetails._txtTitle.Text) && _currentEditMenuBarItem != null) {
 						MessageBox.ErrorQuery ("Invalid title", "Must enter a valid title!.", "Ok");
 					} else if (_currentEditMenuBarItem != null) {
@@ -322,7 +322,7 @@ namespace UICatalog.Scenarios {
 					}
 				};
 
-				_btnAdd.Clicked += () => {
+				_btnAdd.Clicked += (s,e) => {
 					if (MenuBar == null) {
 						MessageBox.ErrorQuery ("Menu Bar Error", "Must add a MenuBar first!", "Ok");
 						_btnAddMenuBar.SetFocus ();
@@ -359,7 +359,7 @@ namespace UICatalog.Scenarios {
 					}
 				};
 
-				_btnRemove.Clicked += () => {
+				_btnRemove.Clicked += (s,e) => {
 					var menuItem = DataContext.Menus.Count > 0 ? DataContext.Menus [_lstMenus.SelectedItem].MenuItem : null;
 					if (menuItem != null) {
 						var childrens = ((MenuBarItem)_currentMenuBarItem).Children;
@@ -391,7 +391,7 @@ namespace UICatalog.Scenarios {
 					}
 				};
 
-				_lstMenus.OpenSelectedItem += (e) => {
+				_lstMenus.OpenSelectedItem += (s,e) => {
 					_currentMenuBarItem = DataContext.Menus [e.Item].MenuItem;
 					if (!(_currentMenuBarItem is MenuBarItem)) {
 						MessageBox.ErrorQuery ("Menu Open Error", "Must allows sub menus first!", "Ok");
@@ -404,33 +404,33 @@ namespace UICatalog.Scenarios {
 					SetFrameDetails (menuBarItem);
 				};
 
-				_lstMenus.Enter += (_) => {
+				_lstMenus.Enter += (s, e) => {
 					var menuBarItem = DataContext.Menus.Count > 0 ? DataContext.Menus [_lstMenus.SelectedItem].MenuItem : null;
 					SetFrameDetails (menuBarItem);
 				};
 
-				_btnNext.Clicked += () => {
+				_btnNext.Clicked += (s,e) => {
 					if (_menuBar != null && _currentSelectedMenuBar + 1 < _menuBar.Menus.Length) {
 						_currentSelectedMenuBar++;
 					}
 					SelectCurrentMenuBarItem ();
 				};
 
-				_btnPrevious.Clicked += () => {
+				_btnPrevious.Clicked += (s,e) => {
 					if (_currentSelectedMenuBar - 1 > -1) {
 						_currentSelectedMenuBar--;
 					}
 					SelectCurrentMenuBarItem ();
 				};
 
-				_lblMenuBar.Enter += (e) => {
+				_lblMenuBar.Enter += (s, e) => {
 					if (_menuBar?.Menus != null) {
 						_currentMenuBarItem = _menuBar.Menus [_currentSelectedMenuBar];
 						SetFrameDetails (_menuBar.Menus [_currentSelectedMenuBar]);
 					}
 				};
 
-				_btnAddMenuBar.Clicked += () => {
+				_btnAddMenuBar.Clicked += (s,e) => {
 					var frameDetails = new DynamicMenuBarDetails (null, false);
 					var item = frameDetails.EnterMenuItem ();
 					if (item == null) {
@@ -457,7 +457,7 @@ namespace UICatalog.Scenarios {
 					_menuBar.SetNeedsDisplay ();
 				};
 
-				_btnRemoveMenuBar.Clicked += () => {
+				_btnRemoveMenuBar.Clicked += (s,e) => {
 					if (_menuBar == null || _menuBar.Menus.Length == 0) {
 						return;
 					}
@@ -729,7 +729,7 @@ namespace UICatalog.Scenarios {
 					Width = Dim.Fill (),
 					ReadOnly = true
 				};
-				_txtShortcut.KeyDown += (e) => {
+				_txtShortcut.KeyDown += (s, e) => {
 					if (!ProcessKey (e.KeyEvent)) {
 						return;
 					}
@@ -772,7 +772,7 @@ namespace UICatalog.Scenarios {
 					return true;
 				}
 
-				_txtShortcut.KeyUp += (e) => {
+				_txtShortcut.KeyUp += (s, e) => {
 					var k = ShortcutHelper.GetModifiersKey (e.KeyEvent);
 					if (CheckShortcut (k, false)) {
 						e.Handled = true;
@@ -784,12 +784,12 @@ namespace UICatalog.Scenarios {
 					X = Pos.X (_lblShortcut),
 					Y = Pos.Bottom (_txtShortcut) + 1
 				};
-				_btnShortcut.Clicked += () => {
+				_btnShortcut.Clicked += (s,e) => {
 					_txtShortcut.Text = "";
 				};
 				Add (_btnShortcut);
 
-				_ckbIsTopLevel.Toggled += (e) => {
+				_ckbIsTopLevel.Toggled += (s, e) => {
 					if ((_menuItem != null && _menuItem.Parent != null && (bool)_ckbIsTopLevel.Checked) ||
 						_menuItem == null && hasParent && (bool)_ckbIsTopLevel.Checked) {
 						MessageBox.ErrorQuery ("Invalid IsTopLevel", "Only menu bar can have top level menu item!", "Ok");
@@ -814,7 +814,7 @@ namespace UICatalog.Scenarios {
 						_txtAction.Enabled = false;
 					}
 				};
-				_ckbSubMenu.Toggled += (e) => {
+				_ckbSubMenu.Toggled += (s, e) => {
 					if ((bool)_ckbSubMenu.Checked) {
 						_ckbIsTopLevel.Checked = false;
 						_ckbIsTopLevel.SetNeedsDisplay ();
@@ -835,7 +835,7 @@ namespace UICatalog.Scenarios {
 						_txtShortcut.Enabled = _ckbIsTopLevel.Checked == false && _ckbSubMenu.Checked == false;
 					}
 				};
-				_ckbNullCheck.Toggled += (e) => {
+				_ckbNullCheck.Toggled += (s,e) => {
 					if (_menuItem != null) {
 						_menuItem.AllowNullChecked = (bool)_ckbNullCheck.Checked;
 					}
@@ -868,7 +868,7 @@ namespace UICatalog.Scenarios {
 				var _btnOk = new Button ("Ok") {
 					IsDefault = true,
 				};
-				_btnOk.Clicked += () => {
+				_btnOk.Clicked += (s,e) => {
 					if (ustring.IsNullOrEmpty (_txtTitle.Text)) {
 						MessageBox.ErrorQuery ("Invalid title", "Must enter a valid title!.", "Ok");
 					} else {
@@ -877,7 +877,7 @@ namespace UICatalog.Scenarios {
 					}
 				};
 				var _btnCancel = new Button ("Cancel");
-				_btnCancel.Clicked += () => {
+				_btnCancel.Clicked += (s,e) => {
 					_txtTitle.Text = ustring.Empty;
 					Application.RequestStop ();
 				};

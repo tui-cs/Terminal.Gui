@@ -97,7 +97,7 @@ namespace Terminal.Gui {
 		/// Invoked when a new timeout is added. To be used in the case
 		/// when <see cref="Application.ExitRunLoopAfterFirstIteration"/> is <see langword="true"/>.
 		/// </summary>
-		public event Action<long> TimeoutAdded;
+		public event EventHandler<TimeoutEventArgs> TimeoutAdded;
 
 		/// <summary>
 		///  Creates a new Mainloop. 
@@ -161,7 +161,7 @@ namespace Terminal.Gui {
 			lock (timeoutsLockToken) {
 				var k = (DateTime.UtcNow + time).Ticks;
 				timeouts.Add (NudgeToUniqueKey (k), timeout);
-				TimeoutAdded?.Invoke (k);
+				TimeoutAdded?.Invoke (this, new TimeoutEventArgs(timeout, k));
 			}
 		}
 

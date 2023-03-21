@@ -91,17 +91,17 @@ namespace UICatalog.Scenarios {
 			}
 		}
 
-		private void MixedMessage ()
+		private void MixedMessage (object sender, EventArgs e)
 		{
 			MessageBox.Query ("Say Hello 你", $"Hello {_text.Text}", "Ok");
 		}
 
-		private void NarrowMessage ()
+		private void NarrowMessage (object sender, EventArgs e)
 		{
 			MessageBox.Query ("Say Hello", $"Hello {_text.Text}", "Ok");
 		}
 
-		private void WideMessage ()
+		private void WideMessage (object sender, EventArgs e)
 		{
 			MessageBox.Query ("こんにちはと言う", $"こんにちは {_text.Text}", "Ok");
 		}

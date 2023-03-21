@@ -743,8 +743,8 @@ namespace Terminal.Gui {
 
 			mLoop.ProcessInput = (e) => ProcessInput (e);
 
-			mLoop.WinChanged = (e) => {
-				ChangeWin (e);
+			mLoop.WinChanged = (s,e) => {
+				ChangeWin (e.Size);
 			};
 		}
 
@@ -1868,8 +1868,8 @@ namespace Terminal.Gui {
 		/// <summary>
 		/// Invoked when the window is changed.
 		/// </summary>
-		public Action<Size> WinChanged;
-
+		public EventHandler<SizeChangedEventArgs> WinChanged;
+		
 		public WindowsMainLoop (ConsoleDriver consoleDriver = null)
 		{
 			this.consoleDriver = consoleDriver ?? throw new ArgumentNullException ("Console driver instance must be provided.");
@@ -1991,7 +1991,7 @@ namespace Terminal.Gui {
 			}
 			if (winChanged) {
 				winChanged = false;
-				WinChanged?.Invoke (windowSize);
+				WinChanged?.Invoke (this, new SizeChangedEventArgs(windowSize));
 			}
 		}
 	}

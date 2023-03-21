@@ -663,7 +663,7 @@ namespace Terminal.Gui.ViewTests {
 		{
 			bool cancel = true;
 
-			_textField.TextChanging += (e) => {
+			_textField.TextChanging += (s,e) => {
 				Assert.Equal ("changing", e.NewText);
 				if (cancel) {
 					e.Cancel = true;
@@ -681,8 +681,8 @@ namespace Terminal.Gui.ViewTests {
 		[TextFieldTestsAutoInitShutdown]
 		public void TextChanged_Event ()
 		{
-			_textField.TextChanged += (e) => {
-				Assert.Equal ("TAB to jump between text fields.", e);
+			_textField.TextChanged += (s,e) => {
+				Assert.Equal ("TAB to jump between text fields.", e.OldValue);
 			};
 
 			_textField.Text = "changed";
@@ -781,7 +781,7 @@ namespace Terminal.Gui.ViewTests {
 			Assert.Equal ("A", tf.Text.ToString ());
 
 			// cancel the next keystroke
-			tf.TextChanging += (e) => e.Cancel = e.NewText == "AB";
+			tf.TextChanging += (s,e) => e.Cancel = e.NewText == "AB";
 			tf.ProcessKey (new KeyEvent (Key.B, new KeyModifiers ()));
 
 			// B was canceled so should just be A
@@ -1137,8 +1137,8 @@ namespace Terminal.Gui.ViewTests {
 			var oldText = "";
 			var tf = new TextField () { Width = 10, Text = "-1" };
 
-			tf.TextChanging += (e) => newText = e.NewText.ToString ();
-			tf.TextChanged += (e) => oldText = e.ToString ();
+			tf.TextChanging += (s,e) => newText = e.NewText.ToString ();
+			tf.TextChanged += (s, e) => oldText = e.OldValue.ToString ();
 
 			Application.Top.Add (tf);
 			Application.Begin (Application.Top);
@@ -1235,7 +1235,7 @@ namespace Terminal.Gui.ViewTests {
 
 			var tf = new TextField () { Width = 10 };
 			int clickCounter = 0;
-			tf.MouseClick += (m) => { clickCounter++; };
+			tf.MouseClick += (s, m) => { clickCounter++; };
 
 			Application.Top.Add (tf);
 			Application.Begin (Application.Top);

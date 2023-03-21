@@ -32,14 +32,14 @@ namespace UICatalog.Scenarios {
 				HotKeySpecifier = (System.Rune)'_',
 				CanFocus = true,
 			};
-			defaultLabel.Clicked += () => Application.RequestStop ();
+			defaultLabel.Clicked += (s,e) => Application.RequestStop ();
 			Win.Add (defaultLabel);
 
 			var swapLabel = new Label (50, 0, "S_wap Default (Absolute Layout)") {
 				HotKeySpecifier = (System.Rune)'_',
 				CanFocus = true,
 			};
-			swapLabel.Clicked += () => {
+			swapLabel.Clicked += (s,e) => {
 				//defaultLabel.IsDefault = !defaultLabel.IsDefault;
 				//swapLabel.IsDefault = !swapLabel.IsDefault;
 			};
@@ -47,7 +47,7 @@ namespace UICatalog.Scenarios {
 
 			static void DoMessage (Label Label, ustring txt)
 			{
-				Label.Clicked += () => {
+				Label.Clicked += (s,e) => {
 					var btnText = Label.Text.ToString ();
 					MessageBox.Query ("Message", $"Did you click {txt}?", "Yes", "No");
 				};
@@ -73,7 +73,7 @@ namespace UICatalog.Scenarios {
 				Win.Add (colorLabel);
 				x += colorLabel.Text.Length + 2;
 			}
-			Application.Top.Ready += () => Application.Top.Redraw (Application.Top.Bounds);
+			Application.Top.Ready += (s,e) => Application.Top.Redraw (Application.Top.Bounds);
 
 			Label Label;
 			Win.Add (Label = new Label ("A super long _Label that will probably expose a bug in clipping or wrapping of text. Will it?") {
@@ -93,7 +93,7 @@ namespace UICatalog.Scenarios {
 				TextAlignment = TextAlignment.Centered,
 				VerticalTextAlignment = VerticalTextAlignment.Middle
 			});
-			Label.Clicked += () => MessageBox.Query ("Message", "Question?", "Yes", "No");
+			Label.Clicked += (s,e) => MessageBox.Query ("Message", "Question?", "Yes", "No");
 
 			var textChanger = new Label ("Te_xt Changer") {
 				X = 2,
@@ -102,7 +102,7 @@ namespace UICatalog.Scenarios {
 				CanFocus = true,
 			};
 			Win.Add (textChanger);
-			textChanger.Clicked += () => textChanger.Text += "!";
+			textChanger.Clicked += (s,e) => textChanger.Text += "!";
 
 			Win.Add (Label = new Label ("Lets see if this will move as \"Text Changer\" grows") {
 				X = Pos.Right (textChanger) + 2,
@@ -120,7 +120,7 @@ namespace UICatalog.Scenarios {
 			};
 			Win.Add (removeLabel);
 			// This in interesting test case because `moveBtn` and below are laid out relative to this one!
-			removeLabel.Clicked += () => {
+			removeLabel.Clicked += (s,e) => {
 				// Now this throw a InvalidOperationException on the TopologicalSort method as is expected.
 				//Win.Remove (removeLabel);
 
@@ -145,7 +145,7 @@ namespace UICatalog.Scenarios {
 				HotKeySpecifier = (System.Rune)'_',
 				CanFocus = true,
 			};
-			moveBtn.Clicked += () => {
+			moveBtn.Clicked += (s,e) => {
 				moveBtn.X = moveBtn.Frame.X + 5;
 				// This is already fixed with the call to SetNeedDisplay() in the Pos Dim.
 				//computedFrame.LayoutSubviews (); // BUGBUG: This call should not be needed. View.X is not causing relayout correctly
@@ -163,7 +163,7 @@ namespace UICatalog.Scenarios {
 				CanFocus = true,
 				AutoSize = false
 			};
-			sizeBtn.Clicked += () => {
+			sizeBtn.Clicked += (s,e) => {
 				sizeBtn.Width = sizeBtn.Frame.Width + 5;
 				//computedFrame.LayoutSubviews (); // FIXED: This call should not be needed. View.X is not causing relayout correctly
 			};
@@ -183,7 +183,7 @@ namespace UICatalog.Scenarios {
 				HotKeySpecifier = (System.Rune)'_',
 				CanFocus = true,
 			};
-			moveBtnA.Clicked += () => {
+			moveBtnA.Clicked += (s,e) => {
 				moveBtnA.Frame = new Rect (moveBtnA.Frame.X + 5, moveBtnA.Frame.Y, moveBtnA.Frame.Width, moveBtnA.Frame.Height);
 			};
 			absoluteFrame.Add (moveBtnA);
@@ -195,7 +195,7 @@ namespace UICatalog.Scenarios {
 				CanFocus = true,
 				AutoSize = false
 			};
-			sizeBtnA.Clicked += () => {
+			sizeBtnA.Clicked += (s,e) => {
 				sizeBtnA.Frame = new Rect (sizeBtnA.Frame.X, sizeBtnA.Frame.Y, sizeBtnA.Frame.Width + 5, sizeBtnA.Frame.Height);
 			};
 			absoluteFrame.Add (sizeBtnA);
@@ -250,7 +250,7 @@ namespace UICatalog.Scenarios {
 				HotKeySpecifier = (System.Rune)'_',
 				CanFocus = true,
 			};
-			moveHotKeyBtn.Clicked += () => {
+			moveHotKeyBtn.Clicked += (s,e) => {
 				moveHotKeyBtn.Text = MoveHotkey (moveHotKeyBtn.Text);
 			};
 			Win.Add (moveHotKeyBtn);
@@ -264,12 +264,12 @@ namespace UICatalog.Scenarios {
 				HotKeySpecifier = (System.Rune)'_',
 				CanFocus = true,
 			};
-			moveUnicodeHotKeyBtn.Clicked += () => {
+			moveUnicodeHotKeyBtn.Clicked += (s,e) => {
 				moveUnicodeHotKeyBtn.Text = MoveHotkey (moveUnicodeHotKeyBtn.Text);
 			};
 			Win.Add (moveUnicodeHotKeyBtn);
 
-			radioGroup.SelectedItemChanged += (args) => {
+			radioGroup.SelectedItemChanged += (s,args) => {
 				switch (args.SelectedItem) {
 				case 0:
 					moveBtn.TextAlignment = TextAlignment.Left;
@@ -306,7 +306,7 @@ namespace UICatalog.Scenarios {
 				}
 			};
 
-			Application.Top.Ready += () => radioGroup.Refresh ();
+			Application.Top.Ready += (s,e) => radioGroup.Refresh ();
 		}
 	}
 }

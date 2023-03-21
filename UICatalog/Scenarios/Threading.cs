@@ -46,7 +46,7 @@ namespace UICatalog.Scenarios {
 
 
 			_btnActionCancel = new Button (1, 1, "Cancelable Load Items");
-			_btnActionCancel.Clicked += () => Application.MainLoop.Invoke (CallLoadItemsAsync);
+			_btnActionCancel.Clicked += (s,e) => Application.MainLoop.Invoke (CallLoadItemsAsync);
 
 			Win.Add (new Label ("Data Items:") {
 				X = Pos.X (_btnActionCancel),
@@ -77,23 +77,23 @@ namespace UICatalog.Scenarios {
 			var text = new TextField (1, 3, 100, "Type anything after press the button");
 
 			var _btnAction = new Button (80, 10, "Load Data Action");
-			_btnAction.Clicked += () => _action.Invoke ();
+			_btnAction.Clicked += (s,e) => _action.Invoke ();
 			var _btnLambda = new Button (80, 12, "Load Data Lambda");
-			_btnLambda.Clicked += () => _lambda.Invoke ();
+			_btnLambda.Clicked += (s,e) => _lambda.Invoke ();
 			var _btnHandler = new Button (80, 14, "Load Data Handler");
-			_btnHandler.Clicked += () => _handler.Invoke (null, new EventArgs ());
+			_btnHandler.Clicked += (s,e) => _handler.Invoke (null, new EventArgs ());
 			var _btnSync = new Button (80, 16, "Load Data Synchronous");
-			_btnSync.Clicked += () => _sync.Invoke ();
+			_btnSync.Clicked += (s,e) => _sync.Invoke ();
 			var _btnMethod = new Button (80, 18, "Load Data Method");
-			_btnMethod.Clicked += async () => await MethodAsync ();
+			_btnMethod.Clicked += async (s,e) => await MethodAsync ();
 			var _btnClearData = new Button (80, 20, "Clear Data");
-			_btnClearData.Clicked += () => { _itemsList.Source = null; LogJob ("Cleaning Data"); };
+			_btnClearData.Clicked += (s,e) => { _itemsList.Source = null; LogJob ("Cleaning Data"); };
 			var _btnQuit = new Button (80, 22, "Quit");
-			_btnQuit.Clicked += () => Application.RequestStop ();
+			_btnQuit.Clicked += (s,e) => Application.RequestStop ();
 
 			Win.Add (_itemsList, _btnActionCancel, _logJob, text, _btnAction, _btnLambda, _btnHandler, _btnSync, _btnMethod, _btnClearData, _btnQuit);
 
-			void Top_Loaded ()
+			void Top_Loaded (object sender, EventArgs args)
 			{
 				_btnActionCancel.SetFocus ();
 				Application.Top.Loaded -= Top_Loaded;

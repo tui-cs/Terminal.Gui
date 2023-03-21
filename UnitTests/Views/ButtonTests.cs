@@ -30,8 +30,8 @@ namespace Terminal.Gui.ViewTests {
 [  ]
 ";
 			TestHelpers.AssertDriverContentsWithFrameAre (expected, output);
-
 			Application.End (rs);
+			
 			btn = new Button ("ARGS", true) { Text = "Test" };
 			Assert.Equal ("Test", btn.Text);
 			Application.Top.Add (btn);
@@ -48,8 +48,8 @@ namespace Terminal.Gui.ViewTests {
 [◦ Test ◦]
 ";
 			TestHelpers.AssertDriverContentsWithFrameAre (expected, output);
-
 			Application.End (rs);
+			
 			btn = new Button (3, 4, "Test", true);
 			Assert.Equal ("Test", btn.Text);
 			Application.Top.Add (btn);
@@ -76,7 +76,7 @@ namespace Terminal.Gui.ViewTests {
 		{
 			var clicked = false;
 			Button btn = new Button ("Test");
-			btn.Clicked += () => clicked = true;
+			btn.Clicked += (s,e) => clicked = true;
 			Application.Top.Add (btn);
 			Application.Begin (Application.Top);
 
@@ -119,7 +119,7 @@ namespace Terminal.Gui.ViewTests {
 		{
 			var clicked = false;
 			Button btn = new Button ("Test");
-			btn.Clicked += () => clicked = true;
+			btn.Clicked += (s,e) => clicked = true;
 			Application.Top.Add (btn);
 			Application.Begin (Application.Top);
 
@@ -146,7 +146,7 @@ namespace Terminal.Gui.ViewTests {
 		{
 			int pressed = 0;
 			var btn = new Button ("Press Me");
-			btn.Clicked += () => pressed++;
+			btn.Clicked += (s,e) => pressed++;
 
 			// The Button class supports the Accept command
 			Assert.Contains (Command.Accept, btn.GetSupportedCommands ());
@@ -583,6 +583,46 @@ namespace Terminal.Gui.ViewTests {
 ";
 
 			TestHelpers.AssertDriverContentsWithFrameAre (expected, output);
+		}
+		[Fact, AutoInitShutdown]
+		public void Button_HotKeyChanged_EventFires ()
+		{
+			var btn = new Button ("Yar");
+
+			object sender = null;
+			KeyChangedEventArgs args = null;
+
+			btn.HotKeyChanged += (s, e) =>{
+				sender = s;
+				args = e;
+
+			};
+			
+			btn.HotKey = Key.r;
+			Assert.Same (btn, sender);
+			Assert.Equal (Key.Y, args.OldKey);
+			Assert.Equal (Key.r, args.NewKey);
+
+		}
+		[Fact, AutoInitShutdown]
+		public void Button_HotKeyChanged_EventFires_WithNone ()
+		{
+			var btn = new Button ();
+
+			object sender = null;
+			KeyChangedEventArgs args = null;
+
+			btn.HotKeyChanged += (s, e) => {
+				sender = s;
+				args = e;
+
+			};
+
+			btn.HotKey = Key.r;
+			Assert.Same (btn, sender);
+			Assert.Equal (Key.Null, args.OldKey);
+			Assert.Equal (Key.r, args.NewKey);
+
 		}
 	}
 }

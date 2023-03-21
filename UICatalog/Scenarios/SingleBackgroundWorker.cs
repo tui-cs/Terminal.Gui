@@ -63,7 +63,7 @@ namespace UICatalog.Scenarios {
 				worker = new BackgroundWorker () { WorkerSupportsCancellation = true };
 
 				var cancel = new Button ("Cancel Worker");
-				cancel.Clicked += () => {
+				cancel.Clicked += (s,e) => {
 					if (worker == null) {
 						log.Add ($"Worker is not running at {DateTime.Now}!");
 						listLog.SetNeedsDisplay ();
@@ -133,7 +133,7 @@ namespace UICatalog.Scenarios {
 			public StagingUIController (DateTime? start, List<string> list)
 			{
 				top = new Toplevel (Application.Top.Frame);
-				top.KeyPress += (e) => {
+				top.KeyPress += (s,e) => {
 					// Prevents Ctrl+Q from closing this.
 					// Only Ctrl+C is allowed.
 					if (e.KeyEvent.Key == Application.QuitKey) {

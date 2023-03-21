@@ -62,7 +62,7 @@ namespace UICatalog.Scenarios {
 			Win.Add (label);
 			var checkBox = new CheckBox (gitString) { X = 20, Y = Pos.Y (label), Width = Dim.Percent (50) };
 			var ckbAllowNull = new CheckBox ("Allow null checked") { X = Pos.Right (checkBox) + 1, Y = Pos.Y (label) };
-			ckbAllowNull.Toggled += (e) => checkBox.AllowNullChecked = (bool)!e;
+			ckbAllowNull.Toggled += (s,e) => checkBox.AllowNullChecked = (bool)!e.OldValue;
 			Win.Add (checkBox, ckbAllowNull);
 
 			label = new Label ("ComboBox:") { X = Pos.X (label), Y = Pos.Bottom (label) + 1 };

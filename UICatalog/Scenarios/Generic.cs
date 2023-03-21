@@ -33,7 +33,7 @@ namespace UICatalog.Scenarios {
 				X = Pos.Center (),
 				Y = Pos.Center (),
 			};
-			button.Clicked += () => MessageBox.Query (20, 7, "Hi", "Neat?", "Yes", "No");
+			button.Clicked += (s,e) => MessageBox.Query (20, 7, "Hi", "Neat?", "Yes", "No");
 			Win.Add (button);
 		}
 	}

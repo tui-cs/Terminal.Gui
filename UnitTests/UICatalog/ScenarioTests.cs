@@ -59,7 +59,7 @@ namespace UICatalog.Tests {
 
 			foreach (var scenario in scenarios) {
 				output.WriteLine ($"Running Scenario '{scenario.GetName ()}'");
-				
+
 				Application.Init (new FakeDriver ());
 
 				// Press QuitKey 
@@ -70,7 +70,7 @@ namespace UICatalog.Tests {
 				FakeConsole.PushMockKeyPress (Application.QuitKey);
 
 				// The only key we care about is the QuitKey
-				Application.Top.KeyPress += (View.KeyEventEventArgs args) => {
+				Application.Top.KeyPress += (object sender, KeyEventEventArgs args) => {
 					output.WriteLine ($"  Keypress: {args.KeyEvent.Key}");
 					Assert.Equal (Application.QuitKey, args.KeyEvent.Key);
 					args.Handled = false;
@@ -86,7 +86,6 @@ namespace UICatalog.Tests {
 				//output.WriteLine ($"  Add timeout to force quit after {abortTime}ms");
 				_ = Application.MainLoop.AddTimeout (TimeSpan.FromMilliseconds (abortTime), forceCloseCallback);
 
-				int iterations = 0;
 				Application.Iteration += () => {
 					//output.WriteLine ($"  iteration {++iterations}");
 					if (FakeConsole.MockKeyPresses.Count == 0) {
@@ -153,9 +152,8 @@ namespace UICatalog.Tests {
 			};
 			var token = Application.MainLoop.AddTimeout (TimeSpan.FromMilliseconds (ms), abortCallback);
 
-			Application.Top.KeyPress += (View.KeyEventEventArgs args) => {
-				output.WriteLine ($"'Generic' KeyPress {args.KeyEvent.Key}");
-				Assert.Equal (Application.QuitKey, args.KeyEvent.Key);
+			Application.Top.KeyPress += (object sender, KeyEventEventArgs args) => {
+				Assert.Equal (Key.CtrlMask | Key.Q, args.KeyEvent.Key);
 			};
 
 			generic.Init ();
@@ -321,24 +319,24 @@ namespace UICatalog.Tests {
 				ColorScheme = Colors.Dialog,
 			};
 
-			_classListView.OpenSelectedItem += (a) => {
+			_classListView.OpenSelectedItem += (s, a) => {
 				_settingsPane.SetFocus ();
 			};
-			_classListView.SelectedItemChanged += (args) => {
+			_classListView.SelectedItemChanged += (s, args) => {
 				ClearClass (_curView);
 				_curView = CreateClass (_viewClasses.Values.ToArray () [_classListView.SelectedItem]);
 			};
 
-			_computedCheckBox.Toggled += (previousState) => {
+			_computedCheckBox.Toggled += (s, e) => {
 				if (_curView != null) {
-					_curView.LayoutStyle = previousState == true ? LayoutStyle.Absolute : LayoutStyle.Computed;
+					_curView.LayoutStyle = e.OldValue == true ? LayoutStyle.Absolute : LayoutStyle.Computed;
 					_hostPane.LayoutSubviews ();
 				}
 			};
 
-			_xRadioGroup.SelectedItemChanged += (selected) => DimPosChanged (_curView);
+			_xRadioGroup.SelectedItemChanged += (s, selected) => DimPosChanged (_curView);
 
-			_xText.TextChanged += (args) => {
+			_xText.TextChanged += (s, args) => {
 				try {
 					_xVal = int.Parse (_xText.Text.ToString ());
 					DimPosChanged (_curView);
@@ -347,7 +345,7 @@ namespace UICatalog.Tests {
 				}
 			};
 
-			_yText.TextChanged += (args) => {
+			_yText.TextChanged += (s, e) => {
 				try {
 					_yVal = int.Parse (_yText.Text.ToString ());
 					DimPosChanged (_curView);
@@ -356,11 +354,11 @@ namespace UICatalog.Tests {
 				}
 			};
 
-			_yRadioGroup.SelectedItemChanged += (selected) => DimPosChanged (_curView);
+			_yRadioGroup.SelectedItemChanged += (s, selected) => DimPosChanged (_curView);
 
-			_wRadioGroup.SelectedItemChanged += (selected) => DimPosChanged (_curView);
+			_wRadioGroup.SelectedItemChanged += (s, selected) => DimPosChanged (_curView);
 
-			_wText.TextChanged += (args) => {
+			_wText.TextChanged += (s, args) => {
 				try {
 					_wVal = int.Parse (_wText.Text.ToString ());
 					DimPosChanged (_curView);
@@ -369,7 +367,7 @@ namespace UICatalog.Tests {
 				}
 			};
 
-			_hText.TextChanged += (args) => {
+			_hText.TextChanged += (s, args) => {
 				try {
 					_hVal = int.Parse (_hText.Text.ToString ());
 					DimPosChanged (_curView);
@@ -378,7 +376,7 @@ namespace UICatalog.Tests {
 				}
 			};
 
-			_hRadioGroup.SelectedItemChanged += (selected) => DimPosChanged (_curView);
+			_hRadioGroup.SelectedItemChanged += (s, selected) => DimPosChanged (_curView);
 
 			Top.Add (_leftPane, _settingsPane, _hostPane);
 
@@ -589,7 +587,7 @@ namespace UICatalog.Tests {
 				return view;
 			}
 
-			void LayoutCompleteHandler (View.LayoutEventArgs args)
+			void LayoutCompleteHandler (object sender, LayoutEventArgs args)
 			{
 				UpdateTitle (_curView);
 			}

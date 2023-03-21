@@ -324,8 +324,8 @@ namespace Terminal.Gui.ViewTests {
 			private Label labelFill;
 			private Label labelText;
 
-			public CustomButton (string fill, ustring text, int width, int height)
-			{
+			public CustomButton (string fill, ustring text, int width, int height) : base()
+			{				
 				Width = width;
 				Height = height;
 				labelFill = new Label () { AutoSize = false, Width = Dim.Fill (), Height = Dim.Fill (), Visible = false };

@@ -60,7 +60,7 @@ namespace Terminal.Gui {
 		/// </param>
 		public Button (ustring text, bool is_default = false) : base (text)
 		{
-			Initialize (text, is_default);
+			SetInitialProperties (text, is_default);
 		}
 
 		/// <summary>
@@ -92,10 +92,15 @@ namespace Terminal.Gui {
 		public Button (int x, int y, ustring text, bool is_default)
 		    : base (new Rect (x, y, text.RuneCount + 4 + (is_default ? 2 : 0), 1), text)
 		{
-			Initialize (text, is_default);
+			SetInitialProperties (text, is_default);
 		}
-
-		void Initialize (ustring text, bool is_default)
+		// TODO: v2 - Remove constructors with parameters
+		/// <summary>
+		/// Private helper to set the initial properties of the View that were provided via constructors.
+		/// </summary>
+		/// <param name="text"></param>
+		/// <param name="is_default"></param>
+		void SetInitialProperties (ustring text, bool is_default)
 		{
 			TextAlignment = TextAlignment.Centered;
 			VerticalTextAlignment = VerticalTextAlignment.Middle;
@@ -111,8 +116,8 @@ namespace Terminal.Gui {
 			AutoSize = true;
 			this.is_default = is_default;
 			Text = text ?? string.Empty;
-			UpdateTextFormatterText ();
-			ProcessResizeView ();
+
+			OnResizeNeeded ();
 
 			// Things this view knows how to do
 			AddCommand (Command.Accept, () => AcceptKey ());
@@ -134,7 +139,7 @@ namespace Terminal.Gui {
 			set {
 				is_default = value;
 				UpdateTextFormatterText ();
-				ProcessResizeView ();
+				OnResizeNeeded ();
 			}
 		}
 
@@ -231,7 +236,7 @@ namespace Terminal.Gui {
 		/// </summary>
 		public virtual void OnClicked ()
 		{
-			Clicked?.Invoke ();
+			Clicked?.Invoke (this, EventArgs.Empty);
 		}
 
 		/// <summary>
@@ -243,7 +248,7 @@ namespace Terminal.Gui {
 		///   raised when the button is activated either with
 		///   the mouse or the keyboard.
 		/// </remarks>
-		public event Action Clicked;
+		public event EventHandler Clicked;
 
 		///<inheritdoc/>
 		public override bool MouseEvent (MouseEvent me)

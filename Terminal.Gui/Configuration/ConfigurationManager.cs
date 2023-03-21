@@ -302,19 +302,6 @@ namespace Terminal.Gui.Configuration {
 		}
 
 		/// <summary>
-		/// Event arguments for the <see cref="ConfigurationManager"/> events.
-		/// </summary>
-		public class ConfigurationManagerEventArgs : EventArgs {
-
-			/// <summary>
-			/// Initializes a new instance of <see cref="ConfigurationManagerEventArgs"/>
-			/// </summary>
-			public ConfigurationManagerEventArgs ()
-			{
-			}
-		}
-
-		/// <summary>
 		/// Gets or sets whether the <see cref="ConfigurationManager"/> should throw an exception if it encounters 
 		/// an error on deserialization. If <see langword="false"/> (the default), the error is logged and printed to the 
 		/// console when <see cref="Application.Shutdown"/> is called. 
@@ -353,14 +340,14 @@ namespace Terminal.Gui.Configuration {
 		public static void OnUpdated ()
 		{
 			Debug.WriteLine ($"ConfigurationManager.OnApplied()");
-			Updated?.Invoke (new ConfigurationManagerEventArgs ());
+			Updated?.Invoke (null, new ConfigurationManagerEventArgs ());
 		}
 
 		/// <summary>
 		/// Event fired when the configuration has been updated from a configuration source.  
 		/// application.
 		/// </summary>
-		public static event Action<ConfigurationManagerEventArgs>? Updated;
+		public static event EventHandler<ConfigurationManagerEventArgs>? Updated;
 
 		/// <summary>
 		/// Resets the state of <see cref="ConfigurationManager"/>. Should be called whenever a new app session
@@ -440,14 +427,14 @@ namespace Terminal.Gui.Configuration {
 		public static void OnApplied ()
 		{
 			Debug.WriteLine ($"ConfigurationManager.OnApplied()");
-			Applied?.Invoke (new ConfigurationManagerEventArgs ());
+			Applied?.Invoke (null, new ConfigurationManagerEventArgs ());
 		}
 
 		/// <summary>
 		/// Event fired when an updated configuration has been applied to the  
 		/// application.
 		/// </summary>
-		public static event Action<ConfigurationManagerEventArgs>? Applied;
+		public static event EventHandler<ConfigurationManagerEventArgs>? Applied;
 
 		/// <summary>
 		/// Name of the running application. By default this property is set to the application's assembly name.

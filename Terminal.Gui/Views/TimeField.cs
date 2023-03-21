@@ -38,7 +38,7 @@ namespace Terminal.Gui {
 		/// <remarks>
 		///   The passed <see cref="EventArgs"/> is a <see cref="DateTimeEventArgs{T}"/> containing the old value, new value, and format string.
 		/// </remarks>
-		public event Action<DateTimeEventArgs<TimeSpan>> TimeChanged;
+		public event EventHandler<DateTimeEventArgs<TimeSpan>> TimeChanged;
 
 		/// <summary>
 		///    Initializes a new instance of <see cref="TimeField"/> using <see cref="LayoutStyle.Absolute"/> positioning.
@@ -106,13 +106,13 @@ namespace Terminal.Gui {
 			AddKeyBinding (Key.F | Key.CtrlMask, Command.Right);
 		}
 
-		void TextField_TextChanged (ustring e)
+		void TextField_TextChanged (object sender, TextChangedEventArgs e)
 		{
 			try {
 				if (!TimeSpan.TryParseExact (Text.ToString ().Trim (), format.Trim (), CultureInfo.CurrentCulture, TimeSpanStyles.None, out TimeSpan result))
-					Text = e;
+					Text = e.OldValue;
 			} catch (Exception) {
-				Text = e;
+				Text = e.OldValue;
 			}
 		}
 
@@ -336,7 +336,7 @@ namespace Terminal.Gui {
 		/// <param name="args">The event arguments</param>
 		public virtual void OnTimeChanged (DateTimeEventArgs<TimeSpan> args)
 		{
-			TimeChanged?.Invoke (args);
+			TimeChanged?.Invoke (this,args);
 		}
 	}
 }

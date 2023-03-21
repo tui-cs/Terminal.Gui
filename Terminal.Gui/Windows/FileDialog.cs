@@ -649,7 +649,7 @@ namespace Terminal.Gui {
 				Y = 1 + msgLines,
 				Width = Dim.Fill () - 1,
 			};
-			dirEntry.TextChanged += (e) => {
+			dirEntry.TextChanged += (s, e) => {
 				DirectoryPath = dirEntry.Text;
 				nameEntry.Text = ustring.Empty;
 			};
@@ -678,7 +678,7 @@ namespace Terminal.Gui {
 				HideDropdownListOnClick = true
 			};
 			cmbAllowedTypes.SetSource (allowedTypes ?? new List<string> ());
-			cmbAllowedTypes.OpenSelectedItem += (e) => {
+			cmbAllowedTypes.OpenSelectedItem += (s, e) => {
 				dirListView.AllowedFileTypes = cmbAllowedTypes.Text.ToString ().Split (';');
 				dirListView.Reload ();
 			};
@@ -698,7 +698,7 @@ namespace Terminal.Gui {
 			dirListView.FileChanged = (file) => nameEntry.Text = file == ".." ? "" : file;
 			dirListView.SelectedChanged = (file) => nameEntry.Text = file.Item1 == ".." ? "" : file.Item1;
 			this.cancel = new Button ("Cancel");
-			this.cancel.Clicked += () => {
+			this.cancel.Clicked += (s,e) => {
 				Cancel ();
 			};
 			AddButton (cancel);
@@ -707,7 +707,7 @@ namespace Terminal.Gui {
 				IsDefault = true,
 				Enabled = nameEntry.Text.IsEmpty ? false : true
 			};
-			this.prompt.Clicked += () => {
+			this.prompt.Clicked += (s,e) => {
 				if (this is OpenDialog) {
 					if (!dirListView.GetValidFilesName (nameEntry.Text.ToString (), out string res)) {
 						nameEntry.Text = res;
@@ -731,7 +731,7 @@ namespace Terminal.Gui {
 			};
 			AddButton (this.prompt);
 
-			nameEntry.TextChanged += (e) => {
+			nameEntry.TextChanged += (s,e) => {
 				if (nameEntry.Text.IsEmpty) {
 					this.prompt.Enabled = false;
 				} else {
@@ -745,7 +745,7 @@ namespace Terminal.Gui {
 			// On success, we will set this to false.
 			canceled = true;
 
-			KeyPress += (e) => {
+			KeyPress += (s, e) => {
 				if (e.KeyEvent.Key == Key.Esc) {
 					Cancel ();
 					e.Handled = true;

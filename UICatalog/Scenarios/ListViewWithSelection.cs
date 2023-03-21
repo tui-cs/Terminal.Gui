@@ -62,7 +62,7 @@ namespace UICatalog.Scenarios {
 
 			var _scrollBar = new ScrollBarView (_listView, true);
 
-			_scrollBar.ChangedPosition += () => {
+			_scrollBar.ChangedPosition += (s,e) => {
 				_listView.TopItem = _scrollBar.Position;
 				if (_listView.TopItem != _scrollBar.Position) {
 					_scrollBar.Position = _listView.TopItem;
@@ -70,7 +70,7 @@ namespace UICatalog.Scenarios {
 				_listView.SetNeedsDisplay ();
 			};
 
-			_scrollBar.OtherScrollBarView.ChangedPosition += () => {
+			_scrollBar.OtherScrollBarView.ChangedPosition += (s,e) => {
 				_listView.LeftItem = _scrollBar.OtherScrollBarView.Position;
 				if (_listView.LeftItem != _scrollBar.OtherScrollBarView.Position) {
 					_scrollBar.OtherScrollBarView.Position = _listView.LeftItem;
@@ -78,7 +78,7 @@ namespace UICatalog.Scenarios {
 				_listView.SetNeedsDisplay ();
 			};
 
-			_listView.DrawContent += (e) => {
+			_listView.DrawContent += (s,e) => {
 				_scrollBar.Size = _listView.Source.Count - 1;
 				_scrollBar.Position = _listView.TopItem;
 				_scrollBar.OtherScrollBarView.Size = _listView.Maxlength - 1;
@@ -93,11 +93,11 @@ namespace UICatalog.Scenarios {
 				X = Pos.AnchorEnd (k.Length + 3),
 				Y = 0,
 			};
-			keepCheckBox.Toggled += (_) => _scrollBar.KeepContentAlwaysInViewport = (bool)keepCheckBox.Checked;
+			keepCheckBox.Toggled += (s,e) => _scrollBar.KeepContentAlwaysInViewport = (bool)keepCheckBox.Checked;
 			Win.Add (keepCheckBox);
 		}
 
-		private void ListView_RowRender (ListViewRowEventArgs obj)
+		private void ListView_RowRender (object sender, ListViewRowEventArgs obj)
 		{
 			if (obj.Row == _listView.SelectedItem) {
 				return;
@@ -113,9 +113,9 @@ namespace UICatalog.Scenarios {
 			}
 		}
 
-		private void _customRenderCB_Toggled (bool? prev)
+		private void _customRenderCB_Toggled (object sender, ToggleEventArgs e)
 		{
-			if (prev == true) {
+			if (e.OldValue == true) {
 				_listView.SetSource (_scenarios);
 			} else {
 				_listView.Source = new ScenarioListDataSource (_scenarios);
@@ -124,16 +124,16 @@ namespace UICatalog.Scenarios {
 			Win.SetNeedsDisplay ();
 		}
 
-		private void AllowMarkingCB_Toggled (bool? prev)
+		private void AllowMarkingCB_Toggled (object sender, ToggleEventArgs e)
 		{
-			_listView.AllowsMarking = (bool)!prev;
+			_listView.AllowsMarking = (bool)!e.OldValue;
 			_allowMultipleCB.Visible = _listView.AllowsMarking;
 			Win.SetNeedsDisplay ();
 		}
 
-		private void AllowMultipleCB_Toggled (bool? prev)
+		private void AllowMultipleCB_Toggled (object sender, ToggleEventArgs e)
 		{
-			_listView.AllowsMultipleSelection = (bool)!prev;
+			_listView.AllowsMultipleSelection = (bool)!e.OldValue;
 			Win.SetNeedsDisplay ();
 		}
 

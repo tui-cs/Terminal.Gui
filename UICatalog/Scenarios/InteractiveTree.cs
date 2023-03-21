@@ -49,7 +49,7 @@ namespace UICatalog.Scenarios {
 
 		}
 
-		private void TreeView_KeyPress (View.KeyEventEventArgs obj)
+		private void TreeView_KeyPress (object sender, KeyEventEventArgs obj)
 		{
 			if (obj.KeyEvent.Key == Key.DeleteChar) {
 
@@ -116,9 +116,9 @@ namespace UICatalog.Scenarios {
 			bool okPressed = false;
 
 			var ok = new Button ("Ok", is_default: true);
-			ok.Clicked += () => { okPressed = true; Application.RequestStop (); };
+			ok.Clicked += (s,e) => { okPressed = true; Application.RequestStop (); };
 			var cancel = new Button ("Cancel");
-			cancel.Clicked += () => { Application.RequestStop (); };
+			cancel.Clicked += (s,e) => { Application.RequestStop (); };
 			var d = new Dialog (title, 60, 20, ok, cancel);
 
 			var lbl = new Label () {

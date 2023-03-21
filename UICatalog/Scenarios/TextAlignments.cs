@@ -40,7 +40,7 @@ namespace UICatalog.Scenarios {
 				ColorScheme = Colors.TopLevel,
 				Text = txt,
 			};
-			edit.TextChanged += () => {
+			edit.TextChanged += (s,e) => {
 				foreach (var alignment in alignments) {
 					singleLines [(int)alignment].Text = edit.Text;
 					multipleLines [(int)alignment].Text = edit.Text;
@@ -52,7 +52,7 @@ namespace UICatalog.Scenarios {
 				X = Pos.Right (edit) + 1,
 				Y = 0,
 			};
-			unicodeSample.Clicked += () => {
+			unicodeSample.Clicked += (s,e) => {
 				edit.Text = unicodeSampleText;
 			};
 			Win.Add (unicodeSample);
@@ -62,7 +62,7 @@ namespace UICatalog.Scenarios {
 				Y = Pos.Bottom (edit) - 1,
 
 			};
-			update.Clicked += () => {
+			update.Clicked += (s,e) => {
 				foreach (var alignment in alignments) {
 					singleLines [(int)alignment].Text = edit.Text;
 					multipleLines [(int)alignment].Text = edit.Text;
@@ -98,10 +98,10 @@ namespace UICatalog.Scenarios {
 				label = multipleLines [(int)alignment];
 			}
 
-			enableHotKeyCheckBox.Toggled += (previous) => {
+			enableHotKeyCheckBox.Toggled += (s,e) => {
 				foreach (var alignment in alignments) {
-					singleLines [(int)alignment].HotKeySpecifier = previous == true ? (Rune)0xffff : (Rune)'_';
-					multipleLines [(int)alignment].HotKeySpecifier = previous == true ? (Rune)0xffff : (Rune)'_';
+					singleLines [(int)alignment].HotKeySpecifier = e.OldValue == true ? (Rune)0xffff : (Rune)'_';
+					multipleLines [(int)alignment].HotKeySpecifier = e.OldValue == true ? (Rune)0xffff : (Rune)'_';
 				}
 				Win.SetNeedsDisplay ();
 				Win.LayoutSubviews ();

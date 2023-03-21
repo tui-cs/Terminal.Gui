@@ -99,7 +99,7 @@ namespace UICatalog.Scenarios {
 			SetupScrollBar ();
 		}
 
-		private void SelectedCellLabel_TextChanged (ustring last)
+		private void SelectedCellLabel_TextChanged (object sender, TextChangedEventArgs e)
 		{
 			// if user is in the text control and editing the selected cell
 			if (!selectedCellLabel.HasFocus)
@@ -114,7 +114,7 @@ namespace UICatalog.Scenarios {
 			}
 		}
 
-		private void OnSelectedCellChanged (TableView.SelectedCellChangedEventArgs e)
+		private void OnSelectedCellChanged (object sender, SelectedCellChangedEventArgs e)
 		{
 			// only update the text box if the user is not manually editing it
 			if (!selectedCellLabel.HasFocus)
@@ -446,7 +446,7 @@ namespace UICatalog.Scenarios {
 		{
 			var _scrollBar = new ScrollBarView (tableView, true);
 
-			_scrollBar.ChangedPosition += () => {
+			_scrollBar.ChangedPosition += (s,e) => {
 				tableView.RowOffset = _scrollBar.Position;
 				if (tableView.RowOffset != _scrollBar.Position) {
 					_scrollBar.Position = tableView.RowOffset;
@@ -454,7 +454,7 @@ namespace UICatalog.Scenarios {
 				tableView.SetNeedsDisplay ();
 			};
 			/*
-			_scrollBar.OtherScrollBarView.ChangedPosition += () => {
+			_scrollBar.OtherScrollBarView.ChangedPosition += (s,e) => {
 				_listView.LeftItem = _scrollBar.OtherScrollBarView.Position;
 				if (_listView.LeftItem != _scrollBar.OtherScrollBarView.Position) {
 					_scrollBar.OtherScrollBarView.Position = _listView.LeftItem;
@@ -462,7 +462,7 @@ namespace UICatalog.Scenarios {
 				_listView.SetNeedsDisplay ();
 			};*/
 
-			tableView.DrawContent += (e) => {
+			tableView.DrawContent += (s,e) => {
 				_scrollBar.Size = tableView.Table?.Rows?.Count ?? 0;
 				_scrollBar.Position = tableView.RowOffset;
 				//	_scrollBar.OtherScrollBarView.Size = _listView.Maxlength - 1;
@@ -472,7 +472,7 @@ namespace UICatalog.Scenarios {
 
 		}
 
-		private void TableViewKeyPress (View.KeyEventEventArgs e)
+		private void TableViewKeyPress (object sender, KeyEventEventArgs e)
 		{
 			if (e.KeyEvent.Key == Key.DeleteChar) {
 
@@ -514,9 +514,9 @@ namespace UICatalog.Scenarios {
 			bool okPressed = false;
 
 			var ok = new Button ("Ok", is_default: true);
-			ok.Clicked += () => { okPressed = true; Application.RequestStop (); };
+			ok.Clicked += (s,e) => { okPressed = true; Application.RequestStop (); };
 			var cancel = new Button ("Cancel");
-			cancel.Clicked += () => { Application.RequestStop (); };
+			cancel.Clicked += (s,e) => { Application.RequestStop (); };
 			var d = new Dialog (title, 60, 20, ok, cancel);
 
 			var lbl = new Label () {
@@ -540,7 +540,7 @@ namespace UICatalog.Scenarios {
 			enteredText = okPressed ? tf.Text.ToString () : null;
 			return okPressed;
 		}
-		private void EditCurrentCell (TableView.CellActivatedEventArgs e)
+		private void EditCurrentCell (object sender, CellActivatedEventArgs e)
 		{
 			if (e.Table == null)
 				return;

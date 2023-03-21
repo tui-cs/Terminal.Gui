@@ -27,14 +27,14 @@ namespace Terminal.Gui {
 		///   raised when the <see cref="CheckBox"/> is activated either with
 		///   the mouse or the keyboard. The passed <c>bool</c> contains the previous state. 
 		/// </remarks>
-		public event Action<bool?> Toggled;
+		public event EventHandler<ToggleEventArgs> Toggled;
 
 		/// <summary>
 		/// Called when the <see cref="Checked"/> property changes. Invokes the <see cref="Toggled"/> event.
 		/// </summary>
-		public virtual void OnToggled (bool? previousChecked)
+		public virtual void OnToggled (ToggleEventArgs e)
 		{
-			Toggled?.Invoke (previousChecked);
+			Toggled?.Invoke (this, e);
 		}
 
 		/// <summary>
@@ -49,7 +49,7 @@ namespace Terminal.Gui {
 		/// <param name="is_checked">If set to <c>true</c> is checked.</param>
 		public CheckBox (ustring s, bool is_checked = false) : base ()
 		{
-			Initialize (s, is_checked);
+			SetInitialProperties (s, is_checked);
 		}
 
 		/// <summary>
@@ -72,10 +72,16 @@ namespace Terminal.Gui {
 		/// </remarks>
 		public CheckBox (int x, int y, ustring s, bool is_checked) : base (new Rect (x, y, s.Length, 1))
 		{
-			Initialize (s, is_checked);
+			SetInitialProperties (s, is_checked);
 		}
 
-		void Initialize (ustring s, bool is_checked)
+		// TODO: v2 - Remove constructors with parameters
+		/// <summary>
+		/// Private helper to set the initial properties of the View that were provided via constructors.
+		/// </summary>
+		/// <param name="s"></param>
+		/// <param name="is_checked"></param>
+		void SetInitialProperties (ustring s, bool is_checked)
 		{
 			charNullChecked = new Rune (Driver != null ? Driver.NullChecked : '?');
 			charChecked = new Rune (Driver != null ? Driver.Checked : '√');
@@ -85,8 +91,8 @@ namespace Terminal.Gui {
 			CanFocus = true;
 			AutoSize = true;
 			Text = s;
-			UpdateTextFormatterText ();
-			ProcessResizeView ();
+			
+			OnResizeNeeded ();
 
 			// Things this view knows how to do
 			AddCommand (Command.ToggleChecked, () => ToggleChecked ());
@@ -139,7 +145,7 @@ namespace Terminal.Gui {
 				}
 				@checked = value;
 				UpdateTextFormatterText ();
-				ProcessResizeView ();
+				OnResizeNeeded ();
 			}
 		}
 
@@ -203,7 +209,8 @@ namespace Terminal.Gui {
 			} else {
 				Checked = !Checked;
 			}
-			OnToggled (previousChecked);
+			
+			OnToggled (new ToggleEventArgs (previousChecked, Checked));
 			SetNeedsDisplay ();
 			return true;
 		}

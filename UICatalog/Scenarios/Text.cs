@@ -26,7 +26,7 @@ namespace UICatalog.Scenarios {
 			};
 			textField.TextChanging += TextField_TextChanging;
 
-			void TextField_TextChanging (TextChangingEventArgs e)
+			void TextField_TextChanging (object sender, TextChangingEventArgs e)
 			{
 				textField.Autocomplete.AllSuggestions = Regex.Matches (e.NewText.ToString (), "\\w+")
 					.Select (s => s.Value)
@@ -41,7 +41,7 @@ namespace UICatalog.Scenarios {
 			};
 			Win.Add (labelMirroringTextField);
 
-			textField.TextChanged += (prev) => {
+			textField.TextChanged += (s, prev) => {
 				labelMirroringTextField.Text = textField.Text;
 			};
 
@@ -56,7 +56,7 @@ namespace UICatalog.Scenarios {
 			textView.DrawContent += TextView_DrawContent;
 
 			// This shows how to enable autocomplete in TextView.
-			void TextView_DrawContent (Rect e)
+			void TextView_DrawContent (object sender, DrawEventArgs e)
 			{
 				textView.Autocomplete.AllSuggestions = Regex.Matches (textView.Text.ToString (), "\\w+")
 					.Select (s => s.Value)
@@ -75,7 +75,7 @@ namespace UICatalog.Scenarios {
 			// Use ContentChanged to detect if the user has typed something in a TextView.
 			// The TextChanged property is only fired if the TextView.Text property is
 			// explicitly set
-			textView.ContentsChanged += (a) => {
+			textView.ContentsChanged += (s,a) => {
 				labelMirroringTextView.Enabled = !labelMirroringTextView.Enabled;
 				labelMirroringTextView.Text = textView.Text;
 			};
@@ -87,14 +87,14 @@ namespace UICatalog.Scenarios {
 				Y = Pos.Bottom (textView),
 				Checked = true
 			};
-			chxMultiline.Toggled += (b) => textView.Multiline = (bool)b;
+			chxMultiline.Toggled += (s,e) => textView.Multiline = (bool)e.OldValue;
 			Win.Add (chxMultiline);
 
 			var chxWordWrap = new CheckBox ("Word Wrap") {
 				X = Pos.Right (chxMultiline) + 2,
 				Y = Pos.Top (chxMultiline)
 			};
-			chxWordWrap.Toggled += (b) => textView.WordWrap = (bool)b;
+			chxWordWrap.Toggled += (s,e) => textView.WordWrap = (bool)e.OldValue;
 			Win.Add (chxWordWrap);
 
 			// TextView captures Tabs (so users can enter /t into text) by default;
@@ -108,15 +108,15 @@ namespace UICatalog.Scenarios {
 
 			Key keyTab = textView.GetKeyFromCommand (Command.Tab);
 			Key keyBackTab = textView.GetKeyFromCommand (Command.BackTab);
-			chxCaptureTabs.Toggled += (b) => {
-				if (b == true) {
+			chxCaptureTabs.Toggled += (s,e) => {
+				if (e.OldValue == true) {
 					textView.AddKeyBinding (keyTab, Command.Tab);
 					textView.AddKeyBinding (keyBackTab, Command.BackTab);
 				} else {
 					textView.ClearKeybinding (keyTab);
 					textView.ClearKeybinding (keyBackTab);
 				}
-				textView.WordWrap = (bool)b;
+				textView.WordWrap = (bool)e.OldValue;
 			};
 			Win.Add (chxCaptureTabs);
 
@@ -136,7 +136,7 @@ namespace UICatalog.Scenarios {
 			};
 			var array = ((MemoryStream)hexEditor.Source).ToArray ();
 			labelMirroringHexEditor.Text = Encoding.UTF8.GetString (array, 0, array.Length);
-			hexEditor.Edited += (kv) => {
+			hexEditor.Edited += (s,kv) => {
 				hexEditor.ApplyEdits ();
 				var array = ((MemoryStream)hexEditor.Source).ToArray ();
 				labelMirroringHexEditor.Text = Encoding.UTF8.GetString (array, 0, array.Length);
@@ -159,7 +159,7 @@ namespace UICatalog.Scenarios {
 			};
 			Win.Add (labelMirroringDateField);
 
-			dateField.TextChanged += (prev) => {
+			dateField.TextChanged += (s, prev) => {
 				labelMirroringDateField.Text = dateField.Text;
 			};
 
@@ -218,7 +218,7 @@ namespace UICatalog.Scenarios {
 		TimeField _timeField;
 		Label _labelMirroringTimeField;
 
-		private void TimeChanged (DateTimeEventArgs<TimeSpan> e)
+		private void TimeChanged (object sender, DateTimeEventArgs<TimeSpan> e)
 		{
 			_labelMirroringTimeField.Text = _timeField.Text;
 		}

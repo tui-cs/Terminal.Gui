@@ -102,7 +102,7 @@ namespace UICatalog.Scenarios {
 				X = Pos.Center (),
 				Y = Pos.Bottom (Win) - 5,
 			};
-			swapButton.Clicked += () => {
+			swapButton.Clicked += (s,e) => {
 				longTime.ReadOnly = !longTime.ReadOnly;
 				shortTime.ReadOnly = !shortTime.ReadOnly;
 
@@ -118,14 +118,14 @@ namespace UICatalog.Scenarios {
 			Win.Add (swapButton);
 		}
 
-		private void TimeChanged (DateTimeEventArgs<TimeSpan> e)
+		private void TimeChanged (object sender, DateTimeEventArgs<TimeSpan> e)
 		{
 			lblOldTime.Text = $"Old Time: {e.OldValue}";
 			lblNewTime.Text = $"New Time: {e.NewValue}";
 			lblTimeFmt.Text = $"Time Format: {e.Format}";
 		}
 
-		private void DateChanged (DateTimeEventArgs<DateTime> e)
+		private void DateChanged (object sender, DateTimeEventArgs<DateTime> e)
 		{
 			lblOldDate.Text = $"Old Date: {e.OldValue}";
 			lblNewDate.Text = $"New Date: {e.NewValue}";

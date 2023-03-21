@@ -42,7 +42,7 @@ namespace Terminal.Gui {
 		/// <summary>
 		/// Changing event, raised before the <see cref="Text"/> changes and can be canceled or changing the new text.
 		/// </summary>
-		public event Action<TextChangingEventArgs> TextChanging;
+		public event EventHandler<TextChangingEventArgs> TextChanging;
 
 		/// <summary>
 		///   Changed event, raised when the text has changed.
@@ -53,7 +53,7 @@ namespace Terminal.Gui {
 		/// <remarks>
 		///   The passed <see cref="EventArgs"/> is a <see cref="NStack.ustring"/> containing the old value. 
 		/// </remarks>
-		public event Action<ustring> TextChanged;
+		public event EventHandler<TextChangedEventArgs> TextChanged;
 
 		/// <summary>
 		/// Initializes a new instance of the <see cref="TextField"/> class using <see cref="LayoutStyle.Computed"/> positioning.
@@ -228,12 +228,12 @@ namespace Terminal.Gui {
 				});
 		}
 
-		private void ContextMenu_KeyChanged (Key obj)
+		private void ContextMenu_KeyChanged (object sender, KeyChangedEventArgs e)
 		{
-			ReplaceKeyBinding (obj, ContextMenu.Key);
+			ReplaceKeyBinding (e.OldKey, e.NewKey);
 		}
 
-		private void HistoryText_ChangeText (HistoryText.HistoryTextItem obj)
+		private void HistoryText_ChangeText (object sender, HistoryText.HistoryTextItem obj)
 		{
 			if (obj == null)
 				return;
@@ -308,7 +308,7 @@ namespace Terminal.Gui {
 						, HistoryText.LineStatus.Replaced);
 				}
 
-				TextChanged?.Invoke (oldText);
+				TextChanged?.Invoke (this, new TextChangedEventArgs(oldText));
 
 				if (point > text.Count) {
 					point = Math.Max (TextModel.DisplaySize (text, 0).size - 1, 0);
@@ -1249,7 +1249,7 @@ namespace Terminal.Gui {
 		public virtual TextChangingEventArgs OnTextChanging (ustring newText)
 		{
 			var ev = new TextChangingEventArgs (newText);
-			TextChanging?.Invoke (ev);
+			TextChanging?.Invoke (this, ev);
 			return ev;
 		}
 
@@ -1308,30 +1308,6 @@ namespace Terminal.Gui {
 			historyText.Clear (Text);
 		}
 	}
-
-	/// <summary>
-	/// An <see cref="EventArgs"/> which allows passing a cancelable new text value event.
-	/// </summary>
-	public class TextChangingEventArgs : EventArgs {
-		/// <summary>
-		/// The new text to be replaced.
-		/// </summary>
-		public ustring NewText { get; set; }
-		/// <summary>
-		/// Flag which allows to cancel the new text value.
-		/// </summary>
-		public bool Cancel { get; set; }
-
-		/// <summary>
-		/// Initializes a new instance of <see cref="TextChangingEventArgs"/>
-		/// </summary>
-		/// <param name="newText">The new <see cref="TextField.Text"/> to be replaced.</param>
-		public TextChangingEventArgs (ustring newText)
-		{
-			NewText = newText;
-		}
-	}
-
 	/// <summary>
 	/// Renders an overlay on another view at a given point that allows selecting
 	/// from a range of 'autocomplete' options.

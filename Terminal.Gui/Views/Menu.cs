@@ -1044,7 +1044,7 @@ namespace Terminal.Gui {
 
 		bool _initialCanFocus;
 
-		private void MenuBar_Added (View obj)
+		private void MenuBar_Added (object sender, SuperViewChangedEventArgs e)
 		{
 			_initialCanFocus = CanFocus;
 			Added -= MenuBar_Added;
@@ -1205,22 +1205,22 @@ namespace Terminal.Gui {
 		/// <summary>
 		/// Raised as a menu is opening.
 		/// </summary>
-		public event Action<MenuOpeningEventArgs> MenuOpening;
+		public event EventHandler<MenuOpeningEventArgs> MenuOpening;
 
 		/// <summary>
 		/// Raised when a menu is opened.
 		/// </summary>
-		public event Action<MenuItem> MenuOpened;
+		public event EventHandler<MenuOpenedEventArgs> MenuOpened;
 
 		/// <summary>
 		/// Raised when a menu is closing passing <see cref="MenuClosingEventArgs"/>.
 		/// </summary>
-		public event Action<MenuClosingEventArgs> MenuClosing;
+		public event EventHandler<MenuClosingEventArgs> MenuClosing;
 
 		/// <summary>
 		/// Raised when all the menu is closed.
 		/// </summary>
-		public event Action MenuAllClosed;
+		public event EventHandler MenuAllClosed;
 
 		internal Menu openMenu;
 		Menu ocm;
@@ -1253,7 +1253,7 @@ namespace Terminal.Gui {
 		public virtual MenuOpeningEventArgs OnMenuOpening (MenuBarItem currentMenu)
 		{
 			var ev = new MenuOpeningEventArgs (currentMenu);
-			MenuOpening?.Invoke (ev);
+			MenuOpening?.Invoke (this, ev);
 			return ev;
 		}
 
@@ -1263,16 +1263,20 @@ namespace Terminal.Gui {
 		public virtual void OnMenuOpened ()
 		{
 			MenuItem mi = null;
+			MenuBarItem parent;
+
 			if (openCurrentMenu.barItems.Children != null && openCurrentMenu.barItems.Children.Length > 0
 				&& openCurrentMenu?.current > -1) {
-
-				mi = openCurrentMenu.barItems.Children [openCurrentMenu.current];
+				parent = openCurrentMenu.barItems;
+				mi = parent.Children [openCurrentMenu.current];
 			} else if (openCurrentMenu.barItems.IsTopLevel) {
+				parent = null;
 				mi = openCurrentMenu.barItems;
 			} else {
-				mi = openMenu.barItems.Children [openMenu.current];
+				parent = openMenu.barItems;
+				mi = parent.Children [openMenu.current];
 			}
-			MenuOpened?.Invoke (mi);
+			MenuOpened?.Invoke (this, new MenuOpenedEventArgs (parent, mi));
 		}
 
 		/// <summary>
@@ -1284,7 +1288,7 @@ namespace Terminal.Gui {
 		public virtual MenuClosingEventArgs OnMenuClosing (MenuBarItem currentMenu, bool reopen, bool isSubMenu)
 		{
 			var ev = new MenuClosingEventArgs (currentMenu, reopen, isSubMenu);
-			MenuClosing?.Invoke (ev);
+			MenuClosing?.Invoke (this, ev);
 			return ev;
 		}
 
@@ -1293,7 +1297,7 @@ namespace Terminal.Gui {
 		/// </summary>
 		public virtual void OnMenuAllClosed ()
 		{
-			MenuAllClosed?.Invoke ();
+			MenuAllClosed?.Invoke (this, EventArgs.Empty);
 		}
 
 		View lastFocused;
@@ -2009,74 +2013,6 @@ namespace Terminal.Gui {
 			Application.Driver.SetCursorVisibility (CursorVisibility.Invisible);
 
 			return base.OnEnter (view);
-		}
-	}
-
-	/// <summary>
-	/// An <see cref="EventArgs"/> which allows passing a cancelable menu opening event or replacing with a new <see cref="MenuBarItem"/>.
-	/// </summary>
-	public class MenuOpeningEventArgs : EventArgs {
-		/// <summary>
-		/// The current <see cref="MenuBarItem"/> parent.
-		/// </summary>
-		public MenuBarItem CurrentMenu { get; }
-
-		/// <summary>
-		/// The new <see cref="MenuBarItem"/> to be replaced.
-		/// </summary>
-		public MenuBarItem NewMenuBarItem { get; set; }
-		/// <summary>
-		/// Flag that allows the cancellation of the event. If set to <see langword="true"/> in the
-		/// event handler, the event will be canceled. 
-		/// </summary>
-		public bool Cancel { get; set; }
-
-		/// <summary>
-		/// Initializes a new instance of <see cref="MenuOpeningEventArgs"/>.
-		/// </summary>
-		/// <param name="currentMenu">The current <see cref="MenuBarItem"/> parent.</param>
-		public MenuOpeningEventArgs (MenuBarItem currentMenu)
-		{
-			CurrentMenu = currentMenu;
-		}
-	}
-
-	/// <summary>
-	/// An <see cref="EventArgs"/> which allows passing a cancelable menu closing event.
-	/// </summary>
-	public class MenuClosingEventArgs : EventArgs {
-		/// <summary>
-		/// The current <see cref="MenuBarItem"/> parent.
-		/// </summary>
-		public MenuBarItem CurrentMenu { get; }
-
-		/// <summary>
-		/// Indicates whether the current menu will reopen.
-		/// </summary>
-		public bool Reopen { get; }
-
-		/// <summary>
-		/// Indicates whether the current menu is a sub-menu.
-		/// </summary>
-		public bool IsSubMenu { get; }
-
-		/// <summary>
-		/// Flag that allows the cancellation of the event. If set to <see langword="true"/> in the
-		/// event handler, the event will be canceled. 
-		/// </summary>
-		public bool Cancel { get; set; }
-
-		/// <summary>
-		/// Initializes a new instance of <see cref="MenuClosingEventArgs"/>.
-		/// </summary>
-		/// <param name="currentMenu">The current <see cref="MenuBarItem"/> parent.</param>
-		/// <param name="reopen">Whether the current menu will reopen.</param>
-		/// <param name="isSubMenu">Indicates whether it is a sub-menu.</param>
-		public MenuClosingEventArgs (MenuBarItem currentMenu, bool reopen, bool isSubMenu)
-		{
-			CurrentMenu = currentMenu;
-			Reopen = reopen;
-			IsSubMenu = isSubMenu;
 		}
 	}
 }

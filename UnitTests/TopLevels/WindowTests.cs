@@ -107,7 +107,7 @@ namespace Terminal.Gui.TopLevelTests {
 			string expectedDuring = null;
 			string expectedAfter = null;
 			bool cancel = false;
-			r.TitleChanging += (args) => {
+			r.TitleChanging += (s, args) => {
 				Assert.Equal (expectedOld, args.OldTitle);
 				Assert.Equal (expectedDuring, args.NewTitle);
 				args.Cancel = cancel;
@@ -138,7 +138,7 @@ namespace Terminal.Gui.TopLevelTests {
 
 			string expectedOld = null;
 			string expected = null;
-			r.TitleChanged += (args) => {
+			r.TitleChanged += (s,args) => {
 				Assert.Equal (expectedOld, args.OldTitle);
 				Assert.Equal (r.Title, args.NewTitle);
 			};

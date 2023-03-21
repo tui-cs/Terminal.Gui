@@ -67,19 +67,19 @@ namespace UICatalog.Scenarios {
 			});
 			focusedTabView = tabView;
 			tabView.SelectedTabChanged += TabView_SelectedTabChanged;
-			tabView.Enter += (e) => focusedTabView = tabView;
+			tabView.Enter += (s, e) => focusedTabView = tabView;
 
 			Application.Top.Add (statusBar);
 
 			New ();
 		}
 
-		private void TabView_SelectedTabChanged (object sender, TabView.TabChangedEventArgs e)
+		private void TabView_SelectedTabChanged (object sender, TabChangedEventArgs e)
 		{
 			lenStatusItem.Title = $"Len:{e.NewTab?.View?.Text?.Length ?? 0}";
 		}
 
-		private void TabView_TabClicked (object sender, TabView.TabMouseEventArgs e)
+		private void TabView_TabClicked (object sender, TabMouseEventArgs e)
 		{
 			// we are only interested in right clicks
 			if(!e.MouseEvent.Flags.HasFlag(MouseFlags.Button3Clicked)) {
@@ -174,7 +174,7 @@ namespace UICatalog.Scenarios {
 
 			tv.TabClicked += TabView_TabClicked;
 			tv.SelectedTabChanged += TabView_SelectedTabChanged;
-			tv.Enter += (e) => focusedTabView = tv;
+			tv.Enter += (s, e) => focusedTabView = tv;
 			return tv;
 		}
 
@@ -352,7 +352,7 @@ namespace UICatalog.Scenarios {
 			{
 				var textView = (TextView)View;
 				// when user makes changes rename tab to indicate unsaved
-				textView.KeyUp += (k) => {
+				textView.KeyUp += (s, k) => {
 
 					// if current text doesn't match saved text
 					var areDiff = this.UnsavedChanges;

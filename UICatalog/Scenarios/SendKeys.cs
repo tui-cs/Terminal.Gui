@@ -57,7 +57,7 @@ namespace UICatalog.Scenarios {
 			var IsAlt = false;
 			var IsCtrl = false;
 
-			txtResult.KeyPress += (e) => {
+			txtResult.KeyPress += (s, e) => {
 				rKeys += (char)e.KeyEvent.Key;
 				if (!IsShift && e.KeyEvent.IsShift) {
 					rControlKeys += " Shift ";
@@ -114,9 +114,9 @@ namespace UICatalog.Scenarios {
 				txtInput.SetFocus ();
 			}
 
-			button.Clicked += () => ProcessInput ();
+			button.Clicked += (s,e) => ProcessInput ();
 
-			Win.KeyPress += (e) => {
+			Win.KeyPress += (s, e) => {
 				if (e.KeyEvent.Key == Key.Enter) {
 					ProcessInput ();
 					e.Handled = true;

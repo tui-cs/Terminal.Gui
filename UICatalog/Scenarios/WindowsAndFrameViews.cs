@@ -38,7 +38,7 @@ namespace UICatalog.Scenarios {
 				Y = 0,
 				ColorScheme = Colors.Error,
 			};
-			paddingButton.Clicked += () => About ();
+			paddingButton.Clicked += (s,e) => About ();
 			Win.Add (paddingButton);
 			Win.Add (new Button ("Press ME! (Y = Pos.AnchorEnd(1))") {
 				X = Pos.Center (),
@@ -71,7 +71,7 @@ namespace UICatalog.Scenarios {
 					Y = 0,
 					ColorScheme = Colors.Error,
 				};
-				pressMeButton.Clicked += () =>
+				pressMeButton.Clicked += (s,e) =>
 					MessageBox.ErrorQuery (win.Title.ToString (), "Neat?", "Yes", "No");
 				win.Add (pressMeButton);
 				var subWin = new Window ("Sub Window") {

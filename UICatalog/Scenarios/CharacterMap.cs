@@ -39,7 +39,7 @@ namespace UICatalog.Scenarios {
 			Win.Add (jumpEdit);
 			var unicodeLabel = new Label ("") { X = Pos.Right (jumpEdit) + 1, Y = Pos.Y (_charMap) };
 			Win.Add (unicodeLabel);
-			jumpEdit.TextChanged += (s) => {
+			jumpEdit.TextChanged += (s, e) => {
 				uint result = 0;
 				if (jumpEdit.Text.Length == 0) return;
 				try {
@@ -84,7 +84,7 @@ namespace UICatalog.Scenarios {
 				Height = Dim.Fill(1),
 				SelectedItem = 0
 			};
-			jumpList.SelectedItemChanged += (args) => {
+			jumpList.SelectedItemChanged += (s, args) => {
 				_charMap.StartGlyph = radioItems [jumpList.SelectedItem].start;
 			};
 
@@ -157,7 +157,7 @@ namespace UICatalog.Scenarios {
 			ContentSize = new Size (CharMap.RowWidth, (int)(MaxCodePointVal / 16 + 1));
 			ShowVerticalScrollIndicator = true;
 			ShowHorizontalScrollIndicator = false;
-			LayoutComplete += (args) => {
+			LayoutComplete += (s, args) => {
 				if (Bounds.Width < RowWidth) {
 					ShowHorizontalScrollIndicator = true;
 				} else {
@@ -226,8 +226,10 @@ namespace UICatalog.Scenarios {
 			Clipboard.Contents = $"{new Rune (SelectedGlyph)}";
 		}
 
-		private void CharMap_DrawContent (Rect viewport)
+		private void CharMap_DrawContent (object sender, DrawEventArgs e)
 		{
+			Rect viewport = e.Rect;
+
 			var oldClip = Driver.Clip;
 			Driver.Clip = Frame;
 			// Redraw doesn't know about the scroll indicators, so if off, add one to height
@@ -280,7 +282,7 @@ namespace UICatalog.Scenarios {
 		}
 
 		ContextMenu _contextMenu = new ContextMenu ();
-		void Handle_MouseClick (MouseEventArgs args)
+		void Handle_MouseClick (object sender, MouseEventEventArgs args)
 		{
 			var me = args.MouseEvent;
 			if (me.Flags == MouseFlags.ReportMousePosition || (me.Flags != MouseFlags.Button1Clicked &&

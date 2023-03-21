@@ -9,7 +9,7 @@ namespace Terminal.Gui {
 	/// <summary>
 	/// Control that hosts multiple sub views, presenting a single one at once
 	/// </summary>
-	public class TabView : View {
+	public partial class TabView : View {
 		private Tab selectedTab;
 
 		/// <summary>
@@ -772,37 +772,6 @@ namespace Terminal.Gui {
 		}
 
 		/// <summary>
-		/// Describes a mouse event over a specific <see cref="TabView.Tab"/> in a <see cref="TabView"/>.
-		/// </summary>
-		public class TabMouseEventArgs : EventArgs {
-
-			/// <summary>
-			/// Gets the <see cref="TabView.Tab"/> (if any) that the mouse
-			/// was over when the <see cref="MouseEvent"/> occurred.
-			/// </summary>
-			/// <remarks>This will be null if the click is after last tab
-			/// or before first.</remarks>
-			public Tab Tab { get; }
-
-			/// <summary>
-			/// Gets the actual mouse event.  Use <see cref="MouseEvent.Handled"/> to cancel this event
-			/// and perform custom behavior (e.g. show a context menu).
-			/// </summary>
-			public MouseEvent MouseEvent { get; }
-
-			/// <summary>
-			/// Creates a new instance of the <see cref="TabMouseEventArgs"/> class.
-			/// </summary>
-			/// <param name="tab"><see cref="TabView.Tab"/> that the mouse was over when the event occurred.</param>
-			/// <param name="mouseEvent">The mouse activity being reported</param>
-			public TabMouseEventArgs (Tab tab, MouseEvent mouseEvent)
-			{
-				Tab = tab;
-				MouseEvent = mouseEvent;
-			}
-		}
-
-		/// <summary>
 		/// A single tab in a <see cref="TabView"/>
 		/// </summary>
 		public class Tab {
@@ -866,33 +835,6 @@ namespace Terminal.Gui {
 			/// </summary>
 			public bool TabsOnBottom { get; set; } = false;
 
-		}
-
-		/// <summary>
-		/// Describes a change in <see cref="TabView.SelectedTab"/>
-		/// </summary>
-		public class TabChangedEventArgs : EventArgs {
-
-			/// <summary>
-			/// The previously selected tab. May be null
-			/// </summary>
-			public Tab OldTab { get; }
-
-			/// <summary>
-			/// The currently selected tab. May be null
-			/// </summary>
-			public Tab NewTab { get; }
-
-			/// <summary>
-			/// Documents a tab change
-			/// </summary>
-			/// <param name="oldTab"></param>
-			/// <param name="newTab"></param>
-			public TabChangedEventArgs (Tab oldTab, Tab newTab)
-			{
-				OldTab = oldTab;
-				NewTab = newTab;
-			}
 		}
 		#endregion
 	}

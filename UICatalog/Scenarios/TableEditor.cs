@@ -103,7 +103,7 @@ namespace UICatalog.Scenarios {
 
 			Win.Add (selectedCellLabel);
 
-			tableView.SelectedCellChanged += (e) => { selectedCellLabel.Text = $"{tableView.SelectedRow},{tableView.SelectedColumn}"; };
+			tableView.SelectedCellChanged += (s, e) => { selectedCellLabel.Text = $"{tableView.SelectedRow},{tableView.SelectedColumn}"; };
 			tableView.CellActivated += EditCurrentCell;
 			tableView.KeyPress += TableViewKeyPress;
 
@@ -132,7 +132,7 @@ namespace UICatalog.Scenarios {
 			};
 
 			// if user clicks the mouse in TableView
-			tableView.MouseClick += e => {
+			tableView.MouseClick += (s,e) => {
 
 				tableView.ScreenToCell (e.MouseEvent.X, e.MouseEvent.Y, out DataColumn clickedCol);
 
@@ -217,7 +217,7 @@ namespace UICatalog.Scenarios {
 			return sort;
 		}
 
-		private void ShowHeaderContextMenu (DataColumn clickedCol, View.MouseEventArgs e)
+		private void ShowHeaderContextMenu (DataColumn clickedCol, MouseEventEventArgs e)
 		{
 			var sort = GetProposedNewSortOrder (clickedCol, out var isAsc);
 
@@ -278,9 +278,9 @@ namespace UICatalog.Scenarios {
 		{
 			var accepted = false;
 			var ok = new Button ("Ok", is_default: true);
-			ok.Clicked += () => { accepted = true; Application.RequestStop (); };
+			ok.Clicked += (s,e) => { accepted = true; Application.RequestStop (); };
 			var cancel = new Button ("Cancel");
-			cancel.Clicked += () => { Application.RequestStop (); };
+			cancel.Clicked += (s,e) => { Application.RequestStop (); };
 			var d = new Dialog (prompt, 60, 20, ok, cancel);
 
 			var style = tableView.Style.GetOrCreateColumnStyle (col);
@@ -319,7 +319,7 @@ namespace UICatalog.Scenarios {
 		{
 			var _scrollBar = new ScrollBarView (tableView, true);
 
-			_scrollBar.ChangedPosition += () => {
+			_scrollBar.ChangedPosition += (s,e) => {
 				tableView.RowOffset = _scrollBar.Position;
 				if (tableView.RowOffset != _scrollBar.Position) {
 					_scrollBar.Position = tableView.RowOffset;
@@ -327,7 +327,7 @@ namespace UICatalog.Scenarios {
 				tableView.SetNeedsDisplay ();
 			};
 			/*
-			_scrollBar.OtherScrollBarView.ChangedPosition += () => {
+			_scrollBar.OtherScrollBarView.ChangedPosition += (s,e) => {
 				_listView.LeftItem = _scrollBar.OtherScrollBarView.Position;
 				if (_listView.LeftItem != _scrollBar.OtherScrollBarView.Position) {
 					_scrollBar.OtherScrollBarView.Position = _listView.LeftItem;
@@ -335,7 +335,7 @@ namespace UICatalog.Scenarios {
 				_listView.SetNeedsDisplay ();
 			};*/
 
-			tableView.DrawContent += (e) => {
+			tableView.DrawContent += (s,e) => {
 				_scrollBar.Size = tableView.Table?.Rows?.Count ?? 0;
 				_scrollBar.Position = tableView.RowOffset;
 				//	_scrollBar.OtherScrollBarView.Size = _listView.Maxlength - 1;
@@ -345,7 +345,7 @@ namespace UICatalog.Scenarios {
 
 		}
 
-		private void TableViewKeyPress (View.KeyEventEventArgs e)
+		private void TableViewKeyPress (object sender, KeyEventEventArgs e)
 		{
 			if (e.KeyEvent.Key == Key.DeleteChar) {
 
@@ -748,7 +748,7 @@ namespace UICatalog.Scenarios {
 			tableView.Table = BuildSimpleDataTable (big ? 30 : 5, big ? 1000 : 5);
 		}
 
-		private void EditCurrentCell (TableView.CellActivatedEventArgs e)
+		private void EditCurrentCell (object sender, CellActivatedEventArgs e)
 		{
 			if (e.Table == null)
 				return;
@@ -760,9 +760,9 @@ namespace UICatalog.Scenarios {
 			bool okPressed = false;
 
 			var ok = new Button ("Ok", is_default: true);
-			ok.Clicked += () => { okPressed = true; Application.RequestStop (); };
+			ok.Clicked += (s,e) => { okPressed = true; Application.RequestStop (); };
 			var cancel = new Button ("Cancel");
-			cancel.Clicked += () => { Application.RequestStop (); };
+			cancel.Clicked += (s,e) => { Application.RequestStop (); };
 			var d = new Dialog (title, 60, 20, ok, cancel);
 
 			var lbl = new Label () {

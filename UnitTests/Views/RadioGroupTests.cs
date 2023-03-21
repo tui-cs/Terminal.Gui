@@ -150,7 +150,7 @@ namespace Terminal.Gui.ViewTests {
 			var previousSelectedItem = -1;
 			var selectedItem = -1;
 			var rg = new RadioGroup (new NStack.ustring [] { "Test", "New Test" });
-			rg.SelectedItemChanged += (e) => {
+			rg.SelectedItemChanged += (s,e) => {
 				previousSelectedItem = e.PreviousSelectedItem;
 				selectedItem = e.SelectedItem;
 			};

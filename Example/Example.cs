@@ -57,7 +57,7 @@ public class ExampleWindow : Window {
 		};
 
 		// When login button is clicked display a message popup
-		btnLogin.Clicked += () => {
+		btnLogin.Clicked += (s,e) => {
 			if (usernameText.Text == "admin" && passwordText.Text == "password") {
 				MessageBox.Query ("Logging In", "Login Successful", "Ok");
 				Application.RequestStop ();

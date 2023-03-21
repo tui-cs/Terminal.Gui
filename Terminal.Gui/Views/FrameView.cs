@@ -1,15 +1,4 @@
-﻿//
-// Authors:
-//   Miguel de Icaza (miguel@gnome.org)
-//
-// NOTE: FrameView is functionally identical to Window with the following exceptions. 
-//  - Is not a Toplevel
-//  - Does not support mouse dragging
-//  - Does not support padding (but should)
-//  - Does not support IEnumerable
-// Any udpates done here should probably be done in Window as well; TODO: Merge these classes
-
-using System;
+﻿using System;
 using System.Linq;
 using System.Text.Json.Serialization;
 using NStack;
@@ -97,7 +86,7 @@ namespace Terminal.Gui {
 			}
 		}
 
-		void Border_BorderChanged (Border border)
+		void Border_BorderChanged (object sender, EventArgs e)
 		{
 			Rect frame;
 			if (contentView != null && (contentView.Width is Dim || contentView.Height is Dim)) {
@@ -127,8 +116,6 @@ namespace Terminal.Gui {
 		/// <param name="border">The <see cref="Border"/>.</param>
 		public FrameView (Rect frame, ustring title = null, View [] views = null, Border border = null) : base (frame)
 		{
-			//var cFrame = new Rect (1, 1, Math.Max (frame.Width - 2, 0), Math.Max (frame.Height - 2, 0));
-
 			Initialize (frame, title, views, border);
 		}
 

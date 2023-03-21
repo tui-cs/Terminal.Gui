@@ -126,7 +126,7 @@ namespace Terminal.Gui {
 		/// <summary>
 		/// Event invoked when the <see cref="HotKey"/> is changed.
 		/// </summary>
-		public event Action<Key> HotKeyChanged;
+		public event EventHandler<KeyChangedEventArgs> HotKeyChanged;
 
 		/// <summary>
 		///   The text to be displayed. This text is never modified.
@@ -288,7 +288,7 @@ namespace Terminal.Gui {
 				if (hotKey != value) {
 					var oldKey = hotKey;
 					hotKey = value;
-					HotKeyChanged?.Invoke (oldKey);
+					HotKeyChanged?.Invoke (this, new KeyChangedEventArgs(oldKey,value));
 				}
 			}
 		}

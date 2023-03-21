@@ -84,7 +84,7 @@ namespace UICatalog.Scenarios {
 
 			internal ConfigTextView ()
 			{
-				ContentsChanged += (obj) => {
+				ContentsChanged += (s,obj) => {
 					if (IsDirty) {
 						if (!Tile.Title.EndsWith ('*')) {
 							Tile.Title += '*';
@@ -167,7 +167,7 @@ namespace UICatalog.Scenarios {
 
 				textView.Read ();
 
-				textView.Enter += (a) => {
+				textView.Enter += (s,e) => {
 					_lenStatusItem.Title = $"Len:{textView.Text.Length}";
 				};
 

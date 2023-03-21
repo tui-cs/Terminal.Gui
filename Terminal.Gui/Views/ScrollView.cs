@@ -45,7 +45,7 @@ namespace Terminal.Gui {
 		/// <param name="frame"></param>
 		public ScrollView (Rect frame) : base (frame)
 		{
-			Initialize (frame);
+			SetInitialProperties (frame);
 		}
 
 
@@ -54,10 +54,10 @@ namespace Terminal.Gui {
 		/// </summary>
 		public ScrollView () : base ()
 		{
-			Initialize (Rect.Empty);
+			SetInitialProperties (Rect.Empty);
 		}
 
-		void Initialize (Rect frame)
+		void SetInitialProperties (Rect frame)
 		{
 			contentView = new ContentView (frame);
 			vertical = new ScrollBarView (1, 0, isVertical: true) {
@@ -237,14 +237,14 @@ namespace Terminal.Gui {
 			SetNeedsLayout ();
 		}
 
-		void View_MouseLeave (MouseEventArgs e)
+		void View_MouseLeave (object sender, MouseEventEventArgs e)
 		{
 			if (Application.MouseGrabView != null && Application.MouseGrabView != vertical && Application.MouseGrabView != horizontal) {
 				Application.UngrabMouse ();
 			}
 		}
 
-		void View_MouseEnter (MouseEventArgs e)
+		void View_MouseEnter (object sender, MouseEventEventArgs e)
 		{
 			Application.GrabMouse (this);
 		}

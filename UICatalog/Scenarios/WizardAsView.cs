@@ -35,23 +35,23 @@ namespace UICatalog.Scenarios {
 			// behave like an non-modal View (vs. a modal/pop-up Window).
 			wizard.Modal = false;
 
-			wizard.MovingBack += (args) => {
+			wizard.MovingBack += (s,args) => {
 				//args.Cancel = true;
 				//actionLabel.Text = "Moving Back";
 			};
 
-			wizard.MovingNext += (args) => {
+			wizard.MovingNext += (s,args) => {
 				//args.Cancel = true;
 				//actionLabel.Text = "Moving Next";
 			};
 
-			wizard.Finished += (args) => {
+			wizard.Finished += (s,args) => {
 				//args.Cancel = true;
 				MessageBox.Query ("Setup Wizard", "Finished", "Ok");
 				Application.RequestStop ();
 			};
 
-			wizard.Cancelled += (args) => {
+			wizard.Cancelled += (s,args) => {
 				var btn = MessageBox.Query ("Setup Wizard", "Are you sure you want to cancel?", "Yes", "No");
 				args.Cancel = btn == 1;
 				if (btn == 0) {
@@ -76,7 +76,7 @@ namespace UICatalog.Scenarios {
 				X = Pos.Right (buttonLbl),
 				Y = Pos.Top (buttonLbl)
 			};
-			button.Clicked += () => {
+			button.Clicked += (s,e) => {
 				secondStep.Title = "2nd Step";
 				MessageBox.Query ("Wizard Scenario", "This Wizard Step's title was changed to '2nd Step'", "Ok");
 			};

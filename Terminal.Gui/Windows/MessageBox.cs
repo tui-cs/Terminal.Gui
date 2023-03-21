@@ -326,7 +326,7 @@ namespace Terminal.Gui {
 			for (int n = 0; n < buttonList.Count; n++) {
 				int buttonId = n;
 				var b = buttonList [n];
-				b.Clicked += () => {
+				b.Clicked += (s,e) => {
 					Clicked = buttonId;
 					Application.RequestStop ();
 				};

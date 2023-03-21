@@ -238,11 +238,15 @@ namespace Terminal.Gui.CoreTests {
 			var v = new View (new Rect (0, 0, 10, 24));
 			var t = new View ();
 
-			v.Added += (View e) => {
-				Assert.True (v.SuperView == e);
+			v.Added += (s,e) => {
+				Assert.Same (v.SuperView, e.Parent);
+				Assert.Same (t, e.Parent);
+				Assert.Same (v, e.Child);
 			};
 
-			v.Removed += (View e) => {
+			v.Removed += (s, e) => {
+				Assert.Same (t, e.Parent);
+				Assert.Same (v, e.Child);
 				Assert.True (v.SuperView == null);
 			};
 
@@ -654,21 +658,21 @@ namespace Terminal.Gui.CoreTests {
 
 			int tc = 0, wc = 0, v1c = 0, v2c = 0, sv1c = 0;
 
-			w.Added += (e) => {
-				Assert.Equal (e.Frame.Width, w.Frame.Width);
-				Assert.Equal (e.Frame.Height, w.Frame.Height);
+			w.Added += (s,e) => {
+				Assert.Equal (e.Parent.Frame.Width, w.Frame.Width);
+				Assert.Equal (e.Parent.Frame.Height, w.Frame.Height);
 			};
-			v1.Added += (e) => {
-				Assert.Equal (e.Frame.Width, v1.Frame.Width);
-				Assert.Equal (e.Frame.Height, v1.Frame.Height);
+			v1.Added += (s, e) => {
+				Assert.Equal (e.Parent.Frame.Width, v1.Frame.Width);
+				Assert.Equal (e.Parent.Frame.Height, v1.Frame.Height);
 			};
-			v2.Added += (e) => {
-				Assert.Equal (e.Frame.Width, v2.Frame.Width);
-				Assert.Equal (e.Frame.Height, v2.Frame.Height);
+			v2.Added += (s, e) => {
+				Assert.Equal (e.Parent.Frame.Width, v2.Frame.Width);
+				Assert.Equal (e.Parent.Frame.Height, v2.Frame.Height);
 			};
-			sv1.Added += (e) => {
-				Assert.Equal (e.Frame.Width, sv1.Frame.Width);
-				Assert.Equal (e.Frame.Height, sv1.Frame.Height);
+			sv1.Added += (s, e) => {
+				Assert.Equal (e.Parent.Frame.Width, sv1.Frame.Width);
+				Assert.Equal (e.Parent.Frame.Height, sv1.Frame.Height);
 			};
 
 			t.Initialized += (s, e) => {
@@ -899,7 +903,7 @@ namespace Terminal.Gui.CoreTests {
 			w.Add (f);
 			t.Add (w);
 
-			t.Ready += () => {
+			t.Ready += (s, e) => {
 				Assert.True (t.CanFocus);
 				Assert.True (w.CanFocus);
 				Assert.True (f.CanFocus);
@@ -943,7 +947,7 @@ namespace Terminal.Gui.CoreTests {
 			w.Add (f);
 			t.Add (w);
 
-			t.Ready += () => {
+			t.Ready += (s, e) => {
 				Assert.True (t.CanFocus);
 				Assert.True (w.CanFocus);
 				Assert.True (f.CanFocus);
@@ -978,7 +982,7 @@ namespace Terminal.Gui.CoreTests {
 			w.Add (f);
 			t.Add (w);
 
-			t.Ready += () => {
+			t.Ready += (s, e) => {
 				Assert.True (t.CanFocus);
 				Assert.True (w.CanFocus);
 				Assert.True (f.CanFocus);
@@ -1012,7 +1016,7 @@ namespace Terminal.Gui.CoreTests {
 
 			Application.Init (new FakeDriver ());
 
-			Application.Top.Ready += () => {
+			Application.Top.Ready += (s, e) => {
 				Assert.Null (Application.Top.Focused);
 			};
 
@@ -1072,10 +1076,10 @@ namespace Terminal.Gui.CoreTests {
 
 			t.Ready += FirstDialogToplevel;
 
-			void FirstDialogToplevel ()
+			void FirstDialogToplevel (object sender, EventArgs args)
 			{
 				var od = new OpenDialog ();
-				od.Ready += SecoundDialogToplevel;
+				od.Ready += SecondDialogToplevel;
 
 				Application.MainLoop.AddTimeout (TimeSpan.FromMilliseconds (100), (_) => {
 					count1++;
@@ -1096,7 +1100,7 @@ namespace Terminal.Gui.CoreTests {
 				Application.Run (od);
 			}
 
-			void SecoundDialogToplevel ()
+			void SecondDialogToplevel (object sender, EventArgs args)
 			{
 				var d = new Dialog ();
 
@@ -1130,7 +1134,7 @@ namespace Terminal.Gui.CoreTests {
 			var top = Application.Top;
 
 			var text = new TextField ("");
-			text.KeyPress += (e) => {
+			text.KeyPress += (s, e) => {
 				e.Handled = true;
 				Assert.True (e.Handled);
 				Assert.Equal (Key.N, e.KeyEvent.Key);
@@ -1228,10 +1232,10 @@ namespace Terminal.Gui.CoreTests {
 			Assert.Equal (80, view.Bounds.Width);
 			Assert.Equal (25, view.Bounds.Height);
 			bool layoutStarted = false;
-			view.LayoutStarted += (_) => layoutStarted = true;
+			view.LayoutStarted += (s,e) => layoutStarted = true;
 			view.OnLayoutStarted (null);
 			Assert.True (layoutStarted);
-			view.LayoutComplete += (_) => layoutStarted = false;
+			view.LayoutComplete += (s,e) => layoutStarted = false;
 			view.OnLayoutComplete (null);
 			Assert.False (layoutStarted);
 			view.X = Pos.Center () - 41;
@@ -1248,7 +1252,7 @@ namespace Terminal.Gui.CoreTests {
 		{
 			var wasClicked = false;
 			var view = new Button ("Click Me");
-			view.Clicked += () => wasClicked = !wasClicked;
+			view.Clicked += (s,e) => wasClicked = !wasClicked;
 			Application.Top.Add (view);
 
 			view.ProcessKey (new KeyEvent (Key.Enter, null));
@@ -1277,7 +1281,7 @@ namespace Terminal.Gui.CoreTests {
 		{
 			var wasClicked = false;
 			var button = new Button ("Click Me");
-			button.Clicked += () => wasClicked = !wasClicked;
+			button.Clicked += (s,e) => wasClicked = !wasClicked;
 			var win = new Window () { Width = Dim.Fill (), Height = Dim.Fill () };
 			win.Add (button);
 			Application.Top.Add (win);
@@ -1535,7 +1539,7 @@ namespace Terminal.Gui.CoreTests {
 			var tf = new TextField ();
 			tf.KeyPress += Tf_KeyPress;
 
-			void Tf_KeyPress (View.KeyEventEventArgs obj)
+			void Tf_KeyPress (object sender, KeyEventEventArgs obj)
 			{
 				if (obj.KeyEvent.Key == (Key.Q | Key.CtrlMask)) {
 					obj.Handled = tfQuiting = true;
@@ -1547,7 +1551,7 @@ namespace Terminal.Gui.CoreTests {
 			var top = Application.Top;
 			top.KeyPress += Top_KeyPress;
 
-			void Top_KeyPress (View.KeyEventEventArgs obj)
+			void Top_KeyPress (object sender, KeyEventEventArgs obj)
 			{
 				if (obj.KeyEvent.Key == (Key.Q | Key.CtrlMask)) {
 					obj.Handled = topQuiting = true;
@@ -1595,7 +1599,7 @@ namespace Terminal.Gui.CoreTests {
 			var tf = new TextField ();
 			tf.KeyPress += Tf_KeyPress;
 
-			void Tf_KeyPress (View.KeyEventEventArgs obj)
+			void Tf_KeyPress (object sender, KeyEventEventArgs obj)
 			{
 				if (obj.KeyEvent.Key == (Key.Q | Key.CtrlMask)) {
 					obj.Handled = tfQuiting = true;
@@ -1651,7 +1655,7 @@ namespace Terminal.Gui.CoreTests {
 		{
 			var view = new View (new Rect (0, 0, 8, 4));
 
-			view.DrawContent += (_) => view.DrawFrame (view.Bounds, 0, true);
+			view.DrawContent += (s, e) => view.DrawFrame (view.Bounds, 0, true);
 
 			Assert.Equal (Point.Empty, new Point (view.Frame.X, view.Frame.Y));
 			Assert.Equal (new Size (8, 4), new Size (view.Frame.Width, view.Frame.Height));
@@ -1675,7 +1679,7 @@ namespace Terminal.Gui.CoreTests {
 		{
 			var view = new View (new Rect (0, 0, 2, 2));
 
-			view.DrawContent += (_) => view.DrawFrame (view.Bounds, 0, true);
+			view.DrawContent += (s, e) => view.DrawFrame (view.Bounds, 0, true);
 
 			Assert.Equal (Point.Empty, new Point (view.Frame.X, view.Frame.Y));
 			Assert.Equal (new Size (2, 2), new Size (view.Frame.Width, view.Frame.Height));
@@ -1697,7 +1701,7 @@ namespace Terminal.Gui.CoreTests {
 		{
 			var view = new View (new Rect (-1, 0, 8, 4));
 
-			view.DrawContent += (_) => view.DrawFrame (view.Bounds, 0, true);
+			view.DrawContent += (s, e) => view.DrawFrame (view.Bounds, 0, true);
 
 			Assert.Equal (new Point (-1, 0), new Point (view.Frame.X, view.Frame.Y));
 			Assert.Equal (new Size (8, 4), new Size (view.Frame.Width, view.Frame.Height));
@@ -2021,7 +2025,7 @@ namespace Terminal.Gui.CoreTests {
 				Width = Dim.Fill (),
 				Height = Dim.Fill ()
 			};
-			view.DrawContent += e => {
+			view.DrawContent += (s,e) => {
 				view.DrawFrame (view.Bounds);
 				var savedClip = Application.Driver.Clip;
 				Application.Driver.Clip = new Rect (1, 1, view.Bounds.Width - 2, view.Bounds.Height - 2);
@@ -2069,7 +2073,7 @@ namespace Terminal.Gui.CoreTests {
 				Width = Dim.Fill (),
 				Height = Dim.Fill ()
 			};
-			view.DrawContent += e => {
+			view.DrawContent += (s,e) => {
 				view.DrawFrame (view.Bounds);
 				var savedClip = Application.Driver.Clip;
 				Application.Driver.Clip = new Rect (1, 1, view.Bounds.Width - 2, view.Bounds.Height - 2);
@@ -2111,7 +2115,7 @@ namespace Terminal.Gui.CoreTests {
 		}
 
 		[Fact]
-		public void GetTextFormatterBoundsSize_GetBoundsTextFormatterSize_HotKeySpecifier ()
+		public void GetTextFormatterBoundsSize_GetSizeNeededForText_HotKeySpecifier ()
 		{
 			var text = "Say Hello 你";
 			var horizontalView = new View () { Text = text, AutoSize = true, HotKeySpecifier = '_' };
@@ -2124,17 +2128,17 @@ namespace Terminal.Gui.CoreTests {
 
 			Assert.True (horizontalView.AutoSize);
 			Assert.Equal (new Rect (0, 0, 12, 1), horizontalView.Frame);
-			Assert.Equal (new Size (12, 1), horizontalView.GetTextFormatterBoundsSize ());
-			Assert.Equal (new Size (12, 1), horizontalView.GetBoundsTextFormatterSize ());
-			Assert.Equal (horizontalView.TextFormatter.Size, horizontalView.GetBoundsTextFormatterSize ());
-			Assert.Equal (horizontalView.Frame.Size, horizontalView.GetTextFormatterBoundsSize ());
+			Assert.Equal (new Size (12, 1), horizontalView.GetSizeNeededForTextWithoutHotKey ());
+			Assert.Equal (new Size (12, 1), horizontalView.GetSizeNeededForTextAndHotKey ());
+			Assert.Equal (horizontalView.TextFormatter.Size, horizontalView.GetSizeNeededForTextAndHotKey ());
+			Assert.Equal (horizontalView.Frame.Size, horizontalView.GetSizeNeededForTextWithoutHotKey ());
 
 			Assert.True (verticalView.AutoSize);
 			Assert.Equal (new Rect (0, 0, 2, 11), verticalView.Frame);
-			Assert.Equal (new Size (2, 11), verticalView.GetTextFormatterBoundsSize ());
-			Assert.Equal (new Size (2, 11), verticalView.GetBoundsTextFormatterSize ());
-			Assert.Equal (verticalView.TextFormatter.Size, verticalView.GetBoundsTextFormatterSize ());
-			Assert.Equal (verticalView.Frame.Size, verticalView.GetTextFormatterBoundsSize ());
+			Assert.Equal (new Size (2, 11), verticalView.GetSizeNeededForTextWithoutHotKey ());
+			Assert.Equal (new Size (2, 11), verticalView.GetSizeNeededForTextAndHotKey ());
+			Assert.Equal (verticalView.TextFormatter.Size, verticalView.GetSizeNeededForTextAndHotKey ());
+			Assert.Equal (verticalView.Frame.Size, verticalView.GetSizeNeededForTextWithoutHotKey ());
 
 			text = "Say He_llo 你";
 			horizontalView.Text = text;
@@ -2142,17 +2146,17 @@ namespace Terminal.Gui.CoreTests {
 
 			Assert.True (horizontalView.AutoSize);
 			Assert.Equal (new Rect (0, 0, 12, 1), horizontalView.Frame);
-			Assert.Equal (new Size (12, 1), horizontalView.GetTextFormatterBoundsSize ());
-			Assert.Equal (new Size (13, 1), horizontalView.GetBoundsTextFormatterSize ());
-			Assert.Equal (horizontalView.TextFormatter.Size, horizontalView.GetBoundsTextFormatterSize ());
-			Assert.Equal (horizontalView.Frame.Size, horizontalView.GetTextFormatterBoundsSize ());
+			Assert.Equal (new Size (12, 1), horizontalView.GetSizeNeededForTextWithoutHotKey ());
+			Assert.Equal (new Size (13, 1), horizontalView.GetSizeNeededForTextAndHotKey ());
+			Assert.Equal (horizontalView.TextFormatter.Size, horizontalView.GetSizeNeededForTextAndHotKey ());
+			Assert.Equal (horizontalView.Frame.Size, horizontalView.GetSizeNeededForTextWithoutHotKey ());
 
 			Assert.True (verticalView.AutoSize);
 			Assert.Equal (new Rect (0, 0, 2, 11), verticalView.Frame);
-			Assert.Equal (new Size (2, 11), verticalView.GetTextFormatterBoundsSize ());
-			Assert.Equal (new Size (2, 12), verticalView.GetBoundsTextFormatterSize ());
-			Assert.Equal (verticalView.TextFormatter.Size, verticalView.GetBoundsTextFormatterSize ());
-			Assert.Equal (verticalView.Frame.Size, verticalView.GetTextFormatterBoundsSize ());
+			Assert.Equal (new Size (2, 11), verticalView.GetSizeNeededForTextWithoutHotKey ());
+			Assert.Equal (new Size (2, 12), verticalView.GetSizeNeededForTextAndHotKey ());
+			Assert.Equal (verticalView.TextFormatter.Size, verticalView.GetSizeNeededForTextAndHotKey ());
+			Assert.Equal (verticalView.Frame.Size, verticalView.GetSizeNeededForTextWithoutHotKey ());
 		}
 
 		[Fact]
@@ -2264,9 +2268,9 @@ This is a tes
 			var tvCalled = false;
 
 			var view = new View ("View") { Width = 10, Height = 10 };
-			view.DrawContentComplete += (e) => viewCalled = true;
+			view.DrawContentComplete += (s,e) => viewCalled = true;
 			var tv = new TextView () { Y = 11, Width = 10, Height = 10 };
-			tv.DrawContentComplete += (e) => tvCalled = true;
+			tv.DrawContentComplete += (s, e) => tvCalled = true;
 
 			Application.Top.Add (view, tv);
 			Application.Begin (Application.Top);
@@ -2283,21 +2287,21 @@ This is a tes
 			var keyUp = false;
 
 			var view = new DerivedView ();
-			view.KeyDown += (e) => {
+			view.KeyDown += (s, e) => {
 				Assert.Equal (Key.a, e.KeyEvent.Key);
 				Assert.False (keyDown);
 				Assert.False (view.IsKeyDown);
 				e.Handled = true;
 				keyDown = true;
 			};
-			view.KeyPress += (e) => {
+			view.KeyPress += (s,e) => {
 				Assert.Equal (Key.a, e.KeyEvent.Key);
 				Assert.False (keyPress);
 				Assert.False (view.IsKeyPress);
 				e.Handled = true;
 				keyPress = true;
 			};
-			view.KeyUp += (e) => {
+			view.KeyUp += (s, e) => {
 				Assert.Equal (Key.a, e.KeyEvent.Key);
 				Assert.False (keyUp);
 				Assert.False (view.IsKeyUp);
@@ -2386,7 +2390,7 @@ This is a tes
 			var keyUp = false;
 
 			var view = new DerivedView ();
-			view.KeyDown += (e) => {
+			view.KeyDown += (s,e) => {
 				Assert.Equal (-1, e.KeyEvent.KeyValue);
 				Assert.Equal (shift, e.KeyEvent.IsShift);
 				Assert.Equal (alt, e.KeyEvent.IsAlt);
@@ -2395,10 +2399,10 @@ This is a tes
 				Assert.False (view.IsKeyDown);
 				keyDown = true;
 			};
-			view.KeyPress += (e) => {
+			view.KeyPress += (s, e) => {
 				keyPress = true;
 			};
-			view.KeyUp += (e) => {
+			view.KeyUp += (s, e) => {
 				Assert.Equal (-1, e.KeyEvent.KeyValue);
 				Assert.Equal (shift, e.KeyEvent.IsShift);
 				Assert.Equal (alt, e.KeyEvent.IsAlt);
@@ -2437,15 +2441,15 @@ This is a tes
 			var view1 = new View { CanFocus = true };
 			var subView1 = new View { CanFocus = true };
 			var subView1subView1 = new View { CanFocus = true };
-			view1.Leave += (e) => {
+			view1.Leave += (s,e) => {
 				view1Leave = true;
 			};
-			subView1.Leave += (e) => {
+			subView1.Leave += (s,e) => {
 				subView1.Remove (subView1subView1);
 				subView1Leave = true;
 			};
 			view1.Add (subView1);
-			subView1subView1.Leave += (e) => {
+			subView1subView1.Leave += (s,e) => {
 				// This is never invoked
 				subView1subView1Leave = true;
 			};
@@ -2904,15 +2908,15 @@ At 0,0
 			Assert.Equal (new Rect (0, 0, 30, 1), label.NeedDisplay);
 			Assert.Equal (new Rect (0, 0, 13, 1), button.NeedDisplay);
 
-			top.LayoutComplete += e => {
+			top.LayoutComplete += (s,e) => {
 				Assert.Equal (new Rect (0, 0, 80, 25), top.NeedDisplay);
 			};
 
-			frame.LayoutComplete += e => {
+			frame.LayoutComplete += (s, e) => {
 				Assert.Equal (new Rect (0, 0, 40, 8), frame.NeedDisplay);
 			};
 
-			frame.Subviews [0].LayoutComplete += e => {
+			frame.Subviews [0].LayoutComplete += (s, e) => {
 				if (top.IsLoaded) {
 					Assert.Equal (new Rect (0, 0, 38, 6), frame.Subviews [0].NeedDisplay);
 				} else {
@@ -2920,11 +2924,11 @@ At 0,0
 				}
 			};
 
-			label.LayoutComplete += e => {
+			label.LayoutComplete += (s, e) => {
 				Assert.Equal (new Rect (0, 0, 38, 1), label.NeedDisplay);
 			};
 
-			button.LayoutComplete += e => {
+			button.LayoutComplete += (s, e) => {
 				Assert.Equal (new Rect (0, 0, 13, 1), button.NeedDisplay);
 			};
 

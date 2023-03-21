@@ -112,7 +112,7 @@ namespace Terminal.Gui {
 		/// This event is raised when an object is activated e.g. by double clicking or 
 		/// pressing <see cref="ObjectActivationKey"/>.
 		/// </summary>
-		public event Action<ObjectActivatedEventArgs<T>> ObjectActivated;
+		public event EventHandler<ObjectActivatedEventArgs<T>> ObjectActivated;
 
 		/// <summary>
 		/// Key which when pressed triggers <see cref="TreeView{T}.ObjectActivated"/>.
@@ -712,7 +712,7 @@ namespace Terminal.Gui {
 		/// <param name="e"></param>
 		protected virtual void OnObjectActivated (ObjectActivatedEventArgs<T> e)
 		{
-			ObjectActivated?.Invoke (e);
+			ObjectActivated?.Invoke (this,e);
 		}
 
 		/// <summary>

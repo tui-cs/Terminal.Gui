@@ -106,7 +106,7 @@ namespace UICatalog.Scenarios {
 			ShowPropertiesOf (e.NewValue);
 		}
 
-		private void TreeViewFiles_KeyPress (View.KeyEventEventArgs obj)
+		private void TreeViewFiles_KeyPress (object sender, KeyEventEventArgs obj)
 		{
 			if (obj.KeyEvent.Key == (Key.R | Key.CtrlMask)) {
 
@@ -129,7 +129,7 @@ namespace UICatalog.Scenarios {
 			}
 		}
 
-		private void TreeViewFiles_MouseClick (View.MouseEventArgs obj)
+		private void TreeViewFiles_MouseClick (object sender, MouseEventEventArgs obj)
 		{
 			// if user right clicks
 			if (obj.MouseEvent.Flags.HasFlag (MouseFlags.Button3Clicked)) {
@@ -204,7 +204,7 @@ namespace UICatalog.Scenarios {
 
 			var _scrollBar = new ScrollBarView (treeViewFiles, true);
 
-			_scrollBar.ChangedPosition += () => {
+			_scrollBar.ChangedPosition += (s,e) => {
 				treeViewFiles.ScrollOffsetVertical = _scrollBar.Position;
 				if (treeViewFiles.ScrollOffsetVertical != _scrollBar.Position) {
 					_scrollBar.Position = treeViewFiles.ScrollOffsetVertical;
@@ -212,7 +212,7 @@ namespace UICatalog.Scenarios {
 				treeViewFiles.SetNeedsDisplay ();
 			};
 
-			_scrollBar.OtherScrollBarView.ChangedPosition += () => {
+			_scrollBar.OtherScrollBarView.ChangedPosition += (s,e) => {
 				treeViewFiles.ScrollOffsetHorizontal = _scrollBar.OtherScrollBarView.Position;
 				if (treeViewFiles.ScrollOffsetHorizontal != _scrollBar.OtherScrollBarView.Position) {
 					_scrollBar.OtherScrollBarView.Position = treeViewFiles.ScrollOffsetHorizontal;
@@ -220,7 +220,7 @@ namespace UICatalog.Scenarios {
 				treeViewFiles.SetNeedsDisplay ();
 			};
 
-			treeViewFiles.DrawContent += (e) => {
+			treeViewFiles.DrawContent += (s,e) => {
 				_scrollBar.Size = treeViewFiles.ContentHeight;
 				_scrollBar.Position = treeViewFiles.ScrollOffsetVertical;
 				_scrollBar.OtherScrollBarView.Size = treeViewFiles.GetContentWidth (true);

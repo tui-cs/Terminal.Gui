@@ -76,7 +76,7 @@ namespace Terminal.Gui.ViewTests {
 			_added = false;
 		}
 
-		private void _hostView_DrawContent (Rect obj)
+		private void _hostView_DrawContent (object sender, DrawEventArgs e)
 		{
 			_scrollBar.Size = _hostView.Lines;
 			_scrollBar.Position = _hostView.Top;
@@ -85,7 +85,7 @@ namespace Terminal.Gui.ViewTests {
 			_scrollBar.Refresh ();
 		}
 
-		private void _scrollBar_ChangedPosition ()
+		private void _scrollBar_ChangedPosition (object sender, EventArgs e)
 		{
 			_hostView.Top = _scrollBar.Position;
 			if (_hostView.Top != _scrollBar.Position) {
@@ -94,7 +94,7 @@ namespace Terminal.Gui.ViewTests {
 			_hostView.SetNeedsDisplay ();
 		}
 
-		private void _scrollBar_OtherScrollBarView_ChangedPosition ()
+		private void _scrollBar_OtherScrollBarView_ChangedPosition (object sender, EventArgs e)
 		{
 			_hostView.Left = _scrollBar.OtherScrollBarView.Position;
 			if (_hostView.Left != _scrollBar.OtherScrollBarView.Position) {
@@ -478,7 +478,7 @@ namespace Terminal.Gui.ViewTests {
 				};
 				win.Add (newScrollBarView);
 
-				newScrollBarView.ChangedPosition += () => {
+				newScrollBarView.ChangedPosition += (s,e) => {
 					listView.TopItem = newScrollBarView.Position;
 					if (listView.TopItem != newScrollBarView.Position) {
 						newScrollBarView.Position = listView.TopItem;
@@ -487,7 +487,7 @@ namespace Terminal.Gui.ViewTests {
 					listView.SetNeedsDisplay ();
 				};
 
-				listView.DrawContent += (e) => {
+				listView.DrawContent += (s,e) => {
 					newScrollBarView.Size = listView.Source.Count;
 					Assert.Equal (newScrollBarView.Size, listView.Source.Count);
 					newScrollBarView.Position = listView.TopItem;
@@ -495,7 +495,7 @@ namespace Terminal.Gui.ViewTests {
 					newScrollBarView.Refresh ();
 				};
 
-				top.Ready += () => {
+				top.Ready += (s, e) => {
 					newScrollBarView.Position = 45;
 					Assert.Equal (newScrollBarView.Position, newScrollBarView.Size - listView.TopItem + (listView.TopItem - listView.Bounds.Height));
 					Assert.Equal (newScrollBarView.Position, listView.TopItem);
@@ -553,7 +553,7 @@ namespace Terminal.Gui.ViewTests {
 				};
 				win.Add (newScrollBarView);
 
-				newScrollBarView.ChangedPosition += () => {
+				newScrollBarView.ChangedPosition += (s,e) => {
 					listView.LeftItem = newScrollBarView.Position;
 					if (listView.LeftItem != newScrollBarView.Position) {
 						newScrollBarView.Position = listView.LeftItem;
@@ -562,7 +562,7 @@ namespace Terminal.Gui.ViewTests {
 					listView.SetNeedsDisplay ();
 				};
 
-				listView.DrawContent += (e) => {
+				listView.DrawContent += (s,e) => {
 					newScrollBarView.Size = listView.Maxlength;
 					Assert.Equal (newScrollBarView.Size, listView.Maxlength);
 					newScrollBarView.Position = listView.LeftItem;
@@ -570,7 +570,7 @@ namespace Terminal.Gui.ViewTests {
 					newScrollBarView.Refresh ();
 				};
 
-				top.Ready += () => {
+				top.Ready += (s, e) => {
 					newScrollBarView.Position = 100;
 					Assert.Equal (newScrollBarView.Position, newScrollBarView.Size - listView.LeftItem + (listView.LeftItem - listView.Bounds.Width));
 					Assert.Equal (newScrollBarView.Position, listView.LeftItem);
@@ -652,7 +652,7 @@ namespace Terminal.Gui.ViewTests {
 
 			var scrollBar = new ScrollBarView (textView, true);
 
-			scrollBar.ChangedPosition += () => {
+			scrollBar.ChangedPosition += (s,e) => {
 				textView.TopRow = scrollBar.Position;
 				if (textView.TopRow != scrollBar.Position) {
 					scrollBar.Position = textView.TopRow;
@@ -660,7 +660,7 @@ namespace Terminal.Gui.ViewTests {
 				textView.SetNeedsDisplay ();
 			};
 
-			scrollBar.OtherScrollBarView.ChangedPosition += () => {
+			scrollBar.OtherScrollBarView.ChangedPosition += (s,e) => {
 				textView.LeftColumn = scrollBar.OtherScrollBarView.Position;
 				if (textView.LeftColumn != scrollBar.OtherScrollBarView.Position) {
 					scrollBar.OtherScrollBarView.Position = textView.LeftColumn;
@@ -668,7 +668,7 @@ namespace Terminal.Gui.ViewTests {
 				textView.SetNeedsDisplay ();
 			};
 
-			scrollBar.VisibleChanged += () => {
+			scrollBar.VisibleChanged += (s,e) => {
 				if (scrollBar.Visible && textView.RightOffset == 0) {
 					textView.RightOffset = 1;
 				} else if (!scrollBar.Visible && textView.RightOffset == 1) {
@@ -676,7 +676,7 @@ namespace Terminal.Gui.ViewTests {
 				}
 			};
 
-			scrollBar.OtherScrollBarView.VisibleChanged += () => {
+			scrollBar.OtherScrollBarView.VisibleChanged += (s,e) => {
 				if (scrollBar.OtherScrollBarView.Visible && textView.BottomOffset == 0) {
 					textView.BottomOffset = 1;
 				} else if (!scrollBar.OtherScrollBarView.Visible && textView.BottomOffset == 1) {
@@ -684,7 +684,7 @@ namespace Terminal.Gui.ViewTests {
 				}
 			};
 
-			textView.DrawContent += (e) => {
+			textView.DrawContent += (s,e) => {
 				scrollBar.Size = textView.Lines;
 				scrollBar.Position = textView.TopRow;
 				if (scrollBar.OtherScrollBarView != null) {
@@ -909,7 +909,7 @@ This is a test
 			var text = "This is a test\nThis is a test\nThis is a test\nThis is a test\nThis is a test";
 			var label = new Label (text) { Width = 14, Height = 5 };
 			var btn = new Button (14, 0, "Click Me!");
-			btn.Clicked += () => clicked = true;
+			btn.Clicked += (s,e) => clicked = true;
 			Application.Top.Add (label, btn);
 
 			var sbv = new ScrollBarView (label, true, false) {

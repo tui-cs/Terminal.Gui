@@ -109,7 +109,7 @@ namespace Terminal.Gui.MenuTests {
 					new MenuItem ("_New", "Creates new file.", New)
 				})
 			});
-			menu.MenuOpening += (e) => {
+			menu.MenuOpening += (s,e) => {
 				Assert.Equal ("_File", e.CurrentMenu.Title);
 				Assert.Equal ("_New", e.CurrentMenu.Children [0].Title);
 				Assert.Equal ("Creates new file.", e.CurrentMenu.Children [0].Help);
@@ -120,15 +120,17 @@ namespace Terminal.Gui.MenuTests {
 					new MenuItem ("_Copy", "Copies the selection.", Copy)
 				});
 			};
-			menu.MenuOpened += (e) => {
-				Assert.Equal ("_Edit", e.Parent.Title);
-				Assert.Equal ("_Copy", e.Title);
-				Assert.Equal ("Copies the selection.", e.Help);
-				Assert.Equal (Copy, e.Action);
-				e.Action ();
+			menu.MenuOpened += (s, e) => {
+				var mi = e.MenuItem;
+
+				Assert.Equal ("_Edit", mi.Parent.Title);
+				Assert.Equal ("_Copy", mi.Title);
+				Assert.Equal ("Copies the selection.", mi.Help);
+				Assert.Equal (Copy, mi.Action);
+				mi.Action ();
 				Assert.Equal ("Copy", miAction);
 			};
-			menu.MenuClosing += (e) => {
+			menu.MenuClosing += (s,e) => {
 				Assert.False (isMenuClosed);
 				if (cancelClosing) {
 					e.Cancel = true;
@@ -194,8 +196,8 @@ Edit
 					new MenuItem ("_Save", "Saves the file.", null, null)
 				})
 			});
-			menu.MenuOpened += (e) => {
-				miCurrent = e;
+			menu.MenuOpened += (s,e) => {
+				miCurrent = e.MenuItem;
 				mCurrent = menu.openMenu;
 			};
 			menu.UseKeysUpDownAsKeysLeftRight = true;
@@ -290,8 +292,8 @@ Edit
 					new MenuItem ("_Paste", "", null)
 				})
 			});
-			menu.MenuOpened += (e) => {
-				miCurrent = e;
+			menu.MenuOpened += (s, e) => {
+				miCurrent = e.MenuItem;
 				mCurrent = menu.openCurrentMenu;
 			};
 			Application.Top.Add (menu);
@@ -378,12 +380,12 @@ Edit
 				}),
 				new MenuBarItem ("_About", "Top-Level", () => miAction ="About")
 			});
-			menu.MenuOpening += (e) => mbiCurrent = e.CurrentMenu;
-			menu.MenuOpened += (e) => {
-				miCurrent = e;
+			menu.MenuOpening += (s,e) => mbiCurrent = e.CurrentMenu;
+			menu.MenuOpened += (s, e) => {
+				miCurrent = e.MenuItem;
 				mCurrent = menu.openCurrentMenu;
 			};
-			menu.MenuClosing += (_) => {
+			menu.MenuClosing += (s,e) => {
 				mbiCurrent = null;
 				miCurrent = null;
 				mCurrent = null;

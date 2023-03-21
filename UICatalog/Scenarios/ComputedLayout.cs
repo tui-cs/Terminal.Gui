@@ -52,7 +52,7 @@ namespace UICatalog.Scenarios {
 				ColorScheme = Colors.Error
 			};
 
-			Application.Top.LayoutComplete += (a) => {
+			Application.Top.LayoutComplete += (s, a) => {
 				horizontalRuler.Text = rule.Repeat ((int)Math.Ceiling ((double)(horizontalRuler.Bounds.Width) / (double)rule.Length)) [0..(horizontalRuler.Bounds.Width)];
 				verticalRuler.Text = vrule.Repeat ((int)Math.Ceiling ((double)(verticalRuler.Bounds.Height * 2) / (double)rule.Length)) [0..(verticalRuler.Bounds.Height*2)];
 			};
@@ -210,7 +210,7 @@ namespace UICatalog.Scenarios {
 				Y = Pos.AnchorEnd () - 1,
 			};
 			anchorButton.X = Pos.AnchorEnd () - (Pos.Right (anchorButton) - Pos.Left (anchorButton));
-			anchorButton.Clicked += () => {
+			anchorButton.Clicked += (s,e) => {
 				// Ths demonstrates how to have a dynamically sized button
 				// Each time the button is clicked the button's text gets longer
 				// The call to Application.Top.LayoutSubviews causes the Computed layout to
@@ -246,7 +246,7 @@ namespace UICatalog.Scenarios {
 			var leftButton = new Button ("Left") {
 				Y = Pos.AnchorEnd () - 1 // Pos.Combine
 			};
-			leftButton.Clicked += () => {
+			leftButton.Clicked += (s,e) => {
 				// Ths demonstrates how to have a dynamically sized button
 				// Each time the button is clicked the button's text gets longer
 				// The call to Application.Top.LayoutSubviews causes the Computed layout to
@@ -261,7 +261,7 @@ namespace UICatalog.Scenarios {
 				X = Pos.Center (),
 				Y = Pos.AnchorEnd (1)  // Pos.AnchorEnd(1)
 			};
-			centerButton.Clicked += () => {
+			centerButton.Clicked += (s,e) => {
 				// Ths demonstrates how to have a dynamically sized button
 				// Each time the button is clicked the button's text gets longer
 				// The call to Application.Top.LayoutSubviews causes the Computed layout to
@@ -274,7 +274,7 @@ namespace UICatalog.Scenarios {
 			var rightButton = new Button ("Right") {
 				Y = Pos.Y (centerButton)
 			};
-			rightButton.Clicked += () => {
+			rightButton.Clicked += (s,e) => {
 				// Ths demonstrates how to have a dynamically sized button
 				// Each time the button is clicked the button's text gets longer
 				// The call to Application.Top.LayoutSubviews causes the Computed layout to

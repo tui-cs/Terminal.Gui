@@ -13,44 +13,7 @@ namespace Terminal.Gui {
 	/// 
 	/// <a href="https://gui-cs.github.io/Terminal.Gui/articles/tableview.html">See TableView Deep Dive for more information</a>.
 	/// </summary>
-	public class TableView : View {
-
-		/// <summary>
-		///  Defines the event arguments for <see cref="TableView.CellActivated"/> event
-		/// </summary>
-		public class CellActivatedEventArgs : EventArgs {
-			/// <summary>
-			/// The current table to which the new indexes refer.  May be null e.g. if selection change is the result of clearing the table from the view
-			/// </summary>
-			/// <value></value>
-			public DataTable Table { get; }
-
-
-			/// <summary>
-			/// The column index of the <see cref="Table"/> cell that is being activated
-			/// </summary>
-			/// <value></value>
-			public int Col { get; }
-
-			/// <summary>
-			/// The row index of the <see cref="Table"/> cell that is being activated
-			/// </summary>
-			/// <value></value>
-			public int Row { get; }
-
-			/// <summary>
-			/// Creates a new instance of arguments describing a cell being activated in <see cref="TableView"/>
-			/// </summary>
-			/// <param name="t"></param>
-			/// <param name="col"></param>
-			/// <param name="row"></param>
-			public CellActivatedEventArgs (DataTable t, int col, int row)
-			{
-				Table = t;
-				Col = col;
-				Row = row;
-			}
-		}
+	public partial class TableView : View {
 
 		private int columnOffset;
 		private int rowOffset;
@@ -171,12 +134,12 @@ namespace Terminal.Gui {
 		/// <summary>
 		/// This event is raised when the selected cell in the table changes.
 		/// </summary>
-		public event Action<SelectedCellChangedEventArgs> SelectedCellChanged;
+		public event EventHandler<SelectedCellChangedEventArgs> SelectedCellChanged;
 
 		/// <summary>
 		/// This event is raised when a cell is activated e.g. by double clicking or pressing <see cref="CellActivationKey"/>
 		/// </summary>
-		public event Action<CellActivatedEventArgs> CellActivated;
+		public event EventHandler<CellActivatedEventArgs> CellActivated;
 
 		/// <summary>
 		/// The key which when pressed should trigger <see cref="CellActivated"/> event.  Defaults to Enter.
@@ -1510,7 +1473,7 @@ namespace Terminal.Gui {
 		/// </summary>
 		protected virtual void OnSelectedCellChanged (SelectedCellChangedEventArgs args)
 		{
-			SelectedCellChanged?.Invoke (args);
+			SelectedCellChanged?.Invoke (this,args);
 		}
 
 		/// <summary>
@@ -1519,7 +1482,7 @@ namespace Terminal.Gui {
 		/// <param name="args"></param>
 		protected virtual void OnCellActivated (CellActivatedEventArgs args)
 		{
-			CellActivated?.Invoke (args);
+			CellActivated?.Invoke (this, args);
 		}
 
 		/// <summary>
@@ -1998,62 +1961,6 @@ namespace Terminal.Gui {
 			{
 				Table = table;
 				RowIndex = rowIdx;
-			}
-		}
-
-		/// <summary>
-		/// Defines the event arguments for <see cref="TableView.SelectedCellChanged"/> 
-		/// </summary>
-		public class SelectedCellChangedEventArgs : EventArgs {
-			/// <summary>
-			/// The current table to which the new indexes refer.  May be null e.g. if selection change is the result of clearing the table from the view
-			/// </summary>
-			/// <value></value>
-			public DataTable Table { get; }
-
-
-			/// <summary>
-			/// The previous selected column index.  May be invalid e.g. when the selection has been changed as a result of replacing the existing Table with a smaller one
-			/// </summary>
-			/// <value></value>
-			public int OldCol { get; }
-
-
-			/// <summary>
-			/// The newly selected column index.
-			/// </summary>
-			/// <value></value>
-			public int NewCol { get; }
-
-
-			/// <summary>
-			/// The previous selected row index.  May be invalid e.g. when the selection has been changed as a result of deleting rows from the table
-			/// </summary>
-			/// <value></value>
-			public int OldRow { get; }
-
-
-			/// <summary>
-			/// The newly selected row index.
-			/// </summary>
-			/// <value></value>
-			public int NewRow { get; }
-
-			/// <summary>
-			/// Creates a new instance of arguments describing a change in selected cell in a <see cref="TableView"/>
-			/// </summary>
-			/// <param name="t"></param>
-			/// <param name="oldCol"></param>
-			/// <param name="newCol"></param>
-			/// <param name="oldRow"></param>
-			/// <param name="newRow"></param>
-			public SelectedCellChangedEventArgs (DataTable t, int oldCol, int newCol, int oldRow, int newRow)
-			{
-				Table = t;
-				OldCol = oldCol;
-				NewCol = newCol;
-				OldRow = oldRow;
-				NewRow = newRow;
 			}
 		}
 

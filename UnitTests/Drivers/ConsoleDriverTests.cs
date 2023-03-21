@@ -82,7 +82,7 @@ namespace Terminal.Gui.DriverTests {
 			var count = 0;
 			var wasKeyPressed = false;
 
-			view.KeyPress += (e) => {
+			view.KeyPress += (s, e) => {
 				wasKeyPressed = true;
 			};
 			top.Add (view);
@@ -121,7 +121,7 @@ namespace Terminal.Gui.DriverTests {
 			var rText = "";
 			var idx = 0;
 
-			top.KeyPress += (e) => {
+			view.KeyPress += (s, e) => {
 				Assert.Equal (text [idx], (char)e.KeyEvent.Key);
 				rText += (char)e.KeyEvent.Key;
 				Assert.Equal (rText, text.Substring (0, idx + 1));
@@ -530,7 +530,7 @@ namespace Terminal.Gui.DriverTests {
 
 			var top = Application.Top;
 
-			top.KeyPress += (e) => {
+			top.KeyPress += (s, e) => {
 				var after = ShortcutHelper.GetModifiersKey (e.KeyEvent);
 				Assert.Equal (expectedRemapping, after);
 				e.Handled = true;

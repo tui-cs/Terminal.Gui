@@ -582,7 +582,7 @@ namespace Terminal.Gui.TopLevelTests {
 		{
 			for (int i = 0; i < 8; i++) {
 				var fd = new FileDialog ();
-				fd.Ready += () => Application.RequestStop ();
+				fd.Ready += (s,e) => Application.RequestStop ();
 				Application.Run (fd);
 			}
 		}

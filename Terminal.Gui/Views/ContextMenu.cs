@@ -61,7 +61,7 @@ namespace Terminal.Gui {
 			Position = new Point (x, y);
 		}
 
-		private void MenuBar_MenuAllClosed ()
+		private void MenuBar_MenuAllClosed (object sender, EventArgs e)
 		{
 			Dispose ();
 		}
@@ -145,14 +145,14 @@ namespace Terminal.Gui {
 			menuBar.OpenMenu ();
 		}
 
-		private void Container_Resized (Size obj)
+		private void Container_Resized (object sender, SizeChangedEventArgs e)
 		{
 			if (IsShow) {
 				Show ();
 			}
 		}
 
-		private void Container_Closing (ToplevelClosingEventArgs obj)
+		private void Container_Closing (object sender, ToplevelClosingEventArgs obj)
 		{
 			Hide ();
 		}
@@ -169,12 +169,12 @@ namespace Terminal.Gui {
 		/// <summary>
 		/// Event invoked when the <see cref="ContextMenu.Key"/> is changed.
 		/// </summary>
-		public event Action<Key> KeyChanged;
+		public event EventHandler<KeyChangedEventArgs> KeyChanged;
 
 		/// <summary>
 		/// Event invoked when the <see cref="ContextMenu.MouseFlags"/> is changed.
 		/// </summary>
-		public event Action<MouseFlags> MouseFlagsChanged;
+		public event EventHandler<MouseFlagsChangedEventArgs> MouseFlagsChanged;
 
 		/// <summary>
 		/// Gets or sets the menu position.
@@ -194,7 +194,7 @@ namespace Terminal.Gui {
 			set {
 				var oldKey = key;
 				key = value;
-				KeyChanged?.Invoke (oldKey);
+				KeyChanged?.Invoke (this, new KeyChangedEventArgs(oldKey,key));
 			}
 		}
 
@@ -206,7 +206,7 @@ namespace Terminal.Gui {
 			set {
 				var oldFlags = mouseFlags;
 				mouseFlags = value;
-				MouseFlagsChanged?.Invoke (oldFlags);
+				MouseFlagsChanged?.Invoke (this, new MouseFlagsChangedEventArgs(oldFlags,value));
 			}
 		}
 

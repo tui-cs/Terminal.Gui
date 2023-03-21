@@ -88,7 +88,7 @@ namespace UICatalog.Scenarios {
 				ReadOnly = true
 			};
 
-			tvOutput.KeyDown += (e) => {
+			tvOutput.KeyDown += (s, e) => {
 				//System.Diagnostics.Debug.WriteLine ($"Output - KeyDown: {e.KeyEvent.Key}");
 				e.Handled = true;
 				if (e.KeyEvent.Key == Key.Unknown) {
@@ -96,7 +96,7 @@ namespace UICatalog.Scenarios {
 				}
 			};
 
-			tvOutput.KeyPress += (e) => {
+			tvOutput.KeyPress += (s, e) => {
 				//System.Diagnostics.Debug.WriteLine ($"Output - KeyPress - _keyboardStrokes: {_keyboardStrokes.Count}");
 				if (_outputStarted && _keyboardStrokes.Count > 0) {
 					var ev = ShortcutHelper.GetModifiersKey (e.KeyEvent);
@@ -114,7 +114,7 @@ namespace UICatalog.Scenarios {
 
 			Win.Add (tvOutput);
 
-			tvInput.KeyDown += (e) => {
+			tvInput.KeyDown += (s, e) => {
 				//System.Diagnostics.Debug.WriteLine ($"Input - KeyDown: {e.KeyEvent.Key}");
 				e.Handled = true;
 				if (e.KeyEvent.Key == Key.Unknown) {
@@ -122,10 +122,10 @@ namespace UICatalog.Scenarios {
 				}
 			};
 
-			View.KeyEventEventArgs unknownChar = null;
+			KeyEventEventArgs unknownChar = null;
 
-			tvInput.KeyPress += (e) => {
-				if (e.KeyEvent.Key == Application.QuitKey) {
+			tvInput.KeyPress += (s, e) => {
+				if (e.KeyEvent.Key == (Key.Q | Key.CtrlMask)) {
 					Application.RequestStop ();
 					return;
 				}
@@ -152,7 +152,7 @@ namespace UICatalog.Scenarios {
 				//System.Diagnostics.Debug.WriteLine ($"Input - KeyPress - _keyboardStrokes: {_keyboardStrokes.Count}");
 			};
 
-			tvInput.KeyUp += (e) => {
+			tvInput.KeyUp += (s, e) => {
 				//System.Diagnostics.Debug.WriteLine ($"Input - KeyUp: {e.KeyEvent.Key}");
 				//var ke = e.KeyEvent;
 				var ke = ShortcutHelper.GetModifiersKey (e.KeyEvent);
@@ -207,13 +207,13 @@ namespace UICatalog.Scenarios {
 				}
 			};
 
-			btnInput.Clicked += () => {
+			btnInput.Clicked += (s,e) => {
 				if (!tvInput.HasFocus && _keyboardStrokes.Count == 0) {
 					tvInput.SetFocus ();
 				}
 			};
 
-			btnOutput.Clicked += () => {
+			btnOutput.Clicked += (s,e) => {
 				if (!tvOutput.HasFocus && _keyboardStrokes.Count == 0) {
 					tvOutput.SetFocus ();
 				}
@@ -221,7 +221,7 @@ namespace UICatalog.Scenarios {
 
 			tvInput.SetFocus ();
 
-			Win.LayoutComplete += (_) => {
+			Win.LayoutComplete += (s, e) => {
 				inputHorizontalRuler.Text = outputHorizontalRuler.Text = ruler.Repeat ((int)Math.Ceiling ((double)(inputHorizontalRuler.Bounds.Width) / (double)ruler.Length)) [0..(inputHorizontalRuler.Bounds.Width)];
 				inputVerticalRuler.Height = tvInput.Frame.Height + 1;
 				inputVerticalRuler.Text = ruler.Repeat ((int)Math.Ceiling ((double)(inputVerticalRuler.Bounds.Height) / (double)ruler.Length)) [0..(inputVerticalRuler.Bounds.Height)];
@@ -229,7 +229,7 @@ namespace UICatalog.Scenarios {
 			};
 		}
 
-		private void AddKeyboardStrokes (View.KeyEventEventArgs e)
+		private void AddKeyboardStrokes (KeyEventEventArgs e)
 		{
 			var ke = e.KeyEvent;
 			var km = new KeyModifiers ();

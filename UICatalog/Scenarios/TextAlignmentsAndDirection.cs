@@ -109,7 +109,7 @@ namespace UICatalog.Scenarios {
 				Text = txt
 			};
 
-			editText.MouseClick += (m) => {
+			editText.MouseClick += (s, m) => {
 				foreach (var v in txts) {
 					v.Text = editText.Text;
 				}
@@ -118,7 +118,7 @@ namespace UICatalog.Scenarios {
 				}
 			};
 
-			Win.KeyUp += (m) => {
+			Win.KeyUp += (s, m) => {
 				foreach (var v in txts) {
 					v.Text = editText.Text;
 				}
@@ -141,8 +141,8 @@ namespace UICatalog.Scenarios {
 				Height = 1
 			};
 
-			justifyCheckbox.Toggled += (prevtoggled) => {
-				if (prevtoggled == true) {
+			justifyCheckbox.Toggled += (s,e) => {
+				if (e.OldValue == true) {
 					foreach (var t in mtxts) {
 						t.TextAlignment = (TextAlignment)((dynamic)t.Data).h;
 						t.VerticalTextAlignment = (VerticalTextAlignment)((dynamic)t.Data).v;
@@ -175,7 +175,7 @@ namespace UICatalog.Scenarios {
 				HotKeySpecifier = '\xffff'
 			};
 
-			directionOptions.SelectedItemChanged += (ev) => {
+			directionOptions.SelectedItemChanged += (s, ev) => {
 				foreach (var v in mtxts) {
 					v.TextDirection = (TextDirection)ev.SelectedItem;
 				}

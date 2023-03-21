@@ -204,7 +204,7 @@ namespace Terminal.Gui {
 				if (SuperView != null && SuperView.Subviews.Contains (this)) {
 					SelectedItem = -1;
 					search.Text = "";
-					Search_Changed ("");
+					Search_Changed (this, new TextChangedEventArgs(""));
 					SetNeedsDisplay ();
 				}
 			}
@@ -230,22 +230,22 @@ namespace Terminal.Gui {
 		/// <summary>
 		/// This event is raised when the selected item in the <see cref="ComboBox"/> has changed.
 		/// </summary>
-		public event Action<ListViewItemEventArgs> SelectedItemChanged;
+		public event EventHandler<ListViewItemEventArgs> SelectedItemChanged;
 
 		/// <summary>
 		/// This event is raised when the drop-down list is expanded.
 		/// </summary>
-		public event Action Expanded;
+		public event EventHandler Expanded;
 
 		/// <summary>
 		/// This event is raised when the drop-down list is collapsed.
 		/// </summary>
-		public event Action Collapsed;
+		public event EventHandler Collapsed;
 
 		/// <summary>
 		/// This event is raised when the user Double Clicks on an item or presses ENTER to open the selected item.
 		/// </summary>
-		public event Action<ListViewItemEventArgs> OpenSelectedItem;
+		public event EventHandler<ListViewItemEventArgs> OpenSelectedItem;
 
 		readonly IList searchset = new List<object> ();
 		ustring text = "";
@@ -311,12 +311,12 @@ namespace Terminal.Gui {
 			search.TextChanged += Search_Changed;
 
 			listview.Y = Pos.Bottom (search);
-			listview.OpenSelectedItem += (ListViewItemEventArgs a) => Selected ();
+			listview.OpenSelectedItem += (object sender, ListViewItemEventArgs a) => Selected ();
 
 			this.Add (search, listview);
 
 			// On resize
-			LayoutComplete += (LayoutEventArgs a) => {
+			LayoutComplete += (object sender, LayoutEventArgs a) => {
 				if ((!autoHide && Bounds.Width > 0 && search.Frame.Width != Bounds.Width) ||
 				    (autoHide && Bounds.Width > 0 && search.Frame.Width != Bounds.Width - 1)) {
 
@@ -327,14 +327,14 @@ namespace Terminal.Gui {
 				}
 			};
 
-			listview.SelectedItemChanged += (ListViewItemEventArgs e) => {
+			listview.SelectedItemChanged += (object sender, ListViewItemEventArgs e) => {
 
 				if (!HideDropdownListOnClick && searchset.Count > 0) {
 					SetValue (searchset [listview.SelectedItem]);
 				}
 			};
 
-			Added += (View v) => {
+			Added += (s,  e) => {
 
 				// Determine if this view is hosted inside a dialog and is the only control
 				for (View view = this.SuperView; view != null; view = view.SuperView) {
@@ -351,7 +351,7 @@ namespace Terminal.Gui {
 
 				SetNeedsLayout ();
 				SetNeedsDisplay ();
-				Search_Changed (Text);
+				Search_Changed (this, new TextChangedEventArgs( Text));
 			};
 
 			// Things this view knows how to do
@@ -489,7 +489,7 @@ namespace Terminal.Gui {
 		/// </summary>
 		public virtual void OnExpanded ()
 		{
-			Expanded?.Invoke ();
+			Expanded?.Invoke (this, EventArgs.Empty);
 		}
 
 		/// <summary>
@@ -497,7 +497,7 @@ namespace Terminal.Gui {
 		/// </summary>
 		public virtual void OnCollapsed ()
 		{
-			Collapsed?.Invoke ();
+			Collapsed?.Invoke (this, EventArgs.Empty);
 		}
 
 		///<inheritdoc/>
@@ -538,7 +538,7 @@ namespace Terminal.Gui {
 		{
 			// Note: Cannot rely on "listview.SelectedItem != lastSelectedItem" because the list is dynamic. 
 			// So we cannot optimize. Ie: Don't call if not changed
-			SelectedItemChanged?.Invoke (new ListViewItemEventArgs (SelectedItem, search.Text));
+			SelectedItemChanged?.Invoke (this, new ListViewItemEventArgs (SelectedItem, search.Text));
 
 			return true;
 		}
@@ -551,7 +551,7 @@ namespace Terminal.Gui {
 		{
 			var value = search.Text;
 			lastSelectedItem = SelectedItem;
-			OpenSelectedItem?.Invoke (new ListViewItemEventArgs (SelectedItem, value));
+			OpenSelectedItem?.Invoke (this, new ListViewItemEventArgs (SelectedItem, value));
 
 			return true;
 		}
@@ -773,7 +773,7 @@ namespace Terminal.Gui {
 
 			SetValue (searchset [listview.SelectedItem]);
 			search.CursorPosition = search.Text.RuneCount;
-			Search_Changed (search.Text);
+			Search_Changed (this, new TextChangedEventArgs(search.Text));
 			OnOpenSelectedItem ();
 			Reset (keepSearchText: true);
 			HideList ();
@@ -829,15 +829,15 @@ namespace Terminal.Gui {
 			}
 		}
 
-		private void Search_Changed (ustring text)
+		private void Search_Changed (object sender, TextChangedEventArgs e)
 		{
 			if (source == null) { // Object initialization		
 				return;
 			}
 
-			if (ustring.IsNullOrEmpty (search.Text) && ustring.IsNullOrEmpty (text)) {
+			if (ustring.IsNullOrEmpty (search.Text) && ustring.IsNullOrEmpty (e.OldValue)) {
 				ResetSearchSet ();
-			} else if (search.Text != text) {
+			} else if (search.Text != e.OldValue) {
 				isShow = true;
 				ResetSearchSet (noCopy: true);
 

@@ -100,7 +100,7 @@ namespace Terminal.Gui.ViewTests {
 			};
 
 			bool called = false;
-			tableView.SelectedCellChanged += (e) => { called = true; };
+			tableView.SelectedCellChanged += (s,e) => { called = true; };
 
 			Assert.Equal (0, tableView.SelectedColumn);
 			Assert.False (called);
@@ -124,7 +124,7 @@ namespace Terminal.Gui.ViewTests {
 			};
 
 			bool called = false;
-			tableView.SelectedCellChanged += (e) => {
+			tableView.SelectedCellChanged += (s,e) => {
 				called = true;
 				Assert.Equal (0, e.OldCol);
 				Assert.Equal (10, e.NewCol);
@@ -142,7 +142,7 @@ namespace Terminal.Gui.ViewTests {
 			};
 
 			bool called = false;
-			tableView.SelectedCellChanged += (e) => {
+			tableView.SelectedCellChanged += (s,e) => {
 				called = true;
 				Assert.Equal (0, e.OldRow);
 				Assert.Equal (10, e.NewRow);
@@ -520,7 +520,7 @@ namespace Terminal.Gui.ViewTests {
 		{
 			string activatedValue = null;
 			var tv = new TableView (BuildTable(1,1));
-			tv.CellActivated += (c) => activatedValue = c.Table.Rows[c.Row][c.Col].ToString();
+			tv.CellActivated += (s,c) => activatedValue = c.Table.Rows[c.Row][c.Col].ToString();
 
 			Application.Top.Add (tv);
 			Application.Begin (Application.Top);
@@ -1652,10 +1652,8 @@ namespace Terminal.Gui.ViewTests {
 
 			Assert.Equal(4,tableView.GetAllSelectedCells().Count());
 			tableView.ProcessKey (new KeyEvent { Key = Key.Space });
-			Assert.Equal(1,tableView.GetAllSelectedCells().Count());
+			Assert.Single(tableView.GetAllSelectedCells());
 		}
-
-
 
 		[Fact, AutoInitShutdown]
 		public void TestToggleCells_MultiSelectOn_Two_SquareSelects_BothToggled ()

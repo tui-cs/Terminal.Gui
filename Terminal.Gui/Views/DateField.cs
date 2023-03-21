@@ -38,7 +38,7 @@ namespace Terminal.Gui {
 		/// <remarks>
 		///   The passed event arguments containing the old value, new value, and format string.
 		/// </remarks>
-		public event Action<DateTimeEventArgs<DateTime>> DateChanged;
+		public event EventHandler<DateTimeEventArgs<DateTime>> DateChanged;
 
 		/// <summary>
 		///    Initializes a new instance of <see cref="DateField"/> using <see cref="LayoutStyle.Absolute"/> layout.
@@ -106,13 +106,13 @@ namespace Terminal.Gui {
 			AddKeyBinding (Key.F | Key.CtrlMask, Command.Right);
 		}
 
-		void DateField_Changed (ustring e)
+		void DateField_Changed (object sender, TextChangedEventArgs e)
 		{
 			try {
 				if (!DateTime.TryParseExact (GetDate (Text).ToString (), GetInvarianteFormat (), CultureInfo.CurrentCulture, DateTimeStyles.None, out DateTime result))
-					Text = e;
+					Text = e.OldValue;
 			} catch (Exception) {
-				Text = e;
+				Text = e.OldValue;
 			}
 		}
 
@@ -418,40 +418,7 @@ namespace Terminal.Gui {
 		/// <param name="args">Event arguments</param>
 		public virtual void OnDateChanged (DateTimeEventArgs<DateTime> args)
 		{
-			DateChanged?.Invoke (args);
-		}
-	}
-
-	/// <summary>
-	/// Defines the event arguments for <see cref="DateField.DateChanged"/> and <see cref="TimeField.TimeChanged"/> events.
-	/// </summary>
-	public class DateTimeEventArgs<T> : EventArgs {
-		/// <summary>
-		/// The old <see cref="DateField"/> or <see cref="TimeField"/> value.
-		/// </summary>
-		public T OldValue { get; }
-
-		/// <summary>
-		/// The new <see cref="DateField"/> or <see cref="TimeField"/> value.
-		/// </summary>
-		public T NewValue { get; }
-
-		/// <summary>
-		/// The <see cref="DateField"/> or <see cref="TimeField"/> format.
-		/// </summary>
-		public string Format { get; }
-
-		/// <summary>
-		/// Initializes a new instance of <see cref="DateTimeEventArgs{T}"/>
-		/// </summary>
-		/// <param name="oldValue">The old <see cref="DateField"/> or <see cref="TimeField"/> value.</param>
-		/// <param name="newValue">The new <see cref="DateField"/> or <see cref="TimeField"/> value.</param>
-		/// <param name="format">The <see cref="DateField"/> or <see cref="TimeField"/> format string.</param>
-		public DateTimeEventArgs (T oldValue, T newValue, string format)
-		{
-			OldValue = oldValue;
-			NewValue = newValue;
-			Format = format;
+			DateChanged?.Invoke (this,args);
 		}
 	}
 }

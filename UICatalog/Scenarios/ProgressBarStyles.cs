@@ -64,7 +64,7 @@ namespace UICatalog.Scenarios {
 				X = Pos.Center (),
 				Y = Pos.Bottom (continuousPB) + 1
 			};
-			button.Clicked += () => {
+			button.Clicked += (s,e) => {
 				if (_fractionTimer == null) {
 					button.Enabled = false;
 					blocksPB.Fraction = 0;
@@ -113,15 +113,15 @@ namespace UICatalog.Scenarios {
 			};
 			Win.Add (marqueesContinuousPB);
 
-			rbPBFormat.SelectedItemChanged += (e) => {
+			rbPBFormat.SelectedItemChanged += (s,e) => {
 				blocksPB.ProgressBarFormat = (ProgressBarFormat)e.SelectedItem;
 				continuousPB.ProgressBarFormat = (ProgressBarFormat)e.SelectedItem;
 				marqueesBlocksPB.ProgressBarFormat = (ProgressBarFormat)e.SelectedItem;
 				marqueesContinuousPB.ProgressBarFormat = (ProgressBarFormat)e.SelectedItem;
 			};
 
-			ckbBidirectional.Toggled += (e) => {
-				ckbBidirectional.Checked = marqueesBlocksPB.BidirectionalMarquee = marqueesContinuousPB.BidirectionalMarquee = (bool)!e;
+			ckbBidirectional.Toggled += (s,e) => {
+				ckbBidirectional.Checked = marqueesBlocksPB.BidirectionalMarquee = marqueesContinuousPB.BidirectionalMarquee = (bool)!e.OldValue;
 			};
 
 			_pulseTimer = new Timer ((_) => {
@@ -133,7 +133,7 @@ namespace UICatalog.Scenarios {
 
 			Application.Top.Unloaded += Top_Unloaded;
 
-			void Top_Unloaded ()
+			void Top_Unloaded (object sender, EventArgs args)
 			{
 				if (_fractionTimer != null) {
 					_fractionTimer.Dispose ();
