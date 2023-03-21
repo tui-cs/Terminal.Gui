@@ -78,8 +78,10 @@ namespace Terminal.Gui {
 			ColorScheme = Colors.Dialog;
 			Modal = true;
 			ButtonAlignment = DefaultButtonAlignment;
-			Border = DefaultBorder;
-			Border.Title = title;
+			if (Border == null) {
+				Border = DefaultBorder;
+				Border.Title = title;
+			}
 
 			if (buttons != null) {
 				foreach (var b in buttons) {

@@ -210,7 +210,7 @@ namespace Terminal.Gui {
 
 			Application.GrabbingMouse += Application_GrabbingMouse;
 			Application.UnGrabbingMouse += Application_UnGrabbingMouse;
-      
+
 			// TODO: v2 - ALL Views (Responders??!?!) should support the commands related to 
 			//    - Focus
 			//  Move the appropriate AddCommand calls to `Responder`
@@ -378,8 +378,7 @@ namespace Terminal.Gui {
 
 		/// <summary>
 		/// <see langword="true"/> if was already loaded by the <see cref="Application.Begin(Toplevel)"/>
-		/// <see langword="false"/>, otherwise. This is used to avoid the <see cref="View._needsDisplay"/>
-		/// having wrong values while this was not yet loaded.
+		/// <see langword="false"/>, otherwise.
 		/// </summary>
 		public bool IsLoaded { get; private set; }
 
@@ -627,11 +626,15 @@ namespace Terminal.Gui {
 				l = top.SuperView.Frame.Width;
 				superView = top.SuperView;
 			}
-			nx = Math.Max (x, 0);
-			nx = nx + top.Frame.Width > l ? Math.Max (l - top.Frame.Width, 0) : nx;
 			var mfLength = top.Border?.DrawMarginFrame == true ? 2 : 1;
-			if (nx + mfLength > top.Frame.X + top.Frame.Width) {
-				nx = Math.Max (top.Frame.Right - mfLength, 0);
+			if (top.Frame.Width <= l) {
+				nx = Math.Max (x, 0);
+				nx = nx + top.Frame.Width > l ? Math.Max (l - top.Frame.Width, 0) : nx;
+				if (nx + mfLength > top.Frame.X + top.Frame.Width) {
+					nx = Math.Max (top.Frame.Right - mfLength, 0);
+				}
+			} else {
+				nx = x;
 			}
 			//System.Diagnostics.Debug.WriteLine ($"nx:{nx}, rWidth:{rWidth}");
 			bool m, s;
@@ -640,7 +643,7 @@ namespace Terminal.Gui {
 				mb = Application.Top.MenuBar;
 			} else {
 				var t = top.SuperView;
-				while (!(t is Toplevel)) {
+				while (t is not Toplevel) {
 					t = t.SuperView;
 				}
 				m = ((Toplevel)t).MenuBar?.Visible == true;
@@ -657,7 +660,7 @@ namespace Terminal.Gui {
 				sb = Application.Top.StatusBar;
 			} else {
 				var t = top.SuperView;
-				while (!(t is Toplevel)) {
+				while (t is not Toplevel) {
 					t = t.SuperView;
 				}
 				s = ((Toplevel)t).StatusBar?.Visible == true;
@@ -669,9 +672,11 @@ namespace Terminal.Gui {
 				l = s ? top.SuperView.Frame.Height - 1 : top.SuperView.Frame.Height;
 			}
 			ny = Math.Min (ny, l);
-			ny = ny + top.Frame.Height >= l ? Math.Max (l - top.Frame.Height, m ? 1 : 0) : ny;
-			if (ny + mfLength > top.Frame.Y + top.Frame.Height) {
-				ny = Math.Max (top.Frame.Bottom - mfLength, 0);
+			if (top.Frame.Height <= l) {
+				ny = ny + top.Frame.Height >= l ? Math.Max (l - top.Frame.Height, m ? 1 : 0) : ny;
+				if (ny + mfLength > top.Frame.Y + top.Frame.Height) {
+					ny = Math.Max (top.Frame.Bottom - mfLength, 0);
+				}
 			}
 			//System.Diagnostics.Debug.WriteLine ($"ny:{ny}, rHeight:{rHeight}");
 
@@ -698,15 +703,15 @@ namespace Terminal.Gui {
 			var superView = EnsureVisibleBounds (top, top.Frame.X, top.Frame.Y,
 				out int nx, out int ny, out _, out StatusBar sb);
 			bool layoutSubviews = false;
-			if ((top?.SuperView != null || (top != Application.Top && top.Modal)
+			if ((superView != top || top?.SuperView != null || (top != Application.Top && top.Modal)
 				|| (top?.SuperView == null && top.IsMdiChild))
-				&& (nx > top.Frame.X || ny > top.Frame.Y) && top.LayoutStyle == LayoutStyle.Computed) {
+				&& (top.Frame.X + top.Frame.Width > Driver.Cols || ny > top.Frame.Y) && top.LayoutStyle == LayoutStyle.Computed) {
 
-				if ((top.X == null || top.X is Pos.PosAbsolute) && top.Bounds.X != nx) {
+				if ((top.X == null || top.X is Pos.PosAbsolute) && top.Frame.X != nx) {
 					top.X = nx;
 					layoutSubviews = true;
 				}
-				if ((top.Y == null || top.Y is Pos.PosAbsolute) && top.Bounds.Y != ny) {
+				if ((top.Y == null || top.Y is Pos.PosAbsolute) && top.Frame.Y != ny) {
 					top.Y = ny;
 					layoutSubviews = true;
 				}
@@ -993,6 +998,13 @@ namespace Terminal.Gui {
 		public override bool OnLeave (View view)
 		{
 			return MostFocused?.OnLeave (view) ?? base.OnLeave (view);
+		}
+
+		///<inheritdoc/>
+		protected override void Dispose (bool disposing)
+		{
+			dragPosition = null;
+			base.Dispose (disposing);
 		}
 	}
 

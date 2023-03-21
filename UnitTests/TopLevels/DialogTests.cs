@@ -582,9 +582,99 @@ namespace Terminal.Gui.TopLevelTests {
 		{
 			for (int i = 0; i < 8; i++) {
 				var fd = new FileDialog ();
-				fd.Ready += (s,e) => Application.RequestStop ();
+				fd.Ready += (s, e) => Application.RequestStop ();
 				Application.Run (fd);
 			}
+		}
+
+		[Fact, AutoInitShutdown]
+		public void Dialog_Opened_From_Another_Dialog ()
+		{
+			var btn1 = new Button ("press me 1");
+			Button btn2 = null;
+			Button btn3 = null;
+			string expected = null;
+			btn1.Clicked += (s, e) => {
+				btn2 = new Button ("Show Sub");
+				btn3 = new Button ("Close");
+				btn3.Clicked += (s, e) => Application.RequestStop ();
+				btn2.Clicked += (s, e) => { MessageBox.Query ("hey", "ya", "ok"); };
+				var dlg = new Dialog ("Hey", btn2, btn3);
+
+				Application.Run (dlg);
+			};
+
+			var iterations = -1;
+			Application.Iteration += () => {
+				iterations++;
+				if (iterations == 0) {
+					Assert.True (btn1.ProcessKey (new KeyEvent (Key.Enter, new KeyModifiers ())));
+				} else if (iterations == 1) {
+					expected = @"
+      ┌ Hey ─────────────────────────────────────────────────────────────┐
+      │                                                                  │
+      │                                                                  │
+      │                                                                  │
+      │                                                                  │
+      │                                                                  │
+      │                                                                  │
+      │                                                                  │
+      │                                                                  │
+      │                                                                  │
+      │                                                                  │
+      │                                                                  │
+      │                                                                  │
+      │                                                                  │
+      │                                                                  │
+      │                                                                  │
+      │                                                                  │
+      │                                                                  │
+      │                                                                  │
+      │                      [ Show Sub ] [ Close ]                      │
+      └──────────────────────────────────────────────────────────────────┘";
+					TestHelpers.AssertDriverContentsWithFrameAre (expected, output);
+
+					Assert.True (btn2.ProcessKey (new KeyEvent (Key.Enter, new KeyModifiers ())));
+				} else if (iterations == 2) {
+					TestHelpers.AssertDriverContentsWithFrameAre (@"
+      ┌ Hey ─────────────────────────────────────────────────────────────┐
+      │                                                                  │
+      │                                                                  │
+      │                                                                  │
+      │                                                                  │
+      │                                                                  │
+      │                                                                  │
+      │                                                                  │
+      │         ┌ hey ─────────────────────────────────────────┐         │
+      │         │                      ya                      │         │
+      │         │                                              │         │
+      │         │                   [◦ ok ◦]                   │         │
+      │         └──────────────────────────────────────────────┘         │
+      │                                                                  │
+      │                                                                  │
+      │                                                                  │
+      │                                                                  │
+      │                                                                  │
+      │                                                                  │
+      │                      [ Show Sub ] [ Close ]                      │
+      └──────────────────────────────────────────────────────────────────┘", output);
+
+					Assert.True (Application.Current.ProcessKey (new KeyEvent (Key.Enter, new KeyModifiers ())));
+				} else if (iterations == 3) {
+					TestHelpers.AssertDriverContentsWithFrameAre (expected, output);
+
+					Assert.True (btn3.ProcessKey (new KeyEvent (Key.Enter, new KeyModifiers ())));
+				} else if (iterations == 4) {
+					TestHelpers.AssertDriverContentsWithFrameAre ("", output);
+
+					Application.RequestStop ();
+				}
+			};
+
+			Application.Run ();
+			Application.Shutdown ();
+
+			Assert.Equal (4, iterations);
 		}
 	}
 }

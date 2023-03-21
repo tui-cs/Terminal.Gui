@@ -240,9 +240,12 @@ namespace Terminal.Gui {
 					contentView.Frame = cFrame;
 				}
 			}
-			if (Subviews?.Count == 0)
+			if (Subviews?.Count == 0) {
 				base.Add (contentView);
-			Border.Child = contentView;
+			}
+			if (Border.Child != contentView) {
+				Border.Child = contentView;
+			}
 		}
 
 		///// <summary>
@@ -273,7 +276,13 @@ namespace Terminal.Gui {
 			}
 
 			SetNeedsDisplay ();
-			contentView.Remove (view);
+			if (view == contentView) {
+				base.Remove (view);
+				contentView.Dispose ();
+				return;
+			} else {
+				contentView.Remove (view);
+			}
 
 			if (contentView.InternalSubviews.Count < 1) {
 				CanFocus = false;

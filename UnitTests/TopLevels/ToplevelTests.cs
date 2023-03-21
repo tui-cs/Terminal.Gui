@@ -149,7 +149,6 @@ namespace Terminal.Gui.TopLevelTests {
 		[AutoInitShutdown]
 		public void Internal_Tests ()
 		{
-			Toplevel.dragPosition = null; // dragPosition is `static` and must be reset for each instance or unit tests will fail?
 			var top = new Toplevel ();
 
 			var eventInvoked = "";
@@ -200,7 +199,7 @@ namespace Terminal.Gui.TopLevelTests {
 			Application.Begin (top);
 			Assert.Equal (top, Application.Top);
 
-			// top is Application.Top without menu and status bar.
+			// Application.Top without menu and status bar.
 			var supView = top.EnsureVisibleBounds (top, 2, 2, out int nx, out int ny, out MenuBar mb, out StatusBar sb);
 			Assert.Equal (Application.Top, supView);
 			Assert.Equal (0, nx);
@@ -211,7 +210,7 @@ namespace Terminal.Gui.TopLevelTests {
 			top.AddMenuStatusBar (new MenuBar ());
 			Assert.NotNull (top.MenuBar);
 
-			// top is Application.Top with a menu and without status bar.
+			// Application.Top with a menu and without status bar.
 			top.EnsureVisibleBounds (top, 2, 2, out nx, out ny, out mb, out sb);
 			Assert.Equal (0, nx);
 			Assert.Equal (1, ny);
@@ -221,20 +220,24 @@ namespace Terminal.Gui.TopLevelTests {
 			top.AddMenuStatusBar (new StatusBar ());
 			Assert.NotNull (top.StatusBar);
 
-			// top is Application.Top with a menu and status bar.
+			// Application.Top with a menu and status bar.
 			top.EnsureVisibleBounds (top, 2, 2, out nx, out ny, out mb, out sb);
 			Assert.Equal (0, nx);
-			Assert.Equal (1, ny);
+			// The available height is lower than the Application.Top height minus
+			// the menu bar and status bar, then the top can go beyond the bottom
+			Assert.Equal (2, ny);
 			Assert.NotNull (mb);
 			Assert.NotNull (sb);
 
 			top.RemoveMenuStatusBar (top.MenuBar);
 			Assert.Null (top.MenuBar);
 
-			// top is Application.Top without a menu and with a status bar.
+			// Application.Top without a menu and with a status bar.
 			top.EnsureVisibleBounds (top, 2, 2, out nx, out ny, out mb, out sb);
 			Assert.Equal (0, nx);
-			Assert.Equal (0, ny);
+			// The available height is lower than the Application.Top height minus
+			// the status bar, then the top can go beyond the bottom
+			Assert.Equal (2, ny);
 			Assert.Null (mb);
 			Assert.NotNull (sb);
 
@@ -252,7 +255,7 @@ namespace Terminal.Gui.TopLevelTests {
 			supView = win.EnsureVisibleBounds (win, 0, 0, out nx, out ny, out mb, out sb);
 			Assert.Equal (Application.Top, supView);
 
-			// top is Application.Top without menu and status bar.
+			// Application.Top without menu and status bar.
 			top.EnsureVisibleBounds (win, 0, 0, out nx, out ny, out mb, out sb);
 			Assert.Equal (0, nx);
 			Assert.Equal (0, ny);
@@ -262,7 +265,7 @@ namespace Terminal.Gui.TopLevelTests {
 			top.AddMenuStatusBar (new MenuBar ());
 			Assert.NotNull (top.MenuBar);
 
-			// top is Application.Top with a menu and without status bar.
+			// Application.Top with a menu and without status bar.
 			top.EnsureVisibleBounds (win, 2, 2, out nx, out ny, out mb, out sb);
 			Assert.Equal (0, nx);
 			Assert.Equal (1, ny);
@@ -272,10 +275,12 @@ namespace Terminal.Gui.TopLevelTests {
 			top.AddMenuStatusBar (new StatusBar ());
 			Assert.NotNull (top.StatusBar);
 
-			// top is Application.Top with a menu and status bar.
+			// Application.Top with a menu and status bar.
 			top.EnsureVisibleBounds (win, 30, 20, out nx, out ny, out mb, out sb);
 			Assert.Equal (0, nx);
-			Assert.Equal (1, ny);
+			// The available height is lower than the Application.Top height minus
+			// the menu bar and status bar, then the top can go beyond the bottom
+			Assert.Equal (20, ny);
 			Assert.NotNull (mb);
 			Assert.NotNull (sb);
 
@@ -289,7 +294,7 @@ namespace Terminal.Gui.TopLevelTests {
 			win = new Window () { Width = 60, Height = 15 };
 			top.Add (win);
 
-			// top is Application.Top without menu and status bar.
+			// Application.Top without menu and status bar.
 			top.EnsureVisibleBounds (win, 0, 0, out nx, out ny, out mb, out sb);
 			Assert.Equal (0, nx);
 			Assert.Equal (0, ny);
@@ -299,7 +304,7 @@ namespace Terminal.Gui.TopLevelTests {
 			top.AddMenuStatusBar (new MenuBar ());
 			Assert.NotNull (top.MenuBar);
 
-			// top is Application.Top with a menu and without status bar.
+			// Application.Top with a menu and without status bar.
 			top.EnsureVisibleBounds (win, 2, 2, out nx, out ny, out mb, out sb);
 			Assert.Equal (2, nx);
 			Assert.Equal (2, ny);
@@ -309,7 +314,7 @@ namespace Terminal.Gui.TopLevelTests {
 			top.AddMenuStatusBar (new StatusBar ());
 			Assert.NotNull (top.StatusBar);
 
-			// top is Application.Top with a menu and status bar.
+			// Application.Top with a menu and status bar.
 			top.EnsureVisibleBounds (win, 30, 20, out nx, out ny, out mb, out sb);
 			Assert.Equal (20, nx); // 20+60=80
 			Assert.Equal (9, ny); // 9+15+1(mb)=25
@@ -1212,6 +1217,152 @@ namespace Terminal.Gui.TopLevelTests {
 					Flags = MouseFlags.ReportMousePosition
 				});
 			Assert.Equal (scrollView, Application.MouseGrabView);
+		}
+
+		[Fact, AutoInitShutdown]
+		public void Dialog_Bounds_Bigger_Than_Driver_Cols_And_Rows_Allow_Drag_Beyond_Left_Right_And_Bottom ()
+		{
+			var menu = new MenuBar (new MenuBarItem [] {
+				new MenuBarItem("File", new MenuItem [] {
+					new MenuItem("New", "", null)
+				})
+			});
+
+			var sb = new StatusBar (new StatusItem [] {
+				new StatusItem(Key.N, "~CTRL-N~ New", null)
+			});
+			var top = Application.Top;
+			top.Add (menu, sb);
+			var dialog = new Dialog ("Dialog", 20, 3, new Button ("Ok"));
+			Application.Begin (top);
+			((FakeDriver)Application.Driver).SetBufferSize (40, 10);
+			Application.Begin (dialog);
+			Application.Refresh ();
+			Assert.Equal (new Rect (0, 0, 40, 10), top.Frame);
+			Assert.Equal (new Rect (10, 3, 20, 3), dialog.Frame);
+			TestHelpers.AssertDriverContentsWithFrameAre (@"
+ File                         
+                              
+                              
+          ┌ Dialog ──────────┐
+          │      [ Ok ]      │
+          └──────────────────┘
+                              
+                              
+                              
+ CTRL-N New                   ", output);
+
+			Assert.Null (Application.MouseGrabView);
+
+			ReflectionTools.InvokePrivate (
+				typeof (Application),
+				"ProcessMouseEvent",
+				new MouseEvent () {
+					X = 10,
+					Y = 3,
+					Flags = MouseFlags.Button1Pressed
+				});
+
+			Assert.Equal (dialog, Application.MouseGrabView);
+
+			ReflectionTools.InvokePrivate (
+				typeof (Application),
+				"ProcessMouseEvent",
+				new MouseEvent () {
+					X = -11,
+					Y = -4,
+					Flags = MouseFlags.Button1Pressed | MouseFlags.ReportMousePosition
+				});
+
+			Application.Refresh ();
+			Assert.Equal (new Rect (0, 0, 40, 10), top.Frame);
+			Assert.Equal (new Rect (0, 1, 20, 3), dialog.Frame);
+			TestHelpers.AssertDriverContentsWithFrameAre (@"
+ File               
+┌ Dialog ──────────┐
+│      [ Ok ]      │
+└──────────────────┘
+                    
+                    
+                    
+                    
+                    
+ CTRL-N New         ", output);
+
+			// Changes Top size to same size as Dialog more menu and scroll bar
+			((FakeDriver)Application.Driver).SetBufferSize (20, 5);
+			ReflectionTools.InvokePrivate (
+				typeof (Application),
+				"ProcessMouseEvent",
+				new MouseEvent () {
+					X = -1,
+					Y = -1,
+					Flags = MouseFlags.Button1Pressed | MouseFlags.ReportMousePosition
+				});
+
+			Application.Refresh ();
+			Assert.Equal (new Rect (0, 0, 20, 5), top.Frame);
+			Assert.Equal (new Rect (0, 1, 20, 3), dialog.Frame);
+			TestHelpers.AssertDriverContentsWithFrameAre (@"
+ File               
+┌ Dialog ──────────┐
+│      [ Ok ]      │
+└──────────────────┘
+ CTRL-N New         ", output);
+
+			// Changes Top size smaller than Dialog size
+			((FakeDriver)Application.Driver).SetBufferSize (19, 3);
+			ReflectionTools.InvokePrivate (
+				typeof (Application),
+				"ProcessMouseEvent",
+				new MouseEvent () {
+					X = -1,
+					Y = -1,
+					Flags = MouseFlags.Button1Pressed | MouseFlags.ReportMousePosition
+				});
+
+			Application.Refresh ();
+			Assert.Equal (new Rect (0, 0, 19, 3), top.Frame);
+			Assert.Equal (new Rect (-1, 1, 20, 3), dialog.Frame);
+			TestHelpers.AssertDriverContentsWithFrameAre (@"
+ File              
+ Dialog ──────────┐
+      [ Ok ]      │", output);
+
+			ReflectionTools.InvokePrivate (
+				typeof (Application),
+				"ProcessMouseEvent",
+				new MouseEvent () {
+					X = 18,
+					Y = 3,
+					Flags = MouseFlags.Button1Pressed | MouseFlags.ReportMousePosition
+				});
+
+			Application.Refresh ();
+			Assert.Equal (new Rect (0, 0, 19, 3), top.Frame);
+			Assert.Equal (new Rect (18, 2, 20, 3), dialog.Frame);
+			TestHelpers.AssertDriverContentsWithFrameAre (@"
+ File              
+                   
+ CTRL-N New       ┌", output);
+
+			// On a real app we can't go beyond the SuperView bounds
+			ReflectionTools.InvokePrivate (
+				typeof (Application),
+				"ProcessMouseEvent",
+				new MouseEvent () {
+					X = 19,
+					Y = 4,
+					Flags = MouseFlags.Button1Pressed | MouseFlags.ReportMousePosition
+				});
+
+			Application.Refresh ();
+			Assert.Equal (new Rect (0, 0, 19, 3), top.Frame);
+			Assert.Equal (new Rect (19, 2, 20, 3), dialog.Frame);
+			TestHelpers.AssertDriverContentsWithFrameAre (@"
+ File      
+           
+ CTRL-N New", output);
 		}
 	}
 }

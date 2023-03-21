@@ -1,6 +1,8 @@
 ﻿using NStack;
 using System;
 using System.Collections.Generic;
+using Terminal.Gui.Configuration;
+using static Terminal.Gui.Configuration.ConfigurationManager;
 
 namespace Terminal.Gui {
 	/// <summary>
@@ -239,6 +241,17 @@ namespace Terminal.Gui {
 			return QueryFull (true, 0, 0, title, message, defaultButton, border, wrapMessagge, buttons);
 		}
 
+		/// <summary>
+		/// Defines the default border styling for <see cref="Dialog"/>. Can be configured via <see cref="ConfigurationManager"/>.
+		/// </summary>
+		[SerializableConfigurationProperty (Scope = typeof (ThemeScope))]
+		public static Border DefaultBorder { get; set; } = new Border () {
+			BorderStyle = BorderStyle.Single,
+			DrawMarginFrame = false,
+			Effect3D = true,
+			Effect3DOffset = new Point (1, 1),
+		};
+
 		static int QueryFull (bool useErrorColors, int width, int height, ustring title, ustring message,
 			int defaultButton = 0, Border border = null, bool wrapMessagge = true, params ustring [] buttons)
 		{
@@ -277,7 +290,10 @@ namespace Terminal.Gui {
 				buttonList.Add (b);
 				count++;
 			}
-
+			if (border == null) {
+				border = DefaultBorder;
+				border.Title = title;
+			}
 			// Create Dialog (retain backwards compat by supporting specifying height/width)
 			Dialog d;
 			if (width == 0 & height == 0) {
@@ -326,7 +342,7 @@ namespace Terminal.Gui {
 			for (int n = 0; n < buttonList.Count; n++) {
 				int buttonId = n;
 				var b = buttonList [n];
-				b.Clicked += (s,e) => {
+				b.Clicked += (s, e) => {
 					Clicked = buttonId;
 					Application.RequestStop ();
 				};
