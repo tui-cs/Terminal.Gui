@@ -387,7 +387,7 @@ namespace Terminal.Gui {
 						pos = new Point (col, i);
 						col += (textToReplace.Length - matchText.Length);
 					}
-					if (col + 1 > txt.Length) {
+					if (col < 0 || col + 1 > txt.Length) {
 						break;
 					}
 					col = txt.IndexOf (matchText, col + 1);
@@ -2336,7 +2336,7 @@ namespace Terminal.Gui {
 				row = wrapManager.GetModelLineFromWrappedLines (currentRow);
 				col = wrapManager.GetModelColFromWrappedLines (currentRow, currentColumn);
 			}
-			UnwrappedCursorPosition?.Invoke (this, new PointEventArgs(new Point ((int)col, (int)row)));
+			UnwrappedCursorPosition?.Invoke (this, new PointEventArgs (new Point ((int)col, (int)row)));
 		}
 
 		ustring GetSelectedRegion ()

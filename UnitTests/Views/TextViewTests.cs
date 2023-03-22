@@ -949,7 +949,7 @@ namespace Terminal.Gui.ViewTests {
 					Assert.Equal (0, _textView.CursorPosition.X);
 					Assert.Equal (0, _textView.CursorPosition.Y);
 					Assert.Equal ("This is the second line.", _textView.Text.ToString ());
-					Assert.Equal ($"This is the first line.{Environment.NewLine}", Clipboard.Contents.ToString());
+					Assert.Equal ($"This is the first line.{Environment.NewLine}", Clipboard.Contents.ToString ());
 					break;
 				case 2:
 					_textView.ProcessKey (new KeyEvent (Key.K | Key.CtrlMask, new KeyModifiers ()));
@@ -985,7 +985,7 @@ namespace Terminal.Gui.ViewTests {
 					_textView.ProcessKey (new KeyEvent (Key.K | Key.AltMask, new KeyModifiers ()));
 					Assert.Equal (0, _textView.CursorPosition.X);
 					Assert.Equal (1, _textView.CursorPosition.Y);
-					Assert.Equal ($"This is the first line.{Environment.NewLine}", _textView.Text.ToString());
+					Assert.Equal ($"This is the first line.{Environment.NewLine}", _textView.Text.ToString ());
 					Assert.Equal ($"This is the second line.", Clipboard.Contents.ToString ());
 					break;
 				case 1:
@@ -1380,7 +1380,7 @@ namespace Terminal.Gui.ViewTests {
 		[TextViewTestsAutoInitShutdown]
 		public void TextChanged_Event ()
 		{
-			_textView.TextChanged += (s,e) => {
+			_textView.TextChanged += (s, e) => {
 				if (_textView.Text == "changing") {
 					Assert.Equal ("changing", _textView.Text);
 					_textView.Text = "changed";
@@ -1396,7 +1396,7 @@ namespace Terminal.Gui.ViewTests {
 		public void TextChanged_Event_NoFires_OnTyping ()
 		{
 			var eventcount = 0;
-			_textView.TextChanged += (s,e) => {
+			_textView.TextChanged += (s, e) => {
 				eventcount++;
 			};
 
@@ -6001,7 +6001,7 @@ line.
 				Height = Dim.Fill (),
 				Text = "This is the first line.\nThis is the second line.\n"
 			};
-			tv.UnwrappedCursorPosition += (s,e) => {
+			tv.UnwrappedCursorPosition += (s, e) => {
 				cp = e.Point;
 			};
 			Application.Top.Add (tv);
@@ -6477,7 +6477,7 @@ This is the second line.
 				Height = 10,
 			};
 
-			tv.ContentsChanged += (s,e) => {
+			tv.ContentsChanged += (s, e) => {
 				eventcount++;
 			};
 			Assert.Equal (0, eventcount);
@@ -6498,7 +6498,7 @@ This is the second line.
 			};
 			tv.CursorPosition = new Point (0, 0);
 
-			tv.ContentsChanged += (s,e) => {
+			tv.ContentsChanged += (s, e) => {
 				eventcount++;
 			};
 
@@ -6536,7 +6536,7 @@ This is the second line.
 				Width = 50,
 				Height = 10,
 			};
-			tv.ContentsChanged += (s,e) => {
+			tv.ContentsChanged += (s, e) => {
 				eventcount++;
 				Assert.Equal (expectedRow, e.Row);
 				Assert.Equal (expectedCol, e.Col);
@@ -6565,7 +6565,7 @@ This is the second line.
 				// row/col = 0 when you set Text
 				Text = "abc",
 			};
-			tv.ContentsChanged += (s,e) => {
+			tv.ContentsChanged += (s, e) => {
 				eventcount++;
 				Assert.Equal (expectedRow, e.Row);
 				Assert.Equal (expectedCol, e.Col);
@@ -6597,7 +6597,7 @@ This is the second line.
 				Width = 50,
 				Height = 10,
 			};
-			tv.ContentsChanged += (s,e) => {
+			tv.ContentsChanged += (s, e) => {
 				eventcount++;
 				Assert.Equal (expectedRow, e.Row);
 				Assert.Equal (expectedCol, e.Col);
@@ -6622,7 +6622,7 @@ This is the second line.
 		{
 			var eventcount = 0;
 
-			_textView.ContentsChanged += (s,e) => {
+			_textView.ContentsChanged += (s, e) => {
 				eventcount++;
 			};
 
@@ -6649,7 +6649,7 @@ This is the second line.
 		{
 			var eventcount = 0;
 
-			_textView.ContentsChanged += (s,e) => {
+			_textView.ContentsChanged += (s, e) => {
 				eventcount++;
 			};
 
@@ -6715,7 +6715,7 @@ This is the second line.
 			var eventcount = 0;
 			var expectedEventCount = 0;
 
-			_textView.ContentsChanged += (s,e) => {
+			_textView.ContentsChanged += (s, e) => {
 				eventcount++;
 			};
 
@@ -6759,7 +6759,7 @@ This is the second line.
 				Height = 10,
 				Text = text,
 			};
-			tv.ContentsChanged += (s,e) => {
+			tv.ContentsChanged += (s, e) => {
 				eventcount++;
 			};
 
@@ -6784,7 +6784,7 @@ This is the second line.
 				Width = 50,
 				Height = 10,
 			};
-			tv.ContentsChanged += (s,e) => {
+			tv.ContentsChanged += (s, e) => {
 				eventcount++;
 			};
 
@@ -6804,7 +6804,7 @@ This is the second line.
 				Width = 50,
 				Height = 10,
 			};
-			tv.ContentsChanged += (s,e) => {
+			tv.ContentsChanged += (s, e) => {
 				eventcount++;
 			};
 
@@ -6814,6 +6814,18 @@ This is the second line.
 			tv.LoadFile (fileName);
 			Assert.Equal (1, eventcount);
 			Assert.Equal ($"This is the first line.{Environment.NewLine}This is the second line.{Environment.NewLine}", tv.Text);
+		}
+
+		[Fact]
+		public void ReplaceAllText_Does_Not_Throw_Exception ()
+		{
+			var textToFind = "hello! hello!";
+			var textToReplace = "hello!";
+			var tv = new TextView () { Width = 20, Height = 3, Text = textToFind };
+
+			var exception = Record.Exception (() => tv.ReplaceAllText (textToFind, false, false, textToReplace));
+			Assert.Null (exception);
+			Assert.Equal (textToReplace, tv.Text);
 		}
 	}
 }

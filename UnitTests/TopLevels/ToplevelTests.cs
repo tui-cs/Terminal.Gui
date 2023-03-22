@@ -1364,5 +1364,90 @@ namespace Terminal.Gui.TopLevelTests {
            
  CTRL-N New", output);
 		}
+
+		[Fact, AutoInitShutdown]
+		public void Single_Smaller_Top_Will_Have_Cleaning_Trails_Chunk_On_Move ()
+		{
+			var dialog = new Dialog ("Single smaller Dialog") { Width = 30, Height = 10 };
+			dialog.Add (new Label (
+				"How should I've to react. Cleaning all chunk trails or setting the 'Cols' and 'Rows' to this dialog length?\n" +
+				"Cleaning is more easy to fix this.") {
+				X = Pos.Center (),
+				Y = Pos.Center (),
+				Width = Dim.Fill (),
+				Height = Dim.Fill (),
+				TextAlignment = TextAlignment.Centered,
+				VerticalTextAlignment = VerticalTextAlignment.Middle,
+				AutoSize = false
+			});
+
+			var rs = Application.Begin (dialog);
+
+			Assert.Null (Application.MouseGrabView);
+			Assert.Equal (new Rect (25, 7, 30, 10), dialog.Frame);
+			TestHelpers.AssertDriverContentsWithFrameAre (@"
+                         ┌ Single smaller Dialog ─────┐
+                         │ How should I've to react.  │
+                         │Cleaning all chunk trails or│
+                         │   setting the 'Cols' and   │
+                         │   'Rows' to this dialog    │
+                         │          length?           │
+                         │Cleaning is more easy to fix│
+                         │           this.            │
+                         │                            │
+                         └────────────────────────────┘", output);
+
+			ReflectionTools.InvokePrivate (
+				typeof (Application),
+				"ProcessMouseEvent",
+				new MouseEvent () {
+					X = 25,
+					Y = 7,
+					Flags = MouseFlags.Button1Pressed
+				});
+
+			var firstIteration = false;
+			Application.RunMainLoopIteration (ref rs, true, ref firstIteration); Assert.Equal (dialog, Application.MouseGrabView);
+
+			Assert.Equal (new Rect (25, 7, 30, 10), dialog.Frame);
+			TestHelpers.AssertDriverContentsWithFrameAre (@"
+                         ┌ Single smaller Dialog ─────┐
+                         │ How should I've to react.  │
+                         │Cleaning all chunk trails or│
+                         │   setting the 'Cols' and   │
+                         │   'Rows' to this dialog    │
+                         │          length?           │
+                         │Cleaning is more easy to fix│
+                         │           this.            │
+                         │                            │
+                         └────────────────────────────┘", output);
+
+			ReflectionTools.InvokePrivate (
+				typeof (Application),
+				"ProcessMouseEvent",
+				new MouseEvent () {
+					X = 20,
+					Y = 10,
+					Flags = MouseFlags.Button1Pressed | MouseFlags.ReportMousePosition
+				});
+
+			firstIteration = false;
+			Application.RunMainLoopIteration (ref rs, true, ref firstIteration);
+			Assert.Equal (dialog, Application.MouseGrabView);
+			Assert.Equal (new Rect (20, 10, 30, 10), dialog.Frame);
+			TestHelpers.AssertDriverContentsWithFrameAre (@"
+                    ┌ Single smaller Dialog ─────┐
+                    │ How should I've to react.  │
+                    │Cleaning all chunk trails or│
+                    │   setting the 'Cols' and   │
+                    │   'Rows' to this dialog    │
+                    │          length?           │
+                    │Cleaning is more easy to fix│
+                    │           this.            │
+                    │                            │
+                    └────────────────────────────┘", output);
+
+			Application.End (rs);
+		}
 	}
 }
