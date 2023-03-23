@@ -17,9 +17,8 @@ namespace Terminal.Gui {
 	public class ComboBox : View {
 
 		private class ComboListView : ListView {
-			private int highlighted = -1;
+			private int highlighted;
 			private ComboBox container;
-			private bool hideDropdownListOnClick;
 
 			public ComboListView (ComboBox container, bool hideDropdownListOnClick)
 			{
@@ -38,17 +37,12 @@ namespace Terminal.Gui {
 
 			private void Initialize (ComboBox container, bool hideDropdownListOnClick)
 			{
-				if (container == null)
-					throw new ArgumentNullException ("ComboBox container cannot be null.", nameof (container));
-
-				this.container = container;
+				this.container = container ?? throw new ArgumentNullException ("ComboBox container cannot be null.", nameof (container));
 				HideDropdownListOnClick = hideDropdownListOnClick;
+				WantMousePositionReports = true;
 			}
 
-			public bool HideDropdownListOnClick {
-				get => hideDropdownListOnClick;
-				set => hideDropdownListOnClick = WantMousePositionReports = value;
-			}
+			public bool HideDropdownListOnClick { get; set; }
 
 			public override bool MouseEvent (MouseEvent me)
 			{
@@ -60,10 +54,7 @@ namespace Terminal.Gui {
 						View = me.View
 					};
 					if (container.MouseEvent (newXY)) {
-						if (me.View == container.search) {
-							return false;
-						}
-						return true;
+						return me.View != container.search;
 					}
 				}
 
@@ -96,10 +87,15 @@ namespace Terminal.Gui {
 
 			private bool IsListViewPositionValid (MouseEvent me)
 			{
-				if (me.X >= 0 && me.X < Frame.Width && me.Y >= 0 && me.Y < Frame.Height) {
-					return true;
+				return me.X >= 0 && me.X < Frame.Width && me.Y >= 0 && me.Y < Frame.Height;
+			}
+
+			public override bool ProcessKey (KeyEvent kb)
+			{
+				if (kb.Key == Key.Esc) {
+					return container.ProcessKey (kb);
 				}
-				return false;
+				return base.ProcessKey (kb);
 			}
 
 			public override void Redraw (Rect bounds)
@@ -109,21 +105,20 @@ namespace Terminal.Gui {
 				Move (0, 0);
 				var f = Frame;
 				var item = TopItem;
-				bool focused = HasFocus;
 				int col = AllowsMarking ? 2 : 0;
 				int start = LeftItem;
 
 				for (int row = 0; row < f.Height; row++, item++) {
-					bool isSelected = item == container.SelectedItem;
-					bool isHighlighted = hideDropdownListOnClick && item == highlighted;
+					bool isSelected = item == container.GetOpenSelectItem (item);
+					bool isHighlighted = item == highlighted;
 
 					Attribute newcolor;
-					if (isHighlighted || (isSelected && !hideDropdownListOnClick)) {
-						newcolor = focused ? ColorScheme.Focus : ColorScheme.HotNormal;
-					} else if (isSelected && hideDropdownListOnClick) {
-						newcolor = focused ? ColorScheme.HotFocus : ColorScheme.HotNormal;
+					if (isHighlighted) {
+						newcolor = new Attribute (ColorScheme.Focus.Background, ColorScheme.Focus.Foreground);
+					} else if (isSelected) {
+						newcolor = ColorScheme.HotFocus;
 					} else {
-						newcolor = focused ? GetNormalColor () : GetNormalColor ();
+						newcolor = GetFocusColor ();
 					}
 
 					if (newcolor != current) {
@@ -153,25 +148,21 @@ namespace Terminal.Gui {
 
 			public override bool OnEnter (View view)
 			{
-				if (hideDropdownListOnClick) {
-					highlighted = container.SelectedItem;
-					Application.GrabMouse (this);
-				}
+				highlighted = SelectedItem;
+				Application.GrabMouse (this);
 
 				return base.OnEnter (view);
 			}
 
 			public override bool OnLeave (View view)
 			{
-				if (hideDropdownListOnClick) {
-					highlighted = container.SelectedItem;
-					if (container.IsShow) {
-						container.isShow = false;
-						container.HideList ();
-					}
-					if (Application.MouseGrabView == this) {
-						Application.UngrabMouse ();
-					}
+				highlighted = container.SelectedItem;
+				if (container.IsShow) {
+					container.isShow = false;
+					container.HideList ();
+				}
+				if (Application.MouseGrabView == this) {
+					Application.UngrabMouse ();
 				}
 
 				return base.OnLeave (view);
@@ -201,10 +192,10 @@ namespace Terminal.Gui {
 				source = value;
 
 				// Only need to refresh list if its been added to a container view
-				if (SuperView != null && SuperView.Subviews.Contains (this)) {
+				if (SuperView?.Subviews.Contains (this) == true) {
 					SelectedItem = -1;
 					search.Text = "";
-					Search_Changed (this, new TextChangedEventArgs(""));
+					Search_Changed (this, new TextChangedEventArgs (""));
 					SetNeedsDisplay ();
 				}
 			}
@@ -253,7 +244,6 @@ namespace Terminal.Gui {
 		readonly ComboListView listview;
 		bool autoHide = true;
 		int minimumHeight = 2;
-		private int savedHeight;
 
 		/// <summary>
 		/// Public constructor
@@ -309,17 +299,23 @@ namespace Terminal.Gui {
 			}
 
 			search.TextChanged += Search_Changed;
+			search.KeyPress += Search_KeyPress;
 
 			listview.Y = Pos.Bottom (search);
 			listview.OpenSelectedItem += (object sender, ListViewItemEventArgs a) => Selected ();
+			listview.SelectedItemChanged += (object sender, ListViewItemEventArgs a) => SelectedChanged ();
 
 			this.Add (search, listview);
 
 			// On resize
 			LayoutComplete += (object sender, LayoutEventArgs a) => {
-				if ((!autoHide && Bounds.Width > 0 && search.Frame.Width != Bounds.Width) ||
-				    (autoHide && Bounds.Width > 0 && search.Frame.Width != Bounds.Width - 1)) {
-
+				if (!autoHide) {
+					search.Width = Dim.Fill ();
+					listview.Width = Dim.Fill ();
+					listview.Height = Dim.Fill ();
+					search.SetRelativeLayout (Bounds);
+					listview.SetRelativeLayout (Bounds);
+				} else if (autoHide && Bounds.Width > 0 && search.Frame.Width != Bounds.Width - 1) {
 					search.Width = listview.Width = autoHide ? Bounds.Width - 1 : Bounds.Width;
 					listview.Height = CalculatetHeight ();
 					search.SetRelativeLayout (Bounds);
@@ -327,31 +323,21 @@ namespace Terminal.Gui {
 				}
 			};
 
-			listview.SelectedItemChanged += (object sender, ListViewItemEventArgs e) => {
-
-				if (!HideDropdownListOnClick && searchset.Count > 0) {
-					SetValue (searchset [listview.SelectedItem]);
-				}
-			};
-
-			Added += (s,  e) => {
+			Added += (s, e) => {
 
 				// Determine if this view is hosted inside a dialog and is the only control
 				for (View view = this.SuperView; view != null; view = view.SuperView) {
-					if (view is Dialog && SuperView != null && SuperView.Subviews.Count == 1 && SuperView.Subviews [0] == this) {
+					if (view is Dialog && SuperView?.Subviews.Count == 1 && SuperView.Subviews [0] == this) {
 						autoHide = false;
+						this.Width = Dim.Fill ();
+						this.Height = Dim.Fill ();
 						break;
 					}
 				}
 
-				savedHeight = Bounds.Height;
-				if (hideDropdownListOnClick) {
-					Height = 1;
-				}
-
 				SetNeedsLayout ();
 				SetNeedsDisplay ();
-				Search_Changed (this, new TextChangedEventArgs( Text));
+				Search_Changed (this, new TextChangedEventArgs (Text));
 			};
 
 			// Things this view knows how to do
@@ -384,7 +370,7 @@ namespace Terminal.Gui {
 		private bool isShow = false;
 		private int selectedItem = -1;
 		private int lastSelectedItem = -1;
-		private bool hideDropdownListOnClick;
+		private bool hideDropdownListOnClick = true;
 
 		/// <summary>
 		/// Gets the index of the currently selected item in the <see cref="Source"/>
@@ -393,14 +379,14 @@ namespace Terminal.Gui {
 		public int SelectedItem {
 			get => selectedItem;
 			set {
-				if (selectedItem != value && (value == -1
+				if ((selectedItem != value || text != search.Text) && (value == -1
 				    || (source != null && value > -1 && value < source.Count))) {
 
-					selectedItem = lastSelectedItem = value;
+					selectedItem = value;
 					if (selectedItem != -1) {
-						SetValue (source.ToList () [selectedItem].ToString (), true);
+						SetValue (source.ToList () [selectedItem].ToString ());
 					} else {
-						SetValue ("", true);
+						SetValue ("");
 					}
 					OnSelectedChanged ();
 				}
@@ -431,11 +417,6 @@ namespace Terminal.Gui {
 			get => search.ReadOnly;
 			set {
 				search.ReadOnly = value;
-				if (search.ReadOnly) {
-					if (search.ColorScheme != null) {
-						search.ColorScheme.Normal = search.ColorScheme.Focus;
-					}
-				}
 			}
 		}
 
@@ -473,15 +454,29 @@ namespace Terminal.Gui {
 				return true;
 			}
 
-			return false;
+			return base.MouseEvent (me);
 		}
 
 		private void FocusSelectedItem ()
 		{
-			listview.SelectedItem = SelectedItem > -1 ? SelectedItem : 0;
+			listview.SelectedItem = Math.Max (GetOpenSelectItem (SelectedItem), 0);
 			listview.TabStop = true;
 			listview.SetFocus ();
 			OnExpanded ();
+		}
+
+		private int GetOpenSelectItem (int item)
+		{
+			if (lastSelectedItem > -1 && Source?.Count > 0 && Source?.Count > item
+				&& searchset?.Count > 0 && searchset?.Count > item) {
+
+				var openItem = Source.ToList () [lastSelectedItem].ToString ();
+				var searchsetItem = searchset [item].ToString ();
+				if (openItem == searchsetItem) {
+					return item;
+				}
+			}
+			return -1;
 		}
 
 		/// <summary>
@@ -515,10 +510,11 @@ namespace Terminal.Gui {
 		///<inheritdoc/>
 		public override bool OnLeave (View view)
 		{
-			if (source?.Count > 0 && selectedItem > -1 && selectedItem < source.Count - 1
-			    && text != source.ToList () [selectedItem].ToString ()) {
-
-				SetValue (source.ToList () [selectedItem].ToString ());
+			if (IsValidSelection ()) {
+				SelectedItem = lastSelectedItem = GetSelectedItemFromSource (search.Text);
+				OnOpenSelectedItem ();
+			} else if (source?.Count > 0 && lastSelectedItem > -1) {
+				SetValue (source.ToList () [lastSelectedItem].ToString ());
 			}
 			if (autoHide && isShow && view != this && view != search && view != listview) {
 				isShow = false;
@@ -589,19 +585,29 @@ namespace Terminal.Gui {
 
 		bool CancelSelected ()
 		{
-			search.SetFocus ();
+			if (!IsDirty ()) {
+				search.SetFocus ();
+				return false;
+			}
+			SelectedItem = lastSelectedItem;
 			if (ReadOnly || HideDropdownListOnClick) {
-				SelectedItem = lastSelectedItem;
-				if (SelectedItem > -1 && listview.Source?.Count > 0) {
-					search.Text = text = listview.Source.ToList () [SelectedItem].ToString ();
+				if (SelectedItem > -1) {
+					SetSearchSet ();
+					search.Text = text = Source.ToList () [lastSelectedItem].ToString ();
+					search.CursorPosition = 0;
 				}
 			} else if (!ReadOnly) {
 				search.Text = text = "";
-				selectedItem = lastSelectedItem;
-				OnSelectedChanged ();
 			}
+			search.SetFocus ();
 			Collapse ();
 			return true;
+		}
+
+		bool IsDirty ()
+		{
+			return isShow || (lastSelectedItem >= -1 && !ustring.IsNullOrEmpty (search.Text)
+				&& selectedItem != lastSelectedItem);
 		}
 
 		bool? MoveEnd ()
@@ -664,6 +670,7 @@ namespace Terminal.Gui {
 					listview.TabStop = true;
 					listview.SetFocus ();
 					SetValue (searchset [listview.SelectedItem]);
+					SelectedItem = GetSelectedItemFromSource (this.text);
 				} else {
 					listview.TabStop = false;
 					SuperView?.FocusNext ();
@@ -713,8 +720,8 @@ namespace Terminal.Gui {
 				return false;
 			}
 
-			isShow = false;
 			HideList ();
+			isShow = false;
 			return true;
 		}
 
@@ -748,21 +755,16 @@ namespace Terminal.Gui {
 			}
 		}
 
-		private void SetValue (object text, bool isFromSelectedItem = false)
+		private void SetValue (object text)
 		{
 			search.TextChanged -= Search_Changed;
 			this.text = search.Text = text.ToString ();
 			search.CursorPosition = 0;
 			search.TextChanged += Search_Changed;
-			if (!isFromSelectedItem) {
-				selectedItem = GetSelectedItemFromSource (this.text);
-				OnSelectedChanged ();
-			}
 		}
 
 		private void Selected ()
 		{
-			isShow = false;
 			listview.TabStop = false;
 
 			if (listview.Source.Count == 0 || (searchset?.Count ?? 0) == 0) {
@@ -770,13 +772,41 @@ namespace Terminal.Gui {
 				HideList ();
 				return;
 			}
-
-			SetValue (searchset [listview.SelectedItem]);
+			if (!IsValidSelection ()) {
+				SelectedItem = lastSelectedItem;
+			} else {
+				SetValue (searchset [listview.SelectedItem]);
+			}
 			search.CursorPosition = search.Text.RuneCount;
-			Search_Changed (this, new TextChangedEventArgs(search.Text));
+			SelectedItem = GetSelectedItemFromSource (this.text);
 			OnOpenSelectedItem ();
 			Reset (keepSearchText: true);
-			HideList ();
+			if (autoHide) {
+				HideList ();
+				isShow = false;
+			}
+		}
+
+		private bool IsValidSelection ()
+		{
+			if (source?.Count > 0 && searchset?.Count > 0 && !ustring.IsNullOrEmpty (search.Text) && listview.SelectedItem > -1) {
+				var srcList = source.ToList ();
+				var srcItem = GetSelectedItemFromSource (searchset [listview.SelectedItem].ToString ());
+				var scrText = srcList [srcItem].ToString ();
+				if (string.Equals (scrText, search.Text.ToString (), StringComparison.InvariantCultureIgnoreCase)) {
+					return true;
+				}
+			}
+			return false;
+		}
+
+		private void SelectedChanged ()
+		{
+			if (searchset?.Count > 0) {
+				SetValue (searchset [listview.SelectedItem]);
+				search.CursorPosition = search.Text.RuneCount;
+				SelectedItem = GetSelectedItemFromSource (this.text);
+			}
 		}
 
 		private int GetSelectedItemFromSource (ustring value)
@@ -804,7 +834,9 @@ namespace Terminal.Gui {
 			ResetSearchSet ();
 
 			listview.SetSource (searchset);
-			listview.Height = CalculatetHeight ();
+			if (autoHide) {
+				listview.Height = CalculatetHeight ();
+			}
 
 			if (Subviews.Count > 0) {
 				search.SetFocus ();
@@ -829,6 +861,16 @@ namespace Terminal.Gui {
 			}
 		}
 
+		private void Search_KeyPress (object sender, KeyEventEventArgs e)
+		{
+			if (e.KeyEvent.Key == Key.Esc) {
+				e.Handled = ProcessKey (e.KeyEvent);
+			} else if (!ReadOnly && !e.KeyEvent.IsCtrl && !e.KeyEvent.IsAlt && char.IsLetter ((char)e.KeyEvent.KeyValue)) {
+				PopulateSearchset (((char)e.KeyEvent.KeyValue).ToString ());
+				ShowList ();
+			}
+		}
+
 		private void Search_Changed (object sender, TextChangedEventArgs e)
 		{
 			if (source == null) { // Object initialization		
@@ -838,18 +880,22 @@ namespace Terminal.Gui {
 			if (ustring.IsNullOrEmpty (search.Text) && ustring.IsNullOrEmpty (e.OldValue)) {
 				ResetSearchSet ();
 			} else if (search.Text != e.OldValue) {
-				isShow = true;
-				ResetSearchSet (noCopy: true);
-
-				foreach (var item in source.ToList ()) { // Iterate to preserver object type and force deep copy
-					if (item.ToString ().StartsWith (search.Text.ToString (), StringComparison.CurrentCultureIgnoreCase)) {
-						searchset.Add (item);
-					}
-				}
+				PopulateSearchset (search.Text.ToString ());
 			}
 
-			if (!hideDropdownListOnClick) {
-				ShowList ();
+			ShowList ();
+		}
+
+		private void PopulateSearchset (string searchText)
+		{
+			isShow = true;
+			ResetSearchSet (noCopy: true);
+
+			// Iterate to preserver object type and force deep copy
+			foreach (var item in source.ToList ()) {
+				if (item.ToString ().StartsWith (searchText, StringComparison.CurrentCultureIgnoreCase)) {
+					searchset.Add (item);
+				}
 			}
 		}
 
@@ -861,11 +907,11 @@ namespace Terminal.Gui {
 		private void ShowList ()
 		{
 			listview.SetSource (searchset);
-			listview.Clear (); // Ensure list shrinks in Dialog as you type
-			if (hideDropdownListOnClick) {
-				Height = savedHeight;
+			// Ensure list shrinks as you type
+			listview.Clear ();
+			if (autoHide) {
+				listview.Height = CalculatetHeight ();
 			}
-			listview.Height = CalculatetHeight ();
 			this.SuperView?.BringSubviewToFront (this);
 		}
 
@@ -880,14 +926,10 @@ namespace Terminal.Gui {
 				OnOpenSelectedItem ();
 			}
 			var rect = listview.ViewToScreen (listview.Bounds);
-			Reset (SelectedItem > -1);
+			Reset (lastSelectedItem > -1);
 			listview.Clear (rect);
 			listview.TabStop = false;
-			if (hideDropdownListOnClick) {
-				savedHeight = Bounds.Height;
-				Height = 1;
-				listview.Height = 0;
-			}
+			listview.Height = 0;
 			SuperView?.SendSubviewToBack (this);
 			SuperView?.SetNeedsDisplay (rect);
 			OnCollapsed ();

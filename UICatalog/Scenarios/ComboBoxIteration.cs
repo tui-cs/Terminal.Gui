@@ -38,15 +38,15 @@ namespace UICatalog.Scenarios {
 			};
 			comboBox.SetSource (items);
 
-			listview.SelectedItemChanged += (s,e) => {
+			listview.SelectedItemChanged += (s, e) => {
 				lbListView.Text = items [e.Item];
 				comboBox.SelectedItem = e.Item;
 			};
 
-			comboBox.SelectedItemChanged += (object sender, ListViewItemEventArgs text) => {
-				if (text.Item != -1) {
-					lbComboBox.Text = text.Value.ToString ();
-					listview.SelectedItem = text.Item;
+			comboBox.OpenSelectedItem += (object sender, ListViewItemEventArgs e) => {
+				if (e.Item != -1) {
+					lbComboBox.Text = e.Value.ToString ();
+					listview.SelectedItem = e.Item;
 				}
 			};
 			Win.Add (lbComboBox, comboBox);
@@ -55,7 +55,7 @@ namespace UICatalog.Scenarios {
 			var btnTwo = new Button ("Two") {
 				X = Pos.Right (comboBox) + 1,
 			};
-			btnTwo.Clicked += (s,e) => {
+			btnTwo.Clicked += (s, e) => {
 				items = new List<string> () { "one", "two" };
 				comboBox.SetSource (items);
 				listview.SetSource (items);
@@ -67,7 +67,7 @@ namespace UICatalog.Scenarios {
 				X = Pos.Right (comboBox) + 1,
 				Y = Pos.Top (comboBox)
 			};
-			btnThree.Clicked += (s,e) => {
+			btnThree.Clicked += (s, e) => {
 				items = new List<string> () { "one", "two", "three" };
 				comboBox.SetSource (items);
 				listview.SetSource (items);
@@ -83,6 +83,50 @@ namespace UICatalog.Scenarios {
 				HideDropdownListOnClick = true
 			};
 			Win.Add (comboBox2);
+
+			var ckbReadOnlyComboBox = new CheckBox ("ComboBox read only") {
+				X = Pos.Center (),
+				Y = Pos.Bottom (btnThree) + 7,
+			};
+			ckbReadOnlyComboBox.Toggled += (s, e) => comboBox.ReadOnly = comboBox2.ReadOnly = (bool)e.NewValue;
+			Win.Add (ckbReadOnlyComboBox);
+
+			var btnComboBoxInDialog = new Button ("ComboBox In Dialog") {
+				X = Pos.Center (),
+				Y = Pos.Bottom (btnThree) + 9,
+			};
+			var lblCurrentItem = new Label () {
+				X = Pos.Center (),
+				Y = Pos.Bottom (btnThree) + 11,
+			};
+			btnComboBoxInDialog.Clicked += (s, e) => {
+				var dialog = new Dialog ("Dialog", 20, 8);
+				var cb = new ComboBox (new List<string> { "One", "Two", "Three" }) {
+					HideDropdownListOnClick = false
+				};
+				cb.OpenSelectedItem += (s, e) => {
+					Application.RequestStop ();
+				};
+				dialog.Add (cb);
+
+				Application.Run (dialog);
+
+				lblCurrentItem.Text = $"Dialog: {cb.Text}";
+			};
+			Win.Add (btnComboBoxInDialog, lblCurrentItem);
+
+			var win = new Window ("ComboBox Inside Window") {
+				Y = Pos.Bottom (ckbReadOnlyComboBox) + 4,
+				Width = 40,
+				Height = 3
+			};
+			var comboBox3 = new ComboBox (new List<string> { "First", "Second", "Third" }) {
+				Width = Dim.Fill (),
+				Height = 3,
+				HideDropdownListOnClick = true
+			};
+			win.Add (comboBox3);
+			Win.Add (win);
 		}
 	}
 }
