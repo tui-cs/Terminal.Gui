@@ -74,9 +74,9 @@ namespace Terminal.Gui {
 				} else if (HideDropdownListOnClick && isListViewPositionValid && me.Flags == MouseFlags.Button1Clicked) {
 					OnOpenSelectedItem ();
 					return true;
-				} else if (HideDropdownListOnClick && me.Flags == MouseFlags.ReportMousePosition) {
+				} else if (me.Flags == MouseFlags.ReportMousePosition) {
 					if (isListViewPositionValid) {
-						highlighted = Math.Min (TopItem + me.Y, Source.Count);
+						highlighted = Math.Min (TopItem + me.Y, Source.Count - 1);
 						SetNeedsDisplay ();
 					}
 					return true;
@@ -510,7 +510,7 @@ namespace Terminal.Gui {
 		///<inheritdoc/>
 		public override bool OnLeave (View view)
 		{
-			if (IsValidSelection ()) {
+			if (IsDirty () && IsValidSelection ()) {
 				SelectedItem = lastSelectedItem = GetSelectedItemFromSource (search.Text);
 				OnOpenSelectedItem ();
 			} else if (source?.Count > 0 && lastSelectedItem > -1) {
