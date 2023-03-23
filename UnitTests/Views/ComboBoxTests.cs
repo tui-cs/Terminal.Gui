@@ -1441,6 +1441,65 @@ One  ▼  First  ▼
                               │                  │
                               └──────────────────┘", output);
 
+			Assert.True (cb.ProcessKey (new KeyEvent (Key.Esc, new KeyModifiers ())));
+			Assert.True (cb.ProcessKey (new KeyEvent (Key.CursorDown, new KeyModifiers ())));
+			var attributes = new Attribute [] {
+				// 0
+				new Attribute(Color.Black, Color.Black),
+				// 1
+				Application.Top.ColorScheme.Normal,
+				// 2
+				cb.Subviews [0].ColorScheme.Focus,
+				// 3
+				new Attribute (cb.Subviews [1].ColorScheme.Focus.Background, cb.Subviews [1].ColorScheme.Focus.Foreground),
+			};
+
+			// Highlighted three
+			ReflectionTools.InvokePrivate (
+				typeof (Application),
+				"ProcessMouseEvent",
+				new MouseEvent () {
+					X = 33,
+					Y = 12,
+					Flags = MouseFlags.ReportMousePosition
+				});
+
+			Assert.Equal (cb.Subviews [1], Application.MouseGrabView);
+			Application.Top.Redraw (Application.Top.Bounds);
+			var expectedColors = @"
+000000000000000000000000000000000000000000000000000
+000000000000000000000000000000000000000000000000000
+000000000000000000000000000000000000000000000000000
+000000000000000000000000000000000000000000000000000
+000000000000000000000000000000000000000000000000000
+000000000000000000000000000000000000000000000000000
+000000000000000000000000000000000000000000000000000
+000000000000000000000000000000000000000000000000000
+000000000000000000000000000000111111111111111111110
+000000000000000000000000000000122222222222222222210
+000000000000000000000000000000111111111111111111110
+000000000000000000000000000000111111111111111111110
+000000000000000000000000000000133333333333333333310
+000000000000000000000000000000111111111111111111110
+000000000000000000000000000000111111111111111111110
+000000000000000000000000000000111111111111111111110
+000000000000000000000000000000000000000000000000000";
+			TestHelpers.AssertDriverColorsAre (expectedColors, attributes);
+
+			// Mouse beyond last item highlighted the last item which is three
+			ReflectionTools.InvokePrivate (
+				typeof (Application),
+				"ProcessMouseEvent",
+				new MouseEvent () {
+					X = 33,
+					Y = 13,
+					Flags = MouseFlags.ReportMousePosition
+				});
+
+			Assert.Equal (cb.Subviews [1], Application.MouseGrabView);
+			Application.Top.Redraw (Application.Top.Bounds);
+			TestHelpers.AssertDriverColorsAre (expectedColors, attributes);
+
 			Application.End (rs);
 		}
 	}

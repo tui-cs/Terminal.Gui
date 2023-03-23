@@ -309,13 +309,7 @@ namespace Terminal.Gui {
 
 			// On resize
 			LayoutComplete += (object sender, LayoutEventArgs a) => {
-				if (!autoHide) {
-					search.Width = Dim.Fill ();
-					listview.Width = Dim.Fill ();
-					listview.Height = Dim.Fill ();
-					search.SetRelativeLayout (Bounds);
-					listview.SetRelativeLayout (Bounds);
-				} else if (autoHide && Bounds.Width > 0 && search.Frame.Width != Bounds.Width - 1) {
+				if (autoHide && Bounds.Width > 0 && search.Frame.Width != Bounds.Width - 1) {
 					search.Width = listview.Width = autoHide ? Bounds.Width - 1 : Bounds.Width;
 					listview.Height = CalculatetHeight ();
 					search.SetRelativeLayout (Bounds);
@@ -331,6 +325,9 @@ namespace Terminal.Gui {
 						autoHide = false;
 						this.Width = Dim.Fill ();
 						this.Height = Dim.Fill ();
+						search.Width = Dim.Fill ();
+						listview.Width = Dim.Fill ();
+						listview.Height = Dim.Fill ();
 						break;
 					}
 				}
@@ -929,7 +926,9 @@ namespace Terminal.Gui {
 			Reset (lastSelectedItem > -1);
 			listview.Clear (rect);
 			listview.TabStop = false;
-			listview.Height = 0;
+			if (autoHide) {
+				listview.Height = 0;
+			}
 			SuperView?.SendSubviewToBack (this);
 			SuperView?.SetNeedsDisplay (rect);
 			OnCollapsed ();
