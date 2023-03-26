@@ -1677,7 +1677,9 @@ namespace Terminal.Gui {
 			if (focused?.hasFocus == true && focused == view)
 				return;
 			if (focused?.hasFocus == true && focused?.SuperView == view) {
-				view.hasFocus = true;
+				if (!view.hasFocus) {
+					view.hasFocus = true;
+				}
 				return;
 			}
 			// Make sure that this view is a subview
