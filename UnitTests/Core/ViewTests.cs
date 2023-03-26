@@ -238,7 +238,7 @@ namespace Terminal.Gui.CoreTests {
 			var v = new View (new Rect (0, 0, 10, 24));
 			var t = new View ();
 
-			v.Added += (s,e) => {
+			v.Added += (s, e) => {
 				Assert.Same (v.SuperView, e.Parent);
 				Assert.Same (t, e.Parent);
 				Assert.Same (v, e.Child);
@@ -658,7 +658,7 @@ namespace Terminal.Gui.CoreTests {
 
 			int tc = 0, wc = 0, v1c = 0, v2c = 0, sv1c = 0;
 
-			w.Added += (s,e) => {
+			w.Added += (s, e) => {
 				Assert.Equal (e.Parent.Frame.Width, w.Frame.Width);
 				Assert.Equal (e.Parent.Frame.Height, w.Frame.Height);
 			};
@@ -1232,10 +1232,10 @@ namespace Terminal.Gui.CoreTests {
 			Assert.Equal (80, view.Bounds.Width);
 			Assert.Equal (25, view.Bounds.Height);
 			bool layoutStarted = false;
-			view.LayoutStarted += (s,e) => layoutStarted = true;
+			view.LayoutStarted += (s, e) => layoutStarted = true;
 			view.OnLayoutStarted (null);
 			Assert.True (layoutStarted);
-			view.LayoutComplete += (s,e) => layoutStarted = false;
+			view.LayoutComplete += (s, e) => layoutStarted = false;
 			view.OnLayoutComplete (null);
 			Assert.False (layoutStarted);
 			view.X = Pos.Center () - 41;
@@ -1252,7 +1252,7 @@ namespace Terminal.Gui.CoreTests {
 		{
 			var wasClicked = false;
 			var view = new Button ("Click Me");
-			view.Clicked += (s,e) => wasClicked = !wasClicked;
+			view.Clicked += (s, e) => wasClicked = !wasClicked;
 			Application.Top.Add (view);
 
 			view.ProcessKey (new KeyEvent (Key.Enter, null));
@@ -1281,7 +1281,7 @@ namespace Terminal.Gui.CoreTests {
 		{
 			var wasClicked = false;
 			var button = new Button ("Click Me");
-			button.Clicked += (s,e) => wasClicked = !wasClicked;
+			button.Clicked += (s, e) => wasClicked = !wasClicked;
 			var win = new Window () { Width = Dim.Fill (), Height = Dim.Fill () };
 			win.Add (button);
 			Application.Top.Add (win);
@@ -1452,11 +1452,11 @@ namespace Terminal.Gui.CoreTests {
 		[AutoInitShutdown]
 		public void CanFocus_Sets_To_False_On_Single_View_Focus_View_On_Another_Toplevel ()
 		{
-			var view1 = new View () { Width = 10, Height = 1, CanFocus = true };
-			var win1 = new Window () { Width = Dim.Percent (50), Height = Dim.Fill () };
+			var view1 = new View () { Id = "view1", Width = 10, Height = 1, CanFocus = true };
+			var win1 = new Window () { Id = "win1", Width = Dim.Percent (50), Height = Dim.Fill () };
 			win1.Add (view1);
-			var view2 = new View () { Width = 20, Height = 2, CanFocus = true };
-			var win2 = new Window () { X = Pos.Right (win1), Width = Dim.Fill (), Height = Dim.Fill () };
+			var view2 = new View () { Id = "view2", Width = 20, Height = 2, CanFocus = true };
+			var win2 = new Window () { Id = "win2", X = Pos.Right (win1), Width = Dim.Fill (), Height = Dim.Fill () };
 			win2.Add (view2);
 			Application.Top.Add (win1, win2);
 			Application.Begin (Application.Top);
@@ -1464,7 +1464,7 @@ namespace Terminal.Gui.CoreTests {
 			Assert.True (view1.CanFocus);
 			Assert.True (view1.HasFocus);
 			Assert.True (view2.CanFocus);
-			Assert.True (view2.HasFocus);
+			Assert.False (view2.HasFocus);
 
 			view1.CanFocus = false;
 			Assert.False (view1.CanFocus);
@@ -1477,12 +1477,12 @@ namespace Terminal.Gui.CoreTests {
 		[AutoInitShutdown]
 		public void CanFocus_Sets_To_False_With_Two_Views_Focus_Another_View_On_The_Same_Toplevel ()
 		{
-			var view1 = new View () { Width = 10, Height = 1, CanFocus = true };
-			var view12 = new View () { Y = 5, Width = 10, Height = 1, CanFocus = true };
-			var win1 = new Window () { Width = Dim.Percent (50), Height = Dim.Fill () };
+			var view1 = new View () { Id = "view1", Width = 10, Height = 1, CanFocus = true };
+			var view12 = new View () { Id = "view12", Y = 5, Width = 10, Height = 1, CanFocus = true };
+			var win1 = new Window () { Id = "win1", Width = Dim.Percent (50), Height = Dim.Fill () };
 			win1.Add (view1, view12);
-			var view2 = new View () { Width = 20, Height = 2, CanFocus = true };
-			var win2 = new Window () { X = Pos.Right (win1), Width = Dim.Fill (), Height = Dim.Fill () };
+			var view2 = new View () { Id = "view2", Width = 20, Height = 2, CanFocus = true };
+			var win2 = new Window () { Id = "win2", X = Pos.Right (win1), Width = Dim.Fill (), Height = Dim.Fill () };
 			win2.Add (view2);
 			Application.Top.Add (win1, win2);
 			Application.Begin (Application.Top);
@@ -1490,7 +1490,7 @@ namespace Terminal.Gui.CoreTests {
 			Assert.True (view1.CanFocus);
 			Assert.True (view1.HasFocus);
 			Assert.True (view2.CanFocus);
-			Assert.True (view2.HasFocus);
+			Assert.False (view2.HasFocus);
 
 			view1.CanFocus = false;
 			Assert.False (view1.CanFocus);
@@ -1503,11 +1503,11 @@ namespace Terminal.Gui.CoreTests {
 		[AutoInitShutdown]
 		public void CanFocus_Sets_To_False_On_Toplevel_Focus_View_On_Another_Toplevel ()
 		{
-			var view1 = new View () { Width = 10, Height = 1, CanFocus = true };
-			var win1 = new Window () { Width = Dim.Percent (50), Height = Dim.Fill () };
+			var view1 = new View () { Id = "view1", Width = 10, Height = 1, CanFocus = true };
+			var win1 = new Window () { Id = "win1", Width = Dim.Percent (50), Height = Dim.Fill () };
 			win1.Add (view1);
-			var view2 = new View () { Width = 20, Height = 2, CanFocus = true };
-			var win2 = new Window () { X = Pos.Right (win1), Width = Dim.Fill (), Height = Dim.Fill () };
+			var view2 = new View () { Id = "view2", Width = 20, Height = 2, CanFocus = true };
+			var win2 = new Window () { Id = "win2", X = Pos.Right (win1), Width = Dim.Fill (), Height = Dim.Fill () };
 			win2.Add (view2);
 			Application.Top.Add (win1, win2);
 			Application.Begin (Application.Top);
@@ -1515,7 +1515,7 @@ namespace Terminal.Gui.CoreTests {
 			Assert.True (view1.CanFocus);
 			Assert.True (view1.HasFocus);
 			Assert.True (view2.CanFocus);
-			Assert.True (view2.HasFocus);
+			Assert.False (view2.HasFocus);
 
 			win1.CanFocus = false;
 			Assert.False (view1.CanFocus);
@@ -2025,7 +2025,7 @@ namespace Terminal.Gui.CoreTests {
 				Width = Dim.Fill (),
 				Height = Dim.Fill ()
 			};
-			view.DrawContent += (s,e) => {
+			view.DrawContent += (s, e) => {
 				view.DrawFrame (view.Bounds);
 				var savedClip = Application.Driver.Clip;
 				Application.Driver.Clip = new Rect (1, 1, view.Bounds.Width - 2, view.Bounds.Height - 2);
@@ -2073,7 +2073,7 @@ namespace Terminal.Gui.CoreTests {
 				Width = Dim.Fill (),
 				Height = Dim.Fill ()
 			};
-			view.DrawContent += (s,e) => {
+			view.DrawContent += (s, e) => {
 				view.DrawFrame (view.Bounds);
 				var savedClip = Application.Driver.Clip;
 				Application.Driver.Clip = new Rect (1, 1, view.Bounds.Width - 2, view.Bounds.Height - 2);
@@ -2268,7 +2268,7 @@ This is a tes
 			var tvCalled = false;
 
 			var view = new View ("View") { Width = 10, Height = 10 };
-			view.DrawContentComplete += (s,e) => viewCalled = true;
+			view.DrawContentComplete += (s, e) => viewCalled = true;
 			var tv = new TextView () { Y = 11, Width = 10, Height = 10 };
 			tv.DrawContentComplete += (s, e) => tvCalled = true;
 
@@ -2294,7 +2294,7 @@ This is a tes
 				e.Handled = true;
 				keyDown = true;
 			};
-			view.KeyPress += (s,e) => {
+			view.KeyPress += (s, e) => {
 				Assert.Equal (Key.a, e.KeyEvent.Key);
 				Assert.False (keyPress);
 				Assert.False (view.IsKeyPress);
@@ -2390,7 +2390,7 @@ This is a tes
 			var keyUp = false;
 
 			var view = new DerivedView ();
-			view.KeyDown += (s,e) => {
+			view.KeyDown += (s, e) => {
 				Assert.Equal (-1, e.KeyEvent.KeyValue);
 				Assert.Equal (shift, e.KeyEvent.IsShift);
 				Assert.Equal (alt, e.KeyEvent.IsAlt);
@@ -2441,15 +2441,15 @@ This is a tes
 			var view1 = new View { CanFocus = true };
 			var subView1 = new View { CanFocus = true };
 			var subView1subView1 = new View { CanFocus = true };
-			view1.Leave += (s,e) => {
+			view1.Leave += (s, e) => {
 				view1Leave = true;
 			};
-			subView1.Leave += (s,e) => {
+			subView1.Leave += (s, e) => {
 				subView1.Remove (subView1subView1);
 				subView1Leave = true;
 			};
 			view1.Add (subView1);
-			subView1subView1.Leave += (s,e) => {
+			subView1subView1.Leave += (s, e) => {
 				// This is never invoked
 				subView1subView1Leave = true;
 			};
@@ -2908,7 +2908,7 @@ At 0,0
 			Assert.Equal (new Rect (0, 0, 30, 1), label.NeedDisplay);
 			Assert.Equal (new Rect (0, 0, 13, 1), button.NeedDisplay);
 
-			top.LayoutComplete += (s,e) => {
+			top.LayoutComplete += (s, e) => {
 				Assert.Equal (new Rect (0, 0, 80, 25), top.NeedDisplay);
 			};
 

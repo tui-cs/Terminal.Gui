@@ -138,7 +138,7 @@ namespace Terminal.Gui.TopLevelTests {
 
 			string expectedOld = null;
 			string expected = null;
-			r.TitleChanged += (s,args) => {
+			r.TitleChanged += (s, args) => {
 				Assert.Equal (expectedOld, args.OldTitle);
 				Assert.Equal (r.Title, args.NewTitle);
 			};
@@ -235,7 +235,24 @@ namespace Terminal.Gui.TopLevelTests {
 │└────────────────┘│
 │ ^Q Quit │ ^O Open│
 └──────────────────┘", output);
+		}
 
+		[Fact, AutoInitShutdown]
+		public void OnCanFocusChanged_Only_Must_ContentView_Forces_SetFocus_After_IsInitialized_Is_True ()
+		{
+			var win1 = new Window () { Id = "win1", Width = 10, Height = 1 };
+			var view1 = new View () { Id = "view1", Width = Dim.Fill (), Height = Dim.Fill (), CanFocus = true };
+			var win2 = new Window () { Id = "win2", Y = 6, Width = 10, Height = 1 };
+			var view2 = new View () { Id = "view2", Width = Dim.Fill (), Height = Dim.Fill (), CanFocus = true };
+			win2.Add (view2);
+			win1.Add (view1, win2);
+
+			Application.Begin (win1);
+
+			Assert.True (win1.HasFocus);
+			Assert.True (view1.HasFocus);
+			Assert.False (win2.HasFocus);
+			Assert.False (view2.HasFocus);
 		}
 	}
 }

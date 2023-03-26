@@ -983,7 +983,7 @@ namespace Terminal.Gui {
 			}
 			SetNeedsLayout ();
 			SetNeedsDisplay ();
-      
+
 			OnAdded (new SuperViewChangedEventArgs (this, view));
 			if (IsInitialized && !view.IsInitialized) {
 				view.BeginInit ();
@@ -1676,7 +1676,10 @@ namespace Terminal.Gui {
 				return;
 			if (focused?.hasFocus == true && focused == view)
 				return;
-
+			if (focused?.hasFocus == true && focused?.SuperView == view) {
+				view.hasFocus = true;
+				return;
+			}
 			// Make sure that this view is a subview
 			View c;
 			for (c = view.container; c != null; c = c.container)
@@ -1694,7 +1697,11 @@ namespace Terminal.Gui {
 			focused.EnsureFocus ();
 
 			// Send focus upwards
-			SuperView?.SetFocus (this);
+			if (SuperView != null) {
+				SuperView.SetFocus (this);
+			} else {
+				SetFocus (this);
+			}
 		}
 
 		/// <summary>
