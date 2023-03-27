@@ -22,19 +22,24 @@ namespace Terminal.Gui.ViewTests {
 			var lv = new ListView ();
 			Assert.Null (lv.Source);
 			Assert.True (lv.CanFocus);
+			Assert.Equal (-1, lv.SelectedItem);
 
 			lv = new ListView (new List<string> () { "One", "Two", "Three" });
 			Assert.NotNull (lv.Source);
+			Assert.Equal (-1, lv.SelectedItem);
 
 			lv = new ListView (new NewListDataSource ());
 			Assert.NotNull (lv.Source);
+			Assert.Equal (-1, lv.SelectedItem);
 
 			lv = new ListView (new Rect (0, 1, 10, 20), new List<string> () { "One", "Two", "Three" });
 			Assert.NotNull (lv.Source);
+			Assert.Equal (-1, lv.SelectedItem);
 			Assert.Equal (new Rect (0, 1, 10, 20), lv.Frame);
 
 			lv = new ListView (new Rect (0, 1, 10, 20), new NewListDataSource ());
 			Assert.NotNull (lv.Source);
+			Assert.Equal (-1, lv.SelectedItem);
 			Assert.Equal (new Rect (0, 1, 10, 20), lv.Frame);
 		}
 
@@ -46,8 +51,8 @@ namespace Terminal.Gui.ViewTests {
 
 			Assert.NotNull (lv.Source);
 
-			// first item should be selected by default
-			Assert.Equal (0, lv.SelectedItem);
+			// first item should be deselected by default
+			Assert.Equal (-1, lv.SelectedItem);
 
 			// nothing is ticked
 			Assert.False (lv.Source.IsMarked (0));
@@ -59,6 +64,17 @@ namespace Terminal.Gui.ViewTests {
 			var ev = new KeyEvent (Key.Space | Key.ShiftMask, new KeyModifiers () { Shift = true });
 
 			// view should indicate that it has accepted and consumed the event
+			Assert.True (lv.ProcessKey (ev));
+
+			// first item should now be selected
+			Assert.Equal (0, lv.SelectedItem);
+
+			// none of the items should be ticked
+			Assert.False (lv.Source.IsMarked (0));
+			Assert.False (lv.Source.IsMarked (1));
+			Assert.False (lv.Source.IsMarked (2));
+
+			// Press key combo again
 			Assert.True (lv.ProcessKey (ev));
 
 			// second item should now be selected
@@ -109,8 +125,8 @@ namespace Terminal.Gui.ViewTests {
 
 			Assert.NotNull (lv.Source);
 
-			// first item should be selected by default
-			Assert.Equal (0, lv.SelectedItem);
+			// first item should be deselected by default
+			Assert.Equal (-1, lv.SelectedItem);
 
 			// bind shift down to move down twice in control
 			lv.AddKeyBinding (Key.CursorDown | Key.ShiftMask, Command.LineDown, Command.LineDown);
@@ -119,8 +135,8 @@ namespace Terminal.Gui.ViewTests {
 
 			Assert.True (lv.ProcessKey (ev), "The first time we move down 2 it should be possible");
 
-			// After moving down twice from One we should be at 'Three'
-			Assert.Equal (2, lv.SelectedItem);
+			// After moving down twice from -1 we should be at 'Two'
+			Assert.Equal (1, lv.SelectedItem);
 
 			// clear the items
 			lv.SetSource (null);
@@ -160,9 +176,9 @@ namespace Terminal.Gui.ViewTests {
 		{
 			List<string> source = new List<string> () { "One", "Two", "Three" };
 			ListView lv = new ListView (source) { Height = 2, AllowsMarking = true };
-			Assert.Equal (0, lv.SelectedItem);
+			Assert.Equal (-1, lv.SelectedItem);
 			Assert.True (lv.ProcessKey (new KeyEvent (Key.CursorDown, new KeyModifiers ())));
-			Assert.Equal (1, lv.SelectedItem);
+			Assert.Equal (0, lv.SelectedItem);
 			Assert.True (lv.ProcessKey (new KeyEvent (Key.CursorUp, new KeyModifiers ())));
 			Assert.Equal (0, lv.SelectedItem);
 			Assert.True (lv.ProcessKey (new KeyEvent (Key.PageDown, new KeyModifiers ())));
@@ -175,7 +191,7 @@ namespace Terminal.Gui.ViewTests {
 			Assert.True (lv.ProcessKey (new KeyEvent (Key.Space, new KeyModifiers ())));
 			Assert.True (lv.Source.IsMarked (lv.SelectedItem));
 			var opened = false;
-			lv.OpenSelectedItem += (s,_) => opened = true;
+			lv.OpenSelectedItem += (s, _) => opened = true;
 			Assert.True (lv.ProcessKey (new KeyEvent (Key.Enter, new KeyModifiers ())));
 			Assert.True (opened);
 			Assert.True (lv.ProcessKey (new KeyEvent (Key.End, new KeyModifiers ())));
@@ -191,7 +207,7 @@ namespace Terminal.Gui.ViewTests {
 			var rendered = false;
 			var source = new List<string> () { "one", "two", "three" };
 			var lv = new ListView () { Width = Dim.Fill (), Height = Dim.Fill () };
-			lv.RowRender += (s,_) => rendered = true;
+			lv.RowRender += (s, _) => rendered = true;
 			Application.Top.Add (lv);
 			Application.Begin (Application.Top);
 			Assert.False (rendered);
@@ -246,7 +262,7 @@ namespace Terminal.Gui.ViewTests {
 			((FakeDriver)Application.Driver).SetBufferSize (12, 12);
 			Application.Refresh ();
 
-			Assert.Equal (0, lv.SelectedItem);
+			Assert.Equal (-1, lv.SelectedItem);
 			TestHelpers.AssertDriverContentsWithFrameAre (@"
 ┌──────────┐
 │Line0     │
@@ -263,7 +279,7 @@ namespace Terminal.Gui.ViewTests {
 
 			Assert.True (lv.ScrollDown (10));
 			lv.Redraw (lv.Bounds);
-			Assert.Equal (0, lv.SelectedItem);
+			Assert.Equal (-1, lv.SelectedItem);
 			TestHelpers.AssertDriverContentsWithFrameAre (@"
 ┌──────────┐
 │Line10    │
@@ -280,9 +296,10 @@ namespace Terminal.Gui.ViewTests {
 
 			Assert.True (lv.MoveDown ());
 			lv.Redraw (lv.Bounds);
-			Assert.Equal (1, lv.SelectedItem);
+			Assert.Equal (0, lv.SelectedItem);
 			TestHelpers.AssertDriverContentsWithFrameAre (@"
 ┌──────────┐
+│Line0     │
 │Line1     │
 │Line2     │
 │Line3     │
@@ -292,7 +309,6 @@ namespace Terminal.Gui.ViewTests {
 │Line7     │
 │Line8     │
 │Line9     │
-│Line10    │
 └──────────┘", output);
 
 			Assert.True (lv.MoveEnd ());

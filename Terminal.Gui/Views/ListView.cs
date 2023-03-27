@@ -96,7 +96,7 @@ namespace Terminal.Gui {
 	/// </remarks>
 	public class ListView : View {
 		int top, left;
-		int selected;
+		int selected = -1;
 
 		IListDataSource source;
 		/// <summary>
@@ -112,7 +112,7 @@ namespace Terminal.Gui {
 				source = value;
 				KeystrokeNavigator.Collection = source?.ToList ()?.Cast<object> ();
 				top = 0;
-				selected = 0;
+				selected = -1;
 				lastSelectedItem = -1;
 				SetNeedsDisplay ();
 			}
@@ -207,7 +207,7 @@ namespace Terminal.Gui {
 
 				if (value < 0 || (source.Count > 0 && value >= source.Count))
 					throw new ArgumentException ("value");
-				top = value;
+				top = Math.Max (value, 0);
 				SetNeedsDisplay ();
 			}
 		}
@@ -485,7 +485,7 @@ namespace Terminal.Gui {
 				n = 0;
 			if (n != selected) {
 				selected = n;
-				top = selected;
+				top = Math.Max (selected, 0);
 				OnSelectedChanged ();
 				SetNeedsDisplay ();
 			}
@@ -506,7 +506,7 @@ namespace Terminal.Gui {
 			if (n != selected) {
 				selected = n;
 				if (source.Count >= Frame.Height)
-					top = selected;
+					top = Math.Max (selected, 0);
 				else
 					top = 0;
 				OnSelectedChanged ();
@@ -540,9 +540,7 @@ namespace Terminal.Gui {
 				if (selected >= top + Frame.Height) {
 					top++;
 				} else if (selected < top) {
-					top = selected;
-				} else if (selected < top) {
-					top = selected;
+					top = Math.Max (selected, 0);
 				}
 				OnSelectedChanged ();
 				SetNeedsDisplay ();
@@ -550,7 +548,7 @@ namespace Terminal.Gui {
 				OnSelectedChanged ();
 				SetNeedsDisplay ();
 			} else if (selected >= top + Frame.Height) {
-				top = source.Count - Frame.Height;
+				top = Math.Max (source.Count - Frame.Height, 0);
 				SetNeedsDisplay ();
 			}
 
@@ -581,14 +579,14 @@ namespace Terminal.Gui {
 					selected = Source.Count - 1;
 				}
 				if (selected < top) {
-					top = selected;
+					top = Math.Max (selected, 0);
 				} else if (selected > top + Frame.Height) {
 					top = Math.Max (selected - Frame.Height + 1, 0);
 				}
 				OnSelectedChanged ();
 				SetNeedsDisplay ();
 			} else if (selected < top) {
-				top = selected;
+				top = Math.Max (selected, 0);
 				SetNeedsDisplay ();
 			}
 			return true;
@@ -604,7 +602,7 @@ namespace Terminal.Gui {
 			if (source.Count > 0 && selected != source.Count - 1) {
 				selected = source.Count - 1;
 				if (top + selected > Frame.Height - 1) {
-					top = selected;
+					top = Math.Max (selected, 0);
 				}
 				OnSelectedChanged ();
 				SetNeedsDisplay ();
@@ -622,7 +620,7 @@ namespace Terminal.Gui {
 		{
 			if (selected != 0) {
 				selected = 0;
-				top = selected;
+				top = Math.Max (selected, 0);
 				OnSelectedChanged ();
 				SetNeedsDisplay ();
 			}
@@ -750,7 +748,7 @@ namespace Terminal.Gui {
 		{
 			SuperView?.LayoutSubviews ();
 			if (selected < top) {
-				top = selected;
+				top = Math.Max (selected, 0);
 			} else if (Frame.Height > 0 && selected >= top + Frame.Height) {
 				top = Math.Max (selected - Frame.Height + 1, 0);
 			}

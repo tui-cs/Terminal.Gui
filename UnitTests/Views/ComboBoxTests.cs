@@ -110,7 +110,8 @@ namespace Terminal.Gui.ViewTests {
 			Assert.True (cb.ProcessKey (new KeyEvent (Key.Enter, new KeyModifiers ())));
 			Assert.True (opened);
 			Assert.Equal ("Two", cb.Text);
-			cb.SetSource (null);
+            Assert.False(cb.IsShow);
+            cb.SetSource (null);
 			Assert.False (cb.ProcessKey (new KeyEvent (Key.Enter, new KeyModifiers ())));
 			Assert.True (cb.ProcessKey (new KeyEvent (Key.F4, new KeyModifiers ()))); // with no source also expand empty
 			Assert.True (cb.IsShow);

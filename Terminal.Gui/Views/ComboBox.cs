@@ -767,6 +767,7 @@ namespace Terminal.Gui {
 			if (listview.Source.Count == 0 || (searchset?.Count ?? 0) == 0) {
 				text = "";
 				HideList ();
+				isShow = false;
 				return;
 			}
 			if (!IsValidSelection ()) {

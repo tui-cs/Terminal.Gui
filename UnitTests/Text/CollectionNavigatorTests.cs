@@ -35,12 +35,21 @@ namespace Terminal.Gui.TextTests {
 		[Fact]
 		public void Cycling ()
 		{
+			// cycling with 'b'
 			var n = new CollectionNavigator (simpleStrings);
 			Assert.Equal (2, n.GetNextMatchingItem (0, 'b'));
 			Assert.Equal (3, n.GetNextMatchingItem (2, 'b'));
 
 			// if 4 (candle) is selected it should loop back to bat
 			Assert.Equal (2, n.GetNextMatchingItem (4, 'b'));
+
+			// cycling with 'a'
+			n = new CollectionNavigator (simpleStrings);
+			Assert.Equal (0, n.GetNextMatchingItem (-1, 'a'));
+			Assert.Equal (1, n.GetNextMatchingItem (0, 'a'));
+
+			// if 4 (candle) is selected it should loop back to appricot
+			Assert.Equal (0, n.GetNextMatchingItem (4, 'a'));
 		}
 
 		[Fact]
