@@ -663,7 +663,7 @@ namespace Terminal.Gui.ViewTests {
 		{
 			bool cancel = true;
 
-			_textField.TextChanging += (s,e) => {
+			_textField.TextChanging += (s, e) => {
 				Assert.Equal ("changing", e.NewText);
 				if (cancel) {
 					e.Cancel = true;
@@ -681,7 +681,7 @@ namespace Terminal.Gui.ViewTests {
 		[TextFieldTestsAutoInitShutdown]
 		public void TextChanged_Event ()
 		{
-			_textField.TextChanged += (s,e) => {
+			_textField.TextChanged += (s, e) => {
 				Assert.Equal ("TAB to jump between text fields.", e.OldValue);
 			};
 
@@ -781,7 +781,7 @@ namespace Terminal.Gui.ViewTests {
 			Assert.Equal ("A", tf.Text.ToString ());
 
 			// cancel the next keystroke
-			tf.TextChanging += (s,e) => e.Cancel = e.NewText == "AB";
+			tf.TextChanging += (s, e) => e.Cancel = e.NewText == "AB";
 			tf.ProcessKey (new KeyEvent (Key.B, new KeyModifiers ()));
 
 			// B was canceled so should just be A
@@ -1137,7 +1137,7 @@ namespace Terminal.Gui.ViewTests {
 			var oldText = "";
 			var tf = new TextField () { Width = 10, Text = "-1" };
 
-			tf.TextChanging += (s,e) => newText = e.NewText.ToString ();
+			tf.TextChanging += (s, e) => newText = e.NewText.ToString ();
 			tf.TextChanged += (s, e) => oldText = e.OldValue.ToString ();
 
 			Application.Top.Add (tf);
@@ -1439,6 +1439,17 @@ Les Miśerables", output);
 			Application.Refresh ();
 			TestHelpers.AssertDriverContentsWithFrameAre (@"
 ắ", output);
+		}
+
+		[Fact]
+		public void OnEnter_Does_Not_Throw_If_Not_IsInitialized_SetCursorVisibility ()
+		{
+			var top = new Toplevel ();
+			var tf = new TextField () { Width = 10 };
+			top.Add (tf);
+
+			var exception = Record.Exception (tf.SetFocus);
+			Assert.Null (exception);
 		}
 	}
 }

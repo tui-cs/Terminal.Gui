@@ -250,6 +250,16 @@ namespace Terminal.Gui {
 		}
 
 		///<inheritdoc/>
+		public override bool OnEnter (View view)
+		{
+			if (IsInitialized) {
+				Application.Driver.SetCursorVisibility (DesiredCursorVisibility);
+			}
+
+			return base.OnEnter (view);
+		}
+
+		///<inheritdoc/>
 		public override bool OnLeave (View view)
 		{
 			if (Application.MouseGrabView != null && Application.MouseGrabView == this)
@@ -308,7 +318,7 @@ namespace Terminal.Gui {
 						, HistoryText.LineStatus.Replaced);
 				}
 
-				TextChanged?.Invoke (this, new TextChangedEventArgs(oldText));
+				TextChanged?.Invoke (this, new TextChangedEventArgs (oldText));
 
 				if (point > text.Count) {
 					point = Math.Max (TextModel.DisplaySize (text, 0).size - 1, 0);
@@ -1267,14 +1277,6 @@ namespace Terminal.Gui {
 
 				desiredCursorVisibility = value;
 			}
-		}
-
-		///<inheritdoc/>
-		public override bool OnEnter (View view)
-		{
-			Application.Driver.SetCursorVisibility (DesiredCursorVisibility);
-
-			return base.OnEnter (view);
 		}
 
 		/// <summary>
