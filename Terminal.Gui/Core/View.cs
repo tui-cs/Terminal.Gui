@@ -1037,9 +1037,6 @@ namespace Terminal.Gui {
 			view.tabIndex = -1;
 			SetNeedsLayout ();
 			SetNeedsDisplay ();
-			if (subviews.Count < 1) {
-				CanFocus = false;
-			}
 			foreach (var v in subviews) {
 				if (v.Frame.IntersectsWith (touched))
 					view.SetNeedsDisplay ();

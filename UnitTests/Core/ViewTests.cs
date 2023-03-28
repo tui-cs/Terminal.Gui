@@ -2957,5 +2957,43 @@ At 0,0
 
 			TestHelpers.AssertDriverContentsWithFrameAre (expected, output);
 		}
+
+		[Fact, AutoInitShutdown]
+		public void Remove_Does_Not_Change_Focus ()
+		{
+			Assert.True (Application.Top.CanFocus);
+			Assert.False (Application.Top.HasFocus);
+
+			var container = new View () { Width = 10, Height = 10 };
+			var leave = false;
+			container.Leave += (s, e) => leave = true;
+			Assert.False (container.CanFocus);
+			var child = new View () { Width = Dim.Fill (), Height = Dim.Fill (), CanFocus = true };
+			container.Add (child);
+
+			Assert.True (container.CanFocus);
+			Assert.False (container.HasFocus);
+			Assert.True (child.CanFocus);
+			Assert.False (child.HasFocus);
+
+			Application.Top.Add (container);
+			Application.Begin (Application.Top);
+
+			Assert.True (Application.Top.CanFocus);
+			Assert.True (Application.Top.HasFocus);
+			Assert.True (container.CanFocus);
+			Assert.True (container.HasFocus);
+			Assert.True (child.CanFocus);
+			Assert.True (child.HasFocus);
+
+			container.Remove (child);
+			child.Dispose ();
+			child = null;
+			Assert.True (Application.Top.HasFocus);
+			Assert.True (container.CanFocus);
+			Assert.True (container.HasFocus);
+			Assert.Null (child);
+			Assert.False (leave);
+		}
 	}
 }
