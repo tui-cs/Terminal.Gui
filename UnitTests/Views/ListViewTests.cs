@@ -529,5 +529,15 @@ Item 4
 Item 5
 Item 6", output);
 		}
+
+		[Fact]
+		public void SelectedItem_Get_Set ()
+		{
+			var lv = new ListView (new List<string> { "One", "Two", "Three" });
+			Assert.Equal (-1, lv.SelectedItem);
+			Assert.Throws<ArgumentException> (() => lv.SelectedItem = 3);
+			var exception = Record.Exception (() => lv.SelectedItem = -1);
+			Assert.Null (exception);
+		}
 	}
 }

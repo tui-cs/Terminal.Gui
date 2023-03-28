@@ -244,7 +244,7 @@ namespace Terminal.Gui {
 				if (source == null || source.Count == 0) {
 					return;
 				}
-				if (value < 0 || value >= source.Count) {
+				if (value < -1 || value >= source.Count) {
 					throw new ArgumentException ("value");
 				}
 				selected = value;
