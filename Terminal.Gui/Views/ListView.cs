@@ -685,6 +685,7 @@ namespace Terminal.Gui {
 				var value = source?.Count > 0 ? source.ToList () [selected] : null;
 				SelectedItemChanged?.Invoke (this, new ListViewItemEventArgs (selected, value));
 				lastSelectedItem = selected;
+				EnsureSelectedItemVisible ();
 				return true;
 			}
 

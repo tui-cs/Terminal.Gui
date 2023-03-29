@@ -224,7 +224,6 @@ namespace Terminal.Gui.ViewTests {
 			var source = new List<string> () { "First", "Second" };
 			ListView lv = new ListView (source) { Width = Dim.Fill (), Height = 1 };
 			lv.SelectedItem = 1;
-			lv.EnsureSelectedItemVisible ();
 			Application.Top.Add (lv);
 			Application.Begin (Application.Top);
 
@@ -512,16 +511,8 @@ Item 2
 Item 3
 Item 4", output);
 
+			// EnsureSelectedItemVisible is auto enabled on the OnSelectedChanged
 			lv.SelectedItem = 6;
-			Application.Refresh ();
-			TestHelpers.AssertDriverContentsWithFrameAre (@"
-Item 0
-Item 1
-Item 2
-Item 3
-Item 4", output);
-
-			lv.EnsureSelectedItemVisible ();
 			Application.Refresh ();
 			TestHelpers.AssertDriverContentsWithFrameAre (@"
 Item 2
