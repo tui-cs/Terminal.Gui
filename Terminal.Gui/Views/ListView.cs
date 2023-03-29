@@ -684,9 +684,7 @@ namespace Terminal.Gui {
 			if (selected != lastSelectedItem) {
 				var value = source?.Count > 0 ? source.ToList () [selected] : null;
 				SelectedItemChanged?.Invoke (this, new ListViewItemEventArgs (selected, value));
-				if (HasFocus) {
-					lastSelectedItem = selected;
-				}
+				lastSelectedItem = selected;
 				return true;
 			}
 
@@ -724,21 +722,11 @@ namespace Terminal.Gui {
 		{
 			Application.Driver.SetCursorVisibility (CursorVisibility.Invisible);
 
-			if (lastSelectedItem == -1) {
+			if (lastSelectedItem != selected) {
 				EnsureSelectedItemVisible ();
 			}
 
 			return base.OnEnter (view);
-		}
-
-		///<inheritdoc/>
-		public override bool OnLeave (View view)
-		{
-			if (lastSelectedItem > -1) {
-				lastSelectedItem = -1;
-			}
-
-			return base.OnLeave (view);
 		}
 
 		/// <summary>

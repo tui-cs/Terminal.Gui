@@ -224,6 +224,7 @@ namespace Terminal.Gui.ViewTests {
 			var source = new List<string> () { "First", "Second" };
 			ListView lv = new ListView (source) { Width = Dim.Fill (), Height = 1 };
 			lv.SelectedItem = 1;
+			lv.EnsureSelectedItemVisible ();
 			Application.Top.Add (lv);
 			Application.Begin (Application.Top);
 
