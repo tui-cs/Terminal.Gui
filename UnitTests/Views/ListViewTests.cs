@@ -531,5 +531,15 @@ Item 6", output);
 			var exception = Record.Exception (() => lv.SelectedItem = -1);
 			Assert.Null (exception);
 		}
+
+		[Fact]
+		public void OnEnter_Does_Not_Throw_Exception ()
+		{
+			var lv = new ListView ();
+			var top = new View ();
+			top.Add (lv);
+			var exception = Record.Exception (lv.SetFocus);
+			Assert.Null (exception);
+		}
 	}
 }
