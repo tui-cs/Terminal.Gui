@@ -1673,7 +1673,9 @@ namespace Terminal.Gui {
 				return;
 			if (focused?.hasFocus == true && focused == view)
 				return;
-			if (focused?.hasFocus == true && focused?.SuperView == view) {
+			if ((focused?.hasFocus == true && focused?.SuperView == view)
+				|| view == this) {
+
 				if (!view.hasFocus) {
 					view.hasFocus = true;
 				}
@@ -1715,7 +1717,11 @@ namespace Terminal.Gui {
 				return;
 			}
 
-			SuperView?.SetFocus (this);
+			if (SuperView != null) {
+				SuperView.SetFocus (this);
+			} else {
+				SetFocus (this);
+			}
 		}
 
 		/// <summary>

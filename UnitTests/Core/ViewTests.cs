@@ -2995,5 +2995,17 @@ At 0,0
 			Assert.Null (child);
 			Assert.False (leave);
 		}
+
+		[Fact, AutoInitShutdown]
+		public void SetFocus_View_With_Null_Superview_Does_Not_Throw_Exception ()
+		{
+			Assert.True (Application.Top.CanFocus);
+			Assert.False (Application.Top.HasFocus);
+
+			var exception = Record.Exception (Application.Top.SetFocus);
+			Assert.Null (exception);
+			Assert.True (Application.Top.CanFocus);
+			Assert.True (Application.Top.HasFocus);
+		}
 	}
 }
