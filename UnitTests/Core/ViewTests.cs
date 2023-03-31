@@ -3026,7 +3026,11 @@ At 0,0
 					Assert.False (view3.HasFocus);
 				}
 			};
-			view2.Leave += (s, e) => Application.Current.Remove (view3);
+			view2.Leave += (s, e) => {
+				Application.Current.Remove (view3);
+				view3.Dispose ();
+				view3 = null;
+			};
 			top2.Add (view2);
 			top1.Add (view1, top2);
 			Application.Begin (top1);
@@ -3034,15 +3038,20 @@ At 0,0
 			Assert.True (top1.HasFocus);
 			Assert.True (view1.HasFocus);
 			Assert.False (view2.HasFocus);
+			Assert.False (removed);
+			Assert.Null (view3);
 
 			Assert.True (top1.ProcessKey (new KeyEvent (Key.Tab | Key.CtrlMask, new KeyModifiers { Ctrl = true })));
 			Assert.True (top1.HasFocus);
 			Assert.False (view1.HasFocus);
 			Assert.True (view2.HasFocus);
+			Assert.True (removed);
+			Assert.NotNull (view3);
 
 			var exception = Record.Exception (() => top1.ProcessKey (new KeyEvent (Key.Tab | Key.CtrlMask, new KeyModifiers { Ctrl = true })));
 			Assert.Null (exception);
 			Assert.True (removed);
+			Assert.Null (view3);
 		}
 	}
 }
