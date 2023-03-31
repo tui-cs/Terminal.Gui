@@ -3007,5 +3007,42 @@ At 0,0
 			Assert.True (Application.Top.CanFocus);
 			Assert.True (Application.Top.HasFocus);
 		}
+
+		[Fact, AutoInitShutdown]
+		public void FocusNext_Does_Not_Throws_If_A_View_Was_Removed_From_The_Collection ()
+		{
+			var top1 = Application.Top;
+			var view1 = new View () { Id = "view1", Width = 10, Height = 5, CanFocus = true };
+			var top2 = new Toplevel () { Id = "top2", Y = 1, Width = 10, Height = 5 };
+			var view2 = new View () { Id = "view2", Y = 1, Width = 10, Height = 5, CanFocus = true };
+			View view3 = null;
+			var removed = false;
+			view2.Enter += (s, e) => {
+				if (!removed) {
+					removed = true;
+					view3 = new View () { Id = "view3", Y = 1, Width = 10, Height = 5 };
+					Application.Current.Add (view3);
+					Application.Current.BringSubviewToFront (view3);
+					Assert.False (view3.HasFocus);
+				}
+			};
+			view2.Leave += (s, e) => Application.Current.Remove (view3);
+			top2.Add (view2);
+			top1.Add (view1, top2);
+			Application.Begin (top1);
+
+			Assert.True (top1.HasFocus);
+			Assert.True (view1.HasFocus);
+			Assert.False (view2.HasFocus);
+
+			Assert.True (top1.ProcessKey (new KeyEvent (Key.Tab | Key.CtrlMask, new KeyModifiers { Ctrl = true })));
+			Assert.True (top1.HasFocus);
+			Assert.False (view1.HasFocus);
+			Assert.True (view2.HasFocus);
+
+			var exception = Record.Exception (() => top1.ProcessKey (new KeyEvent (Key.Tab | Key.CtrlMask, new KeyModifiers { Ctrl = true })));
+			Assert.Null (exception);
+			Assert.True (removed);
+		}
 	}
 }

@@ -2141,9 +2141,8 @@ namespace Terminal.Gui {
 				FocusFirst ();
 				return focused != null;
 			}
-			var n = tabIndexes.Count;
 			var focusedIdx = -1;
-			for (var i = 0; i < n; i++) {
+			for (var i = 0; i < tabIndexes.Count; i++) {
 				var w = tabIndexes [i];
 
 				if (w.HasFocus) {
