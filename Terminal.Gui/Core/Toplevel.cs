@@ -766,6 +766,9 @@ namespace Terminal.Gui {
 						view.SetNeedsDisplay (view.Bounds);
 					}
 				}
+
+				ClearLayoutNeeded ();
+				ClearNeedsDisplay ();
 			}
 
 			base.Redraw (Bounds);

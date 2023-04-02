@@ -1407,7 +1407,8 @@ namespace Terminal.Gui.TopLevelTests {
 				});
 
 			var firstIteration = false;
-			Application.RunMainLoopIteration (ref rs, true, ref firstIteration); Assert.Equal (dialog, Application.MouseGrabView);
+			Application.RunMainLoopIteration (ref rs, true, ref firstIteration);
+			Assert.Equal (dialog, Application.MouseGrabView);
 
 			Assert.Equal (new Rect (25, 7, 30, 10), dialog.Frame);
 			TestHelpers.AssertDriverContentsWithFrameAre (@"
@@ -1446,6 +1447,122 @@ namespace Terminal.Gui.TopLevelTests {
                     │           this.            │
                     │                            │
                     └────────────────────────────┘", output);
+
+			Application.End (rs);
+		}
+
+		[Fact, AutoInitShutdown]
+		public void Draw_A_Top_Subview_On_A_Dialog ()
+		{
+			var top = Application.Top;
+			var win = new Window ("Window");
+			top.Add (win);
+			Application.Begin (top);
+			((FakeDriver)Application.Driver).SetBufferSize (20, 20);
+
+			Assert.Equal (new Rect (0, 0, 20, 20), win.Frame);
+			TestHelpers.AssertDriverContentsWithFrameAre (@"
+┌ Window ──────────┐
+│                  │
+│                  │
+│                  │
+│                  │
+│                  │
+│                  │
+│                  │
+│                  │
+│                  │
+│                  │
+│                  │
+│                  │
+│                  │
+│                  │
+│                  │
+│                  │
+│                  │
+│                  │
+└──────────────────┘", output);
+
+			var btnPopup = new Button ("Popup");
+			btnPopup.Clicked += (s, e) => {
+				var viewToScreen = btnPopup.ViewToScreen (top.Frame);
+				var view = new View () { X = 1, Y = viewToScreen.Y + 1, Width = 18, Height = 5 };
+				Application.IterationComplete += Application_IterationComplete;
+				top.Add (view);
+
+				void Application_IterationComplete ()
+				{
+					Assert.Equal (new Rect (1, 14, 18, 5), view.Frame);
+
+					top.DrawFrame (view.Frame);
+					top.Move (2, 15);
+					View.Driver.AddStr ("One");
+					top.Move (2, 16);
+					View.Driver.AddStr ("Two");
+					top.Move (2, 17);
+					View.Driver.AddStr ("Three");
+
+					Application.IterationComplete -= Application_IterationComplete;
+				}
+			};
+			var dialog = new Dialog ("Dialog", 15, 10, btnPopup);
+			var rs = Application.Begin (dialog);
+
+			Assert.Equal (new Rect (2, 5, 15, 10), dialog.Frame);
+			TestHelpers.AssertDriverContentsWithFrameAre (@"
+┌ Window ──────────┐
+│                  │
+│                  │
+│                  │
+│                  │
+│ ┌ Dialog ─────┐  │
+│ │             │  │
+│ │             │  │
+│ │             │  │
+│ │             │  │
+│ │             │  │
+│ │             │  │
+│ │             │  │
+│ │  [ Popup ]  │  │
+│ └─────────────┘  │
+│                  │
+│                  │
+│                  │
+│                  │
+└──────────────────┘", output);
+
+			ReflectionTools.InvokePrivate (
+				typeof (Application),
+				"ProcessMouseEvent",
+				new MouseEvent () {
+					X = 9,
+					Y = 13,
+					Flags = MouseFlags.Button1Clicked
+				});
+
+			var firstIteration = false;
+			Application.RunMainLoopIteration (ref rs, true, ref firstIteration);
+			TestHelpers.AssertDriverContentsWithFrameAre (@"
+┌ Window ──────────┐
+│                  │
+│                  │
+│                  │
+│                  │
+│ ┌ Dialog ─────┐  │
+│ │             │  │
+│ │             │  │
+│ │             │  │
+│ │             │  │
+│ │             │  │
+│ │             │  │
+│ │             │  │
+│ │  [ Popup ]  │  │
+│┌────────────────┐│
+││One             ││
+││Two             ││
+││Three           ││
+│└────────────────┘│
+└──────────────────┘", output);
 
 			Application.End (rs);
 		}

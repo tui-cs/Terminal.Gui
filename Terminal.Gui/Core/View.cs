@@ -939,8 +939,11 @@ namespace Terminal.Gui {
 		/// </summary>
 		public void SetSubViewNeedsDisplay ()
 		{
+			if (ChildNeedsDisplay) {
+				return;
+			}
 			ChildNeedsDisplay = true;
-			if (container != null)
+			if (container != null && !container.ChildNeedsDisplay)
 				container.SetSubViewNeedsDisplay ();
 		}
 
@@ -1482,7 +1485,7 @@ namespace Terminal.Gui {
 		}
 
 		/// <summary>
-		/// Removes the <see cref="SetNeedsDisplay()"/> and the <see cref="ChildNeedsDisplay"/> setting on this view.
+		/// Removes the <see cref="NeedDisplay"/> and the <see cref="ChildNeedsDisplay"/> setting on this view.
 		/// </summary>
 		protected void ClearNeedsDisplay ()
 		{

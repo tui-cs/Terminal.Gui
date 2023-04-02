@@ -278,6 +278,14 @@ namespace Terminal.Gui {
 		public static Action Iteration;
 
 		/// <summary>
+		///   This event is raised on each iteration of the <see cref="MainLoop"/> after all processes are completed.
+		/// </summary>
+		/// <remarks>
+		///   See also <see cref="Timeout"/>
+		/// </remarks>
+		public static Action IterationComplete;
+
+		/// <summary>
 		/// Returns a rectangle that is centered in the screen for the provided size.
 		/// </summary>
 		/// <returns>The centered rect.</returns>
@@ -1262,6 +1270,7 @@ namespace Terminal.Gui {
 
 			if (state.Toplevel != Top
 				&& (!Top.NeedDisplay.IsEmpty || Top.ChildNeedsDisplay || Top.LayoutNeeded)) {
+				state.Toplevel.SetNeedsDisplay (state.Toplevel.Bounds);
 				Top.Redraw (Top.Bounds);
 				foreach (var top in toplevels.Reverse ()) {
 					if (top != Top && top != state.Toplevel) {
@@ -1269,7 +1278,6 @@ namespace Terminal.Gui {
 						top.Redraw (top.Bounds);
 					}
 				}
-				state.Toplevel.SetNeedsDisplay (state.Toplevel.Bounds);
 			}
 			if (toplevels.Count == 1 && state.Toplevel == Top
 				&& (Driver.Cols != state.Toplevel.Frame.Width || Driver.Rows != state.Toplevel.Frame.Height)
@@ -1294,6 +1302,7 @@ namespace Terminal.Gui {
 				&& (!Top.NeedDisplay.IsEmpty || Top.ChildNeedsDisplay || Top.LayoutNeeded)) {
 				Top.Redraw (Top.Bounds);
 			}
+			IterationComplete?.Invoke ();
 		}
 
 		static void EnsureModalOrVisibleAlwaysOnTop (Toplevel toplevel)
