@@ -228,7 +228,7 @@ namespace Terminal.Gui.MenuTests {
 			var oldKey = Key.Null;
 			var cm = new ContextMenu ();
 
-			cm.KeyChanged += (s,e) => oldKey = e.OldKey;
+			cm.KeyChanged += (s, e) => oldKey = e.OldKey;
 
 			cm.Key = Key.Space | Key.CtrlMask;
 			Assert.Equal (Key.Space | Key.CtrlMask, cm.Key);
@@ -241,7 +241,7 @@ namespace Terminal.Gui.MenuTests {
 			var oldMouseFlags = new MouseFlags ();
 			var cm = new ContextMenu ();
 
-			cm.MouseFlagsChanged += (s,e) => oldMouseFlags = e.OldValue;
+			cm.MouseFlagsChanged += (s, e) => oldMouseFlags = e.OldValue;
 
 			cm.MouseFlags = MouseFlags.Button2Clicked;
 			Assert.Equal (MouseFlags.Button2Clicked, cm.MouseFlags);
@@ -901,6 +901,86 @@ namespace Terminal.Gui.MenuTests {
 			Assert.True (tf.ContextMenu.MenuBar.IsMenuOpen);
 			Assert.True (top.Subviews [1].ProcessKey (new KeyEvent (Key.F10 | Key.ShiftMask, new KeyModifiers ())));
 			Assert.Null (tf.ContextMenu.MenuBar);
+		}
+
+		[Fact, AutoInitShutdown]
+		public void Draw_A_ContextManu_Over_A_Dialog ()
+		{
+			var top = Application.Top;
+			var win = new Window ("Window");
+			top.Add (win);
+			Application.Begin (top);
+			((FakeDriver)Application.Driver).SetBufferSize (20, 15);
+
+			Assert.Equal (new Rect (0, 0, 20, 15), win.Frame);
+			TestHelpers.AssertDriverContentsWithFrameAre (@"
+┌ Window ──────────┐
+│                  │
+│                  │
+│                  │
+│                  │
+│                  │
+│                  │
+│                  │
+│                  │
+│                  │
+│                  │
+│                  │
+│                  │
+│                  │
+└──────────────────┘", output);
+
+			var dialog = new Dialog ("Dialog") { X = 2, Y = 2, Width = 15, Height = 4 };
+			dialog.Add (new TextField ("Test") { X = Pos.Center (), Width = 10 });
+			var rs = Application.Begin (dialog);
+
+			Assert.Equal (new Rect (2, 2, 15, 4), dialog.Frame);
+			TestHelpers.AssertDriverContentsWithFrameAre (@"
+┌ Window ──────────┐
+│                  │
+│ ┌ Dialog ─────┐  │
+│ │ Test        │  │
+│ │             │  │
+│ └─────────────┘  │
+│                  │
+│                  │
+│                  │
+│                  │
+│                  │
+│                  │
+│                  │
+│                  │
+└──────────────────┘", output);
+
+			ReflectionTools.InvokePrivate (
+				typeof (Application),
+				"ProcessMouseEvent",
+				new MouseEvent () {
+					X = 9,
+					Y = 3,
+					Flags = MouseFlags.Button3Clicked
+				});
+
+			var firstIteration = false;
+			Application.RunMainLoopIteration (ref rs, true, ref firstIteration);
+			TestHelpers.AssertDriverContentsWithFrameAre (@"
+┌ Window ──────────┐
+│                  │
+│ ┌ Dialog ─────┐  │
+│ │ Test        │  │
+┌───────────────────
+│ Select All   Ctrl+
+│ Delete All   Ctrl+
+│ Copy         Ctrl+
+│ Cut          Ctrl+
+│ Paste        Ctrl+
+│ Undo         Ctrl+
+│ Redo         Ctrl+
+└───────────────────
+│                  │
+└──────────────────┘", output);
+
+			Application.End (rs);
 		}
 	}
 }

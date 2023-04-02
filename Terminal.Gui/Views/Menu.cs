@@ -477,6 +477,10 @@ namespace Terminal.Gui {
 				WantMousePositionReports = host.WantMousePositionReports;
 			}
 
+			if (Application.Current != null) {
+				Application.Current.DrawContentComplete += Current_DrawContentComplete;
+			}
+
 			// Things this view knows how to do
 			AddCommand (Command.LineUp, () => MoveUp ());
 			AddCommand (Command.LineDown, () => MoveDown ());
@@ -511,9 +515,16 @@ namespace Terminal.Gui {
 			return GetNormalColor ();
 		}
 
-		// Draws the Menu, within the Frame
 		public override void Redraw (Rect bounds)
 		{
+		}
+
+		// Draws the Menu, within the Frame
+		private void Current_DrawContentComplete (object sender, DrawEventArgs e)
+		{
+			if (barItems.Children == null) {
+				return;
+			}
 			Driver.SetAttribute (GetNormalColor ());
 			DrawFrame (Bounds, padding: 0, fill: true);
 
@@ -904,6 +915,14 @@ namespace Terminal.Gui {
 			Application.Driver.SetCursorVisibility (CursorVisibility.Invisible);
 
 			return base.OnEnter (view);
+		}
+
+		protected override void Dispose (bool disposing)
+		{
+			if (Application.Current != null) {
+				Application.Current.DrawContentComplete -= Current_DrawContentComplete;
+			}
+			base.Dispose (disposing);
 		}
 	}
 
@@ -1322,31 +1341,25 @@ namespace Terminal.Gui {
 			switch (subMenu) {
 			case null:
 				// Open a submenu below a MenuBar
-				lastFocused = lastFocused ?? (SuperView == null ? Application.Current.MostFocused : SuperView.MostFocused);
+				lastFocused ??= (SuperView == null ? Application.Current.MostFocused : SuperView.MostFocused);
 				if (openSubMenu != null && !CloseMenu (false, true))
 					return;
 				if (openMenu != null) {
-					if (SuperView == null) {
-						Application.Current.Remove (openMenu);
-					} else {
-						SuperView.Remove (openMenu);
-					}
+					Application.Top.Remove (openMenu);
 					openMenu.Dispose ();
+					openMenu = null;
 				}
 
 				// This positions the submenu horizontally aligned with the first character of the
 				// menu it belongs to's text
 				for (int i = 0; i < index; i++)
 					pos += Menus [i].TitleLength + (Menus [i].Help.ConsoleWidth > 0 ? Menus [i].Help.ConsoleWidth + 2 : 0) + leftPadding + rightPadding;
-				openMenu = new Menu (this, Frame.X + pos, Frame.Y + 1, Menus [index]);
+				var locationOffset = SuperView == null ? new Point (0, 0) : new Point (SuperView.Frame.X, SuperView.Frame.Y);
+				openMenu = new Menu (this, Frame.X + pos + locationOffset.X, Frame.Y + 1 + locationOffset.Y, Menus [index]);
 				openCurrentMenu = openMenu;
 				openCurrentMenu.previousSubFocused = openMenu;
 
-				if (SuperView == null) {
-					Application.Current.Add (openMenu);
-				} else {
-					SuperView.Add (openMenu);
-				}
+				Application.Top.Add (openMenu);
 				openMenu.SetFocus ();
 				break;
 			default:
@@ -1368,17 +1381,14 @@ namespace Terminal.Gui {
 							mbi [j + 2] = subMenu.Children [j];
 						}
 						var newSubMenu = new MenuBarItem (mbi);
-						openCurrentMenu = new Menu (this, first.Frame.Left, first.Frame.Top, newSubMenu);
+						ViewToScreen (first.Frame.Left, first.Frame.Top, out int rx, out int ry);
+						openCurrentMenu = new Menu (this, rx, ry, newSubMenu);
 						last.Visible = false;
 						Application.GrabMouse (openCurrentMenu);
 					}
 					openCurrentMenu.previousSubFocused = last.previousSubFocused;
 					openSubMenu.Add (openCurrentMenu);
-					if (SuperView == null) {
-						Application.Current.Add (openCurrentMenu);
-					} else {
-						SuperView.Add (openCurrentMenu);
-					}
+					Application.Top.Add (openCurrentMenu);
 				}
 				selectedSub = openSubMenu.Count - 1;
 				if (selectedSub > -1 && SelectEnabledItem (openCurrentMenu.barItems.Children, openCurrentMenu.current, out openCurrentMenu.current)) {
@@ -1501,11 +1511,7 @@ namespace Terminal.Gui {
 			switch (isSubMenu) {
 			case false:
 				if (openMenu != null) {
-					if (SuperView == null) {
-						Application.Current.Remove (openMenu);
-					} else {
-						SuperView?.Remove (openMenu);
-					}
+					Application.Top.Remove (openMenu);
 				}
 				SetNeedsDisplay ();
 				if (previousFocused != null && previousFocused is Menu && openMenu != null && previousFocused.ToString () != openCurrentMenu.ToString ())
@@ -1564,11 +1570,7 @@ namespace Terminal.Gui {
 				openCurrentMenu.SetFocus ();
 				if (openSubMenu != null) {
 					menu = openSubMenu [i];
-					if (SuperView == null) {
-						Application.Current.Remove (menu);
-					} else {
-						SuperView.Remove (menu);
-					}
+					Application.Top.Remove (menu);
 					openSubMenu.Remove (menu);
 					menu.Dispose ();
 				}
@@ -1584,11 +1586,7 @@ namespace Terminal.Gui {
 		{
 			if (openSubMenu != null) {
 				foreach (var item in openSubMenu) {
-					if (SuperView == null) {
-						Application.Current.Remove (item);
-					} else {
-						SuperView.Remove (item);
-					}
+					Application.Top.Remove (item);
 					item.Dispose ();
 				}
 			}
@@ -1757,7 +1755,8 @@ namespace Terminal.Gui {
 			}
 
 			if (mi.IsTopLevel) {
-				var menu = new Menu (this, i, 0, mi);
+				ViewToScreen (i, 0, out int rx, out int ry);
+				var menu = new Menu (this, rx, ry, mi);
 				menu.Run (mi.Action);
 				menu.Dispose ();
 			} else {
@@ -1878,7 +1877,8 @@ namespace Terminal.Gui {
 					if (cx >= pos && cx < pos + leftPadding + Menus [i].TitleLength + Menus [i].Help.ConsoleWidth + rightPadding) {
 						if (me.Flags == MouseFlags.Button1Clicked) {
 							if (Menus [i].IsTopLevel) {
-								var menu = new Menu (this, i, 0, Menus [i]);
+								ViewToScreen (i, 0, out int rx, out int ry);
+								var menu = new Menu (this, rx, ry, Menus [i]);
 								menu.Run (Menus [i].Action);
 								menu.Dispose ();
 							} else if (!IsMenuOpen) {

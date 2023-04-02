@@ -91,7 +91,7 @@ namespace Terminal.Gui {
 			if (menuBar != null) {
 				Hide ();
 			}
-			container = Application.Current;
+			container = Application.Top;
 			container.Closing += Container_Closing;
 			container.Resized += Container_Resized;
 			var frame = container.Frame;
@@ -162,7 +162,7 @@ namespace Terminal.Gui {
 		/// </summary>
 		public void Hide ()
 		{
-			menuBar.CleanUp ();
+			menuBar?.CleanUp ();
 			Dispose ();
 		}
 
@@ -194,7 +194,7 @@ namespace Terminal.Gui {
 			set {
 				var oldKey = key;
 				key = value;
-				KeyChanged?.Invoke (this, new KeyChangedEventArgs(oldKey,key));
+				KeyChanged?.Invoke (this, new KeyChangedEventArgs (oldKey, key));
 			}
 		}
 
@@ -206,7 +206,7 @@ namespace Terminal.Gui {
 			set {
 				var oldFlags = mouseFlags;
 				mouseFlags = value;
-				MouseFlagsChanged?.Invoke (this, new MouseFlagsChangedEventArgs(oldFlags,value));
+				MouseFlagsChanged?.Invoke (this, new MouseFlagsChangedEventArgs (oldFlags, value));
 			}
 		}
 

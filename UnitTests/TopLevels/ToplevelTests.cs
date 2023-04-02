@@ -1487,10 +1487,10 @@ namespace Terminal.Gui.TopLevelTests {
 			btnPopup.Clicked += (s, e) => {
 				var viewToScreen = btnPopup.ViewToScreen (top.Frame);
 				var view = new View () { X = 1, Y = viewToScreen.Y + 1, Width = 18, Height = 5 };
-				Application.IterationComplete += Application_IterationComplete;
+				Application.Current.DrawContentComplete += Current_DrawContentComplete;
 				top.Add (view);
 
-				void Application_IterationComplete ()
+				void Current_DrawContentComplete (object sender, DrawEventArgs e)
 				{
 					Assert.Equal (new Rect (1, 14, 18, 5), view.Frame);
 
@@ -1502,7 +1502,7 @@ namespace Terminal.Gui.TopLevelTests {
 					top.Move (2, 17);
 					View.Driver.AddStr ("Three");
 
-					Application.IterationComplete -= Application_IterationComplete;
+					Application.Current.DrawContentComplete -= Current_DrawContentComplete;
 				}
 			};
 			var dialog = new Dialog ("Dialog", 15, 10, btnPopup);

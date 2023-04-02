@@ -278,14 +278,6 @@ namespace Terminal.Gui {
 		public static Action Iteration;
 
 		/// <summary>
-		///   This event is raised on each iteration of the <see cref="MainLoop"/> after all processes are completed.
-		/// </summary>
-		/// <remarks>
-		///   See also <see cref="Timeout"/>
-		/// </remarks>
-		public static Action IterationComplete;
-
-		/// <summary>
 		/// Returns a rectangle that is centered in the screen for the provided size.
 		/// </summary>
 		/// <returns>The centered rect.</returns>
@@ -1290,6 +1282,7 @@ namespace Terminal.Gui {
 			if (!state.Toplevel.NeedDisplay.IsEmpty || state.Toplevel.ChildNeedsDisplay || state.Toplevel.LayoutNeeded
 				|| MdiChildNeedsDisplay ()) {
 				state.Toplevel.Redraw (state.Toplevel.Bounds);
+				state.Toplevel.OnDrawContentComplete (state.Toplevel.Bounds);
 				if (DebugDrawBounds) {
 					DrawBounds (state.Toplevel);
 				}
@@ -1302,7 +1295,6 @@ namespace Terminal.Gui {
 				&& (!Top.NeedDisplay.IsEmpty || Top.ChildNeedsDisplay || Top.LayoutNeeded)) {
 				Top.Redraw (Top.Bounds);
 			}
-			IterationComplete?.Invoke ();
 		}
 
 		static void EnsureModalOrVisibleAlwaysOnTop (Toplevel toplevel)

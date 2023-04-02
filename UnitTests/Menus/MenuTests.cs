@@ -109,7 +109,7 @@ namespace Terminal.Gui.MenuTests {
 					new MenuItem ("_New", "Creates new file.", New)
 				})
 			});
-			menu.MenuOpening += (s,e) => {
+			menu.MenuOpening += (s, e) => {
 				Assert.Equal ("_File", e.CurrentMenu.Title);
 				Assert.Equal ("_New", e.CurrentMenu.Children [0].Title);
 				Assert.Equal ("Creates new file.", e.CurrentMenu.Children [0].Help);
@@ -130,7 +130,7 @@ namespace Terminal.Gui.MenuTests {
 				mi.Action ();
 				Assert.Equal ("Copy", miAction);
 			};
-			menu.MenuClosing += (s,e) => {
+			menu.MenuClosing += (s, e) => {
 				Assert.False (isMenuClosed);
 				if (cancelClosing) {
 					e.Cancel = true;
@@ -196,7 +196,7 @@ Edit
 					new MenuItem ("_Save", "Saves the file.", null, null)
 				})
 			});
-			menu.MenuOpened += (s,e) => {
+			menu.MenuOpened += (s, e) => {
 				miCurrent = e.MenuItem;
 				mCurrent = menu.openMenu;
 			};
@@ -380,12 +380,12 @@ Edit
 				}),
 				new MenuBarItem ("_About", "Top-Level", () => miAction ="About")
 			});
-			menu.MenuOpening += (s,e) => mbiCurrent = e.CurrentMenu;
+			menu.MenuOpening += (s, e) => mbiCurrent = e.CurrentMenu;
 			menu.MenuOpened += (s, e) => {
 				miCurrent = e.MenuItem;
 				mCurrent = menu.openCurrentMenu;
 			};
-			menu.MenuClosing += (s,e) => {
+			menu.MenuClosing += (s, e) => {
 				mbiCurrent = null;
 				miCurrent = null;
 				mCurrent = null;
@@ -1689,7 +1689,7 @@ Edit
 └──────────────────────────────────────┘", output);
 
 			Assert.True (win.ProcessHotKey (new KeyEvent (Key.F9, new KeyModifiers ())));
-			win.Redraw (win.Bounds);
+			top.Redraw (top.Bounds);
 			TestHelpers.AssertDriverContentsWithFrameAre (@"
 ┌──────────────────────────────────────┐
 │ File  Edit                           │
@@ -1701,7 +1701,7 @@ Edit
 └──────────────────────────────────────┘", output);
 
 			Assert.True (menu.ProcessKey (new KeyEvent (Key.CursorRight, new KeyModifiers ())));
-			win.Redraw (win.Bounds);
+			top.Redraw (top.Bounds);
 			TestHelpers.AssertDriverContentsWithFrameAre (@"
 ┌──────────────────────────────────────┐
 │ File  Edit                           │
@@ -1713,7 +1713,7 @@ Edit
 └──────────────────────────────────────┘", output);
 
 			Assert.True (menu.openMenu.ProcessKey (new KeyEvent (Key.CursorRight, new KeyModifiers ())));
-			win.Redraw (win.Bounds);
+			top.Redraw (top.Bounds);
 			TestHelpers.AssertDriverContentsWithFrameAre (@"
 ┌──────────────────────────────────────┐
 │ File  Edit                           │
@@ -1725,7 +1725,7 @@ Edit
 └──────────────────────────────────────┘", output);
 
 			Assert.True (menu.openMenu.ProcessKey (new KeyEvent (Key.CursorRight, new KeyModifiers ())));
-			win.Redraw (win.Bounds);
+			top.Redraw (top.Bounds);
 			TestHelpers.AssertDriverContentsWithFrameAre (@"
 ┌──────────────────────────────────────┐
 │ File  Edit                           │
