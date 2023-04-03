@@ -658,42 +658,11 @@ namespace Terminal.Gui {
 					var rx = x - startFrame.X;
 					var ry = y - startFrame.Y;
 					if (top.Visible && top.Frame.Contains (rx, ry)) {
-						var deep = FindDeepestView (top, rx, ry, out resx, out resy);
+						var deep = View.FindDeepestView (top, rx, ry, out resx, out resy);
 						if (deep == null)
 							return FindDeepestMdiView (top, rx, ry, out resx, out resy);
 						if (deep != MdiTop)
 							return deep;
-					}
-				}
-			}
-			resx = x - startFrame.X;
-			resy = y - startFrame.Y;
-			return start;
-		}
-
-		static View FindDeepestView (View start, int x, int y, out int resx, out int resy)
-		{
-			var startFrame = start.Frame;
-
-			if (!startFrame.Contains (x, y)) {
-				resx = 0;
-				resy = 0;
-				return null;
-			}
-
-			if (start.InternalSubviews != null) {
-				int count = start.InternalSubviews.Count;
-				if (count > 0) {
-					var rx = x - startFrame.X;
-					var ry = y - startFrame.Y;
-					for (int i = count - 1; i >= 0; i--) {
-						View v = start.InternalSubviews [i];
-						if (v.Visible && v.Frame.Contains (rx, ry)) {
-							var deep = FindDeepestView (v, rx, ry, out resx, out resy);
-							if (deep == null)
-								return v;
-							return deep;
-						}
 					}
 				}
 			}
@@ -824,7 +793,7 @@ namespace Terminal.Gui {
 				return;
 			}
 
-			var view = FindDeepestView (Current, me.X, me.Y, out int rx, out int ry);
+			var view = View.FindDeepestView (Current, me.X, me.Y, out int rx, out int ry);
 
 			if (view != null && view.WantContinuousButtonPressed)
 				WantContinuousButtonPressedView = view;
@@ -840,8 +809,6 @@ namespace Terminal.Gui {
 			}
 
 			if (mouseGrabView != null) {
-				view ??= mouseGrabView;
-
 				var newxy = mouseGrabView.ScreenToView (me.X, me.Y);
 				var nme = new MouseEvent () {
 					X = newxy.X,
@@ -864,7 +831,7 @@ namespace Terminal.Gui {
 				&& me.Flags != MouseFlags.ReportMousePosition && me.Flags != 0) {
 
 				var top = FindDeepestTop (Top, me.X, me.Y, out _, out _);
-				view = FindDeepestView (top, me.X, me.Y, out rx, out ry);
+				view = View.FindDeepestView (top, me.X, me.Y, out rx, out ry);
 
 				if (view != null && view != MdiTop && top != Current) {
 					MoveCurrent ((Toplevel)top);

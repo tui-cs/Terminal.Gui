@@ -480,6 +480,7 @@ namespace Terminal.Gui {
 			if (Application.Current != null) {
 				Application.Current.DrawContentComplete += Current_DrawContentComplete;
 			}
+			Application.RootMouseEvent += Application_RootMouseEvent;
 
 			// Things this view knows how to do
 			AddCommand (Command.LineUp, () => MoveUp ());
@@ -504,6 +505,22 @@ namespace Terminal.Gui {
 			AddKeyBinding (Key.CursorRight, Command.Right);
 			AddKeyBinding (Key.Esc, Command.Cancel);
 			AddKeyBinding (Key.Enter, Command.Accept);
+		}
+
+		private void Application_RootMouseEvent (MouseEvent me)
+		{
+			var view = View.FindDeepestView (this, me.X, me.Y, out int rx, out int ry);
+			if (view == this) {
+				var nme = new MouseEvent () {
+					X = rx,
+					Y = ry,
+					Flags = me.Flags,
+					View = view
+				};
+				if (MouseEvent (nme) || me.Flags == MouseFlags.Button1Pressed || me.Flags == MouseFlags.Button1Released) {
+					me.Handled = true;
+				}
+			}
 		}
 
 		internal Attribute DetermineColorSchemeFor (MenuItem item, int index)
@@ -922,6 +939,7 @@ namespace Terminal.Gui {
 			if (Application.Current != null) {
 				Application.Current.DrawContentComplete -= Current_DrawContentComplete;
 			}
+			Application.RootMouseEvent -= Application_RootMouseEvent;
 			base.Dispose (disposing);
 		}
 	}

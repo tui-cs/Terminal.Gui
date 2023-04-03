@@ -3158,5 +3158,45 @@ namespace Terminal.Gui {
 
 			return top;
 		}
+
+		/// <summary>
+		/// Finds which view that belong to the <paramref name="start"/> at the provided location.
+		/// </summary>
+		/// <param name="start">The view where to look for.</param>
+		/// <param name="x">The column location.</param>
+		/// <param name="y">The row location.</param>
+		/// <param name="resx">The found view column location.</param>
+		/// <param name="resy">The found view row location.</param>
+		/// <returns>The view that belong to the provided location.</returns>
+		public static View FindDeepestView (View start, int x, int y, out int resx, out int resy)
+		{
+			var startFrame = start.Frame;
+
+			if (!startFrame.Contains (x, y)) {
+				resx = 0;
+				resy = 0;
+				return null;
+			}
+
+			if (start.InternalSubviews != null) {
+				int count = start.InternalSubviews.Count;
+				if (count > 0) {
+					var rx = x - startFrame.X;
+					var ry = y - startFrame.Y;
+					for (int i = count - 1; i >= 0; i--) {
+						View v = start.InternalSubviews [i];
+						if (v.Visible && v.Frame.Contains (rx, ry)) {
+							var deep = FindDeepestView (v, rx, ry, out resx, out resy);
+							if (deep == null)
+								return v;
+							return deep;
+						}
+					}
+				}
+			}
+			resx = x - startFrame.X;
+			resy = y - startFrame.Y;
+			return start;
+		}
 	}
 }
