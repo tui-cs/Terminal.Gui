@@ -40,12 +40,7 @@ namespace Terminal.Gui {
 		/// The strings that form the current list of suggestions to render
 		/// based on what the user has typed so far.
 		/// </summary>
-		ReadOnlyCollection<string> Suggestions { get; set; }
-
-		/// <summary>
-		/// The full set of all strings that can be suggested.
-		/// </summary>
-		List<string> AllSuggestions { get; set; }
+		ReadOnlyCollection<Suggestion> Suggestions { get; set; }
 
 		/// <summary>
 		/// The currently selected index into <see cref="Suggestions"/> that the user has highlighted
@@ -53,7 +48,7 @@ namespace Terminal.Gui {
 		int SelectedIdx { get; set; }
 
 		/// <summary>
-		/// The colors to use to render the overlay.  Accessing this property before
+		/// The colors to use to render the overlay. Accessing this property before
 		/// the Application has been initialized will cause an error
 		/// </summary>
 		ColorScheme ColorScheme { get; set; }
@@ -105,11 +100,19 @@ namespace Terminal.Gui {
 		/// </summary>
 		void ClearSuggestions ();
 
+
 		/// <summary>
-		/// Populates <see cref="Suggestions"/> with all strings in <see cref="AllSuggestions"/> that
-		/// match with the current cursor position/text in the <see cref="HostControl"/>.
+		/// Gets or Sets the class responsible for generating <see cref="Suggestions"/>
+		/// based on a given <see cref="AutocompleteContext"/> of the <see cref="HostControl"/>.
 		/// </summary>
-		/// <param name="columnOffset">The column offset. Current (zero - default), left (negative), right (positive).</param>
-		void GenerateSuggestions (int columnOffset = 0);
+		ISuggestionGenerator SuggestionGenerator { get; set; }
+
+
+		/// <summary>
+		/// Populates <see cref="Suggestions"/> with all <see cref="Suggestion"/> 
+		/// proposed by <see cref="SuggestionGenerator"/> at the given <paramref name="context"/>
+		/// (cursor position)
+		/// </summary>
+		void GenerateSuggestions (AutocompleteContext context);
 	}
 }

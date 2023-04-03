@@ -3,6 +3,7 @@ using System;
 using System.Threading;
 using Terminal.Gui;
 using System.Linq;
+using System.Runtime.CompilerServices;
 
 namespace UICatalog.Scenarios {
 	// 
@@ -20,6 +21,7 @@ namespace UICatalog.Scenarios {
 			internal TextField Speed { get; private set; }
 			internal ProgressBar ActivityProgressBar { get; private set; }
 			internal ProgressBar PulseProgressBar { get; private set; }
+			internal SpinnerView Spinner { get; private set; }
 			internal Action StartBtnClick;
 			internal Action StopBtnClick;
 			internal Action PulseBtnClick = null;
@@ -84,6 +86,14 @@ namespace UICatalog.Scenarios {
 				};
 				Add (ActivityProgressBar);
 
+				Spinner = new SpinnerView {
+					X = Pos.Right (ActivityProgressBar),
+					Y = ActivityProgressBar.Y,
+					Visible = false,
+
+				};
+				Add (Spinner);
+
 				PulseProgressBar = new ProgressBar () {
 					X = Pos.Right (LeftFrame) + 1,
 					Y = Pos.Bottom (ActivityProgressBar) + 1,
@@ -109,12 +119,23 @@ namespace UICatalog.Scenarios {
 			{
 				Started = true;
 				StartBtnClick?.Invoke ();
+				Application.MainLoop.Invoke(()=>{
+					Spinner.Visible = true;
+					ActivityProgressBar.Width = Dim.Fill(1);
+					this.LayoutSubviews();
+				});
 			}
 
 			internal void Stop ()
 			{
 				Started = false;
 				StopBtnClick?.Invoke ();
+
+				Application.MainLoop.Invoke(()=>{
+					Spinner.Visible = false;
+					ActivityProgressBar.Width = Dim.Fill();
+					this.LayoutSubviews();
+				});
 			}
 
 			internal void Pulse ()
@@ -129,6 +150,7 @@ namespace UICatalog.Scenarios {
 						ActivityProgressBar.Fraction += 0.01F;
 					}
 					PulseProgressBar.Pulse ();
+					Spinner.SetNeedsDisplay ();
 				}
 			}
 		}
@@ -196,6 +218,7 @@ namespace UICatalog.Scenarios {
 
 				_mainLoopTimeout = Application.MainLoop.AddTimeout (TimeSpan.FromMilliseconds (_mainLooopTimeoutTick), (loop) => {
 					mainLoopTimeoutDemo.Pulse ();
+					
 					return true;
 				});
 			};

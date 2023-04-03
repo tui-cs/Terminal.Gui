@@ -24,11 +24,15 @@ namespace UICatalog.Scenarios {
 				Width = Dim.Percent (50) - 1,
 				Height = 2
 			};
+
+			var singleWordGenerator = new SingleWordSuggestionGenerator ();
+			textField.Autocomplete.SuggestionGenerator = singleWordGenerator;
+
 			textField.TextChanging += TextField_TextChanging;
 
 			void TextField_TextChanging (object sender, TextChangingEventArgs e)
 			{
-				textField.Autocomplete.AllSuggestions = Regex.Matches (e.NewText.ToString (), "\\w+")
+				singleWordGenerator.AllSuggestions = Regex.Matches (e.NewText.ToString (), "\\w+")
 					.Select (s => s.Value)
 					.Distinct ().ToList ();
 			}
@@ -58,7 +62,7 @@ namespace UICatalog.Scenarios {
 			// This shows how to enable autocomplete in TextView.
 			void TextView_DrawContent (object sender, DrawEventArgs e)
 			{
-				textView.Autocomplete.AllSuggestions = Regex.Matches (textView.Text.ToString (), "\\w+")
+				singleWordGenerator.AllSuggestions = Regex.Matches (textView.Text.ToString (), "\\w+")
 					.Select (s => s.Value)
 					.Distinct ().ToList ();
 			}
@@ -213,6 +217,26 @@ namespace UICatalog.Scenarios {
 			};
 
 			Win.Add (regexProviderField);
+
+			var labelAppendAutocomplete = new Label ("Append Autocomplete:") {
+				Y = Pos.Y (regexProviderField) + 2,
+				X = 1
+			};
+			var appendAutocompleteTextField = new TextField () {
+				X = Pos.Right(labelAppendAutocomplete),
+				Y = labelAppendAutocomplete.Y,
+				Width = Dim.Fill()
+			};
+			appendAutocompleteTextField.Autocomplete = new AppendAutocomplete (appendAutocompleteTextField);
+			appendAutocompleteTextField.Autocomplete.SuggestionGenerator = new SingleWordSuggestionGenerator {
+				AllSuggestions = new System.Collections.Generic.List<string>{
+					"fish", "flipper", "fin","fun","the","at","there","some","my","of","be","use","her","than","and","this","an","would","first","have","each","make","water","to","from","which","like","been","in","or","she","him","call","is","one","do","into","who","you","had","how","time","oil","that","by","their","has","its","it","word","if","look","now","he","but","will","two","find","was","not","up","more","long","for","what","other","write","down","on","all","about","go","day","are","were","out","see","did","as","we","many","number","get","with","when","then","no","come","his","your","them","way","made","they","can","these","could","may","said","so","people","part"
+				}
+			};
+
+
+			Win.Add (labelAppendAutocomplete);
+			Win.Add (appendAutocompleteTextField);
 		}
 
 		TimeField _timeField;

@@ -544,6 +544,9 @@ namespace UICatalog.Scenarios {
 
 		private MenuItem CreateAutocomplete ()
 		{
+			var singleWordGenerator = new SingleWordSuggestionGenerator ();
+			_textView.Autocomplete.SuggestionGenerator = singleWordGenerator;
+
 			var auto = new MenuItem ();
 			auto.Title = "Autocomplete";
 			auto.CheckType |= MenuItemCheckStyle.Checked;
@@ -551,13 +554,13 @@ namespace UICatalog.Scenarios {
 			auto.Action += () => {
 				if ((bool)(auto.Checked = !auto.Checked)) {
 					// setup autocomplete with all words currently in the editor
-					_textView.Autocomplete.AllSuggestions =
+					singleWordGenerator.AllSuggestions =
 
 					Regex.Matches (_textView.Text.ToString (), "\\w+")
 					.Select (s => s.Value)
 					.Distinct ().ToList ();
 				} else {
-					_textView.Autocomplete.AllSuggestions.Clear ();
+					singleWordGenerator.AllSuggestions.Clear ();
 
 				}
 			};

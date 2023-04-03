@@ -26,6 +26,8 @@ namespace UICatalog.Scenarios {
 			var width = 20;
 			var text = " jamp jemp jimp jomp jump";
 
+
+
 			var menu = new MenuBar (new MenuBarItem [] {
 				new MenuBarItem ("_File", new MenuItem [] {
 					miMultiline =  new MenuItem ("_Multiline", "", () => Multiline()){CheckType = MenuItemCheckStyle.Checked},
@@ -121,7 +123,7 @@ namespace UICatalog.Scenarios {
 
 		private void SetAllSuggestions (TextView view)
 		{
-			view.Autocomplete.AllSuggestions = Regex.Matches (view.Text.ToString (), "\\w+")
+			((SingleWordSuggestionGenerator)view.Autocomplete.SuggestionGenerator).AllSuggestions = Regex.Matches (view.Text.ToString (), "\\w+")
 				.Select (s => s.Value)
 				.Distinct ().ToList ();
 		}

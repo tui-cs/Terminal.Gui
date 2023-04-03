@@ -21,17 +21,22 @@ namespace Terminal.Gui.ViewTests {
 		public void Test_GenerateSuggestions_Simple ()
 		{
 			var ac = new TextViewAutocomplete ();
-			ac.AllSuggestions = new List<string> { "fish", "const", "Cobble" };
+			((SingleWordSuggestionGenerator)ac.SuggestionGenerator).AllSuggestions = new List<string> {
+				"fish",
+				"const",
+				"Cobble" };
 
 			var tv = new TextView ();
 			tv.InsertText ("co");
 
 			ac.HostControl = tv;
-			ac.GenerateSuggestions ();
+			ac.GenerateSuggestions (
+				new AutocompleteContext(
+				tv.Text.ToRuneList(),2));
 
 			Assert.Equal (2, ac.Suggestions.Count);
-			Assert.Equal ("const", ac.Suggestions [0]);
-			Assert.Equal ("Cobble", ac.Suggestions [1]);
+			Assert.Equal ("const", ac.Suggestions [0].Title);
+			Assert.Equal ("Cobble", ac.Suggestions [1].Title);
 		}
 
 		[Fact]
@@ -75,14 +80,16 @@ namespace Terminal.Gui.ViewTests {
 
 			Assert.Equal (Point.Empty, tv.CursorPosition);
 			Assert.NotNull (tv.Autocomplete);
-			Assert.Empty (tv.Autocomplete.AllSuggestions);
-			tv.Autocomplete.AllSuggestions = Regex.Matches (tv.Text.ToString (), "\\w+")
+			var g = (SingleWordSuggestionGenerator)tv.Autocomplete.SuggestionGenerator;
+
+			Assert.Empty (g.AllSuggestions);
+			g.AllSuggestions = Regex.Matches (tv.Text.ToString (), "\\w+")
 				.Select (s => s.Value)
 				.Distinct ().ToList ();
-			Assert.Equal (3, tv.Autocomplete.AllSuggestions.Count);
-			Assert.Equal ("Fortunately", tv.Autocomplete.AllSuggestions [0]);
-			Assert.Equal ("super", tv.Autocomplete.AllSuggestions [1]);
-			Assert.Equal ("feature", tv.Autocomplete.AllSuggestions [^1]);
+			Assert.Equal (3, g.AllSuggestions.Count);
+			Assert.Equal ("Fortunately", g.AllSuggestions [0]);
+			Assert.Equal ("super", g.AllSuggestions [1]);
+			Assert.Equal ("feature", g.AllSuggestions [^1]);
 			Assert.Equal (0, tv.Autocomplete.SelectedIdx);
 			Assert.Empty (tv.Autocomplete.Suggestions);
 			Assert.True (tv.ProcessKey (new KeyEvent (Key.F, new KeyModifiers ())));
@@ -90,73 +97,73 @@ namespace Terminal.Gui.ViewTests {
 			Assert.Equal ($"F Fortunately super feature.", tv.Text);
 			Assert.Equal (new Point (1, 0), tv.CursorPosition);
 			Assert.Equal (2, tv.Autocomplete.Suggestions.Count);
-			Assert.Equal ("Fortunately", tv.Autocomplete.Suggestions [0]);
-			Assert.Equal ("feature", tv.Autocomplete.Suggestions [^1]);
+			Assert.Equal ("Fortunately", tv.Autocomplete.Suggestions[0].Replacement);
+			Assert.Equal ("feature", tv.Autocomplete.Suggestions[^1].Replacement);
 			Assert.Equal (0, tv.Autocomplete.SelectedIdx);
-			Assert.Equal ("Fortunately", tv.Autocomplete.Suggestions [tv.Autocomplete.SelectedIdx]);
+			Assert.Equal ("Fortunately", tv.Autocomplete.Suggestions[tv.Autocomplete.SelectedIdx].Replacement);
 			Assert.True (tv.ProcessKey (new KeyEvent (Key.CursorDown, new KeyModifiers ())));
 			top.Redraw (tv.Bounds);
 			Assert.Equal ($"F Fortunately super feature.", tv.Text);
 			Assert.Equal (new Point (1, 0), tv.CursorPosition);
 			Assert.Equal (2, tv.Autocomplete.Suggestions.Count);
-			Assert.Equal ("Fortunately", tv.Autocomplete.Suggestions [0]);
-			Assert.Equal ("feature", tv.Autocomplete.Suggestions [^1]);
+			Assert.Equal ("Fortunately", tv.Autocomplete.Suggestions[0].Replacement);
+			Assert.Equal ("feature", tv.Autocomplete.Suggestions[^1].Replacement);
 			Assert.Equal (1, tv.Autocomplete.SelectedIdx);
-			Assert.Equal ("feature", tv.Autocomplete.Suggestions [tv.Autocomplete.SelectedIdx]);
+			Assert.Equal ("feature", tv.Autocomplete.Suggestions[tv.Autocomplete.SelectedIdx].Replacement);
 			Assert.True (tv.ProcessKey (new KeyEvent (Key.CursorDown, new KeyModifiers ())));
 			top.Redraw (tv.Bounds);
 			Assert.Equal ($"F Fortunately super feature.", tv.Text);
 			Assert.Equal (new Point (1, 0), tv.CursorPosition);
 			Assert.Equal (2, tv.Autocomplete.Suggestions.Count);
-			Assert.Equal ("Fortunately", tv.Autocomplete.Suggestions [0]);
-			Assert.Equal ("feature", tv.Autocomplete.Suggestions [^1]);
+			Assert.Equal ("Fortunately", tv.Autocomplete.Suggestions[0].Replacement);
+			Assert.Equal ("feature", tv.Autocomplete.Suggestions[^1].Replacement);
 			Assert.Equal (0, tv.Autocomplete.SelectedIdx);
-			Assert.Equal ("Fortunately", tv.Autocomplete.Suggestions [tv.Autocomplete.SelectedIdx]);
+			Assert.Equal ("Fortunately", tv.Autocomplete.Suggestions[tv.Autocomplete.SelectedIdx].Replacement);
 			Assert.True (tv.ProcessKey (new KeyEvent (Key.CursorUp, new KeyModifiers ())));
 			top.Redraw (tv.Bounds);
 			Assert.Equal ($"F Fortunately super feature.", tv.Text);
 			Assert.Equal (new Point (1, 0), tv.CursorPosition);
 			Assert.Equal (2, tv.Autocomplete.Suggestions.Count);
-			Assert.Equal ("Fortunately", tv.Autocomplete.Suggestions [0]);
-			Assert.Equal ("feature", tv.Autocomplete.Suggestions [^1]);
+			Assert.Equal ("Fortunately", tv.Autocomplete.Suggestions[0].Replacement);
+			Assert.Equal ("feature", tv.Autocomplete.Suggestions[^1].Replacement);
 			Assert.Equal (1, tv.Autocomplete.SelectedIdx);
-			Assert.Equal ("feature", tv.Autocomplete.Suggestions [tv.Autocomplete.SelectedIdx]);
+			Assert.Equal ("feature", tv.Autocomplete.Suggestions[tv.Autocomplete.SelectedIdx].Replacement);
 			Assert.True (tv.ProcessKey (new KeyEvent (Key.CursorUp, new KeyModifiers ())));
 			top.Redraw (tv.Bounds);
 			Assert.Equal ($"F Fortunately super feature.", tv.Text);
 			Assert.Equal (new Point (1, 0), tv.CursorPosition);
 			Assert.Equal (2, tv.Autocomplete.Suggestions.Count);
-			Assert.Equal ("Fortunately", tv.Autocomplete.Suggestions [0]);
-			Assert.Equal ("feature", tv.Autocomplete.Suggestions [^1]);
+			Assert.Equal ("Fortunately", tv.Autocomplete.Suggestions[0].Replacement);
+			Assert.Equal ("feature", tv.Autocomplete.Suggestions[^1].Replacement);
 			Assert.Equal (0, tv.Autocomplete.SelectedIdx);
-			Assert.Equal ("Fortunately", tv.Autocomplete.Suggestions [tv.Autocomplete.SelectedIdx]);
+			Assert.Equal ("Fortunately", tv.Autocomplete.Suggestions[tv.Autocomplete.SelectedIdx].Replacement);
 			Assert.True (tv.Autocomplete.Visible);
 			top.Redraw (tv.Bounds);
 			Assert.True (tv.ProcessKey (new KeyEvent (tv.Autocomplete.CloseKey, new KeyModifiers ())));
 			Assert.Equal ($"F Fortunately super feature.", tv.Text);
 			Assert.Equal (new Point (1, 0), tv.CursorPosition);
 			Assert.Empty (tv.Autocomplete.Suggestions);
-			Assert.Equal (3, tv.Autocomplete.AllSuggestions.Count);
+			Assert.Equal (3, g.AllSuggestions.Count);
 			Assert.False (tv.Autocomplete.Visible);
 			top.Redraw (tv.Bounds);
 			Assert.True (tv.ProcessKey (new KeyEvent (tv.Autocomplete.Reopen, new KeyModifiers ())));
 			Assert.Equal ($"F Fortunately super feature.", tv.Text);
 			Assert.Equal (new Point (1, 0), tv.CursorPosition);
 			Assert.Equal (2, tv.Autocomplete.Suggestions.Count);
-			Assert.Equal (3, tv.Autocomplete.AllSuggestions.Count);
+			Assert.Equal (3, g.AllSuggestions.Count);
 			Assert.True (tv.ProcessKey (new KeyEvent (tv.Autocomplete.SelectionKey, new KeyModifiers ())));
 			Assert.Equal ($"Fortunately Fortunately super feature.", tv.Text);
 			Assert.Equal (new Point (11, 0), tv.CursorPosition);
 			Assert.Equal (2, tv.Autocomplete.Suggestions.Count);
-			Assert.Equal ("Fortunately", tv.Autocomplete.Suggestions [0]);
-			Assert.Equal ("feature", tv.Autocomplete.Suggestions [^1]);
+			Assert.Equal ("Fortunately", tv.Autocomplete.Suggestions[0].Replacement);
+			Assert.Equal ("feature", tv.Autocomplete.Suggestions[^1].Replacement);
 			Assert.Equal (0, tv.Autocomplete.SelectedIdx);
-			Assert.Equal ("Fortunately", tv.Autocomplete.Suggestions [tv.Autocomplete.SelectedIdx]);
+			Assert.Equal ("Fortunately", tv.Autocomplete.Suggestions[tv.Autocomplete.SelectedIdx].Replacement);
 			Assert.True (tv.ProcessKey (new KeyEvent (tv.Autocomplete.CloseKey, new KeyModifiers ())));
 			Assert.Equal ($"Fortunately Fortunately super feature.", tv.Text);
 			Assert.Equal (new Point (11, 0), tv.CursorPosition);
 			Assert.Empty (tv.Autocomplete.Suggestions);
-			Assert.Equal (3, tv.Autocomplete.AllSuggestions.Count);
+			Assert.Equal (3, g.AllSuggestions.Count);
 		}
 
 		[Fact, AutoInitShutdown]
@@ -167,7 +174,9 @@ namespace Terminal.Gui.ViewTests {
 				Height = 5,
 				Text = "This a long line and against TextView."
 			};
-			tv.Autocomplete.AllSuggestions = Regex.Matches (tv.Text.ToString (), "\\w+")
+
+			var g = (SingleWordSuggestionGenerator)tv.Autocomplete.SuggestionGenerator;
+			g.AllSuggestions = Regex.Matches (tv.Text.ToString (), "\\w+")
 					.Select (s => s.Value)
 					.Distinct ().ToList ();
 			var top = Application.Top;

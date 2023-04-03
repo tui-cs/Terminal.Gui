@@ -2497,6 +2497,8 @@ line.
 			Assert.False (tv.ReadOnly);
 			Assert.True (tv.CanFocus);
 
+			var g = (SingleWordSuggestionGenerator)tv.Autocomplete.SuggestionGenerator;
+
 			tv.CanFocus = false;
 			Assert.True (tv.ProcessKey (new KeyEvent (Key.CursorLeft, new KeyModifiers ())));
 			tv.CanFocus = true;
@@ -2510,7 +2512,7 @@ line.
 			Assert.Equal (new Point (23, 2), tv.CursorPosition);
 			Assert.False (tv.ProcessKey (new KeyEvent (Key.CursorRight, new KeyModifiers ())));
 			Assert.NotNull (tv.Autocomplete);
-			Assert.Empty (tv.Autocomplete.AllSuggestions);
+			Assert.Empty (g.AllSuggestions);
 			Assert.True (tv.ProcessKey (new KeyEvent (Key.F, new KeyModifiers ())));
 			tv.Redraw (tv.Bounds);
 			Assert.Equal ($"This is the first line.{Environment.NewLine}This is the second line.{Environment.NewLine}This is the third line.F", tv.Text);
@@ -2529,31 +2531,31 @@ line.
 			Assert.True (tv.ProcessKey (new KeyEvent (Key.Backspace, new KeyModifiers ())));
 			Assert.Equal ($"This is the first line.{Environment.NewLine}This is the second line.{Environment.NewLine}This is the third line.", tv.Text);
 			Assert.Equal (new Point (23, 2), tv.CursorPosition);
-			tv.Autocomplete.AllSuggestions = Regex.Matches (tv.Text.ToString (), "\\w+")
+			g.AllSuggestions = Regex.Matches (tv.Text.ToString (), "\\w+")
 				.Select (s => s.Value)
 				.Distinct ().ToList ();
-			Assert.Equal (7, tv.Autocomplete.AllSuggestions.Count);
-			Assert.Equal ("This", tv.Autocomplete.AllSuggestions [0]);
-			Assert.Equal ("is", tv.Autocomplete.AllSuggestions [1]);
-			Assert.Equal ("the", tv.Autocomplete.AllSuggestions [2]);
-			Assert.Equal ("first", tv.Autocomplete.AllSuggestions [3]);
-			Assert.Equal ("line", tv.Autocomplete.AllSuggestions [4]);
-			Assert.Equal ("second", tv.Autocomplete.AllSuggestions [5]);
-			Assert.Equal ("third", tv.Autocomplete.AllSuggestions [^1]);
+			Assert.Equal (7, g.AllSuggestions.Count);
+			Assert.Equal ("This", g.AllSuggestions [0]);
+			Assert.Equal ("is", g.AllSuggestions [1]);
+			Assert.Equal ("the", g.AllSuggestions [2]);
+			Assert.Equal ("first", g.AllSuggestions [3]);
+			Assert.Equal ("line", g.AllSuggestions [4]);
+			Assert.Equal ("second", g.AllSuggestions [5]);
+			Assert.Equal ("third", g.AllSuggestions [^1]);
 			Assert.True (tv.ProcessKey (new KeyEvent (Key.F, new KeyModifiers ())));
 			tv.Redraw (tv.Bounds);
 			Assert.Equal ($"This is the first line.{Environment.NewLine}This is the second line.{Environment.NewLine}This is the third line.F", tv.Text);
 			Assert.Equal (new Point (24, 2), tv.CursorPosition);
 			Assert.Single (tv.Autocomplete.Suggestions);
-			Assert.Equal ("first", tv.Autocomplete.Suggestions [0]);
+			Assert.Equal ("first", tv.Autocomplete.Suggestions[0].Replacement);
 			Assert.True (tv.ProcessKey (new KeyEvent (Key.Enter, new KeyModifiers ())));
 			Assert.Equal ($"This is the first line.{Environment.NewLine}This is the second line.{Environment.NewLine}This is the third line.first", tv.Text);
 			Assert.Equal (new Point (28, 2), tv.CursorPosition);
 			Assert.Single (tv.Autocomplete.Suggestions);
-			Assert.Equal ("first", tv.Autocomplete.Suggestions [0]);
-			tv.Autocomplete.AllSuggestions = new List<string> ();
+			Assert.Equal ("first", tv.Autocomplete.Suggestions[0].Replacement);
+			g.AllSuggestions = new List<string> ();
 			tv.Autocomplete.ClearSuggestions ();
-			Assert.Empty (tv.Autocomplete.AllSuggestions);
+			Assert.Empty (g.AllSuggestions);
 			Assert.Empty (tv.Autocomplete.Suggestions);
 			Assert.True (tv.ProcessKey (new KeyEvent (Key.PageUp, new KeyModifiers ())));
 			Assert.Equal (24, tv.GetCurrentLine ().Count);
