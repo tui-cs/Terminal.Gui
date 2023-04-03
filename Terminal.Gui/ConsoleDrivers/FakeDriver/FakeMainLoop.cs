@@ -15,7 +15,7 @@ namespace Terminal.Gui {
 		AutoResetEvent waitForProbe = new AutoResetEvent (false);
 		ConsoleKeyInfo? keyResult = null;
 		MainLoop mainLoop;
-		Func<ConsoleKeyInfo> consoleKeyReaderFn = null;
+		//Func<ConsoleKeyInfo> consoleKeyReaderFn = () => ;
 
 		/// <summary>
 		/// Invoked when a Key is pressed.
@@ -23,25 +23,19 @@ namespace Terminal.Gui {
 		public Action<ConsoleKeyInfo> KeyPressed;
 
 		/// <summary>
-		/// Initializes the class.
+		/// Creates an instance of the FakeMainLoop. <paramref name="consoleDriver"/> is not used.
 		/// </summary>
-		/// <remarks>
-		///   Passing a consoleKeyReaderfn is provided to support unit test scenarios.
-		/// </remarks>
-		/// <param name="consoleKeyReaderFn">The method to be called to get a key from the console.</param>
-		public FakeMainLoop (Func<ConsoleKeyInfo> consoleKeyReaderFn = null)
+		/// <param name="consoleDriver"></param>
+		public FakeMainLoop (ConsoleDriver consoleDriver = null)
 		{
-			if (consoleKeyReaderFn == null) {
-				throw new ArgumentNullException ("key reader function must be provided.");
-			}
-			this.consoleKeyReaderFn = consoleKeyReaderFn;
+			// consoleDriver is not needed/used in FakeConsole
 		}
 
-		void WindowsKeyReader ()
+		void MockKeyReader ()
 		{
 			while (true) {
 				waitForProbe.WaitOne ();
-				keyResult = consoleKeyReaderFn ();
+				keyResult = FakeConsole.ReadKey (true);
 				keyReady.Set ();
 			}
 		}
@@ -49,7 +43,7 @@ namespace Terminal.Gui {
 		void IMainLoopDriver.Setup (MainLoop mainLoop)
 		{
 			this.mainLoop = mainLoop;
-			Thread readThread = new Thread (WindowsKeyReader);
+			Thread readThread = new Thread (MockKeyReader);
 			readThread.Start ();
 		}
 

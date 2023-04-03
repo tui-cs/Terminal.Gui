@@ -53,27 +53,34 @@ namespace UICatalog.Scenarios {
 			}
 		}
 
+		MenuItem highlightModelTextOnly;
+
 		public override void Setup ()
 		{
 			Win.Title = this.GetName ();
 			Win.Y = 1; // menu
 			Win.Height = Dim.Fill (1); // status bar
-			Top.LayoutSubviews ();
+			Application.Top.LayoutSubviews ();
 
 			var menu = new MenuBar (new MenuBarItem [] {
 				new MenuBarItem ("_File", new MenuItem [] {
 					new MenuItem ("_Quit", "", () => Quit()),
-				})
-				,
+				}),
 				new MenuBarItem ("_View", new MenuItem [] {
 					miShowPrivate = new MenuItem ("_Include Private", "", () => ShowPrivate()){
 						Checked = false,
 						CheckType = MenuItemCheckStyle.Checked
 					},
-				new MenuItem ("_Expand All", "", () => treeView.ExpandAll()),
-				new MenuItem ("_Collapse All", "", () => treeView.CollapseAll()) }),
+					new MenuItem ("_Expand All", "", () => treeView.ExpandAll()),
+					new MenuItem ("_Collapse All", "", () => treeView.CollapseAll())
+				}),
+				new MenuBarItem ("_Style", new MenuItem [] {
+					highlightModelTextOnly = new MenuItem ("_Highlight Model Text Only", "", () => OnCheckHighlightModelTextOnly()) {
+						CheckType = MenuItemCheckStyle.Checked
+					},
+				})
 			});
-			Top.Add (menu);
+			Application.Top.Add (menu);
 
 			treeView = new TreeView<object> () {
 				X = 0,
@@ -81,7 +88,6 @@ namespace UICatalog.Scenarios {
 				Width = Dim.Percent (50),
 				Height = Dim.Fill (),
 			};
-
 
 			treeView.AddObjects (AppDomain.CurrentDomain.GetAssemblies ());
 			treeView.AspectGetter = GetRepresentation;
@@ -100,6 +106,13 @@ namespace UICatalog.Scenarios {
 			Win.Add (textView);
 		}
 
+		private void OnCheckHighlightModelTextOnly ()
+		{
+			treeView.Style.HighlightModelTextOnly = !treeView.Style.HighlightModelTextOnly;
+			highlightModelTextOnly.Checked = treeView.Style.HighlightModelTextOnly;
+			treeView.SetNeedsDisplay ();
+		}
+
 		private void ShowPrivate ()
 		{
 			miShowPrivate.Checked = !miShowPrivate.Checked;
@@ -109,7 +122,7 @@ namespace UICatalog.Scenarios {
 
 		private BindingFlags GetFlags ()
 		{
-			if (miShowPrivate.Checked) {
+			if (miShowPrivate.Checked == true) {
 				return BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic;
 			}
 

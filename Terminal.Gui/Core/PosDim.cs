@@ -52,7 +52,7 @@ namespace Terminal.Gui {
 
 			public override string ToString ()
 			{
-				return $"Pos.PosFunc({function ()})";
+				return $"PosFunc({function ()})";
 			}
 
 			public override int GetHashCode () => function.GetHashCode ();
@@ -85,7 +85,7 @@ namespace Terminal.Gui {
 
 			public override string ToString ()
 			{
-				return $"Pos.Factor({factor})";
+				return $"Factor({factor})";
 			}
 
 			public override int GetHashCode () => factor.GetHashCode ();
@@ -135,7 +135,7 @@ namespace Terminal.Gui {
 
 			public override string ToString ()
 			{
-				return $"Pos.AnchorEnd(margin={n})";
+				return $"AnchorEnd({n})";
 			}
 		}
 
@@ -174,7 +174,7 @@ namespace Terminal.Gui {
 
 			public override string ToString ()
 			{
-				return "Pos.Center";
+				return "Center";
 			}
 		}
 
@@ -209,7 +209,7 @@ namespace Terminal.Gui {
 
 			public override string ToString ()
 			{
-				return $"Pos.Absolute({n})";
+				return $"Absolute({n})";
 			}
 
 			internal override int Anchor (int width)
@@ -244,7 +244,7 @@ namespace Terminal.Gui {
 
 		internal class PosCombine : Pos {
 			internal Pos left, right;
-			bool add;
+			internal bool add;
 			public PosCombine (bool add, Pos left, Pos right)
 			{
 				this.left = left;
@@ -264,7 +264,7 @@ namespace Terminal.Gui {
 
 			public override string ToString ()
 			{
-				return $"Pos.Combine({left.ToString ()}{(add ? '+' : '-')}{right.ToString ()})";
+				return $"Combine({left}{(add ? '+' : '-')}{right})";
 			}
 
 		}
@@ -345,7 +345,7 @@ namespace Terminal.Gui {
 				case 3: tside = "bottom"; break;
 				default: tside = "unknown"; break;
 				}
-				return $"Pos.View(side={tside}, target={Target.ToString ()})";
+				return $"View({tside},{Target.ToString ()})";
 			}
 
 			public override int GetHashCode () => Target.GetHashCode ();
@@ -442,7 +442,7 @@ namespace Terminal.Gui {
 
 			public override string ToString ()
 			{
-				return $"Dim.DimFunc({function ()})";
+				return $"DimFunc({function ()})";
 			}
 
 			public override int GetHashCode () => function.GetHashCode ();
@@ -482,7 +482,7 @@ namespace Terminal.Gui {
 
 			public override string ToString ()
 			{
-				return $"Dim.Factor(factor={factor}, remaining={remaining})";
+				return $"Factor({factor},{remaining})";
 			}
 
 			public override int GetHashCode () => factor.GetHashCode ();
@@ -522,7 +522,7 @@ namespace Terminal.Gui {
 
 			public override string ToString ()
 			{
-				return $"Dim.Absolute({n})";
+				return $"Absolute({n})";
 			}
 
 			internal override int Anchor (int width)
@@ -541,7 +541,7 @@ namespace Terminal.Gui {
 
 			public override string ToString ()
 			{
-				return $"Dim.Fill(margin={margin})";
+				return $"Fill({margin})";
 			}
 
 			internal override int Anchor (int width)
@@ -593,7 +593,7 @@ namespace Terminal.Gui {
 
 		internal class DimCombine : Dim {
 			internal Dim left, right;
-			bool add;
+			internal bool add;
 			public DimCombine (bool add, Dim left, Dim right)
 			{
 				this.left = left;
@@ -613,7 +613,7 @@ namespace Terminal.Gui {
 
 			public override string ToString ()
 			{
-				return $"Dim.Combine({left.ToString ()}{(add ? '+' : '-')}{right.ToString ()})";
+				return $"Combine({left}{(add ? '+' : '-')}{right})";
 			}
 
 		}
@@ -691,7 +691,7 @@ namespace Terminal.Gui {
 				case 1: tside = "Width"; break;
 				default: tside = "unknown"; break;
 				}
-				return $"DimView(side={tside}, target={Target.ToString ()})";
+				return $"View({tside},{Target.ToString ()})";
 			}
 
 			public override int GetHashCode () => Target.GetHashCode ();

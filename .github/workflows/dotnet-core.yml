@@ -2,9 +2,9 @@ name: Build & Test Terminal.Gui with .NET Core
 
 on:
   push:
-    branches: [ main, develop ]
+    branches: [ main, develop, v2_develop ]
   pull_request:
-    branches: [ main, develop ]
+    branches: [ main, develop, v2_develop ]
 
 jobs:
   build:
@@ -15,12 +15,13 @@ jobs:
     - uses: actions/checkout@v3
 
     - name: Setup .NET Core
-      uses: actions/setup-dotnet@v2
+      uses: actions/setup-dotnet@v3.0.3
       with:
         dotnet-version: 6.0.100
 
     - name: Install dependencies
-      run: dotnet restore
+      run: |
+        dotnet restore
 
     - name: Build Debug
       run: dotnet build --configuration Debug --no-restore

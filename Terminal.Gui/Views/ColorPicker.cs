@@ -51,7 +51,7 @@ namespace Terminal.Gui {
 		/// <summary>
 		/// Fired when a color is picked.
 		/// </summary>
-		public event Action ColorChanged;
+		public event EventHandler ColorChanged;
 
 		private int selectColorIndex = (int)Color.Black;
 
@@ -65,7 +65,7 @@ namespace Terminal.Gui {
 
 			set {
 				selectColorIndex = (int)value;
-				ColorChanged?.Invoke ();
+				ColorChanged?.Invoke (this, EventArgs.Empty);
 				SetNeedsDisplay ();
 			}
 		}

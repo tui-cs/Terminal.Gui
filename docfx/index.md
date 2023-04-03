@@ -14,6 +14,7 @@ A toolkit for building rich console apps for .NET, .NET Core, and Mono that work
 * [Keyboard Event Processing](~/articles/keyboard.md)
 * [Event Processing and the Application Main Loop](~/articles/mainloop.md)
 * [Cross-platform Driver Model](~/articles/drivers.md)
+* [Configuration and Theme Manager](~/articles/config.md)
 * [TableView Deep Dive](~/articles/tableview.md)
 * [TreeView Deep Dive](~/articles/treeview.md)
 

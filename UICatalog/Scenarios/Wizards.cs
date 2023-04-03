@@ -70,12 +70,12 @@ namespace UICatalog.Scenarios {
 			};
 			frame.Add (titleEdit);
 
-			void Top_Loaded ()
+			void Top_Loaded (object sender, EventArgs args)
 			{
 				frame.Height = Dim.Height (widthEdit) + Dim.Height (heightEdit) + Dim.Height (titleEdit) + 2;
-				Top.Loaded -= Top_Loaded;
+				Application.Top.Loaded -= Top_Loaded;
 			}
-			Top.Loaded += Top_Loaded;
+			Application.Top.Loaded += Top_Loaded;
 
 			label = new Label ("Action:") {
 				X = Pos.Center (),
@@ -97,7 +97,7 @@ namespace UICatalog.Scenarios {
 				IsDefault = true,
 			};
 
-			showWizardButton.Clicked += () => {
+			showWizardButton.Clicked += (s,e) => {
 				try {
 					int width = 0;
 					int.TryParse (widthEdit.Text.ToString (), out width);
@@ -116,22 +116,22 @@ namespace UICatalog.Scenarios {
 						Height = height
 					};
 
-					wizard.MovingBack += (args) => {
+					wizard.MovingBack += (s, args) => {
 						//args.Cancel = true;
 						actionLabel.Text = "Moving Back";
 					};
 
-					wizard.MovingNext += (args) => {
+					wizard.MovingNext += (s, args) => {
 						//args.Cancel = true;
 						actionLabel.Text = "Moving Next";
 					};
 
-					wizard.Finished += (args) => {
+					wizard.Finished += (s, args) => {
 						//args.Cancel = true;
 						actionLabel.Text = "Finished";
 					};
 
-					wizard.Cancelled += (args) => {
+					wizard.Cancelled += (s, args) => {
 						//args.Cancel = true;
 						actionLabel.Text = "Cancelled";
 					};
@@ -153,7 +153,7 @@ namespace UICatalog.Scenarios {
 						X = Pos.Right (buttonLbl),
 						Y = Pos.Top (buttonLbl)
 					};
-					button.Clicked += () => {
+					button.Clicked += (s,e) => {
 						secondStep.Title = "2nd Step";
 						MessageBox.Query ("Wizard Scenario", "This Wizard Step's title was changed to '2nd Step'");
 					};
@@ -176,7 +176,7 @@ namespace UICatalog.Scenarios {
 					};
 					frame.Add (new TextField ("This is a TextField inside of the frame."));
 					secondStep.Add (frame);
-					wizard.StepChanging += (args) => {
+					wizard.StepChanging += (s, args) => {
 						if (args.OldStep == secondStep && firstNameField.Text.IsEmpty) {
 							args.Cancel = true;
 							var btn = MessageBox.ErrorQuery ("Second Step", "You must enter a First Name to continue", "Ok");
@@ -201,9 +201,9 @@ namespace UICatalog.Scenarios {
 						Fraction = 0.42F
 					};
 					thirdStep.Add (progLbl, progressBar);
-					thirdStep.Enabled = thirdStepEnabledCeckBox.Checked;
-					thirdStepEnabledCeckBox.Toggled += (args) => {
-						thirdStep.Enabled = thirdStepEnabledCeckBox.Checked;
+					thirdStep.Enabled = (bool)thirdStepEnabledCeckBox.Checked;
+					thirdStepEnabledCeckBox.Toggled += (s, e) => {
+						thirdStep.Enabled = (bool)thirdStepEnabledCeckBox.Checked;
 					};
 
 					// Add 4th step
@@ -226,7 +226,7 @@ namespace UICatalog.Scenarios {
 						X = Pos.Center (),
 						Y = Pos.AnchorEnd (1)
 					};
-					hideHelpBtn.Clicked += () => {
+					hideHelpBtn.Clicked += (s,e) => {
 						if (fourthStep.HelpText.Length > 0) {
 							fourthStep.HelpText = ustring.Empty;
 						} else {
@@ -237,7 +237,7 @@ namespace UICatalog.Scenarios {
 					fourthStep.NextButtonText = "Go To Last Step";
 					var scrollBar = new ScrollBarView (someText, true);
 
-					scrollBar.ChangedPosition += () => {
+					scrollBar.ChangedPosition += (s,e) => {
 						someText.TopRow = scrollBar.Position;
 						if (someText.TopRow != scrollBar.Position) {
 							scrollBar.Position = someText.TopRow;
@@ -245,7 +245,7 @@ namespace UICatalog.Scenarios {
 						someText.SetNeedsDisplay ();
 					};
 
-					scrollBar.VisibleChanged += () => {
+					scrollBar.VisibleChanged += (s, e) => {
 						if (scrollBar.Visible && someText.RightOffset == 0) {
 							someText.RightOffset = 1;
 						} else if (!scrollBar.Visible && someText.RightOffset == 1) {
@@ -253,7 +253,7 @@ namespace UICatalog.Scenarios {
 						}
 					};
 
-					someText.DrawContent += (e) => {
+					someText.DrawContent += (s,e) => {
 						scrollBar.Size = someText.Lines;
 						scrollBar.Position = someText.TopRow;
 						if (scrollBar.OtherScrollBarView != null) {
@@ -276,9 +276,9 @@ namespace UICatalog.Scenarios {
 					var finalFinalStep = new Wizard.WizardStep ("The VERY last step");
 					wizard.AddStep (finalFinalStep);
 					finalFinalStep.HelpText = "This step only shows if it was enabled on the other last step.";
-					finalFinalStep.Enabled = thirdStepEnabledCeckBox.Checked;
-					finalFinalStepEnabledCeckBox.Toggled += (args) => {
-						finalFinalStep.Enabled = finalFinalStepEnabledCeckBox.Checked;
+					finalFinalStep.Enabled = (bool)thirdStepEnabledCeckBox.Checked;
+					finalFinalStepEnabledCeckBox.Toggled += (s, e) => {
+						finalFinalStep.Enabled = (bool)finalFinalStepEnabledCeckBox.Checked;
 					};
 
 					Application.Run (wizard);

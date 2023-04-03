@@ -52,19 +52,19 @@ namespace UICatalog.Scenarios {
 					miAllowEdits = new MenuItem ("_AllowEdits", "", () => ToggleAllowEdits ()){Checked = _hexView.AllowEdits, CheckType = MenuItemCheckStyle.Checked}
 				})
 			});
-			Top.Add (menu);
+			Application.Top.Add (menu);
 
 			statusBar = new StatusBar (new StatusItem [] {
 				new StatusItem(Key.F2, "~F2~ Open", () => Open()),
 				new StatusItem(Key.F3, "~F3~ Save", () => Save()),
-				new StatusItem(Key.CtrlMask | Key.Q, "~^Q~ Quit", () => Quit()),
+				new StatusItem(Application.QuitKey, $"{Application.QuitKey} to Quit", () => Quit()),
 				siPositionChanged = new StatusItem(Key.Null,
 					$"Position: {_hexView.Position} Line: {_hexView.CursorPosition.Y} Col: {_hexView.CursorPosition.X} Line length: {_hexView.BytesPerLine}", () => {})
 			});
-			Top.Add (statusBar);
+			Application.Top.Add (statusBar);
 		}
 
-		private void _hexView_PositionChanged (HexView.HexViewEventArgs obj)
+		private void _hexView_PositionChanged (object sender, HexViewEventArgs obj)
 		{
 			siPositionChanged.Title = $"Position: {obj.Position} Line: {obj.CursorPosition.Y} Col: {obj.CursorPosition.X} Line length: {obj.BytesPerLine}";
 			statusBar.SetNeedsDisplay ();
@@ -72,10 +72,10 @@ namespace UICatalog.Scenarios {
 
 		private void ToggleAllowEdits ()
 		{
-			_hexView.AllowEdits = miAllowEdits.Checked = !miAllowEdits.Checked;
+			_hexView.AllowEdits = (bool)(miAllowEdits.Checked = !miAllowEdits.Checked);
 		}
 
-		private void _hexView_Edited (System.Collections.Generic.KeyValuePair<long, byte> obj)
+		private void _hexView_Edited (object sender, HexViewEditEventArgs e)
 		{
 			_saved = false;
 		}
@@ -171,7 +171,7 @@ namespace UICatalog.Scenarios {
 			sb.Append ("Hello world.\n");
 			sb.Append ("This is a test of the Emergency Broadcast System.\n");
 
-			byte [] buffer = Encoding.Unicode.GetBytes (sb.ToString());
+			byte [] buffer = Encoding.Unicode.GetBytes (sb.ToString ());
 			MemoryStream ms = new MemoryStream (buffer);
 			FileStream file = new FileStream (fileName, FileMode.Create, FileAccess.Write);
 			ms.WriteTo (file);

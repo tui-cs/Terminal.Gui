@@ -145,11 +145,6 @@ namespace Unix.Terminal {
 			if (l == 1 || l != lines || c != cols) {
 				lines = l;
 				cols = c;
-				//if (l <= 0 || c <= 0) {
-				//	Console.Out.Write ($"\x1b[8;50;{c}t");
-				//	Console.Out.Flush ();
-				//	return false;
-				//}
 				return true;
 			}
 			return false;

@@ -24,3 +24,5 @@ UnitTests/TestResults
 demo.*
 
 *.deb
+
+*.tui/

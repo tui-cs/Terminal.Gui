@@ -60,8 +60,11 @@ namespace UICatalog {
 				foreach (var sub in view.Subviews) {
 					RecordView (sub);
 				}
+				// TODO: BUG: Based on my new understanding of Added event I think this is wrong
+				// (and always was wrong). Parents don't get to be told when new views are added
+				// to them
 
-				view.Added += RecordView;
+				view.Added += (s,e)=>RecordView(e.Child);
 			}
 
 			internal static void Initialize ()
@@ -151,14 +154,14 @@ namespace UICatalog {
 			btnChange.Clicked += RemapKey;
 
 			var close = new Button ("Ok");
-			close.Clicked += () => {
+			close.Clicked += (s,e) => {
 				Application.RequestStop ();
 				ViewTracker.Instance.StartUsingNewKeyMap (CurrentBindings);
 			};
 			AddButton (close);
 
 			var cancel = new Button ("Cancel");
-			cancel.Clicked += ()=>Application.RequestStop();
+			cancel.Clicked += (s,e)=>Application.RequestStop();
 			AddButton (cancel);
 
 			// Register event handler as the last thing in constructor to prevent early calls
@@ -169,14 +172,14 @@ namespace UICatalog {
 			SetTextBoxToShowBinding (commands.First());
 		}
 
-		private void RemapKey ()
+		private void RemapKey (object sender, EventArgs e)
 		{
 			var cmd = commands [commandsListView.SelectedItem];
 			Key? key = null;
 
 			// prompt user to hit a key
 			var dlg = new Dialog ("Enter Key");
-			dlg.KeyPress += (k) => {
+			dlg.KeyPress += (s, k) => {
 				key = k.KeyEvent.Key;
 				Application.RequestStop ();
 			};
@@ -198,7 +201,7 @@ namespace UICatalog {
 			SetNeedsDisplay ();
 		}
 
-		private void CommandsListView_SelectedItemChanged (ListViewItemEventArgs obj)
+		private void CommandsListView_SelectedItemChanged (object sender, ListViewItemEventArgs obj)
 		{
 			SetTextBoxToShowBinding ((Command)obj.Value);
 		}

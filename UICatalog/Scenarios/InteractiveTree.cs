@@ -20,14 +20,14 @@ namespace UICatalog.Scenarios {
 			Win.Title = this.GetName ();
 			Win.Y = 1; // menu
 			Win.Height = Dim.Fill (1); // status bar
-			Top.LayoutSubviews ();
+			Application.Top.LayoutSubviews ();
 
 			var menu = new MenuBar (new MenuBarItem [] {
 				new MenuBarItem ("_File", new MenuItem [] {
 					new MenuItem ("_Quit", "", () => Quit()),
 				})
 				});
-			Top.Add (menu);
+			Application.Top.Add (menu);
 
 			treeView = new TreeView () {
 				X = 0,
@@ -40,16 +40,16 @@ namespace UICatalog.Scenarios {
 			Win.Add (treeView);
 
 			var statusBar = new StatusBar (new StatusItem [] {
-				new StatusItem(Key.CtrlMask | Key.Q, "~^Q~ Quit", () => Quit()),
+				new StatusItem(Application.QuitKey, $"{Application.QuitKey} to Quit", () => Quit()),
 				new StatusItem(Key.CtrlMask | Key.C, "~^C~ Add Child", () => AddChildNode()),
 				new StatusItem(Key.CtrlMask | Key.T, "~^T~ Add Root", () => AddRootNode()),
 				new StatusItem(Key.CtrlMask | Key.R, "~^R~ Rename Node", () => RenameNode()),
 			});
-			Top.Add (statusBar);
+			Application.Top.Add (statusBar);
 
 		}
 
-		private void TreeView_KeyPress (View.KeyEventEventArgs obj)
+		private void TreeView_KeyPress (object sender, KeyEventEventArgs obj)
 		{
 			if (obj.KeyEvent.Key == Key.DeleteChar) {
 
@@ -116,9 +116,9 @@ namespace UICatalog.Scenarios {
 			bool okPressed = false;
 
 			var ok = new Button ("Ok", is_default: true);
-			ok.Clicked += () => { okPressed = true; Application.RequestStop (); };
+			ok.Clicked += (s,e) => { okPressed = true; Application.RequestStop (); };
 			var cancel = new Button ("Cancel");
-			cancel.Clicked += () => { Application.RequestStop (); };
+			cancel.Clicked += (s,e) => { Application.RequestStop (); };
 			var d = new Dialog (title, 60, 20, ok, cancel);
 
 			var lbl = new Label () {

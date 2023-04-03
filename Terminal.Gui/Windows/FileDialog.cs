@@ -41,7 +41,7 @@ namespace Terminal.Gui {
 			if (allowedFileTypes == null)
 				return true;
 			foreach (var ft in allowedFileTypes)
-				if (fsi.Name.EndsWith (ft) || ft == ".*")
+				if (fsi.Name.EndsWith (ft, StringComparison.InvariantCultureIgnoreCase) || ft == ".*")
 					return true;
 			return false;
 		}
@@ -83,6 +83,7 @@ namespace Terminal.Gui {
 				case DirectoryNotFoundException _:
 				case ArgumentException _:
 					dirInfo = null;
+					watcher?.Dispose ();
 					watcher = null;
 					infos.Clear ();
 					valid = true;
@@ -104,7 +105,15 @@ namespace Terminal.Gui {
 		{
 			if (!_disposedValue) {
 				if (disposing) {
+					if (watcher != null) {
+						watcher.Changed -= Watcher_Changed;
+						watcher.Created -= Watcher_Changed;
+						watcher.Deleted -= Watcher_Changed;
+						watcher.Renamed -= Watcher_Changed;
+						watcher.Error -= Watcher_Error;
+					}
 					watcher?.Dispose ();
+					watcher = null;
 				}
 
 				_disposedValue = true;
@@ -116,11 +125,17 @@ namespace Terminal.Gui {
 
 		void Watcher_Error (object sender, ErrorEventArgs e)
 		{
+			if (Application.MainLoop == null)
+				return;
+
 			Application.MainLoop.Invoke (() => Reload ());
 		}
 
 		void Watcher_Changed (object sender, FileSystemEventArgs e)
 		{
+			if (Application.MainLoop == null)
+				return;
+
 			Application.MainLoop.Invoke (() => Reload ());
 		}
 
@@ -634,7 +649,7 @@ namespace Terminal.Gui {
 				Y = 1 + msgLines,
 				Width = Dim.Fill () - 1,
 			};
-			dirEntry.TextChanged += (e) => {
+			dirEntry.TextChanged += (s, e) => {
 				DirectoryPath = dirEntry.Text;
 				nameEntry.Text = ustring.Empty;
 			};
@@ -656,12 +671,17 @@ namespace Terminal.Gui {
 				X = Pos.Right (nameEntry) + 2,
 				Y = Pos.Top (nameEntry),
 				Width = Dim.Fill (1),
-				Height = allowedTypes != null ? allowedTypes.Count + 1 : 1,
+				Height = SetComboBoxHeight (allowedTypes),
 				Text = allowedTypes?.Count > 0 ? allowedTypes [0] : string.Empty,
-				ReadOnly = true
+				SelectedItem = allowedTypes?.Count > 0 ? 0 : -1,
+				ReadOnly = true,
+				HideDropdownListOnClick = true
 			};
 			cmbAllowedTypes.SetSource (allowedTypes ?? new List<string> ());
-			cmbAllowedTypes.OpenSelectedItem += (e) => AllowedFileTypes = cmbAllowedTypes.Text.ToString ().Split (';');
+			cmbAllowedTypes.OpenSelectedItem += (s, e) => {
+				dirListView.AllowedFileTypes = cmbAllowedTypes.Text.ToString ().Split (';');
+				dirListView.Reload ();
+			};
 			Add (cmbAllowedTypes);
 
 			dirListView = new DirListView (this) {
@@ -673,12 +693,12 @@ namespace Terminal.Gui {
 			DirectoryPath = Path.GetFullPath (Environment.CurrentDirectory);
 			Add (dirListView);
 
-			AllowedFileTypes = cmbAllowedTypes.Text.ToString ().Split (';');
+			AllowedFileTypes = allowedTypes?.Count > 0 ? allowedTypes?.ToArray () : null;
 			dirListView.DirectoryChanged = (dir) => { nameEntry.Text = ustring.Empty; dirEntry.Text = dir; };
 			dirListView.FileChanged = (file) => nameEntry.Text = file == ".." ? "" : file;
 			dirListView.SelectedChanged = (file) => nameEntry.Text = file.Item1 == ".." ? "" : file.Item1;
 			this.cancel = new Button ("Cancel");
-			this.cancel.Clicked += () => {
+			this.cancel.Clicked += (s,e) => {
 				Cancel ();
 			};
 			AddButton (cancel);
@@ -687,7 +707,7 @@ namespace Terminal.Gui {
 				IsDefault = true,
 				Enabled = nameEntry.Text.IsEmpty ? false : true
 			};
-			this.prompt.Clicked += () => {
+			this.prompt.Clicked += (s,e) => {
 				if (this is OpenDialog) {
 					if (!dirListView.GetValidFilesName (nameEntry.Text.ToString (), out string res)) {
 						nameEntry.Text = res;
@@ -711,7 +731,7 @@ namespace Terminal.Gui {
 			};
 			AddButton (this.prompt);
 
-			nameEntry.TextChanged += (e) => {
+			nameEntry.TextChanged += (s,e) => {
 				if (nameEntry.Text.IsEmpty) {
 					this.prompt.Enabled = false;
 				} else {
@@ -725,7 +745,7 @@ namespace Terminal.Gui {
 			// On success, we will set this to false.
 			canceled = true;
 
-			KeyPress += (e) => {
+			KeyPress += (s, e) => {
 				if (e.KeyEvent.Key == Key.Esc) {
 					Cancel ();
 					e.Handled = true;
@@ -736,6 +756,11 @@ namespace Terminal.Gui {
 				canceled = true;
 				Application.RequestStop ();
 			}
+		}
+
+		private static int SetComboBoxHeight (List<string> allowedTypes)
+		{
+			return allowedTypes != null ? Math.Min (allowedTypes.Count + 1, 8) : 8;
 		}
 
 		internal bool canceled;
@@ -821,13 +846,24 @@ namespace Terminal.Gui {
 			}
 		}
 
+		private string [] allowedFileTypes;
+
 		/// <summary>
 		/// The array of filename extensions allowed, or null if all file extensions are allowed.
 		/// </summary>
 		/// <value>The allowed file types.</value>
 		public string [] AllowedFileTypes {
-			get => dirListView.AllowedFileTypes;
-			set => dirListView.AllowedFileTypes = value;
+			get => allowedFileTypes;
+			set {
+				allowedFileTypes = value;
+				var selected = cmbAllowedTypes.SelectedItem;
+				cmbAllowedTypes.SetSource (value);
+				cmbAllowedTypes.SelectedItem = selected > -1 ? selected : 0;
+				SetComboBoxHeight (value?.ToList ());
+				dirListView.AllowedFileTypes = value != null
+					? value [cmbAllowedTypes.SelectedItem].Split (';')
+					: null;
+			}
 		}
 
 		/// <summary>

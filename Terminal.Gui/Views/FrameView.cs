@@ -1,24 +1,50 @@
-﻿//
-// Authors:
-//   Miguel de Icaza (miguel@gnome.org)
-//
-// NOTE: FrameView is functionally identical to Window with the following exceptions. 
-//  - Is not a Toplevel
-//  - Does not support mouse dragging
-//  - Does not support padding (but should)
-//  - Does not support IEnumerable
-// Any udpates done here should probably be done in Window as well; TODO: Merge these classes
-
-using System;
+﻿using System;
 using System.Linq;
+using System.Text.Json.Serialization;
 using NStack;
+using Terminal.Gui.Graphs;
+using static Terminal.Gui.Configuration.ConfigurationManager;
 
 namespace Terminal.Gui {
+
 	/// <summary>
 	/// The FrameView is a container frame that draws a frame around the contents. It is similar to
 	/// a GroupBox in Windows.
 	/// </summary>
 	public class FrameView : View {
+
+		//internal class FrameViewConfig : Configuration.Config<FrameViewConfig> {
+
+		//	/// <summary>
+		//	/// 
+		//	/// </summary>
+		//	/// 
+		//	[JsonConverter (typeof (JsonStringEnumConverter))]
+		//	public BorderStyle? DefaultBorderStyle { get; set; }
+
+		//	public override void Apply ()
+		//	{
+		//		if (DefaultBorderStyle.HasValue) {
+		//			FrameView.DefaultBorderStyle = DefaultBorderStyle.Value;
+		//		}
+		//	}
+
+		//	public override void CopyUpdatedProperitesFrom (FrameViewConfig changedConfig)
+		//	{
+		//		if (changedConfig.DefaultBorderStyle.HasValue) {
+		//			DefaultBorderStyle = changedConfig.DefaultBorderStyle;
+		//		}
+		//	}
+
+		//	public override void GetHardCodedDefaults ()
+		//	{
+		//		DefaultBorderStyle = FrameView.DefaultBorderStyle;
+		//	}
+		//}
+
+		//[Configuration.ConfigProperty]
+		//internal static FrameViewConfig Config { get; set; } = new FrameViewConfig ();
+
 		View contentView;
 		ustring title;
 
@@ -30,6 +56,9 @@ namespace Terminal.Gui {
 			get => title;
 			set {
 				title = value;
+				if (Border != null) {
+					Border.Title = title;
+				}
 				SetNeedsDisplay ();
 			}
 		}
@@ -57,7 +86,7 @@ namespace Terminal.Gui {
 			}
 		}
 
-		void Border_BorderChanged (Border border)
+		void Border_BorderChanged (object sender, EventArgs e)
 		{
 			Rect frame;
 			if (contentView != null && (contentView.Width is Dim || contentView.Height is Dim)) {
@@ -87,7 +116,6 @@ namespace Terminal.Gui {
 		/// <param name="border">The <see cref="Border"/>.</param>
 		public FrameView (Rect frame, ustring title = null, View [] views = null, Border border = null) : base (frame)
 		{
-			//var cFrame = new Rect (1, 1, Math.Max (frame.Width - 2, 0), Math.Max (frame.Height - 2, 0));
 			Initialize (frame, title, views, border);
 		}
 
@@ -106,16 +134,29 @@ namespace Terminal.Gui {
 		/// </summary>
 		public FrameView () : this (title: string.Empty) { }
 
+		/// <summary>
+		/// The default <see cref="BorderStyle"/> for <see cref="FrameView"/>. The default is <see cref="BorderStyle.Single"/>.
+		/// </summary>
+		/// <remarks>
+		/// This property can be set in a Theme to change the default <see cref="BorderStyle"/> for all <see cref="FrameView"/>s. 
+		/// </remarks>
+		[SerializableConfigurationProperty (Scope = typeof (ThemeScope)), JsonConverter (typeof (JsonStringEnumConverter))]
+		public static BorderStyle DefaultBorderStyle { get; set; } = BorderStyle.Single;
+
 		void Initialize (Rect frame, ustring title, View [] views = null, Border border = null)
 		{
 			if (title == null) title = ustring.Empty;
 			this.Title = title;
 			if (border == null) {
 				Border = new Border () {
-					BorderStyle = BorderStyle.Single
+					BorderStyle = DefaultBorderStyle,
+					Title = title
 				};
 			} else {
 				Border = border;
+				if (ustring.IsNullOrEmpty (border.Title)) {
+					border.Title = title;
+				}
 			}
 			AdjustContentView (frame, views);
 		}
@@ -214,12 +255,8 @@ namespace Terminal.Gui {
 		///<inheritdoc/>
 		public override void Redraw (Rect bounds)
 		{
-			var padding = Border.GetSumThickness ();
-			var scrRect = ViewToScreen (new Rect (0, 0, Frame.Width, Frame.Height));
-
 			if (!NeedDisplay.IsEmpty) {
 				Driver.SetAttribute (GetNormalColor ());
-				//Driver.DrawWindowFrame (scrRect, padding + 1, padding + 1, padding + 1, padding + 1, border: true, fill: true);
 				Clear ();
 			}
 
@@ -227,16 +264,56 @@ namespace Terminal.Gui {
 			contentView.Redraw (!NeedDisplay.IsEmpty ? contentView.Bounds : bounds);
 			Driver.Clip = savedClip;
 
+			ClearLayoutNeeded ();
 			ClearNeedsDisplay ();
 
-			Driver.SetAttribute (GetNormalColor ());
-			//Driver.DrawWindowFrame (scrRect, padding + 1, padding + 1, padding + 1, padding + 1, border: true, fill: false);
-			Border.DrawContent (this, false);
-			if (HasFocus)
-				Driver.SetAttribute (ColorScheme.HotNormal);
-			if (Border.DrawMarginFrame)
-				Driver.DrawWindowTitle (scrRect, Title, padding.Left, padding.Top, padding.Right, padding.Bottom);
-			Driver.SetAttribute (GetNormalColor ());
+			if (!IgnoreBorderPropertyOnRedraw) {
+				Driver.SetAttribute (GetNormalColor ());
+				Border.DrawContent (this, false);
+			} else {
+				var lc = new LineCanvas ();
+
+				if (Border?.BorderStyle != BorderStyle.None) {
+
+					lc.AddLine (new Point (0, 0), bounds.Width - 1, Orientation.Horizontal, Border.BorderStyle);
+					lc.AddLine (new Point (0, 0), bounds.Height - 1, Orientation.Vertical, Border.BorderStyle);
+
+					lc.AddLine (new Point (bounds.Width - 1, bounds.Height - 1), -bounds.Width + 1, Orientation.Horizontal, Border.BorderStyle);
+					lc.AddLine (new Point (bounds.Width - 1, bounds.Height - 1), -bounds.Height + 1, Orientation.Vertical, Border.BorderStyle);
+				}
+
+				//foreach (var subview in contentView.Subviews) {
+				//	lc.AddLine (new Point (subview.Frame.X + 1, subview.Frame.Y + 1), subview.Frame.Width - 1, Orientation.Horizontal, subview.Border.BorderStyle);
+				//	lc.AddLine (new Point (subview.Frame.X + 1, subview.Frame.Y + 1), subview.Frame.Height - 1, Orientation.Vertical, subview.Border.BorderStyle);
+
+				//	lc.AddLine (new Point (subview.Frame.X + subview.Frame.Width, subview.Frame.Y + subview.Frame.Height), -subview.Frame.Width + 1, Orientation.Horizontal, subview.Border.BorderStyle);
+				//	lc.AddLine (new Point (subview.Frame.X + subview.Frame.Width, subview.Frame.Y + subview.Frame.Height), -subview.Frame.Height + 1, Orientation.Vertical, subview.Border.BorderStyle);
+
+				//}
+
+				//Driver.SetAttribute (ColorScheme.Normal);
+				//foreach (var p in lc.GenerateImage (bounds)) {
+				//	this.AddRune (p.Key.X, p.Key.Y, p.Value);
+				//}
+
+				//// Redraw the lines so that focus/drag symbol renders
+				//foreach (var subview in contentView.Subviews) {
+				//	//	line.DrawSplitterSymbol ();
+				//}
+
+
+				//// Draw Titles over Border
+				//foreach (var subview in contentView.Subviews) {
+				//	// TODO: Use reflection to see if subview has a Title property
+				//	if (subview is FrameView viewWithTite) {
+				//		var rect = viewWithTite.Frame;
+				//		rect.X = rect.X + 1;
+				//		rect.Y = rect.Y + 2;
+				//		// TODO: Do focus color correctly
+				//		Driver.DrawWindowTitle (rect, viewWithTite.Title, padding.Left, padding.Top, padding.Right, padding.Bottom);
+				//	}
+				//}
+			}
 		}
 
 		/// <summary>

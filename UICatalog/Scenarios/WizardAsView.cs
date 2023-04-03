@@ -10,9 +10,9 @@ namespace UICatalog.Scenarios {
 	[ScenarioCategory ("Wizards")]
 	public class WizardAsView : Scenario {
 
-		public override void Init (Toplevel top, ColorScheme colorScheme)
+		public override void Init ()
 		{
-			Top = Application.Top;
+			Application.Init ();
 
 			var menu = new MenuBar (new MenuBarItem [] {
 				new MenuBarItem ("_File", new MenuItem [] {
@@ -21,7 +21,7 @@ namespace UICatalog.Scenarios {
 					new MenuItem ("_Shutdown Server...", "", () => MessageBox.Query ("Wizaard", "Are you sure you want to cancel setup and shutdown?", "Ok", "Cancel")),
 				})
 			});
-			Top.Add (menu);
+			Application.Top.Add (menu);
 
 			// No need for a Title because the border is disabled
 			var wizard = new Wizard () {
@@ -35,23 +35,23 @@ namespace UICatalog.Scenarios {
 			// behave like an non-modal View (vs. a modal/pop-up Window).
 			wizard.Modal = false;
 
-			wizard.MovingBack += (args) => {
+			wizard.MovingBack += (s,args) => {
 				//args.Cancel = true;
 				//actionLabel.Text = "Moving Back";
 			};
 
-			wizard.MovingNext += (args) => {
+			wizard.MovingNext += (s,args) => {
 				//args.Cancel = true;
 				//actionLabel.Text = "Moving Next";
 			};
 
-			wizard.Finished += (args) => {
+			wizard.Finished += (s,args) => {
 				//args.Cancel = true;
 				MessageBox.Query ("Setup Wizard", "Finished", "Ok");
 				Application.RequestStop ();
 			};
 
-			wizard.Cancelled += (args) => {
+			wizard.Cancelled += (s,args) => {
 				var btn = MessageBox.Query ("Setup Wizard", "Are you sure you want to cancel?", "Yes", "No");
 				args.Cancel = btn == 1;
 				if (btn == 0) {
@@ -76,7 +76,7 @@ namespace UICatalog.Scenarios {
 				X = Pos.Right (buttonLbl),
 				Y = Pos.Top (buttonLbl)
 			};
-			button.Clicked += () => {
+			button.Clicked += (s,e) => {
 				secondStep.Title = "2nd Step";
 				MessageBox.Query ("Wizard Scenario", "This Wizard Step's title was changed to '2nd Step'", "Ok");
 			};
@@ -93,8 +93,8 @@ namespace UICatalog.Scenarios {
 			wizard.AddStep (lastStep);
 			lastStep.HelpText = "The wizard is complete!\n\nPress the Finish button to continue.\n\nPressing Esc will cancel.";
 
-			Top.Add (wizard);
-			Application.Run (Top);
+			Application.Top.Add (wizard);
+			Application.Run (Application.Top);
 		}
 
 		public override void Run ()

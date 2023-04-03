@@ -57,7 +57,7 @@ namespace UICatalog.Scenarios {
 			var IsAlt = false;
 			var IsCtrl = false;
 
-			txtResult.KeyPress += (e) => {
+			txtResult.KeyPress += (s, e) => {
 				rKeys += (char)e.KeyEvent.Key;
 				if (!IsShift && e.KeyEvent.IsShift) {
 					rControlKeys += " Shift ";
@@ -106,17 +106,17 @@ namespace UICatalog.Scenarios {
 				foreach (var r in txtInput.Text.ToString ()) {
 					var ck = char.IsLetter (r)
 						? (ConsoleKey)char.ToUpper (r) : (ConsoleKey)r;
-					Application.Driver.SendKeys (r, ck, ckbShift.Checked,
-						ckbAlt.Checked, ckbControl.Checked);
+					Application.Driver.SendKeys (r, ck, (bool)ckbShift.Checked,
+						(bool)ckbAlt.Checked, (bool)ckbControl.Checked);
 				}
 				lblShippedKeys.Text = rKeys;
 				lblShippedControlKeys.Text = rControlKeys;
 				txtInput.SetFocus ();
 			}
 
-			button.Clicked += () => ProcessInput ();
+			button.Clicked += (s,e) => ProcessInput ();
 
-			Win.KeyPress += (e) => {
+			Win.KeyPress += (s, e) => {
 				if (e.KeyEvent.Key == Key.Enter) {
 					ProcessInput ();
 					e.Handled = true;

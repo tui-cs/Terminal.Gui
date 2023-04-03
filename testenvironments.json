@@ -1,0 +1,19 @@
+{
+	// Remote Testing (experimental preview).
+	// Here is some documentation https://learn.microsoft.com/en-us/visualstudio/test/remote-testing?view=vs-2022.
+	// Here a screen shot of the VS2022 where are the Test Explorer https://user-images.githubusercontent.com/13117724/196798350-5a6f94d3-b6cd-424e-b4e8-a9b507dc057a.png.
+	// Ignore "Could not find 'mono' host" error because unit tests don't use the .NET Framework.
+	"version": "1",
+	"environments": [
+		{
+			"name": "WSL-Ubuntu",
+			"type": "wsl",
+			"wslDistribution": "Ubuntu"
+		},
+		{
+			"name": "WSL-Debian",
+			"type": "wsl",
+			"wslDistribution": "Debian"
+		}
+	]
+}

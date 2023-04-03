@@ -53,7 +53,6 @@ namespace Unix.Terminal {
 		public const int COLOR_WHITE = unchecked((int)0x7);
 		public const int COLOR_GRAY = unchecked((int)0x8);
 		public const int KEY_CODE_YES = unchecked((int)0x100);
-		public const int KEY_CODE_SEQ = unchecked((int)0x5b);
 		public const int ERR = unchecked((int)0xffffffff);
 		public const int TIOCGWINSZ  = unchecked((int)0x5413);
 		public const int TIOCGWINSZ_MAC  = unchecked((int)0x40087468);
@@ -69,7 +68,7 @@ namespace Unix.Terminal {
 			Button2Released = unchecked((int)0x20),
 			Button2Clicked = unchecked((int)0x80),
 			Button2DoubleClicked = unchecked((int)0x100),
-			Button2TrippleClicked = unchecked((int)0x200),
+			Button2TripleClicked = unchecked((int)0x200),
 			Button3Pressed = unchecked((int)0x800),
 			Button3Released = unchecked((int)0x400),
 			Button3Clicked = unchecked((int)0x1000),
@@ -106,6 +105,7 @@ namespace Unix.Terminal {
 		public const int KeyPPage = unchecked((int)0x153);
 		public const int KeyHome = unchecked((int)0x106);
 		public const int KeyMouse = unchecked((int)0x199);
+		public const int KeyCSI = unchecked((int)0x5b);
 		public const int KeyEnd = unchecked((int)0x168);
 		public const int KeyDeleteChar = unchecked((int)0x14a);
 		public const int KeyInsertChar = unchecked((int)0x14b);

@@ -3,17 +3,17 @@
     <OutputType>Exe</OutputType>
     <TargetFramework>net6.0</TargetFramework>
     <!-- Version numbers are automatically updated by gitversion when a release is released -->
-    <!-- In the source tree the version will always be 1.0 for all projects. -->
+    <!-- In the source tree the version will always be 2.0 for all projects. -->
     <!-- Do not modify these. -->
-    <AssemblyVersion>1.0</AssemblyVersion>
-    <FileVersion>1.0</FileVersion>
-    <Version>1.0</Version>
-    <InformationalVersion>1.0</InformationalVersion>
+    <AssemblyVersion>2.0</AssemblyVersion>
+    <FileVersion>2.0</FileVersion>
+    <Version>2.0</Version>
+    <InformationalVersion>2.0</InformationalVersion>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="ReactiveUI.Fody" Version="18.3.1" />
-    <PackageReference Include="ReactiveUI" Version="18.3.1" />
-    <PackageReference Include="ReactiveMarbles.ObservableEvents.SourceGenerator" Version="1.1.4" PrivateAssets="all" />
+    <PackageReference Include="ReactiveUI.Fody" Version="18.4.22" />
+    <PackageReference Include="ReactiveUI" Version="18.4.22" />
+    <PackageReference Include="ReactiveMarbles.ObservableEvents.SourceGenerator" Version="1.2.3" PrivateAssets="all" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Terminal.Gui\Terminal.Gui.csproj" />

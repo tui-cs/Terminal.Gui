@@ -16,12 +16,12 @@ jobs:
         fetch-depth: 0 #fetch-depth is needed for GitVersion
 
     - name: Install and calculate the new version with GitVersion 
-      uses: gittools/actions/gitversion/setup@v0.9.13
+      uses: gittools/actions/gitversion/setup@v0.9.15
       with:
         versionSpec: 5.x
 
     - name: Determine Version
-      uses: gittools/actions/gitversion/execute@v0.9.13
+      uses: gittools/actions/gitversion/execute@v0.9.15
       id: gitversion # step id used as reference for output values
 
     - name: Display GitVersion outputs
@@ -30,7 +30,7 @@ jobs:
         echo "CommitsSinceVersionSource: ${{ steps.gitversion.outputs.CommitsSinceVersionSource }}"
 
     - name: Setup dotnet
-      uses: actions/setup-dotnet@v2
+      uses: actions/setup-dotnet@v3.0.3
       with:
         dotnet-version: 6.0.100
 

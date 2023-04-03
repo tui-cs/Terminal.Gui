@@ -92,7 +92,7 @@ namespace UICatalog.Scenarios {
 			};
 			frame.Add (numButtonsEdit);
 
-			var glyphsNotWords = new CheckBox ($"Add {Char.ConvertFromUtf32(CODE_POINT)} to button text to stress wide char support", false) {
+			var glyphsNotWords = new CheckBox ($"Add {Char.ConvertFromUtf32 (CODE_POINT)} to button text to stress wide char support", false) {
 				X = Pos.Left (numButtonsEdit),
 				Y = Pos.Bottom (label),
 				TextAlignment = Terminal.Gui.TextAlignment.Right,
@@ -112,13 +112,13 @@ namespace UICatalog.Scenarios {
 			};
 			frame.Add (styleRadioGroup);
 
-			void Top_Loaded ()
+			void Top_Loaded (object sender, EventArgs args)
 			{
 				frame.Height = Dim.Height (widthEdit) + Dim.Height (heightEdit) + Dim.Height (titleEdit)
-					+ Dim.Height (numButtonsEdit) + Dim.Height (styleRadioGroup) + Dim.Height(glyphsNotWords) + 2;
-				Top.Loaded -= Top_Loaded;
+					+ Dim.Height (numButtonsEdit) + Dim.Height (styleRadioGroup) + Dim.Height (glyphsNotWords) + 2;
+				Application.Top.Loaded -= Top_Loaded;
 			}
-			Top.Loaded += Top_Loaded;
+			Application.Top.Loaded += Top_Loaded;
 
 			label = new Label ("Button Pressed:") {
 				X = Pos.Center (),
@@ -144,7 +144,7 @@ namespace UICatalog.Scenarios {
 				Y = Pos.Bottom (frame) + 2,
 				IsDefault = true,
 			};
-			showDialogButton.Clicked += () => {
+			showDialogButton.Clicked += (s,e) => {
 				try {
 					Dialog dialog = null;
 
@@ -160,7 +160,7 @@ namespace UICatalog.Scenarios {
 					for (int i = 0; i < numButtons; i++) {
 						int buttonId = i;
 						Button button = null;
-						if (glyphsNotWords.Checked) {
+						if (glyphsNotWords.Checked == true) {
 							buttonId = i;
 							button = new Button (NumberToWords.Convert (buttonId) + " " + Char.ConvertFromUtf32 (buttonId + CODE_POINT),
 								is_default: buttonId == 0);
@@ -168,7 +168,7 @@ namespace UICatalog.Scenarios {
 							button = new Button (NumberToWords.Convert (buttonId),
 							       is_default: buttonId == 0);
 						}
-						button.Clicked += () => {
+						button.Clicked += (s,e) => {
 							clicked = buttonId;
 							Application.RequestStop ();
 						};
@@ -193,17 +193,17 @@ namespace UICatalog.Scenarios {
 						X = Pos.Center (),
 						Y = Pos.Center ()
 					};
-					add.Clicked += () => {
+					add.Clicked += (s,e) => {
 						var buttonId = buttons.Count;
 						Button button;
-						if (glyphsNotWords.Checked) {
+						if (glyphsNotWords.Checked == true) {
 							button = new Button (NumberToWords.Convert (buttonId) + " " + Char.ConvertFromUtf32 (buttonId + CODE_POINT),
 								is_default: buttonId == 0);
 						} else {
 							button = new Button (NumberToWords.Convert (buttonId),
 								is_default: buttonId == 0);
 						}
-						button.Clicked += () => {
+						button.Clicked += (s,e) => {
 							clicked = buttonId;
 							Application.RequestStop ();
 
@@ -216,17 +216,17 @@ namespace UICatalog.Scenarios {
 					};
 					dialog.Add (add);
 
-					var addChar = new Button ($"Add a {Char.ConvertFromUtf32(CODE_POINT)} to each button") {
+					var addChar = new Button ($"Add a {Char.ConvertFromUtf32 (CODE_POINT)} to each button") {
 						X = Pos.Center (),
 						Y = Pos.Center () + 1
 					};
-					addChar.Clicked += () => {
+					addChar.Clicked += (s,e) => {
 						foreach (var button in buttons) {
 							button.Text += Char.ConvertFromUtf32 (CODE_POINT);
 						}
 						dialog.LayoutSubviews ();
 					};
-					dialog.Closed += (args) => {
+					dialog.Closed += (s,e) => {
 						buttonPressedLabel.Text = $"{clicked}";
 					};
 					dialog.Add (addChar);

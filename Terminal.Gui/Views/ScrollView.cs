@@ -13,7 +13,6 @@
 
 using System;
 using System.Linq;
-using System.Reflection;
 
 namespace Terminal.Gui {
 	/// <summary>
@@ -30,7 +29,14 @@ namespace Terminal.Gui {
 	/// </para>
 	/// </remarks>
 	public class ScrollView : View {
-		View contentView = null;
+		private class ContentView : View {
+			public ContentView (Rect frame) : base (frame)
+			{
+				CanFocus = true;
+			}
+		}
+
+		ContentView contentView;
 		ScrollBarView vertical, horizontal;
 
 		/// <summary>
@@ -39,7 +45,7 @@ namespace Terminal.Gui {
 		/// <param name="frame"></param>
 		public ScrollView (Rect frame) : base (frame)
 		{
-			Initialize (frame);
+			SetInitialProperties (frame);
 		}
 
 
@@ -48,12 +54,12 @@ namespace Terminal.Gui {
 		/// </summary>
 		public ScrollView () : base ()
 		{
-			Initialize (Rect.Empty);
+			SetInitialProperties (Rect.Empty);
 		}
 
-		void Initialize (Rect frame)
+		void SetInitialProperties (Rect frame)
 		{
-			contentView = new View (frame);
+			contentView = new ContentView (frame);
 			vertical = new ScrollBarView (1, 0, isVertical: true) {
 				X = Pos.AnchorEnd (1),
 				Y = 0,
@@ -178,6 +184,12 @@ namespace Terminal.Gui {
 			set {
 				if (autoHideScrollBars != value) {
 					autoHideScrollBars = value;
+					if (Subviews.Contains (vertical)) {
+						vertical.AutoHideScrollBars = value;
+					}
+					if (Subviews.Contains (horizontal)) {
+						horizontal.AutoHideScrollBars = value;
+					}
 					SetNeedsDisplay ();
 				}
 			}
@@ -217,7 +229,7 @@ namespace Terminal.Gui {
 		/// <param name="view">The view to add to the scrollview.</param>
 		public override void Add (View view)
 		{
-			if (!IsOverridden (view)) {
+			if (!IsOverridden (view, "MouseEvent")) {
 				view.MouseEnter += View_MouseEnter;
 				view.MouseLeave += View_MouseLeave;
 			}
@@ -225,24 +237,16 @@ namespace Terminal.Gui {
 			SetNeedsLayout ();
 		}
 
-		void View_MouseLeave (MouseEventArgs e)
+		void View_MouseLeave (object sender, MouseEventEventArgs e)
 		{
 			if (Application.MouseGrabView != null && Application.MouseGrabView != vertical && Application.MouseGrabView != horizontal) {
 				Application.UngrabMouse ();
 			}
 		}
 
-		void View_MouseEnter (MouseEventArgs e)
+		void View_MouseEnter (object sender, MouseEventEventArgs e)
 		{
 			Application.GrabMouse (this);
-		}
-
-		bool IsOverridden (View view)
-		{
-			Type t = view.GetType ();
-			MethodInfo m = t.GetMethod ("MouseEvent");
-
-			return (m.DeclaringType == t || m.ReflectedType == t) && m.GetBaseDefinition ().DeclaringType == typeof (Responder);
 		}
 
 		/// <summary>
@@ -260,6 +264,8 @@ namespace Terminal.Gui {
 				SetNeedsLayout ();
 				if (value) {
 					base.Add (horizontal);
+					horizontal.ShowScrollIndicator = value;
+					horizontal.AutoHideScrollBars = autoHideScrollBars;
 					horizontal.OtherScrollBarView = vertical;
 					horizontal.OtherScrollBarView.ShowScrollIndicator = value;
 					horizontal.MouseEnter += View_MouseEnter;
@@ -299,6 +305,8 @@ namespace Terminal.Gui {
 				SetNeedsLayout ();
 				if (value) {
 					base.Add (vertical);
+					vertical.ShowScrollIndicator = value;
+					vertical.AutoHideScrollBars = autoHideScrollBars;
 					vertical.OtherScrollBarView = horizontal;
 					vertical.OtherScrollBarView.ShowScrollIndicator = value;
 					vertical.MouseEnter += View_MouseEnter;
@@ -318,7 +326,7 @@ namespace Terminal.Gui {
 		{
 			Driver.SetAttribute (GetNormalColor ());
 			SetViewsNeedsDisplay ();
-			Clear ();
+			//Clear ();
 
 			var savedClip = ClipToBounds ();
 			OnDrawContent (new Rect (ContentOffset,
@@ -331,10 +339,12 @@ namespace Terminal.Gui {
 				ShowHideScrollBars ();
 			} else {
 				if (ShowVerticalScrollIndicator) {
+					vertical.SetRelativeLayout (Bounds);
 					vertical.Redraw (vertical.Bounds);
 				}
 
 				if (ShowHorizontalScrollIndicator) {
+					horizontal.SetRelativeLayout (Bounds);
 					horizontal.Redraw (horizontal.Bounds);
 				}
 			}
@@ -498,7 +508,7 @@ namespace Terminal.Gui {
 		{
 			if (me.Flags != MouseFlags.WheeledDown && me.Flags != MouseFlags.WheeledUp &&
 				me.Flags != MouseFlags.WheeledRight && me.Flags != MouseFlags.WheeledLeft &&
-				me.Flags != MouseFlags.Button1Pressed && me.Flags != MouseFlags.Button1Clicked &&
+//				me.Flags != MouseFlags.Button1Pressed && me.Flags != MouseFlags.Button1Clicked &&
 				!me.Flags.HasFlag (MouseFlags.Button1Pressed | MouseFlags.ReportMousePosition)) {
 				return false;
 			}
@@ -515,7 +525,7 @@ namespace Terminal.Gui {
 				vertical.MouseEvent (me);
 			} else if (me.Y == horizontal.Frame.Y && ShowHorizontalScrollIndicator) {
 				horizontal.MouseEvent (me);
-			} else if (IsOverridden (me.View)) {
+			} else if (IsOverridden (me.View, "MouseEvent")) {
 				Application.UngrabMouse ();
 			}
 			return true;

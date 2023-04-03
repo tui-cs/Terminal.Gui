@@ -3,6 +3,7 @@ using System;
 using System.Threading;
 using Terminal.Gui;
 using System.Linq;
+using System.Runtime.CompilerServices;
 
 namespace UICatalog.Scenarios {
 	// 
@@ -20,6 +21,7 @@ namespace UICatalog.Scenarios {
 			internal TextField Speed { get; private set; }
 			internal ProgressBar ActivityProgressBar { get; private set; }
 			internal ProgressBar PulseProgressBar { get; private set; }
+			internal SpinnerView Spinner { get; private set; }
 			internal Action StartBtnClick;
 			internal Action StopBtnClick;
 			internal Action PulseBtnClick = null;
@@ -58,17 +60,17 @@ namespace UICatalog.Scenarios {
 					X = Pos.Right (LeftFrame) + 1,
 					Y = 0,
 				};
-				startButton.Clicked += () => Start ();
+				startButton.Clicked += (s,e) => Start ();
 				var pulseButton = new Button ("Pulse") {
 					X = Pos.Right (startButton) + 2,
 					Y = Pos.Y (startButton),
 				};
-				pulseButton.Clicked += () => Pulse ();
+				pulseButton.Clicked += (s,e) => Pulse ();
 				var stopbutton = new Button ("Stop Timer") {
 					X = Pos.Right (pulseButton) + 2,
 					Y = Pos.Top (pulseButton),
 				};
-				stopbutton.Clicked += () => Stop ();
+				stopbutton.Clicked += (s,e) => Stop ();
 
 				Add (startButton);
 				Add (pulseButton);
@@ -83,6 +85,14 @@ namespace UICatalog.Scenarios {
 					ColorScheme = Colors.Error
 				};
 				Add (ActivityProgressBar);
+
+				Spinner = new SpinnerView {
+					X = Pos.Right (ActivityProgressBar),
+					Y = ActivityProgressBar.Y,
+					Visible = false,
+
+				};
+				Add (Spinner);
 
 				PulseProgressBar = new ProgressBar () {
 					X = Pos.Right (LeftFrame) + 1,
@@ -109,12 +119,23 @@ namespace UICatalog.Scenarios {
 			{
 				Started = true;
 				StartBtnClick?.Invoke ();
+				Application.MainLoop.Invoke(()=>{
+					Spinner.Visible = true;
+					ActivityProgressBar.Width = Dim.Fill(1);
+					this.LayoutSubviews();
+				});
 			}
 
 			internal void Stop ()
 			{
 				Started = false;
 				StopBtnClick?.Invoke ();
+
+				Application.MainLoop.Invoke(()=>{
+					Spinner.Visible = false;
+					ActivityProgressBar.Width = Dim.Fill();
+					this.LayoutSubviews();
+				});
 			}
 
 			internal void Pulse ()
@@ -129,6 +150,7 @@ namespace UICatalog.Scenarios {
 						ActivityProgressBar.Fraction += 0.01F;
 					}
 					PulseProgressBar.Pulse ();
+					Spinner.SetNeedsDisplay ();
 				}
 			}
 		}
@@ -167,7 +189,7 @@ namespace UICatalog.Scenarios {
 				systemTimerDemo.PulseProgressBar.Fraction = 1F;
 			};
 			systemTimerDemo.Speed.Text = $"{_systemTimerTick}";
-			systemTimerDemo.Speed.TextChanged += (a) => {
+			systemTimerDemo.Speed.TextChanged += (s, a) => {
 				uint result;
 				if (uint.TryParse (systemTimerDemo.Speed.Text.ToString(), out result)) {
 					_systemTimerTick = result;
@@ -196,6 +218,7 @@ namespace UICatalog.Scenarios {
 
 				_mainLoopTimeout = Application.MainLoop.AddTimeout (TimeSpan.FromMilliseconds (_mainLooopTimeoutTick), (loop) => {
 					mainLoopTimeoutDemo.Pulse ();
+					
 					return true;
 				});
 			};
@@ -210,7 +233,7 @@ namespace UICatalog.Scenarios {
 			};
 
 			mainLoopTimeoutDemo.Speed.Text = $"{_mainLooopTimeoutTick}";
-			mainLoopTimeoutDemo.Speed.TextChanged += (a) => {
+			mainLoopTimeoutDemo.Speed.TextChanged += (s, a) => {
 				uint result;
 				if (uint.TryParse (mainLoopTimeoutDemo.Speed.Text.ToString (), out result)) {
 					_mainLooopTimeoutTick = result;
@@ -225,7 +248,7 @@ namespace UICatalog.Scenarios {
 				X = Pos.Center (),
 				Y = Pos.Bottom(mainLoopTimeoutDemo) + 1,
 			};
-			startBoth.Clicked += () => {
+			startBoth.Clicked += (s,e) => {
 				systemTimerDemo.Start ();
 				mainLoopTimeoutDemo.Start ();
 			};

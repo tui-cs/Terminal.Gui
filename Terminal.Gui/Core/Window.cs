@@ -7,11 +7,14 @@
 //  - FrameView Does not support padding (but should)
 //  - FrameView Does not support mouse dragging
 //  - FrameView Does not support IEnumerable
-// Any udpates done here should probably be done in FrameView as well; TODO: Merge these classes
+// Any updates done here should probably be done in FrameView as well; TODO: Merge these classes
 
 using System;
 using System.Collections;
+using System.Text.Json.Serialization;
 using NStack;
+using Terminal.Gui.Configuration;
+using static Terminal.Gui.Configuration.ConfigurationManager;
 
 namespace Terminal.Gui {
 	/// <summary>
@@ -21,7 +24,7 @@ namespace Terminal.Gui {
 	/// The 'client area' of a <see cref="Window"/> is a rectangle deflated by one or more rows/columns from <see cref="View.Bounds"/>. A this time there is no
 	/// API to determine this rectangle.
 	/// </remarks>
-	public class Window : Toplevel {
+	public partial class Window : Toplevel {
 		View contentView;
 		ustring title = ustring.Empty;
 
@@ -35,6 +38,9 @@ namespace Terminal.Gui {
 				if (!OnTitleChanging (title, value)) {
 					var old = title;
 					title = value;
+					if (Border != null) {
+						Border.Title = title;
+					}
 					OnTitleChanged (old, title);
 				}
 				SetNeedsDisplay ();
@@ -64,7 +70,7 @@ namespace Terminal.Gui {
 			}
 		}
 
-		void Border_BorderChanged (Border border)
+		void Border_BorderChanged (object sender, EventArgs e)
 		{
 			Rect frame;
 			if (contentView != null && (contentView.Width is Dim || contentView.Height is Dim)) {
@@ -94,7 +100,7 @@ namespace Terminal.Gui {
 
 			public override void OnCanFocusChanged ()
 			{
-				if (MostFocused == null && CanFocus && Visible) {
+				if (IsInitialized && MostFocused == null && CanFocus && Visible) {
 					EnsureFocus ();
 				}
 
@@ -170,6 +176,15 @@ namespace Terminal.Gui {
 			Initialize (title, Rect.Empty, padding, border);
 		}
 
+		/// <summary>
+		/// The default <see cref="BorderStyle"/> for <see cref="FrameView"/>. The default is <see cref="BorderStyle.Single"/>.
+		/// </summary>
+		/// <remarks>
+		/// This property can be set in a Theme to change the default <see cref="BorderStyle"/> for all <see cref="Window"/>s. 
+		/// </remarks>
+		///[SerializableConfigurationProperty (Scope = typeof (ThemeScope)), JsonConverter (typeof (JsonStringEnumConverter))]
+		public static BorderStyle DefaultBorderStyle { get; set; } = BorderStyle.Single;
+
 		void Initialize (ustring title, Rect frame, int padding = 0, Border border = null)
 		{
 			CanFocus = true;
@@ -178,12 +193,15 @@ namespace Terminal.Gui {
 			Title = title;
 			if (border == null) {
 				Border = new Border () {
-					BorderStyle = BorderStyle.Single,
+					BorderStyle = DefaultBorderStyle,
 					Padding = new Thickness (padding),
-					BorderBrush = ColorScheme.Normal.Background
+					Title = title
 				};
 			} else {
 				Border = border;
+				if (ustring.IsNullOrEmpty (border.Title)) {
+					border.Title = title;
+				}
 			}
 			AdjustContentView (frame);
 		}
@@ -222,9 +240,12 @@ namespace Terminal.Gui {
 					contentView.Frame = cFrame;
 				}
 			}
-			if (Subviews?.Count == 0)
+			if (Subviews?.Count == 0) {
 				base.Add (contentView);
-			Border.Child = contentView;
+			}
+			if (Border.Child != contentView) {
+				Border.Child = contentView;
+			}
 		}
 
 		///// <summary>
@@ -255,7 +276,13 @@ namespace Terminal.Gui {
 			}
 
 			SetNeedsDisplay ();
-			contentView.Remove (view);
+			if (view == contentView) {
+				base.Remove (view);
+				contentView.Dispose ();
+				return;
+			} else {
+				contentView.Remove (view);
+			}
 
 			if (contentView.InternalSubviews.Count < 1) {
 				CanFocus = false;
@@ -275,40 +302,22 @@ namespace Terminal.Gui {
 		///<inheritdoc/>
 		public override void Redraw (Rect bounds)
 		{
-			var padding = Border.GetSumThickness ();
-			var scrRect = ViewToScreen (new Rect (0, 0, Frame.Width, Frame.Height));
-			//var borderLength = Border.DrawMarginFrame ? 1 : 0;
-
-			// FIXED: Why do we draw the frame twice? This call is here to clear the content area, I think. Why not just clear that area?
-			if (!NeedDisplay.IsEmpty) {
+			if (!NeedDisplay.IsEmpty || ChildNeedsDisplay || LayoutNeeded) {
 				Driver.SetAttribute (GetNormalColor ());
 				Clear ();
+				contentView.SetNeedsDisplay ();
 			}
 			var savedClip = contentView.ClipToBounds ();
 
 			// Redraw our contentView
-			// DONE: smartly constrict contentView.Bounds to just be what intersects with the 'bounds' we were passed
-			contentView.Redraw (!NeedDisplay.IsEmpty ? contentView.Bounds : bounds);
+			contentView.Redraw (!NeedDisplay.IsEmpty || ChildNeedsDisplay || LayoutNeeded ? contentView.Bounds : bounds);
 			Driver.Clip = savedClip;
 
 			ClearLayoutNeeded ();
 			ClearNeedsDisplay ();
 
 			Driver.SetAttribute (GetNormalColor ());
-			//Driver.DrawWindowFrame (scrRect, padding.Left + borderLength, padding.Top + borderLength, padding.Right + borderLength, padding.Bottom + borderLength,
-			//	Border.BorderStyle != BorderStyle.None, fill: true, Border.BorderStyle);
 			Border.DrawContent (this, false);
-			if (HasFocus)
-				Driver.SetAttribute (ColorScheme.HotNormal);
-			if (Border.DrawMarginFrame)
-				Driver.DrawWindowTitle (scrRect, Title, padding.Left, padding.Top, padding.Right, padding.Bottom);
-			Driver.SetAttribute (GetNormalColor ());
-
-			// Checks if there are any SuperView view which intersect with this window.
-			if (SuperView != null) {
-				SuperView.SetNeedsLayout ();
-				SuperView.SetNeedsDisplay ();
-			}
 		}
 
 		/// <inheritdoc/>
@@ -343,47 +352,16 @@ namespace Terminal.Gui {
 				base.TextAlignment = contentView.TextAlignment = value;
 			}
 		}
-
-		/// <summary>
-		/// An <see cref="EventArgs"/> which allows passing a cancelable new <see cref="Title"/> value event.
-		/// </summary>
-		public class TitleEventArgs : EventArgs {
-			/// <summary>
-			/// The new Window Title.
-			/// </summary>
-			public ustring NewTitle { get; set; }
-
-			/// <summary>
-			/// The old Window Title.
-			/// </summary>
-			public ustring OldTitle { get; set; }
-
-			/// <summary>
-			/// Flag which allows cancelling the Title change.
-			/// </summary>
-			public bool Cancel { get; set; }
-
-			/// <summary>
-			/// Initializes a new instance of <see cref="TitleEventArgs"/>
-			/// </summary>
-			/// <param name="oldTitle">The <see cref="Window.Title"/> that is/has been replaced.</param>
-			/// <param name="newTitle">The new <see cref="Window.Title"/> to be replaced.</param>
-			public TitleEventArgs (ustring oldTitle, ustring newTitle)
-			{
-				OldTitle = oldTitle;
-				NewTitle = newTitle;
-			}
-		}
 		/// <summary>
 		/// Called before the <see cref="Window.Title"/> changes. Invokes the <see cref="TitleChanging"/> event, which can be cancelled.
 		/// </summary>
 		/// <param name="oldTitle">The <see cref="Window.Title"/> that is/has been replaced.</param>
 		/// <param name="newTitle">The new <see cref="Window.Title"/> to be replaced.</param>
-		/// <returns>`true` if an event handler cancelled the Title change.</returns>
+		/// <returns>`true` if an event handler canceled the Title change.</returns>
 		public virtual bool OnTitleChanging (ustring oldTitle, ustring newTitle)
 		{
 			var args = new TitleEventArgs (oldTitle, newTitle);
-			TitleChanging?.Invoke (args);
+			TitleChanging?.Invoke (this, args);
 			return args.Cancel;
 		}
 
@@ -391,7 +369,7 @@ namespace Terminal.Gui {
 		/// Event fired when the <see cref="Window.Title"/> is changing. Set <see cref="TitleEventArgs.Cancel"/> to 
 		/// `true` to cancel the Title change.
 		/// </summary>
-		public event Action<TitleEventArgs> TitleChanging;
+		public event EventHandler<TitleEventArgs> TitleChanging;
 
 		/// <summary>
 		/// Called when the <see cref="Window.Title"/> has been changed. Invokes the <see cref="TitleChanged"/> event.
@@ -401,12 +379,12 @@ namespace Terminal.Gui {
 		public virtual void OnTitleChanged (ustring oldTitle, ustring newTitle)
 		{
 			var args = new TitleEventArgs (oldTitle, newTitle);
-			TitleChanged?.Invoke (args);
+			TitleChanged?.Invoke (this, args);
 		}
 
 		/// <summary>
 		/// Event fired after the <see cref="Window.Title"/> has been changed. 
 		/// </summary>
-		public event Action<TitleEventArgs> TitleChanged;
+		public event EventHandler<TitleEventArgs> TitleChanged;
 	}
 }

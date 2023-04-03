@@ -34,7 +34,7 @@ namespace Terminal.Gui {
 	/// to an offset in the stream.
 	/// </para>
 	/// </remarks>
-	public class HexView : View {
+	public partial class HexView : View {
 		SortedDictionary<long, byte> edits = new SortedDictionary<long, byte> ();
 		Stream source;
 		long displayStart, pos;
@@ -103,12 +103,12 @@ namespace Terminal.Gui {
 		/// <summary>
 		/// Event to be invoked when an edit is made on the <see cref="Stream"/>.
 		/// </summary>
-		public event Action<KeyValuePair<long, byte>> Edited;
+		public event EventHandler<HexViewEditEventArgs> Edited;
 
 		/// <summary>
 		/// Event to be invoked when the position and cursor position changes.
 		/// </summary>
-		public event Action<HexViewEventArgs> PositionChanged;
+		public event EventHandler<HexViewEventArgs> PositionChanged;
 
 		/// <summary>
 		/// Sets or gets the <see cref="Stream"/> the <see cref="HexView"/> is operating on; the stream must support seeking (<see cref="Stream.CanSeek"/> == true).
@@ -458,11 +458,11 @@ namespace Terminal.Gui {
 					firstNibble = false;
 					b = (byte)(b & 0xf | (value << bsize));
 					edits [position] = b;
-					OnEdited (new KeyValuePair<long, byte> (position, edits [position]));
+					OnEdited (new HexViewEditEventArgs (position, edits [position]));
 				} else {
 					b = (byte)(b & 0xf0 | value);
 					edits [position] = b;
-					OnEdited (new KeyValuePair<long, byte> (position, edits [position]));
+					OnEdited (new HexViewEditEventArgs (position, edits [position]));
 					MoveRight ();
 				}
 				return true;
@@ -473,10 +473,10 @@ namespace Terminal.Gui {
 		/// <summary>
 		/// Method used to invoke the <see cref="Edited"/> event passing the <see cref="KeyValuePair{TKey, TValue}"/>.
 		/// </summary>
-		/// <param name="keyValuePair">The key value pair.</param>
-		public virtual void OnEdited (KeyValuePair<long, byte> keyValuePair)
+		/// <param name="e">The key value pair.</param>
+		public virtual void OnEdited (HexViewEditEventArgs e)
 		{
-			Edited?.Invoke (keyValuePair);
+			Edited?.Invoke (this, e);
 		}
 
 		/// <summary>
@@ -484,7 +484,7 @@ namespace Terminal.Gui {
 		/// </summary>
 		public virtual void OnPositionChanged ()
 		{
-			PositionChanged?.Invoke (new HexViewEventArgs (Position, CursorPosition, BytesPerLine));
+			PositionChanged?.Invoke (this, new HexViewEventArgs (Position, CursorPosition, BytesPerLine));
 		}
 
 		/// <inheritdoc/>
@@ -630,38 +630,6 @@ namespace Terminal.Gui {
 			Application.Driver.SetCursorVisibility (DesiredCursorVisibility);
 
 			return base.OnEnter (view);
-		}
-
-		/// <summary>
-		/// Defines the event arguments for <see cref="PositionChanged"/> event.
-		/// </summary>
-		public class HexViewEventArgs : EventArgs {
-			/// <summary>
-			/// Gets the current character position starting at one, related to the <see cref="Stream"/>.
-			/// </summary>
-			public long Position { get; private set; }
-			/// <summary>
-			/// Gets the current cursor position starting at one for both, line and column.
-			/// </summary>
-			public Point CursorPosition { get; private set; }
-
-			/// <summary>
-			/// The bytes length per line.
-			/// </summary>
-			public int BytesPerLine { get; private set; }
-
-			/// <summary>
-			/// Initializes a new instance of <see cref="HexViewEventArgs"/>
-			/// </summary>
-			/// <param name="pos">The character position.</param>
-			/// <param name="cursor">The cursor position.</param>
-			/// <param name="lineLength">Line bytes length.</param>
-			public HexViewEventArgs (long pos, Point cursor, int lineLength)
-			{
-				Position = pos;
-				CursorPosition = cursor;
-				BytesPerLine = lineLength;
-			}
 		}
 	}
 }

@@ -5,23 +5,23 @@ using System.Linq;
 namespace Terminal.Gui.Trees {
 	class Branch<T> where T : class {
 		/// <summary>
-		/// True if the branch is expanded to reveal child branches
+		/// True if the branch is expanded to reveal child branches.
 		/// </summary>
 		public bool IsExpanded { get; set; }
 
 		/// <summary>
-		/// The users object that is being displayed by this branch of the tree
+		/// The users object that is being displayed by this branch of the tree.
 		/// </summary>
 		public T Model { get; private set; }
 
 		/// <summary>
-		/// The depth of the current branch.  Depth of 0 indicates root level branches
+		/// The depth of the current branch.  Depth of 0 indicates root level branches.
 		/// </summary>
 		public int Depth { get; private set; } = 0;
 
 		/// <summary>
 		/// The children of the current branch.  This is null until the first call to 
-		/// <see cref="FetchChildren"/> to avoid enumerating the entire underlying hierarchy
+		/// <see cref="FetchChildren"/> to avoid enumerating the entire underlying hierarchy.
 		/// </summary>
 		public Dictionary<T, Branch<T>> ChildBranches { get; set; }
 
@@ -34,12 +34,12 @@ namespace Terminal.Gui.Trees {
 
 		/// <summary>
 		/// Declares a new branch of <paramref name="tree"/> in which the users object 
-		/// <paramref name="model"/> is presented
+		/// <paramref name="model"/> is presented.
 		/// </summary>
-		/// <param name="tree">The UI control in which the branch resides</param>
+		/// <param name="tree">The UI control in which the branch resides.</param>
 		/// <param name="parentBranchIfAny">Pass null for root level branches, otherwise
-		/// pass the parent</param>
-		/// <param name="model">The user's object that should be displayed</param>
+		/// pass the parent.</param>
+		/// <param name="model">The user's object that should be displayed.</param>
 		public Branch (TreeView<T> tree, Branch<T> parentBranchIfAny, T model)
 		{
 			this.tree = tree;
@@ -53,7 +53,7 @@ namespace Terminal.Gui.Trees {
 
 
 		/// <summary>
-		/// Fetch the children of this branch. This method populates <see cref="ChildBranches"/>
+		/// Fetch the children of this branch. This method populates <see cref="ChildBranches"/>.
 		/// </summary>
 		public virtual void FetchChildren ()
 		{
@@ -80,7 +80,7 @@ namespace Terminal.Gui.Trees {
 		}
 
 		/// <summary>
-		/// Renders the current <see cref="Model"/> on the specified line <paramref name="y"/>
+		/// Renders the current <see cref="Model"/> on the specified line <paramref name="y"/>.
 		/// </summary>
 		/// <param name="driver"></param>
 		/// <param name="colorScheme"></param>
@@ -89,10 +89,10 @@ namespace Terminal.Gui.Trees {
 		public virtual void Draw (ConsoleDriver driver, ColorScheme colorScheme, int y, int availableWidth)
 		{
 			// true if the current line of the tree is the selected one and control has focus
-			bool isSelected = tree.IsSelected (Model) && tree.HasFocus;
-			Attribute lineColor = isSelected ? colorScheme.Focus : colorScheme.Normal;
+			bool isSelected = tree.IsSelected (Model);
 
-			driver.SetAttribute (lineColor);
+			Attribute textColor = isSelected ? (tree.HasFocus ? colorScheme.Focus : colorScheme.HotNormal) : colorScheme.Normal;
+			Attribute symbolColor = tree.Style.HighlightModelTextOnly ? colorScheme.Normal : textColor;
 
 			// Everything on line before the expansion run and branch text
 			Rune [] prefix = GetLinePrefix (driver).ToArray ();
@@ -104,7 +104,8 @@ namespace Terminal.Gui.Trees {
 			// if we have scrolled to the right then bits of the prefix will have dispeared off the screen
 			int toSkip = tree.ScrollOffsetHorizontal;
 
-			// Draw the line prefix (all paralell lanes or whitespace and an expand/collapse/leaf symbol)
+			driver.SetAttribute (symbolColor);
+			// Draw the line prefix (all parallel lanes or whitespace and an expand/collapse/leaf symbol)
 			foreach (Rune r in prefix) {
 
 				if (toSkip > 0) {
@@ -117,12 +118,16 @@ namespace Terminal.Gui.Trees {
 
 			// pick color for expanded symbol
 			if (tree.Style.ColorExpandSymbol || tree.Style.InvertExpandSymbolColors) {
-				Attribute color;
+				Attribute color = symbolColor;
 
 				if (tree.Style.ColorExpandSymbol) {
-					color = isSelected ? tree.ColorScheme.HotFocus : tree.ColorScheme.HotNormal;
+					if (isSelected) {
+						color = tree.Style.HighlightModelTextOnly ? colorScheme.HotNormal : (tree.HasFocus ? tree.ColorScheme.HotFocus : tree.ColorScheme.HotNormal);
+					} else {
+						color = tree.ColorScheme.HotNormal;
+					}
 				} else {
-					color = lineColor;
+					color = symbolColor;
 				}
 
 				if (tree.Style.InvertExpandSymbolColors) {
@@ -162,16 +167,14 @@ namespace Terminal.Gui.Trees {
 
 			// default behaviour is for model to use the color scheme
 			// of the tree view
-			var modelColor = lineColor;
+			var modelColor = textColor;
 
 			// if custom color delegate invoke it
-			if(tree.ColorGetter != null)
-			{
-				var modelScheme = tree.ColorGetter(Model);
+			if (tree.ColorGetter != null) {
+				var modelScheme = tree.ColorGetter (Model);
 
 				// if custom color scheme is defined for this Model
-				if(modelScheme != null)
-				{
+				if (modelScheme != null) {
 					// use it
 					modelColor = isSelected ? modelScheme.Focus : modelScheme.Normal;
 				}
@@ -179,24 +182,23 @@ namespace Terminal.Gui.Trees {
 
 			driver.SetAttribute (modelColor);
 			driver.AddStr (lineBody);
-			driver.SetAttribute (lineColor);
 
 			if (availableWidth > 0) {
+				driver.SetAttribute (symbolColor);
 				driver.AddStr (new string (' ', availableWidth));
 			}
-
 			driver.SetAttribute (colorScheme.Normal);
 		}
 
 		/// <summary>
 		/// Gets all characters to render prior to the current branches line.  This includes indentation
-		/// whitespace and any tree branches (if enabled)
+		/// whitespace and any tree branches (if enabled).
 		/// </summary>
 		/// <param name="driver"></param>
 		/// <returns></returns>
 		private IEnumerable<Rune> GetLinePrefix (ConsoleDriver driver)
 		{
-			// If not showing line branches or this is a root object
+			// If not showing line branches or this is a root object.
 			if (!tree.Style.ShowBranchLines) {
 				for (int i = 0; i < Depth; i++) {
 					yield return new Rune (' ');
@@ -224,7 +226,7 @@ namespace Terminal.Gui.Trees {
 		}
 
 		/// <summary>
-		/// Returns all parents starting with the immediate parent and ending at the root
+		/// Returns all parents starting with the immediate parent and ending at the root.
 		/// </summary>
 		/// <returns></returns>
 		private IEnumerable<Branch<T>> GetParentBranches ()
@@ -240,7 +242,7 @@ namespace Terminal.Gui.Trees {
 		/// <summary>
 		/// Returns an appropriate symbol for displaying next to the string representation of 
 		/// the <see cref="Model"/> object to indicate whether it <see cref="IsExpanded"/> or
-		/// not (or it is a leaf)
+		/// not (or it is a leaf).
 		/// </summary>
 		/// <param name="driver"></param>
 		/// <returns></returns>
@@ -261,7 +263,7 @@ namespace Terminal.Gui.Trees {
 
 		/// <summary>
 		/// Returns true if the current branch can be expanded according to 
-		/// the <see cref="TreeBuilder{T}"/> or cached children already fetched
+		/// the <see cref="TreeBuilder{T}"/> or cached children already fetched.
 		/// </summary>
 		/// <returns></returns>
 		public bool CanExpand ()
@@ -283,7 +285,7 @@ namespace Terminal.Gui.Trees {
 		}
 
 		/// <summary>
-		/// Expands the current branch if possible
+		/// Expands the current branch if possible.
 		/// </summary>
 		public void Expand ()
 		{
@@ -297,7 +299,7 @@ namespace Terminal.Gui.Trees {
 		}
 
 		/// <summary>
-		/// Marks the branch as collapsed (<see cref="IsExpanded"/> false)
+		/// Marks the branch as collapsed (<see cref="IsExpanded"/> false).
 		/// </summary>
 		public void Collapse ()
 		{
@@ -305,10 +307,10 @@ namespace Terminal.Gui.Trees {
 		}
 
 		/// <summary>
-		/// Refreshes cached knowledge in this branch e.g. what children an object has
+		/// Refreshes cached knowledge in this branch e.g. what children an object has.
 		/// </summary>
 		/// <param name="startAtTop">True to also refresh all <see cref="Parent"/> 
-		/// branches (starting with the root)</param>
+		/// branches (starting with the root).</param>
 		public void Refresh (bool startAtTop)
 		{
 			// if we must go up and refresh from the top down
@@ -351,7 +353,7 @@ namespace Terminal.Gui.Trees {
 		}
 
 		/// <summary>
-		/// Calls <see cref="Refresh(bool)"/> on the current branch and all expanded children
+		/// Calls <see cref="Refresh(bool)"/> on the current branch and all expanded children.
 		/// </summary>
 		internal void Rebuild ()
 		{
@@ -375,7 +377,7 @@ namespace Terminal.Gui.Trees {
 
 		/// <summary>
 		/// Returns true if this branch has parents and it is the last node of it's parents 
-		/// branches (or last root of the tree)
+		/// branches (or last root of the tree).
 		/// </summary>
 		/// <returns></returns>
 		private bool IsLast ()
@@ -389,7 +391,7 @@ namespace Terminal.Gui.Trees {
 
 		/// <summary>
 		/// Returns true if the given x offset on the branch line is the +/- symbol.  Returns 
-		/// false if not showing expansion symbols or leaf node etc
+		/// false if not showing expansion symbols or leaf node etc.
 		/// </summary>
 		/// <param name="driver"></param>
 		/// <param name="x"></param>
@@ -415,7 +417,7 @@ namespace Terminal.Gui.Trees {
 		}
 
 		/// <summary>
-		/// Expands the current branch and all children branches
+		/// Expands the current branch and all children branches.
 		/// </summary>
 		internal void ExpandAll ()
 		{
@@ -430,7 +432,7 @@ namespace Terminal.Gui.Trees {
 
 		/// <summary>
 		/// Collapses the current branch and all children branches (even though those branches are 
-		/// no longer visible they retain collapse/expansion state)
+		/// no longer visible they retain collapse/expansion state).
 		/// </summary>
 		internal void CollapseAll ()
 		{

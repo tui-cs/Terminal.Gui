@@ -94,15 +94,16 @@ namespace Terminal.Gui {
 		public IMainLoopDriver Driver { get; }
 
 		/// <summary>
-		/// Invoked when a new timeout is added to be used on the case
-		/// if <see cref="Application.ExitRunLoopAfterFirstIteration"/> is true,
+		/// Invoked when a new timeout is added. To be used in the case
+		/// when <see cref="Application.ExitRunLoopAfterFirstIteration"/> is <see langword="true"/>.
 		/// </summary>
-		public event Action<long> TimeoutAdded;
+		public event EventHandler<TimeoutEventArgs> TimeoutAdded;
 
 		/// <summary>
 		///  Creates a new Mainloop. 
 		/// </summary>
-		/// <param name="driver">Should match the <see cref="ConsoleDriver"/> (one of the implementations UnixMainLoop, NetMainLoop or WindowsMainLoop).</param>
+		/// <param name="driver">Should match the <see cref="ConsoleDriver"/> 
+		/// (one of the implementations FakeMainLoop, UnixMainLoop, NetMainLoop or WindowsMainLoop).</param>
 		public MainLoop (IMainLoopDriver driver)
 		{
 			Driver = driver;
@@ -160,7 +161,7 @@ namespace Terminal.Gui {
 			lock (timeoutsLockToken) {
 				var k = (DateTime.UtcNow + time).Ticks;
 				timeouts.Add (NudgeToUniqueKey (k), timeout);
-				TimeoutAdded?.Invoke (k);
+				TimeoutAdded?.Invoke (this, new TimeoutEventArgs(timeout, k));
 			}
 		}
 
@@ -306,9 +307,12 @@ namespace Terminal.Gui {
 
 			Driver.MainIteration ();
 
+			bool runIdle = false;
 			lock (idleHandlersLock) {
-				if (idleHandlers.Count > 0)
-					RunIdle ();
+				runIdle = idleHandlers.Count > 0;
+			}
+			if (runIdle) {
+				RunIdle ();
 			}
 		}
 

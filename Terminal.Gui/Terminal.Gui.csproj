@@ -10,20 +10,31 @@
     <!-- Version numbers are automatically updated by gitversion when a release is released -->
     <!-- In the source tree the version will always be 1.0 for all projects. -->
     <!-- Do not modify these. Do NOT commit after manually running `dotnet-gitversion /updateprojectfiles` -->
-    <AssemblyVersion>1.0</AssemblyVersion>
-    <FileVersion>1.0</FileVersion>
-    <Version>1.0</Version>
-    <InformationalVersion>1.0</InformationalVersion>
+    <AssemblyVersion>2.0</AssemblyVersion>
+    <FileVersion>2.0</FileVersion>
+    <Version>2.0</Version>
+    <InformationalVersion>2.0</InformationalVersion>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies" Version="1.0.3" PrivateAssets="all" />
-    <PackageReference Include="NStack.Core" Version="1.0.3" />
-    <InternalsVisibleTo Include="UnitTests" />
+    <None Remove="Resources\config.json" />
   </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Resources\config.json" />
+  </ItemGroup>
+  <ItemGroup>
+    <!-- Enable Nuget Source Link for github -->
+    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.1.1" PrivateAssets="All" />
+    <PackageReference Include="Microsoft.DotNet.PlatformAbstractions" Version="3.1.6" />
+    <PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies" Version="1.0.3" PrivateAssets="all" />
+    <PackageReference Include="NStack.Core" Version="1.0.7" />
+    <PackageReference Include="System.Text.Json" Version="7.0.1" />
+    <PackageReference Include="System.Management" Version="7.0.0" />
+    <InternalsVisibleTo Include="UnitTests" />
+   </ItemGroup>
   <!-- Uncomment the RestoreSources element to have dotnet restore pull NStack from a local dir for testing -->
   <PropertyGroup>
     <!-- See https://stackoverflow.com/a/44463578/297526 -->
-    <!--<RestoreSources>$(RestoreSources);../../local-packages;https://api.nuget.org/v3/index.json</RestoreSources>-->
+    <!--<RestoreSources>$(RestoreSources);..\..\NStack\NStack\bin\Debug;https://api.nuget.org/v3/index.json</RestoreSources>-->
   </PropertyGroup>
   <!-- API Documentation -->
   <ItemGroup>
@@ -49,12 +60,9 @@
       <LastGenOutput>Strings.Designer.cs</LastGenOutput>
     </EmbeddedResource>
   </ItemGroup>
-  <!-- Enable Nuget Source Link for github -->
-  <ItemGroup>
-    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.1.1" PrivateAssets="All" />
-  </ItemGroup>
   <PropertyGroup>
     <TargetFrameworks>net472;netstandard2.0;net6.0</TargetFrameworks>
+    <LangVersion>9</LangVersion>
     <RootNamespace>Terminal.Gui</RootNamespace>
     <AssemblyName>Terminal.Gui</AssemblyName>
     <DocumentationFile>bin\Release\Terminal.Gui.xml</DocumentationFile>
@@ -74,93 +82,13 @@
     <PackageIcon>logo.png</PackageIcon>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageTags>csharp, terminal, c#, f#, gui, toolkit, console, tui</PackageTags>
-    <Description>Cross Platform Terminal UI toolkit for .NET</Description>
+    <Description>Cross platform Terminal UI toolkit for .NET</Description>
     <Owners>Miguel de Icaza, Charlie Kindel</Owners>
     <Summary>A toolkit for building rich console apps for .NET that works on Windows, Mac, and Linux/Unix.</Summary>
-    <Title>Terminal.Gui - Cross Platform Terminal user interface toolkit for .NET</Title>
+    <Title>Terminal.Gui - Cross platform Terminal User Interface (TUI) toolkit for .NET</Title>
     <PackageReleaseNotes>
-      Release v1.8.1
-      * Fixes #2053. MessageBox.Query not wrapping correctly 
-      
-      Release v1.8.0
-      * Fixes #2043. Update to NStack v1.0.3
-      * Fixes #2045. TrySetClipboardData test must be enclosed with a lock.
-      * Fixes #2025. API Docs are now generated via Github Action - View Source Works
-      * Fixes #1991. Broken link in README
-      * Fixes #2026. Added ClearOnVisibleFalse to flag if the view must be cleared or not.
-      * Fixes #2017 and #2013. MainLoopTests.InvokeLeakTest failures
-      * Fixes #2014. Application mouseGrabView is run twice if return true.
-      * Fixes #2011. Wizard no longer needs to set specific colors, because #1971 has been fixed.
-      * Fixes #2006. ProgressBarStyles isn't disposing the _fractionTimer on quitting if running.
-      * Fixes #2004. TextFormatter.Justified not adding the extra spaces.
-      * Fixes #2002. Added feature to fill the remaining width with spaces.
-      * Fixes #1999. Prevents the mouseGrabView being executed with a null view.
-      * Fixes #1994. BREAKING CHANGE. Ensure only a single IdleHandlers list can exist.
-      * Fixes #1979. MessageBox.Query not wrapping since 1.7.1
-      * Fixes #1989. ListView: Ensures SelectedItem visibility on MoveDown and MoveUp.
-      * Fixes #1987. Textview insert text newline fix
-      * Fixes #1984. Setting Label.Visible to false does not hide the Label
-      * Fixes #820. Added HideDropdownListOnClick property.
-      * Fixes #1981. Added SplitNewLine method to the TextFormatter.
-      * Fixes #1973. Avoid positioning Submenus off screen.
-      * Added abstract MakeColor and CreateColors to create the colors at once.
-      * Fixes #1800. TextView now uses the same colors as TextField.
-      * Fixes #1969. ESC on CursesDriver take to long to being processed.
-      * Fixes #1967. New keys for DeleteAll on TextField and TextView.
-      * Fixes #1962 - Change KeyBindings to allow chaining commands
-      * Fixes #1961 Null reference in Keybindings Scenario and hotkey collision
-      * Fixes #1963. Only remove one character on backspace when wordwrap is on
-      * Fixes #1959. GoToEnd should not fail on an empty TreeView
-      * Fixes #1953. TextView cursor position is not updating by mouse.
-      * Fixes #1951. TextView with selected text doesn't scroll beyond the cursor position.
-      * Fixes #1948. Get unwrapped cursor position when word wrap is enabled on TextView.
-      * Ensures that the isButtonShift flag is disabled in all situations.
-      * Fixes #1943. Mouse ButtonShift is not preserving the text selected.
-
-      Release v1.7.2
-      * Fixes #1773. Base color scheme for ListView hard to read
-      * Fixes #1934. WindowsDriver crash when the height is less than 1 with the VS Debugger
-
-      Release v1.7.1
-      * Fixes #1930. Trailing whitespace makes MessageBox.Query buttons disappear.
-      * Fixes #1921. Mouse continuous button pressed is not working on ScrollView.
-      * Fixes #1924. Wizard: Selected help text is unreadable
-
-      Release v1.7.0
-      * Moved Terminal.Gui (and NStack) to the github.com/gui-cs organization.
-      * Adds multi-step Wizard View for setup experiences (#124)
-      * The synchronization context method Send is now blocking (#1854).
-      * Fixes #1917. Sometimes Clipboard.IsSupported doesn't return the correct
-      * Fixes #1893: Fix URLs to match gui-cs Org
-      * Fixes #1883. Child TopLevels now get Loaded/Ready events.
-      * Fixes #1867, #1866, #1796. TextView enhancements for ReadOnly and WordWrap.
-      * Fixes #1861. Border: Title property is preferable to Text.
-      * Fixes #1855. Window and Frame content view without the margin frame.
-      * Fixes #1848. Mouse clicks in Windows Terminal.
-      * Fixes #1846. TabView now clips to the draw bounds.
-      * Fix TableView multi selections extending to -1 indexes
-      * Fixes #1837. Setting Unix clipboard freezes.
-      * Fixes #1839. Process WindowsDriver click event if location is the same after pressed and released.
-      * Fixes #1830. If "libcoreclr.so" is not present then "libncursesw.so" will be used.
-      * Fixes #1816. MessageBox: Hides underlying dialog when visible
-      * Fixes #1815. Now returns false if WSL clipboard isn't supported.
-      * Fixes #1825. Parent MenuItem stay focused if child MenuItem is empty.
-      * Fixes #1812, #1797, #1791. AutoSize fixes.
-      * Fixes #1818. Adds Title change events to Window.
-      * Fixes #1810. Dialog: Closing event is not fired when ESC is pressed to close dialog.
-      * Fixes #1793. ScrollBarView is hiding if the host fit the available space.
-      * Added Pos/Dim Function feature to automate layout.
-      * Fixes #1786. Windows Terminal is reporting well on mouse button pressed + mouse movement.
-      * Fixes #1777 - Dialog button justification. Adds unit tests.
-      * Fixes #1739. Setting menu UseKeysUpDownAsKeysLeftRight as false by default.
-      * Fixes #1772. Avoids WindowsDriver flickering when resizing.
-      * Fixed TableView always showing selected cell(s) even when not focused
-      * Fixes #1769. Supports a minimum view size for non-automatic size views.
-      * Exposes APIs to support upcoming Web console feature
-      * Fixes some scrolling performance issues
-      * Fixes #1763. Allowing read console inputs before idle handlers.
-      * TableView unicode scenario usability
-      * Added unicode testing code to TableEditor
+      See: https://github.com/gui-cs/Terminal.Gui/releases
     </PackageReleaseNotes>
   </PropertyGroup>
+  <ProjectExtensions><VisualStudio><UserProperties resources_4config_1json__JsonSchema="" /></VisualStudio></ProjectExtensions>
 </Project>

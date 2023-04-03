@@ -10,54 +10,54 @@ namespace Terminal.Gui {
 	public enum Command {
 
 		/// <summary>
-		/// Moves the caret down one line.
+		/// Moves down one item (cell, line, etc...).
 		/// </summary>
 		LineDown,
 
 		/// <summary>
-		/// Extends the selection down one line.
+		/// Extends the selection down one (cell, line, etc...).
 		/// </summary>
 		LineDownExtend,
 
 		/// <summary>
-		/// Moves the caret down to the last child node of the branch that holds the current selection
+		/// Moves down to the last child node of the branch that holds the current selection.
 		/// </summary>
 		LineDownToLastBranch,
 
 		/// <summary>
-		/// Scrolls down one line (without changing the selection).
+		/// Scrolls down one (cell, line, etc...) (without changing the selection).
 		/// </summary>
 		ScrollDown,
 
 		// --------------------------------------------------------------------
 
 		/// <summary>
-		/// Moves the caret up one line.
+		/// Moves up one (cell, line, etc...).
 		/// </summary>
 		LineUp,
 
 		/// <summary>
-		/// Extends the selection up one line.
+		/// Extends the selection up one item (cell, line, etc...).
 		/// </summary>
 		LineUpExtend,
 
 		/// <summary>
-		/// Moves the caret up to the first child node of the branch that holds the current selection
+		/// Moves up to the first child node of the branch that holds the current selection.
 		/// </summary>
 		LineUpToFirstBranch,
 
 		/// <summary>
-		/// Scrolls up one line (without changing the selection).
+		/// Scrolls up one item (cell, line, etc...) (without changing the selection).
 		/// </summary>
 		ScrollUp,
 
 		/// <summary>
-		/// Moves the selection left one by the minimum increment supported by the view e.g. single character, cell, item etc.
+		/// Moves the selection left one by the minimum increment supported by the <see cref="View"/> e.g. single character, cell, item etc.
 		/// </summary>
 		Left,
 
 		/// <summary>
-		/// Scrolls one character to the left
+		/// Scrolls one item (cell, character, etc...) to the left
 		/// </summary>
 		ScrollLeft,
 
@@ -72,7 +72,7 @@ namespace Terminal.Gui {
 		Right,
 
 		/// <summary>
-		/// Scrolls one character to the right.
+		/// Scrolls one item (cell, character, etc...) to the right.
 		/// </summary>
 		ScrollRight,
 
@@ -102,12 +102,12 @@ namespace Terminal.Gui {
 		WordRightExtend,
 
 		/// <summary>
-		/// Deletes and copies to the clipboard the characters from the current position to the end of the line.
+		/// Cuts to the clipboard the characters from the current position to the end of the line.
 		/// </summary>
 		CutToEndLine,
 
 		/// <summary>
-		/// Deletes and copies to the clipboard the characters from the current position to the start of the line.
+		/// Cuts to the clipboard the characters from the current position to the start of the line.
 		/// </summary>
 		CutToStartLine,
 
@@ -140,47 +140,47 @@ namespace Terminal.Gui {
 		DisableOverwrite,
 
 		/// <summary>
-		/// Move the page down.
+		/// Move one page down.
 		/// </summary>
 		PageDown,
 
 		/// <summary>
-		/// Move the page down increase selection area to cover revealed objects/characters.
+		/// Move one page page extending the selection to cover revealed objects/characters.
 		/// </summary>
 		PageDownExtend,
 
 		/// <summary>
-		/// Move the page up.
+		/// Move one page up.
 		/// </summary>
 		PageUp,
 
 		/// <summary>
-		/// Move the page up increase selection area to cover revealed objects/characters.
+		/// Move one page up extending the selection to cover revealed objects/characters.
 		/// </summary>
 		PageUpExtend,
 
 		/// <summary>
-		/// Moves to top begin.
+		/// Moves to the top/home.
 		/// </summary>
 		TopHome,
 
 		/// <summary>
-		/// Extends the selection to the top begin.
+		/// Extends the selection to the top/home.
 		/// </summary>
 		TopHomeExtend,
 
 		/// <summary>
-		/// Moves to bottom end.
+		/// Moves to the bottom/end.
 		/// </summary>
 		BottomEnd,
 
 		/// <summary>
-		/// Extends the selection to the bottom end.
+		/// Extends the selection to the bottom/end.
 		/// </summary>
 		BottomEndExtend,
 
 		/// <summary>
-		/// Open selected item.
+		/// Open the selected item.
 		/// </summary>
 		OpenSelectedItem,
 
@@ -190,43 +190,43 @@ namespace Terminal.Gui {
 		ToggleChecked,
 
 		/// <summary>
-		/// Accepts the current state (e.g. selection, button press etc)
+		/// Accepts the current state (e.g. selection, button press etc).
 		/// </summary>
 		Accept,
 
 		/// <summary>
-		/// Toggles the Expanded or collapsed state of a a list or item (with subitems)
+		/// Toggles the Expanded or collapsed state of a a list or item (with subitems).
 		/// </summary>
 		ToggleExpandCollapse,
 
 		/// <summary>
-		/// Expands a list or item (with subitems)
+		/// Expands a list or item (with subitems).
 		/// </summary>
 		Expand,
 
 		/// <summary>
-		/// Recursively Expands all child items and their child items (if any)
+		/// Recursively Expands all child items and their child items (if any).
 		/// </summary>
 		ExpandAll,
 
 		/// <summary>
-		/// Collapses a list or item (with subitems)
+		/// Collapses a list or item (with subitems).
 		/// </summary>
 		Collapse,
 
 		/// <summary>
-		/// Recursively collapses a list items of their children (if any)
+		/// Recursively collapses a list items of their children (if any).
 		/// </summary>
 		CollapseAll,
 
 		/// <summary>
-		/// Cancels any current temporary states on the control e.g. expanding
-		/// a combo list
+		/// Cancels an action or any temporary states on the control e.g. expanding
+		/// a combo list.
 		/// </summary>
 		Cancel,
 
 		/// <summary>
-		/// Unix emulation
+		/// Unix emulation.
 		/// </summary>
 		UnixEmulation,
 
@@ -241,12 +241,12 @@ namespace Terminal.Gui {
 		DeleteCharLeft,
 
 		/// <summary>
-		/// Selects all objects in the control.
+		/// Selects all objects.
 		/// </summary>
 		SelectAll,
 
 		/// <summary>
-		/// Deletes all objects in the control.
+		/// Deletes all objects.
 		/// </summary>
 		DeleteAll,
 
@@ -336,7 +336,7 @@ namespace Terminal.Gui {
 		Paste,
 
 		/// <summary>
-		/// Quit a toplevel.
+		/// Quit a <see cref="Toplevel"/>.
 		/// </summary>
 		QuitToplevel,
 
@@ -356,37 +356,37 @@ namespace Terminal.Gui {
 		PreviousView,
 
 		/// <summary>
-		/// Moves focus to the next view or toplevel (case of Mdi).
+		/// Moves focus to the next view or toplevel (case of MDI).
 		/// </summary>
 		NextViewOrTop,
 
 		/// <summary>
-		/// Moves focus to the next previous or toplevel (case of Mdi).
+		/// Moves focus to the next previous or toplevel (case of MDI).
 		/// </summary>
 		PreviousViewOrTop,
 
 		/// <summary>
-		/// Refresh the application.
+		/// Refresh.
 		/// </summary>
 		Refresh,
 
 		/// <summary>
-		/// Toggles the extended selection.
+		/// Toggles the selection.
 		/// </summary>
 		ToggleExtend,
 
 		/// <summary>
-		/// Inserts a new line.
+		/// Inserts a new item.
 		/// </summary>
 		NewLine,
 
 		/// <summary>
-		/// Inserts a tab.
+		/// Tabs to the next item.
 		/// </summary>
 		Tab,
 
 		/// <summary>
-		/// Inserts a shift tab.
+		/// Tabs back to the previous item.
 		/// </summary>
 		BackTab
 	}

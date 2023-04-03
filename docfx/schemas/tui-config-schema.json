@@ -1,0 +1,296 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "description": "The JSON schema for the Terminal.Gui Configuration Manager (https://gui-cs.github.io/Terminal.Gui/schemas/tui-config-schema.json).",
+  "type": "object",
+  "properties": {
+    "Application.HeightAsBuffer": {
+      "description": "See HeightAsBuffer API documentation.",
+      "type": "boolean"
+    },
+    "Application.AlternateForwardKey": {
+      "description": "Alternative key for navigating forwards through views. SCtrl+Tab is the primary key.",
+      "$ref": "#/definitions/Key"
+    },
+    "Application.AlternateBackwardKey": {
+      "description": "Alternative key for navigating backwards through views. Shift+Ctrl+Tab is the primary key.",
+      "$ref": "#/definitions/Key"
+    },
+    "Application.QuitKey": {
+      "description": "The key to quit the application. Ctrl+Q is the default.",
+      "$ref": "#/definitions/Key"
+    },
+    "Application.IsMouseDisabled": {
+      "description": "Disable or enable the mouse. The mouse is enabled by default.",
+      "type": "boolean"
+    },
+    "Application.UseSystemConsole": {
+      "description": "If true, forces the use of the System.Console-based (aka NetDriver) driver. The default is false.",
+      "type": "boolean"
+    },
+    "Theme": {
+      "description": "The currently selected theme. The default is 'Default'.",
+      "type": "string"
+    },
+    "Themes": {
+      "description": "An array of Theme objects. Each Theme specifies a set of settings for an application. Set Theme to the name of the active theme.",
+      "type": "array",
+      "properties": {
+        "Themes": {
+          "$ref": "#/definitions/Theme"
+        }
+      },
+      "additionalProperties": {
+        "$ref": "#/definitions/ColorScheme"
+      }
+    }
+  },
+  "definitions": {
+    "Theme": {
+      "description": "A Theme is a collection of settings that are named.",
+      "type": "object",
+      "properties": {
+        "ColorSchemes": {
+          "description": "The ColorSchemes defined for this Theme.",
+          "$ref": "#/definitions/ColorSchemes"
+        }
+      }
+    },
+    "ColorSchemes": {
+      "description": "A list of ColorSchemes. Each ColorScheme specifies a set of Attributes (Foreground & Background).",
+      "type": "array",
+      "properties": {
+        "TopLevel": {
+          "$ref": "#/definitions/ColorScheme"
+        },
+        "Base": {
+          "$ref": "#/definitions/ColorScheme"
+        },
+        "Dialog": {
+          "$ref": "#/definitions/ColorScheme"
+        },
+        "Menu": {
+          "$ref": "#/definitions/ColorScheme"
+        },
+        "Error": {
+          "$ref": "#/definitions/ColorScheme"
+        }
+      },
+      "additionalProperties": {
+        "$ref": "#/definitions/ColorScheme"
+      }
+    },
+    "ColorScheme": {
+      "description": "A Terminal.Gui ColorScheme. Specifies the Foreground & Background colors for modes of an Terminal.Gui app.",
+      "type": "object",
+      "properties": {
+        "Normal": {
+          "description": "The foreground and background color for text when the view is not focused, hot, or disabled.",
+          "$ref": "#/definitions/Attribute"
+        },
+        "Focus": {
+          "description": "The foreground and background color for text when the view has focus.",
+          "$ref": "#/definitions/Attribute"
+        },
+        "HotNormal": {
+          "description": "The foreground and background color for text when the view is highlighted (hot).",
+          "$ref": "#/definitions/Attribute"
+        },
+        "HotFocus": {
+          "description": "The foreground and background color for text when the view is highlighted (hot) and has focus.",
+          "$ref": "#/definitions/Attribute"
+        },
+        "Disabled": {
+          "description": "The foreground and background color for text when the view disabled.",
+          "$ref": "#/definitions/Attribute"
+        }
+      }
+    },
+    "Attribute": {
+      "description": "A Terminal.Gui color attribute. Specifies the Foreground & Background colors for Terminal.Gui output.",
+      "type": "object",
+      "properties": {
+        "Foreground": {
+          "$ref": "#/definitions/Color"
+        },
+        "Background": {
+          "$ref": "#/definitions/Color"
+        }
+      },
+      "required": [
+        "Foreground",
+        "Background"
+      ]
+    },
+    "Color": {
+      "description": "One be either one of 16 standard color names or an rgb(r,g,b) tuple.",
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "type": "string",
+      "properties": {
+        "color": {
+          "oneOf": [
+            {
+              "type": "string",
+              "enum": [
+                "Black",
+                "Blue",
+                "Green",
+                "Cyan",
+                "Red",
+                "Magenta",
+                "Brown",
+                "Gray",
+                "DarkGray",
+                "BrightBlue",
+                "BrightGreen",
+                "BrightCyan",
+                "BrightRed",
+                "BrightMagenta",
+                "BrightYellow",
+                "White"
+              ]
+            },
+            {
+              "type": "string",
+              "pattern": "^rgb\\(\\s*\\d{1,3}\\s*,\\s*\\d{1,3}\\s*,\\s*\\d{1,3}\\s*\\)$"
+            }
+          ]
+        }
+      }
+    },
+    "Key": {
+      "description": "A key pressed on the keyboard.",
+      "type": "object",
+      "properties": {
+        "Key": {
+          "description": "A key name (e.g. A, b, 1, 2, Enter, Esc, F5, etc.) or an integer value (e.g. 65, 66, 67, etc.).",
+          "oneOf": [
+            {
+              "type": "string",
+              "enum": [
+                "Null",
+                "Backspace",
+                "Tab",
+                "Enter",
+                "Clear",
+                "Esc",
+                "Space",
+                "D0",
+                "D1",
+                "D2",
+                "D3",
+                "D4",
+                "D5",
+                "D6",
+                "D7",
+                "D8",
+                "D9",
+                "0",
+                "1",
+                "2",
+                "3",
+                "4",
+                "5",
+                "6",
+                "7",
+                "8",
+                "9",
+                "a",
+                "b",
+                "c",
+                "d",
+                "e",
+                "f",
+                "g",
+                "h",
+                "i",
+                "j",
+                "k",
+                "l",
+                "m",
+                "n",
+                "o",
+                "p",
+                "q",
+                "r",
+                "s",
+                "t",
+                "u",
+                "v",
+                "w",
+                "x",
+                "y",
+                "z",
+                "A",
+                "B",
+                "C",
+                "D",
+                "E",
+                "F",
+                "G",
+                "H",
+                "I",
+                "J",
+                "K",
+                "L",
+                "M",
+                "N",
+                "O",
+                "P",
+                "Q",
+                "R",
+                "S",
+                "T",
+                "U",
+                "V",
+                "W",
+                "X",
+                "Y",
+                "Z",
+                "F1",
+                "F2",
+                "F3",
+                "F4",
+                "F5",
+                "F6",
+                "F7",
+                "F8",
+                "F9",
+                "F10",
+                "F11",
+                "F12",
+                "Insert",
+                "Delete",
+                "Home",
+                "End",
+                "PageUp",
+                "PageDown",
+                "Up",
+                "Down",
+                "Left",
+                "Right"
+              ]
+            },
+            {
+              "type": "integer"
+            }
+          ]
+        },
+        "Modifiers": {
+          "description": "A keyboard modifier (e.g. Ctrl, Alt, or Shift).",
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "Ctrl",
+              "Alt",
+              "Shift"
+            ]
+          }
+        }
+      },
+      "required": [
+        "Key"
+      ]
+    }
+  }
+}

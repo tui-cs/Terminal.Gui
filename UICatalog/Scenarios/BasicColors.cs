@@ -13,13 +13,14 @@ namespace UICatalog.Scenarios {
 			var colors = System.Enum.GetValues (typeof (Color));
 
 			foreach (Color bg in colors) {
+				Attribute attr = new Attribute (bg, colors.Length - 1 - bg);
 				var vl = new Label (bg.ToString (), TextDirection.TopBottom_LeftRight) {
 					X = vx,
 					Y = 0,
 					Width = 1,
 					Height = 13,
 					VerticalTextAlignment = VerticalTextAlignment.Bottom,
-					ColorScheme = new ColorScheme () { Normal = new Attribute (bg, colors.Length - 1 - bg) }
+					ColorScheme = new ColorScheme () { Normal = attr }
 				};
 				Win.Add (vl);
 				var hl = new Label (bg.ToString ()) {
@@ -28,7 +29,7 @@ namespace UICatalog.Scenarios {
 					Width = 13,
 					Height = 1,
 					TextAlignment = TextAlignment.Right,
-					ColorScheme = new ColorScheme () { Normal = new Attribute (bg, colors.Length - 1 - bg) }
+					ColorScheme = new ColorScheme () { Normal = attr }
 				};
 				Win.Add (hl);
 				vx++;

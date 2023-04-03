@@ -42,7 +42,7 @@ namespace Terminal.Gui {
 		/// <summary>
 		/// Changing event, raised before the <see cref="Text"/> changes and can be canceled or changing the new text.
 		/// </summary>
-		public event Action<TextChangingEventArgs> TextChanging;
+		public event EventHandler<TextChangingEventArgs> TextChanging;
 
 		/// <summary>
 		///   Changed event, raised when the text has changed.
@@ -51,9 +51,9 @@ namespace Terminal.Gui {
 		///   This event is raised when the <see cref="Text"/> changes. 
 		/// </remarks>
 		/// <remarks>
-		///   The passed <see cref="EventArgs"/> is a <see cref="ustring"/> containing the old value. 
+		///   The passed <see cref="EventArgs"/> is a <see cref="NStack.ustring"/> containing the old value. 
 		/// </remarks>
-		public event Action<ustring> TextChanged;
+		public event EventHandler<TextChangedEventArgs> TextChanged;
 
 		/// <summary>
 		/// Initializes a new instance of the <see cref="TextField"/> class using <see cref="LayoutStyle.Computed"/> positioning.
@@ -228,14 +228,17 @@ namespace Terminal.Gui {
 				});
 		}
 
-		private void ContextMenu_KeyChanged (Key obj)
+		private void ContextMenu_KeyChanged (object sender, KeyChangedEventArgs e)
 		{
-			ReplaceKeyBinding (obj, ContextMenu.Key);
+			ReplaceKeyBinding (e.OldKey, e.NewKey);
 		}
 
-		private void HistoryText_ChangeText (HistoryText.HistoryTextItem obj)
+		private void HistoryText_ChangeText (object sender, HistoryText.HistoryTextItem obj)
 		{
-			Text = ustring.Make (obj.Lines [obj.CursorPosition.Y]);
+			if (obj == null)
+				return;
+
+			Text = ustring.Make (obj?.Lines [obj.CursorPosition.Y]);
 			CursorPosition = obj.CursorPosition.X;
 			Adjust ();
 		}
@@ -244,6 +247,16 @@ namespace Terminal.Gui {
 		{
 			Autocomplete.HostControl = this;
 			Autocomplete.PopupInsideContainer = false;
+		}
+
+		///<inheritdoc/>
+		public override bool OnEnter (View view)
+		{
+			if (IsInitialized) {
+				Application.Driver.SetCursorVisibility (DesiredCursorVisibility);
+			}
+
+			return base.OnEnter (view);
 		}
 
 		///<inheritdoc/>
@@ -259,9 +272,9 @@ namespace Terminal.Gui {
 
 		/// <summary>
 		/// Provides autocomplete context menu based on suggestions at the current cursor
-		/// position. Populate <see cref="Autocomplete.AllSuggestions"/> to enable this feature.
+		/// position. Configure <see cref="ISuggestionGenerator"/> to enable this feature.
 		/// </summary>
-		public IAutocomplete Autocomplete { get; protected set; } = new TextFieldAutocomplete ();
+		public IAutocomplete Autocomplete { get; set; } = new TextFieldAutocomplete ();
 
 		///<inheritdoc/>
 		public override Rect Frame {
@@ -295,6 +308,7 @@ namespace Terminal.Gui {
 					}
 					return;
 				}
+				ClearAllSelection ();
 				text = TextModel.ToRunes (newText.NewText);
 
 				if (!Secret && !historyText.IsFromHistory) {
@@ -304,7 +318,7 @@ namespace Terminal.Gui {
 						, HistoryText.LineStatus.Replaced);
 				}
 
-				TextChanged?.Invoke (oldText);
+				TextChanged?.Invoke (this, new TextChangedEventArgs (oldText));
 
 				if (point > text.Count) {
 					point = Math.Max (TextModel.DisplaySize (text, 0).size - 1, 0);
@@ -457,13 +471,24 @@ namespace Terminal.Gui {
 			if (SelectedLength > 0)
 				return;
 
+
 			// draw autocomplete
-			Autocomplete.GenerateSuggestions ();
+			GenerateSuggestions ();
 
 			var renderAt = new Point (
 				CursorPosition - ScrollOffset, 0);
 
 			Autocomplete.RenderOverlay (renderAt);
+		}
+
+		private void GenerateSuggestions ()
+		{
+			var currentLine = Text.ToRuneList ();
+			var cursorPosition = Math.Min (this.CursorPosition, currentLine.Count);
+
+			Autocomplete.GenerateSuggestions(
+				new AutocompleteContext(currentLine,cursorPosition)
+				);
 		}
 
 		/// <inheritdoc/>
@@ -1060,8 +1085,8 @@ namespace Terminal.Gui {
 				EnsureHasFocus ();
 				int x = PositionCursor (ev);
 				int sbw = x;
-				if (x == text.Count || (x > 0 && (char)Text [x - 1] != ' '
-					|| (x > 0 && (char)Text [x] == ' '))) {
+				if (x == text.Count || (x > 0 && (char)text [x - 1] != ' ')
+					|| (x > 0 && (char)text [x] == ' ')) {
 
 					sbw = WordBackward (x);
 				}
@@ -1245,7 +1270,7 @@ namespace Terminal.Gui {
 		public virtual TextChangingEventArgs OnTextChanging (ustring newText)
 		{
 			var ev = new TextChangingEventArgs (newText);
-			TextChanging?.Invoke (ev);
+			TextChanging?.Invoke (this, ev);
 			return ev;
 		}
 
@@ -1263,14 +1288,6 @@ namespace Terminal.Gui {
 
 				desiredCursorVisibility = value;
 			}
-		}
-
-		///<inheritdoc/>
-		public override bool OnEnter (View view)
-		{
-			Application.Driver.SetCursorVisibility (DesiredCursorVisibility);
-
-			return base.OnEnter (view);
 		}
 
 		/// <summary>
@@ -1304,50 +1321,17 @@ namespace Terminal.Gui {
 			historyText.Clear (Text);
 		}
 	}
-
-	/// <summary>
-	/// An <see cref="EventArgs"/> which allows passing a cancelable new text value event.
-	/// </summary>
-	public class TextChangingEventArgs : EventArgs {
-		/// <summary>
-		/// The new text to be replaced.
-		/// </summary>
-		public ustring NewText { get; set; }
-		/// <summary>
-		/// Flag which allows to cancel the new text value.
-		/// </summary>
-		public bool Cancel { get; set; }
-
-		/// <summary>
-		/// Initializes a new instance of <see cref="TextChangingEventArgs"/>
-		/// </summary>
-		/// <param name="newText">The new <see cref="TextField.Text"/> to be replaced.</param>
-		public TextChangingEventArgs (ustring newText)
-		{
-			NewText = newText;
-		}
-	}
-
 	/// <summary>
 	/// Renders an overlay on another view at a given point that allows selecting
 	/// from a range of 'autocomplete' options.
 	/// An implementation on a TextField.
 	/// </summary>
-	public class TextFieldAutocomplete : Autocomplete {
+	public class TextFieldAutocomplete : PopupAutocomplete {
 
 		/// <inheritdoc/>
 		protected override void DeleteTextBackwards ()
 		{
 			((TextField)HostControl).DeleteCharLeft (false);
-		}
-
-		/// <inheritdoc/>
-		protected override string GetCurrentWord ()
-		{
-			var host = (TextField)HostControl;
-			var currentLine = host.Text.ToRuneList ();
-			var cursorPosition = Math.Min (host.CursorPosition, currentLine.Count);
-			return IdxToWord (currentLine, cursorPosition);
 		}
 
 		/// <inheritdoc/>

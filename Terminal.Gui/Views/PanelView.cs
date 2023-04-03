@@ -128,7 +128,7 @@ namespace Terminal.Gui {
 			Child.Initialized -= Child_Initialized;
 		}
 
-		private void Border_BorderChanged (Border obj)
+		private void Border_BorderChanged (object sender, EventArgs e)
 		{
 			AdjustContainer ();
 		}

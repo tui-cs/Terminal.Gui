@@ -3,6 +3,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.Json.Nodes;
 using Terminal.Gui;
 using Attribute = Terminal.Gui.Attribute;
 
@@ -16,11 +17,13 @@ namespace UICatalog.Scenarios {
 		public CheckBox _allowMultipleCB;
 		public ListView _listView;
 
-		public List<Type> _scenarios = Scenario.GetDerivedClasses<Scenario>().OrderBy (t => Scenario.ScenarioMetadata.GetName (t)).ToList ();
+		public List<Scenario> _scenarios;
 
 		public override void Setup ()
 		{
-			_customRenderCB = new CheckBox ("Render with columns") {
+			_scenarios = Scenario.GetScenarios ();
+
+			_customRenderCB = new CheckBox ("Use custom rendering") {
 				X = 0,
 				Y = 0,
 				Height = 1,
@@ -40,7 +43,7 @@ namespace UICatalog.Scenarios {
 				X = Pos.Right (_allowMarkingCB) + 1,
 				Y = 0,
 				Height = 1,
-				Visible = _allowMarkingCB.Checked
+				Visible = (bool)_allowMarkingCB.Checked
 			};
 			Win.Add (_allowMultipleCB);
 			_allowMultipleCB.Toggled += AllowMultipleCB_Toggled;
@@ -59,7 +62,7 @@ namespace UICatalog.Scenarios {
 
 			var _scrollBar = new ScrollBarView (_listView, true);
 
-			_scrollBar.ChangedPosition += () => {
+			_scrollBar.ChangedPosition += (s,e) => {
 				_listView.TopItem = _scrollBar.Position;
 				if (_listView.TopItem != _scrollBar.Position) {
 					_scrollBar.Position = _listView.TopItem;
@@ -67,7 +70,7 @@ namespace UICatalog.Scenarios {
 				_listView.SetNeedsDisplay ();
 			};
 
-			_scrollBar.OtherScrollBarView.ChangedPosition += () => {
+			_scrollBar.OtherScrollBarView.ChangedPosition += (s,e) => {
 				_listView.LeftItem = _scrollBar.OtherScrollBarView.Position;
 				if (_listView.LeftItem != _scrollBar.OtherScrollBarView.Position) {
 					_scrollBar.OtherScrollBarView.Position = _listView.LeftItem;
@@ -75,7 +78,7 @@ namespace UICatalog.Scenarios {
 				_listView.SetNeedsDisplay ();
 			};
 
-			_listView.DrawContent += (e) => {
+			_listView.DrawContent += (s,e) => {
 				_scrollBar.Size = _listView.Source.Count;
 				_scrollBar.Position = _listView.TopItem;
 				_scrollBar.OtherScrollBarView.Size = _listView.Maxlength;
@@ -90,11 +93,11 @@ namespace UICatalog.Scenarios {
 				X = Pos.AnchorEnd (k.Length + 3),
 				Y = 0,
 			};
-			keepCheckBox.Toggled += (_) => _scrollBar.KeepContentAlwaysInViewport = keepCheckBox.Checked;
+			keepCheckBox.Toggled += (s,e) => _scrollBar.KeepContentAlwaysInViewport = (bool)keepCheckBox.Checked;
 			Win.Add (keepCheckBox);
 		}
 
-		private void ListView_RowRender (ListViewRowEventArgs obj)
+		private void ListView_RowRender (object sender, ListViewRowEventArgs obj)
 		{
 			if (obj.Row == _listView.SelectedItem) {
 				return;
@@ -110,9 +113,9 @@ namespace UICatalog.Scenarios {
 			}
 		}
 
-		private void _customRenderCB_Toggled (bool prev)
+		private void _customRenderCB_Toggled (object sender, ToggleEventArgs e)
 		{
-			if (prev) {
+			if (e.OldValue == true) {
 				_listView.SetSource (_scenarios);
 			} else {
 				_listView.Source = new ScenarioListDataSource (_scenarios);
@@ -121,27 +124,27 @@ namespace UICatalog.Scenarios {
 			Win.SetNeedsDisplay ();
 		}
 
-		private void AllowMarkingCB_Toggled (bool prev)
+		private void AllowMarkingCB_Toggled (object sender, ToggleEventArgs e)
 		{
-			_listView.AllowsMarking = !prev;
+			_listView.AllowsMarking = (bool)!e.OldValue;
 			_allowMultipleCB.Visible = _listView.AllowsMarking;
 			Win.SetNeedsDisplay ();
 		}
 
-		private void AllowMultipleCB_Toggled (bool prev)
+		private void AllowMultipleCB_Toggled (object sender, ToggleEventArgs e)
 		{
-			_listView.AllowsMultipleSelection = !prev;
+			_listView.AllowsMultipleSelection = (bool)!e.OldValue;
 			Win.SetNeedsDisplay ();
 		}
 
 		// This is basically the same implementation used by the UICatalog main window
 		internal class ScenarioListDataSource : IListDataSource {
 			int _nameColumnWidth = 30;
-			private List<Type> scenarios;
+			private List<Scenario> scenarios;
 			BitArray marks;
 			int count, len;
 
-			public List<Type> Scenarios {
+			public List<Scenario> Scenarios {
 				get => scenarios;
 				set {
 					if (value != null) {
@@ -163,14 +166,14 @@ namespace UICatalog.Scenarios {
 
 			public int Length => len;
 
-			public ScenarioListDataSource (List<Type> itemList) => Scenarios = itemList;
+			public ScenarioListDataSource (List<Scenario> itemList) => Scenarios = itemList;
 
 			public void Render (ListView container, ConsoleDriver driver, bool selected, int item, int col, int line, int width, int start = 0)
 			{
 				container.Move (col, line);
 				// Equivalent to an interpolated string like $"{Scenarios[item].Name, -widtestname}"; if such a thing were possible
-				var s = String.Format (String.Format ("{{0,{0}}}", -_nameColumnWidth), Scenario.ScenarioMetadata.GetName (Scenarios [item]));
-				RenderUstr (driver, $"{s}  {Scenario.ScenarioMetadata.GetDescription (Scenarios [item])}", col, line, width, start);
+				var s = String.Format (String.Format ("{{0,{0}}}", -_nameColumnWidth), Scenarios [item].GetName ());
+				RenderUstr (driver, $"{s} ({Scenarios [item].GetDescription ()})", col, line, width, start);
 			}
 
 			public void SetMark (int item, bool value)
@@ -187,8 +190,8 @@ namespace UICatalog.Scenarios {
 
 				int maxLength = 0;
 				for (int i = 0; i < scenarios.Count; i++) {
-					var s = String.Format (String.Format ("{{0,{0}}}", -_nameColumnWidth), Scenario.ScenarioMetadata.GetName (Scenarios [i]));
-					var sc = $"{s}  {Scenario.ScenarioMetadata.GetDescription (Scenarios [i])}";
+					var s = String.Format (String.Format ("{{0,{0}}}", -_nameColumnWidth), Scenarios [i].GetName ());
+					var sc = $"{s}  {Scenarios [i].GetDescription ()}";
 					var l = sc.Length;
 					if (l > maxLength) {
 						maxLength = l;

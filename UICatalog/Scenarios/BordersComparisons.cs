@@ -5,19 +5,17 @@ namespace UICatalog.Scenarios {
 	[ScenarioCategory ("Layout")]
 	[ScenarioCategory ("Borders")]
 	public class BordersComparisons : Scenario {
-		public override void Init (Toplevel top, ColorScheme colorScheme)
+		public override void Init ()
 		{
-			top.Dispose ();
 			Application.Init ();
-
-			top = Application.Top;
 
 			var borderStyle = BorderStyle.Double;
 			var drawMarginFrame = false;
 			var borderThickness = new Thickness (1, 2, 3, 4);
-			var borderBrush = Colors.Base.HotFocus.Foreground;
+			var borderBrush = Color.BrightMagenta;
+			;
 			var padding = new Thickness (1, 2, 3, 4);
-			var background = Colors.Base.HotNormal.Foreground;
+			var background = Color.Cyan;
 			var effect3D = true;
 
 			var win = new Window (new Rect (5, 5, 40, 20), "Test", 8,
@@ -37,10 +35,10 @@ namespace UICatalog.Scenarios {
 				X = Pos.Center (),
 				Y = Pos.Center (),
 			};
-			button.Clicked += () => MessageBox.Query (20, 7, "Hi", "I'm a Window?", "Yes", "No");
+			button.Clicked += (s,e) => MessageBox.Query (20, 7, "Hi", "I'm a Window?", "Yes", "No");
 			var label = new Label ("I'm a Window") {
 				X = Pos.Center (),
-				Y = Pos.Center () - 3,
+				Y = Pos.Center () - 1,
 			};
 			var tv = new TextView () {
 				Y = Pos.AnchorEnd (2),
@@ -54,7 +52,7 @@ namespace UICatalog.Scenarios {
 				Width = 10
 			};
 			win.Add (tf1, button, label, tv, tf2);
-			top.Add (win);
+			Application.Top.Add (win);
 
 			var top2 = new Border.ToplevelContainer (new Rect (50, 5, 40, 20),
 				new Border () {
@@ -76,10 +74,10 @@ namespace UICatalog.Scenarios {
 				X = Pos.Center (),
 				Y = Pos.Center (),
 			};
-			button2.Clicked += () => MessageBox.Query (20, 7, "Hi", "I'm a Toplevel?", "Yes", "No");
+			button2.Clicked += (s,e) => MessageBox.Query (20, 7, "Hi", "I'm a Toplevel?", "Yes", "No");
 			var label2 = new Label ("I'm a Toplevel") {
 				X = Pos.Center (),
-				Y = Pos.Center () - 3,
+				Y = Pos.Center () - 1,
 			};
 			var tv2 = new TextView () {
 				Y = Pos.AnchorEnd (2),
@@ -93,7 +91,7 @@ namespace UICatalog.Scenarios {
 				Width = 10
 			};
 			top2.Add (tf3, button2, label2, tv2, tf4);
-			top.Add (top2);
+			Application.Top.Add (top2);
 
 			var frm = new FrameView (new Rect (95, 5, 40, 20), "Test3", null,
 				new Border () {
@@ -112,10 +110,10 @@ namespace UICatalog.Scenarios {
 				X = Pos.Center (),
 				Y = Pos.Center (),
 			};
-			button3.Clicked += () => MessageBox.Query (20, 7, "Hi", "I'm a FrameView?", "Yes", "No");
+			button3.Clicked += (s,e) => MessageBox.Query (20, 7, "Hi", "I'm a FrameView?", "Yes", "No");
 			var label3 = new Label ("I'm a FrameView") {
 				X = Pos.Center (),
-				Y = Pos.Center () - 3,
+				Y = Pos.Center () - 1,
 			};
 			var tv3 = new TextView () {
 				Y = Pos.AnchorEnd (2),
@@ -129,7 +127,7 @@ namespace UICatalog.Scenarios {
 				Width = 10
 			};
 			frm.Add (tf5, button3, label3, tv3, tf6);
-			top.Add (frm);
+			Application.Top.Add (frm);
 
 			Application.Run ();
 		}

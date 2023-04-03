@@ -11,11 +11,11 @@ namespace UICatalog.Scenarios {
 	public class SingleBackgroundWorker : Scenario {
 		public override void Run ()
 		{
-			Top.Dispose ();
+			Application.Top.Dispose ();
 
 			Application.Run<MainApp> ();
 
-			Top.Dispose ();
+			Application.Top.Dispose ();
 		}
 
 		public class MainApp : Toplevel {
@@ -36,7 +36,7 @@ namespace UICatalog.Scenarios {
 				Add (menu);
 
 				var statusBar = new StatusBar (new [] {
-					new StatusItem(Key.CtrlMask | Key.Q, "~^Q~ Exit", () => Application.RequestStop()),
+					new StatusItem(Application.QuitKey, $"{Application.QuitKey} to Quit", () => Application.RequestStop()),
 					new StatusItem(Key.CtrlMask | Key.P, "~^R~ Run Worker", () => RunWorker())
 				});
 				Add (statusBar);
@@ -63,7 +63,7 @@ namespace UICatalog.Scenarios {
 				worker = new BackgroundWorker () { WorkerSupportsCancellation = true };
 
 				var cancel = new Button ("Cancel Worker");
-				cancel.Clicked += () => {
+				cancel.Clicked += (s,e) => {
 					if (worker == null) {
 						log.Add ($"Worker is not running at {DateTime.Now}!");
 						listLog.SetNeedsDisplay ();
@@ -133,10 +133,10 @@ namespace UICatalog.Scenarios {
 			public StagingUIController (DateTime? start, List<string> list)
 			{
 				top = new Toplevel (Application.Top.Frame);
-				top.KeyPress += (e) => {
+				top.KeyPress += (s,e) => {
 					// Prevents Ctrl+Q from closing this.
 					// Only Ctrl+C is allowed.
-					if (e.KeyEvent.Key == (Key.Q | Key.CtrlMask)) {
+					if (e.KeyEvent.Key == Application.QuitKey) {
 						e.Handled = true;
 					}
 				};

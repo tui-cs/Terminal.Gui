@@ -277,7 +277,7 @@ namespace Terminal.Gui {
 			}
 		}
 
-		private void Host_EnabledChanged ()
+		private void Host_EnabledChanged (object sender, EventArgs e)
 		{
 			Enabled = Host.Enabled;
 			if (otherScrollBarView != null) {
@@ -294,7 +294,7 @@ namespace Terminal.Gui {
 		//	}
 		//}
 
-		void ContentBottomRightCorner_MouseClick (MouseEventArgs me)
+		void ContentBottomRightCorner_MouseClick (object sender, MouseEventEventArgs me)
 		{
 			if (me.MouseEvent.Flags == MouseFlags.WheeledDown || me.MouseEvent.Flags == MouseFlags.WheeledUp
 				|| me.MouseEvent.Flags == MouseFlags.WheeledRight || me.MouseEvent.Flags == MouseFlags.WheeledLeft) {
@@ -344,7 +344,7 @@ namespace Terminal.Gui {
 		/// <summary>
 		/// This event is raised when the position on the scrollbar has changed.
 		/// </summary>
-		public event Action ChangedPosition;
+		public event EventHandler ChangedPosition;
 
 		/// <summary>
 		/// The position, relative to <see cref="Size"/>, to set the scrollbar at.
@@ -490,7 +490,7 @@ namespace Terminal.Gui {
 		/// </summary>
 		public virtual void OnChangedPosition ()
 		{
-			ChangedPosition?.Invoke ();
+			ChangedPosition?.Invoke (this, EventArgs.Empty);
 		}
 
 		/// <summary>
@@ -644,7 +644,7 @@ namespace Terminal.Gui {
 				return;
 			}
 
-			Driver.SetAttribute (GetNormalColor ());
+			Driver.SetAttribute (Host.HasFocus ? ColorScheme.Focus : GetNormalColor ());
 
 			if ((vertical && Bounds.Height == 0) || (!vertical && Bounds.Width == 0)) {
 				return;
@@ -795,13 +795,13 @@ namespace Terminal.Gui {
 		int posBarOffset;
 
 		///<inheritdoc/>
-		public override bool MouseEvent (MouseEvent me)
+		public override bool MouseEvent (MouseEvent mouseEvent)
 		{
-			if (me.Flags != MouseFlags.Button1Pressed && me.Flags != MouseFlags.Button1DoubleClicked &&
-				!me.Flags.HasFlag (MouseFlags.Button1Pressed | MouseFlags.ReportMousePosition) &&
-				me.Flags != MouseFlags.Button1Released && me.Flags != MouseFlags.WheeledDown &&
-				me.Flags != MouseFlags.WheeledUp && me.Flags != MouseFlags.WheeledRight &&
-				me.Flags != MouseFlags.WheeledLeft && me.Flags != MouseFlags.Button1TripleClicked) {
+			if (mouseEvent.Flags != MouseFlags.Button1Pressed && mouseEvent.Flags != MouseFlags.Button1DoubleClicked &&
+				!mouseEvent.Flags.HasFlag (MouseFlags.Button1Pressed | MouseFlags.ReportMousePosition) &&
+				mouseEvent.Flags != MouseFlags.Button1Released && mouseEvent.Flags != MouseFlags.WheeledDown &&
+				mouseEvent.Flags != MouseFlags.WheeledUp && mouseEvent.Flags != MouseFlags.WheeledRight &&
+				mouseEvent.Flags != MouseFlags.WheeledLeft && mouseEvent.Flags != MouseFlags.Button1TripleClicked) {
 				return false;
 			}
 
@@ -812,24 +812,24 @@ namespace Terminal.Gui {
 				Host.SetFocus ();
 			}
 
-			int location = vertical ? me.Y : me.X;
+			int location = vertical ? mouseEvent.Y : mouseEvent.X;
 			int barsize = vertical ? Bounds.Height : Bounds.Width;
 			int posTopLeftTee = vertical ? posTopTee + 1 : posLeftTee + 1;
 			int posBottomRightTee = vertical ? posBottomTee + 1 : posRightTee + 1;
 			barsize -= 2;
 			var pos = Position;
 
-			if (me.Flags != MouseFlags.Button1Released
+			if (mouseEvent.Flags != MouseFlags.Button1Released
 				&& (Application.MouseGrabView == null || Application.MouseGrabView != this)) {
 				Application.GrabMouse (this);
-			} else if (me.Flags == MouseFlags.Button1Released && Application.MouseGrabView != null && Application.MouseGrabView == this) {
+			} else if (mouseEvent.Flags == MouseFlags.Button1Released && Application.MouseGrabView != null && Application.MouseGrabView == this) {
 				lastLocation = -1;
 				Application.UngrabMouse ();
 				return true;
 			}
-			if (showScrollIndicator && (me.Flags == MouseFlags.WheeledDown || me.Flags == MouseFlags.WheeledUp ||
-				me.Flags == MouseFlags.WheeledRight || me.Flags == MouseFlags.WheeledLeft)) {
-				return Host.MouseEvent (me);
+			if (showScrollIndicator && (mouseEvent.Flags == MouseFlags.WheeledDown || mouseEvent.Flags == MouseFlags.WheeledUp ||
+				mouseEvent.Flags == MouseFlags.WheeledRight || mouseEvent.Flags == MouseFlags.WheeledLeft)) {
+				return Host.MouseEvent (mouseEvent);
 			}
 
 			if (location == 0) {
@@ -850,7 +850,7 @@ namespace Terminal.Gui {
 				//}
 
 				if (lastLocation > -1 || (location >= posTopLeftTee && location <= posBottomRightTee
-				&& me.Flags.HasFlag (MouseFlags.Button1Pressed | MouseFlags.ReportMousePosition))) {
+				&& mouseEvent.Flags.HasFlag (MouseFlags.Button1Pressed | MouseFlags.ReportMousePosition))) {
 					if (lastLocation == -1) {
 						lastLocation = location;
 						posBarOffset = keepContentAlwaysInViewport ? Math.Max (location - posTopLeftTee, 1) : 0;

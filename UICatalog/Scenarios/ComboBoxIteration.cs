@@ -38,12 +38,12 @@ namespace UICatalog.Scenarios {
 			};
 			comboBox.SetSource (items);
 
-			listview.SelectedItemChanged += (e) => {
+			listview.SelectedItemChanged += (s,e) => {
 				lbListView.Text = items [e.Item];
 				comboBox.SelectedItem = e.Item;
 			};
 
-			comboBox.SelectedItemChanged += (ListViewItemEventArgs text) => {
+			comboBox.SelectedItemChanged += (object sender, ListViewItemEventArgs text) => {
 				if (text.Item != -1) {
 					lbComboBox.Text = text.Value.ToString ();
 					listview.SelectedItem = text.Item;
@@ -55,7 +55,7 @@ namespace UICatalog.Scenarios {
 			var btnTwo = new Button ("Two") {
 				X = Pos.Right (comboBox) + 1,
 			};
-			btnTwo.Clicked += () => {
+			btnTwo.Clicked += (s,e) => {
 				items = new List<string> () { "one", "two" };
 				comboBox.SetSource (items);
 				listview.SetSource (items);
@@ -67,7 +67,7 @@ namespace UICatalog.Scenarios {
 				X = Pos.Right (comboBox) + 1,
 				Y = Pos.Top (comboBox)
 			};
-			btnThree.Clicked += () => {
+			btnThree.Clicked += (s,e) => {
 				items = new List<string> () { "one", "two", "three" };
 				comboBox.SetSource (items);
 				listview.SetSource (items);

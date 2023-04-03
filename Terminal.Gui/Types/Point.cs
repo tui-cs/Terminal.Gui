@@ -21,11 +21,13 @@ namespace Terminal.Gui
 		/// <summary>
 		/// Gets or sets the x-coordinate of this Point.
 		/// </summary>
+		[System.Text.Json.Serialization.JsonInclude]
 		public int X;
 
 		/// <summary>
 		/// Gets or sets the y-coordinate of this Point.
 		/// </summary>
+		[System.Text.Json.Serialization.JsonInclude]
 		public int Y;
 
 		// -----------------------
@@ -159,6 +161,7 @@ namespace Terminal.Gui
 		/// <remarks>
 		///	Indicates if both X and Y are zero.
 		/// </remarks>		
+		[System.Text.Json.Serialization.JsonIgnore]
 		public bool IsEmpty {
 			get {
 				return ((X == 0) && (Y == 0));

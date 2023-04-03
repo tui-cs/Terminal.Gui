@@ -3,76 +3,60 @@ using System.Linq;
 using Terminal.Gui;
 
 namespace UICatalog.Scenarios {
-	[ScenarioMetadata (Name: "Windows & FrameViews", Description: "Shows Windows, sub-Windows, and FrameViews.")]
+	[ScenarioMetadata (Name: "Windows & FrameViews", Description: "Stress Tests Windows, sub-Windows, and FrameViews.")]
 	[ScenarioCategory ("Layout")]
 	public class WindowsAndFrameViews : Scenario {
-		public override void Init (Toplevel top, ColorScheme colorScheme)
-		{
-			Application.Init ();
-
-			Top = top;
-			if (Top == null) {
-				Top = Application.Top;
-			}
-		}
-
-		public override void RequestStop ()
-		{
-			base.RequestStop ();
-		}
-
-		public override void Run ()
-		{
-			base.Run ();
-		}
-
+		
 		public override void Setup ()
 		{
 			static int About ()
 			{
 				return MessageBox.Query ("About UI Catalog", "UI Catalog is a comprehensive sample library for Terminal.Gui", "Ok");
-
-				//var about = new Window (new Rect (0, 0, 50, 10), "About UI catalog", 0) {
-				//	X = Pos.Center (),
-				//	Y = Pos.Center (),
-				//	Width = 50,
-				//	Height = 10,
-				//	LayoutStyle = LayoutStyle.Computed,
-				//	ColorScheme = Colors.Error,
-
-				//};
-
-				//Application.Run (about);
-				//return 0;
-
 			}
 
 			int margin = 2;
 			int padding = 1;
 			int contentHeight = 7;
+
+			// list of Windows we create
 			var listWin = new List<View> ();
+
+			//Ignore the Win that UI Catalog created and create a new one
+			Application.Top.Remove (Win);
+			Win?.Dispose ();
+
 			Win = new Window ($"{listWin.Count} - Scenario: {GetName ()}", padding) {
 				X = Pos.Center (),
 				Y = 1,
-				Width = Dim.Fill (10),
-				Height = Dim.Percent (15)
+				Width = Dim.Fill (15),
+				Height = 10
 			};
+
 			Win.ColorScheme = Colors.Dialog;
 			var paddingButton = new Button ($"Padding of container is {padding}") {
 				X = Pos.Center (),
 				Y = 0,
 				ColorScheme = Colors.Error,
 			};
-			paddingButton.Clicked += () => About ();
+			paddingButton.Clicked += (s,e) => About ();
 			Win.Add (paddingButton);
 			Win.Add (new Button ("Press ME! (Y = Pos.AnchorEnd(1))") {
 				X = Pos.Center (),
 				Y = Pos.AnchorEnd (1),
 				ColorScheme = Colors.Error
 			});
-			Top.Add (Win);
+			Application.Top.Add (Win);
+			
+			// add it to our list
 			listWin.Add (Win);
 
+			// create 3 more Windows in a loop, adding them Application.Top
+			// Each with a
+			//	button
+			//  sub Window with
+			//		TextField
+			//	sub FrameView with
+			// 
 			for (var i = 0; i < 3; i++) {
 				Window win = null;
 				win = new Window ($"{listWin.Count} - Window Loop - padding = {i}", i) {
@@ -87,7 +71,7 @@ namespace UICatalog.Scenarios {
 					Y = 0,
 					ColorScheme = Colors.Error,
 				};
-				pressMeButton.Clicked += () =>
+				pressMeButton.Clicked += (s,e) =>
 					MessageBox.ErrorQuery (win.Title.ToString (), "Neat?", "Yes", "No");
 				win.Add (pressMeButton);
 				var subWin = new Window ("Sub Window") {
@@ -117,11 +101,22 @@ namespace UICatalog.Scenarios {
 				});
 				win.Add (frameView);
 
-				Top.Add (win);
+				Application.Top.Add (win);
 				listWin.Add (win);
 			}
 
-
+			// Add a FrameView (frame) to Application.Top
+			// Position it at Bottom, using the list of Windows we created above.
+			// Fill it with
+			//   a label
+			//   a SubWindow containing (subWinofFV)
+			//      a TextField
+			//	    two checkboxes
+			//   a Sub FrameView containing (subFrameViewofFV)
+			//      a TextField
+			//      two CheckBoxes	
+			//   a checkbox
+			//   a checkbox
 			FrameView frame = null;
 			frame = new FrameView ($"This is a FrameView") {
 				X = margin,
@@ -179,8 +174,10 @@ namespace UICatalog.Scenarios {
 
 			frame.Add (subFrameViewofFV);
 
-			Top.Add (frame);
+			Application.Top.Add (frame);
 			listWin.Add (frame);
+
+			Application.Top.ColorScheme = Colors.Base;
 		}
 	}
 }

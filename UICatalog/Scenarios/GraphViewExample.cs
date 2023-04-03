@@ -23,7 +23,7 @@ namespace UICatalog.Scenarios {
 			Win.Title = this.GetName ();
 			Win.Y = 1; // menu
 			Win.Height = Dim.Fill (1); // status bar
-			Top.LayoutSubviews ();
+			Application.Top.LayoutSubviews ();
 
 			graphs = new Action [] {
 				 ()=>SetupPeriodicTableScatterPlot(),    //0
@@ -59,7 +59,7 @@ namespace UICatalog.Scenarios {
 				}),
 
 				});
-			Top.Add (menu);
+			Application.Top.Add (menu);
 
 			graphView = new GraphView () {
 				X = 1,
@@ -89,10 +89,10 @@ namespace UICatalog.Scenarios {
 
 
 			var statusBar = new StatusBar (new StatusItem [] {
-				new StatusItem(Key.CtrlMask | Key.Q, "~^Q~ Quit", () => Quit()),
+				new StatusItem(Application.QuitKey, $"{Application.QuitKey} to Quit", () => Quit()),
 				new StatusItem(Key.CtrlMask | Key.G, "~^G~ Next", ()=>graphs[currentGraph++%graphs.Length]()),
 			});
-			Top.Add (statusBar);
+			Application.Top.Add (statusBar);
 		}
 
 		private void MultiBarGraph ()

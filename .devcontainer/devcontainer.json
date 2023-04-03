@@ -1,25 +1,29 @@
 {
 	"name": "Terminal.Gui Codespace",
-	"image": "mcr.microsoft.com/vscode/devcontainers/dotnet:6.0",
-	"settings": {
-		"terminal.integrated.defaultProfile.linux": "pwsh"
-	},
-	"extensions": [
-		"eamodio.gitlens",
-		"ms-dotnettools.csharp",
-		"VisualStudioExptTeam.vscodeintellicode",
-		"ms-vscode.powershell",
-		"cschleiden.vscode-github-actions",
-		"redhat.vscode-yaml",
-		"bierner.markdown-preview-github-styles",
-		"ban.spellright",
-		"jmrog.vscode-nuget-package-manager",
-		"coenraads.bracket-pair-colorizer",
-		"vscode-icons-team.vscode-icons",
-		"editorconfig.editorconfig",
-		"formulahendry.dotnet-test-explorer"
-	],
-	"postCreateCommand": "dotnet restore && dotnet clean && dotnet build --configuration Release --no-restore && dotnet test --configuration Debug --no-restore --verbosity normal --collect:'XPlat Code Coverage' --settings UnitTests/coverlet.runsettings"
+	"image": "mcr.microsoft.com/vscode/devcontainers/dotnet:7.0",
+	"customizations": {
+		"vscode": {
+			"settings": {
+				"terminal.integrated.defaultProfile.linux": "pwsh"
+			},
+			"extensions": [
+				"eamodio.gitlens",
+				"ms-dotnettools.csharp",
+				"VisualStudioExptTeam.vscodeintellicode",
+				"ms-vscode.powershell",
+				"cschleiden.vscode-github-actions",
+				"redhat.vscode-yaml",
+				"bierner.markdown-preview-github-styles",
+				"ban.spellright",
+				"jmrog.vscode-nuget-package-manager",
+				"coenraads.bracket-pair-colorizer",
+				"vscode-icons-team.vscode-icons",
+				"editorconfig.editorconfig",
+				"formulahendry.dotnet-test-explorer"
+			],
+			"postCreateCommand": "dotnet restore && dotnet clean && dotnet build --configuration Release --no-restore && dotnet test --configuration Debug --no-restore --verbosity normal --collect:'XPlat Code Coverage' --settings UnitTests/coverlet.runsettings"		
+		}
+	}
 }
 
 // Built with ❤ by [Pipeline Foundation](https://pipeline.foundation)

@@ -16,7 +16,7 @@
       "dest": "api/Terminal.Gui",
       "shouldSkipMarkup": true,
       "properties": {
-          "TargetFramework": "net6.0"
+          "TargetFramework": "net7.0"
       }
     },
     {
@@ -35,7 +35,7 @@
       "dest": "api/UICatalog",
       "shouldSkipMarkup": false,
       "properties": {
-          "TargetFramework": "net6.0"
+          "TargetFramework": "net7.0"
       }
     }
   ],
@@ -67,7 +67,8 @@
     "resource": [
       {
         "files": [
-          "images/**"
+          "images/**",
+          "schemas/**"
         ],
         "exclude": [
           "obj/**",

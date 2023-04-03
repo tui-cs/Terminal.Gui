@@ -125,6 +125,11 @@ namespace UICatalog.Scenarios {
 			};
 			frame.Add (defaultButtonEdit);
 
+			var border = new Border () {
+				Effect3D = true,
+				BorderStyle = BorderStyle.Single
+			};
+
 			label = new Label ("Style:") {
 				X = 0,
 				Y = Pos.Bottom (label),
@@ -133,32 +138,44 @@ namespace UICatalog.Scenarios {
 				TextAlignment = Terminal.Gui.TextAlignment.Right,
 			};
 			frame.Add (label);
+
 			var styleRadioGroup = new RadioGroup (new ustring [] { "_Query", "_Error" }) {
 				X = Pos.Right (label) + 1,
 				Y = Pos.Top (label),
 			};
 			frame.Add (styleRadioGroup);
 
-			var border = new Border () {
-				Effect3D = true,
-				BorderStyle = BorderStyle.Single
-			};
 			var ckbEffect3D = new CheckBox ("Effect3D", true) {
 				X = Pos.Right (label) + 1,
 				Y = Pos.Top (label) + 2
 			};
-			ckbEffect3D.Toggled += (e) => {
-				border.Effect3D = !e;
+			ckbEffect3D.Toggled += (s,e) => {
+				border.Effect3D = (bool)!e.OldValue;
 			};
 			frame.Add (ckbEffect3D);
+			var ckbWrapMessage = new CheckBox ("Wrap Message", true) {
+				X = Pos.Right (label) + 1,
+				Y = Pos.Top (label) + 3
+			};
+			frame.Add (ckbWrapMessage);
 
-			void Top_Loaded ()
+      frame.ForceValidatePosDim = true;
+			void Top_Loaded (object sender, EventArgs args)
 			{
-				frame.Height = Dim.Height (widthEdit) + Dim.Height (heightEdit) + Dim.Height (titleEdit) + Dim.Height (messageEdit)
-				+ Dim.Height (numButtonsEdit) + Dim.Height (defaultButtonEdit) + Dim.Height (styleRadioGroup) + 2 + Dim.Height (ckbEffect3D);
-				Top.Loaded -= Top_Loaded;
+				frame.Height =
+					widthEdit.Frame.Height +
+					heightEdit.Frame.Height +
+					titleEdit.Frame.Height +
+					messageEdit.Frame.Height +
+					numButtonsEdit.Frame.Height +
+					defaultButtonEdit.Frame.Height +
+					styleRadioGroup.Frame.Height +
+					2 +
+					ckbEffect3D.Frame.Height +
+					ckbWrapMessage.Frame.Height;
+				Application.Top.Loaded -= Top_Loaded;
 			}
-			Top.Loaded += Top_Loaded;
+			Application.Top.Loaded += Top_Loaded;
 
 			label = new Label ("Button Pressed:") {
 				X = Pos.Center (),
@@ -183,7 +200,7 @@ namespace UICatalog.Scenarios {
 				Y = Pos.Bottom (frame) + 2,
 				IsDefault = true,
 			};
-			showMessageBoxButton.Clicked += () => {
+			showMessageBoxButton.Clicked += (s,e) => {
 				try {
 					int width = int.Parse (widthEdit.Text.ToString ());
 					int height = int.Parse (heightEdit.Text.ToString ());
@@ -196,9 +213,9 @@ namespace UICatalog.Scenarios {
 						btns.Add (NumberToWords.Convert (i));
 					}
 					if (styleRadioGroup.SelectedItem == 0) {
-						buttonPressedLabel.Text = $"{MessageBox.Query (width, height, titleEdit.Text.ToString (), messageEdit.Text.ToString (), defaultButton, border, btns.ToArray ())}";
+						buttonPressedLabel.Text = $"{MessageBox.Query (width, height, titleEdit.Text.ToString (), messageEdit.Text.ToString (), defaultButton, border, (bool)ckbWrapMessage.Checked, btns.ToArray ())}";
 					} else {
-						buttonPressedLabel.Text = $"{MessageBox.ErrorQuery (width, height, titleEdit.Text.ToString (), messageEdit.Text.ToString (), defaultButton, border, btns.ToArray ())}";
+						buttonPressedLabel.Text = $"{MessageBox.ErrorQuery (width, height, titleEdit.Text.ToString (), messageEdit.Text.ToString (), defaultButton, border, (bool)ckbWrapMessage.Checked, btns.ToArray ())}";
 					}
 				} catch (FormatException) {
 					buttonPressedLabel.Text = "Invalid Options";

@@ -26,6 +26,8 @@ namespace UICatalog.Scenarios {
 			var width = 20;
 			var text = " jamp jemp jimp jomp jump";
 
+
+
 			var menu = new MenuBar (new MenuBarItem [] {
 				new MenuBarItem ("_File", new MenuItem [] {
 					miMultiline =  new MenuItem ("_Multiline", "", () => Multiline()){CheckType = MenuItemCheckStyle.Checked},
@@ -33,7 +35,7 @@ namespace UICatalog.Scenarios {
 					new MenuItem ("_Quit", "", () => Quit())
 				})
 			});
-			Top.Add (menu);
+			Application.Top.Add (menu);
 
 			textViewTopLeft = new TextView () {
 				Width = width,
@@ -85,23 +87,23 @@ namespace UICatalog.Scenarios {
 			miWrap.Checked = textViewTopLeft.WordWrap;
 
 			var statusBar = new StatusBar (new StatusItem [] {
-				new StatusItem(Key.CtrlMask | Key.Q, "~^Q~ Quit", () => Quit()),
+				new StatusItem(Application.QuitKey, $"{Application.QuitKey} to Quit", () => Quit()),
 				siMultiline = new StatusItem(Key.Null, "", null),
 				siWrap = new StatusItem(Key.Null, "", null)
 			});
-			Top.Add (statusBar);
+			Application.Top.Add (statusBar);
 
 			Win.LayoutStarted += Win_LayoutStarted;
 		}
 
-		private void Win_LayoutStarted (View.LayoutEventArgs obj)
+		private void Win_LayoutStarted (object sender, LayoutEventArgs obj)
 		{
 			miMultiline.Checked = textViewTopLeft.Multiline;
 			miWrap.Checked = textViewTopLeft.WordWrap;
 			SetMultilineStatusText ();
 			SetWrapStatusText ();
 
-			if (miMultiline.Checked) {
+			if (miMultiline.Checked == true) {
 				height = 10;
 			} else {
 				height = 1;
@@ -121,32 +123,32 @@ namespace UICatalog.Scenarios {
 
 		private void SetAllSuggestions (TextView view)
 		{
-			view.Autocomplete.AllSuggestions = Regex.Matches (view.Text.ToString (), "\\w+")
+			((SingleWordSuggestionGenerator)view.Autocomplete.SuggestionGenerator).AllSuggestions = Regex.Matches (view.Text.ToString (), "\\w+")
 				.Select (s => s.Value)
 				.Distinct ().ToList ();
 		}
 
-		private void TextViewCentered_DrawContent (Rect obj)
+		private void TextViewCentered_DrawContent (object sender, DrawEventArgs e)
 		{
 			SetAllSuggestions (textViewCentered);
 		}
 
-		private void TextViewBottomRight_DrawContent (Rect obj)
+		private void TextViewBottomRight_DrawContent (object sender, DrawEventArgs e)
 		{
 			SetAllSuggestions (textViewBottomRight);
 		}
 
-		private void TextViewBottomLeft_DrawContent (Rect obj)
+		private void TextViewBottomLeft_DrawContent (object sender, DrawEventArgs e)
 		{
 			SetAllSuggestions (textViewBottomLeft);
 		}
 
-		private void TextViewTopRight_DrawContent (Rect obj)
+		private void TextViewTopRight_DrawContent (object sender, DrawEventArgs e)
 		{
 			SetAllSuggestions (textViewTopRight);
 		}
 
-		private void TextViewTopLeft_DrawContent (Rect obj)
+		private void TextViewTopLeft_DrawContent (object sender, DrawEventArgs e)
 		{
 			SetAllSuggestions (textViewTopLeft);
 		}
@@ -155,21 +157,21 @@ namespace UICatalog.Scenarios {
 		{
 			miMultiline.Checked = !miMultiline.Checked;
 			SetMultilineStatusText ();
-			textViewTopLeft.Multiline = miMultiline.Checked;
-			textViewTopRight.Multiline = miMultiline.Checked;
-			textViewBottomLeft.Multiline = miMultiline.Checked;
-			textViewBottomRight.Multiline = miMultiline.Checked;
-			textViewCentered.Multiline = miMultiline.Checked;
+			textViewTopLeft.Multiline = (bool)miMultiline.Checked;
+			textViewTopRight.Multiline = (bool)miMultiline.Checked;
+			textViewBottomLeft.Multiline = (bool)miMultiline.Checked;
+			textViewBottomRight.Multiline = (bool)miMultiline.Checked;
+			textViewCentered.Multiline = (bool)miMultiline.Checked;
 		}
 
 		private void WordWrap ()
 		{
 			miWrap.Checked = !miWrap.Checked;
-			textViewTopLeft.WordWrap = miWrap.Checked;
-			textViewTopRight.WordWrap = miWrap.Checked;
-			textViewBottomLeft.WordWrap = miWrap.Checked;
-			textViewBottomRight.WordWrap = miWrap.Checked;
-			textViewCentered.WordWrap = miWrap.Checked;
+			textViewTopLeft.WordWrap = (bool)miWrap.Checked;
+			textViewTopRight.WordWrap = (bool)miWrap.Checked;
+			textViewBottomLeft.WordWrap = (bool)miWrap.Checked;
+			textViewBottomRight.WordWrap = (bool)miWrap.Checked;
+			textViewCentered.WordWrap = (bool)miWrap.Checked;
 			miWrap.Checked = textViewTopLeft.WordWrap;
 			SetWrapStatusText ();
 		}

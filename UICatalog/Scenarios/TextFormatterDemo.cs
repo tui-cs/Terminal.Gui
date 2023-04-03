@@ -38,11 +38,11 @@ namespace UICatalog.Scenarios {
 			block.AppendLine ("  ░   ░ ░░▒░ ░ ░  ▒ ░ ░▒    ░  ▒   ░ ░▒  ░ ░");
 			block.AppendLine ("░ ░   ░  ░░░ ░ ░  ▒ ░ ░   ░        ░  ░  ░  ");
 			block.AppendLine ("      ░    ░      ░    ░  ░ ░            ░  ");
-			block.AppendLine ("                       ░  ░                 "); 
+			block.AppendLine ("                       ░  ░                 ");
 			blockText.Text = ustring.Make (block.ToString ()); // .Replace(" ", "\u00A0"); // \u00A0 is 'non-breaking space
 			Win.Add (blockText);
 
-			var unicodeCheckBox = new CheckBox ("Unicode", Top.HotKeySpecifier == (Rune)' ') {
+			var unicodeCheckBox = new CheckBox ("Unicode", Application.Top.HotKeySpecifier == (Rune)' ') {
 				X = 0,
 				Y = Pos.Bottom (blockText) + 1,
 			};
@@ -80,10 +80,10 @@ namespace UICatalog.Scenarios {
 				label = multipleLines [(int)alignment];
 			}
 
-			unicodeCheckBox.Toggled += (previous) => {
+			unicodeCheckBox.Toggled += (s,e) => {
 				foreach (var alignment in alignments) {
-					singleLines [(int)alignment].Text = previous ? text : unicode;
-					multipleLines [(int)alignment].Text = previous ? text : unicode;
+					singleLines [(int)alignment].Text = e.OldValue == true ? text : unicode;
+					multipleLines [(int)alignment].Text = e.OldValue == true ? text : unicode;
 				}
 			};
 		}

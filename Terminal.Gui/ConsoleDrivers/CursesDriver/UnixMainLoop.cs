@@ -1,30 +1,6 @@
 //
 // mainloop.cs: Simple managed mainloop implementation.
 //
-// Authors:
-//   Miguel de Icaza (miguel.de.icaza@gmail.com)
-//
-// Copyright (C) 2011 Novell (http://www.novell.com)
-//
-// Permission is hereby granted, free of charge, to any person obtaining
-// a copy of this software and associated documentation files (the
-// "Software"), to deal in the Software without restriction, including
-// without limitation the rights to use, copy, modify, merge, publish,
-// distribute, sublicense, and/or sell copies of the Software, and to
-// permit persons to whom the Software is furnished to do so, subject to
-// the following conditions:
-//
-// The above copyright notice and this permission notice shall be
-// included in all copies or substantial portions of the Software.
-//
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
-// EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
-// MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
-// NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
-// LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
-// OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
-// WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-//
 using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
@@ -38,6 +14,11 @@ namespace Terminal.Gui {
 	/// can watch file descriptors using the AddWatch methods.
 	/// </remarks>
 	internal class UnixMainLoop : IMainLoopDriver {
+		public UnixMainLoop (ConsoleDriver consoleDriver = null)
+		{
+			// UnixDriver doesn't use the consoleDriver parameter, but the WindowsDriver does.
+		}
+
 		public const int KEY_RESIZE = unchecked((int)0xffffffffffffffff);
 
 		[StructLayout (LayoutKind.Sequential)]
@@ -47,7 +28,7 @@ namespace Terminal.Gui {
 		}
 
 		/// <summary>
-		///   Condition on which to wake up from file descriptor activity.  These match the Linux/BSD poll definitions.
+		///	Condition on which to wake up from file descriptor activity.  These match the Linux/BSD poll definitions.
 		/// </summary>
 		[Flags]
 		public enum Condition : short {
@@ -122,10 +103,10 @@ namespace Terminal.Gui {
 		}
 
 		/// <summary>
-		///   Removes an active watch from the mainloop.
+		///	Removes an active watch from the mainloop.
 		/// </summary>
 		/// <remarks>
-		///   The token parameter is the value returned from AddWatch
+		///	The token parameter is the value returned from AddWatch
 		/// </remarks>
 		public void RemoveWatch (object token)
 		{
@@ -176,16 +157,15 @@ namespace Terminal.Gui {
 		{
 			UpdatePollMap ();
 
-			if (CheckTimers (wait, out var pollTimeout)) {
-				return true;
-			}
+			bool checkTimersResult = CheckTimers (wait, out var pollTimeout);
 
 			var n = poll (pollmap, (uint)pollmap.Length, pollTimeout);
 
 			if (n == KEY_RESIZE) {
 				winChanged = true;
 			}
-			return n >= KEY_RESIZE || CheckTimers (wait, out pollTimeout);
+
+			return checkTimersResult || n >= KEY_RESIZE;
 		}
 
 		bool CheckTimers (bool wait, out int pollTimeout)

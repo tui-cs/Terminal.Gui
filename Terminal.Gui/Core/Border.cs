@@ -1,5 +1,7 @@
 ﻿using NStack;
 using System;
+using Terminal.Gui.Graphs;
+using System.Text.Json.Serialization;
 
 namespace Terminal.Gui {
 	/// <summary>
@@ -33,18 +35,22 @@ namespace Terminal.Gui {
 		/// <summary>
 		/// Gets or sets the width, in integers, of the left side of the bounding rectangle.
 		/// </summary>
+		[JsonInclude]
 		public int Left;
 		/// <summary>
 		/// Gets or sets the width, in integers, of the upper side of the bounding rectangle.
 		/// </summary>
+		[JsonInclude]
 		public int Top;
 		/// <summary>
 		/// Gets or sets the width, in integers, of the right side of the bounding rectangle.
 		/// </summary>
+		[JsonInclude]
 		public int Right;
 		/// <summary>
 		/// Gets or sets the width, in integers, of the lower side of the bounding rectangle.
 		/// </summary>
+		[JsonInclude]
 		public int Bottom;
 
 		/// <summary>
@@ -125,7 +131,7 @@ namespace Terminal.Gui {
 				}
 			}
 
-			void Border_BorderChanged (Border border)
+			void Border_BorderChanged (object sender, EventArgs e)
 			{
 				Rect frame;
 				if (Border.Child != null && (Border.Child.Width is Dim || Border.Child.Height is Dim)) {
@@ -313,7 +319,7 @@ namespace Terminal.Gui {
 		/// <summary>
 		/// Invoked when any property of Border changes (except <see cref="Child"/>).
 		/// </summary>
-		public event Action<Border> BorderChanged;
+		public event EventHandler BorderChanged;
 
 		private BorderStyle borderStyle;
 		private bool drawMarginFrame;
@@ -325,10 +331,12 @@ namespace Terminal.Gui {
 		private Point effect3DOffset = new Point (1, 1);
 		private Attribute? effect3DBrush;
 		private ustring title = ustring.Empty;
+		private View child;
 
 		/// <summary>
 		/// Specifies the <see cref="Gui.BorderStyle"/> for a view.
 		/// </summary>
+		[JsonInclude, JsonConverter (typeof (JsonStringEnumConverter))]
 		public BorderStyle BorderStyle {
 			get => borderStyle;
 			set {
@@ -344,6 +352,7 @@ namespace Terminal.Gui {
 		/// <summary>
 		/// Gets or sets if a margin frame is drawn around the <see cref="Child"/> regardless the <see cref="BorderStyle"/>
 		/// </summary>
+		[JsonInclude]
 		public bool DrawMarginFrame {
 			get => drawMarginFrame;
 			set {
@@ -361,6 +370,7 @@ namespace Terminal.Gui {
 		/// <summary>
 		/// Gets or sets the relative <see cref="Thickness"/> of a <see cref="Border"/>.
 		/// </summary>
+		[JsonInclude]
 		public Thickness BorderThickness {
 			get => borderThickness;
 			set {
@@ -372,6 +382,7 @@ namespace Terminal.Gui {
 		/// <summary>
 		/// Gets or sets the <see cref="Color"/> that draws the outer border color.
 		/// </summary>
+		[JsonInclude, JsonConverter (typeof (Configuration.ColorJsonConverter))]
 		public Color BorderBrush {
 			get => borderBrush;
 			set {
@@ -383,6 +394,7 @@ namespace Terminal.Gui {
 		/// <summary>
 		/// Gets or sets the <see cref="Color"/> that fills the area between the bounds of a <see cref="Border"/>.
 		/// </summary>
+		[JsonInclude, JsonConverter (typeof (Configuration.ColorJsonConverter))]
 		public Color Background {
 			get => background;
 			set {
@@ -395,6 +407,7 @@ namespace Terminal.Gui {
 		/// Gets or sets a <see cref="Thickness"/> value that describes the amount of space between a
 		///  <see cref="Border"/> and its child element.
 		/// </summary>
+		[JsonInclude]
 		public Thickness Padding {
 			get => padding;
 			set {
@@ -406,6 +419,7 @@ namespace Terminal.Gui {
 		/// <summary>
 		/// Gets the rendered width of this element.
 		/// </summary>
+		[JsonIgnore]
 		public int ActualWidth {
 			get {
 				var driver = Application.Driver;
@@ -419,6 +433,7 @@ namespace Terminal.Gui {
 		/// <summary>
 		/// Gets the rendered height of this element.
 		/// </summary>
+		[JsonIgnore]
 		public int ActualHeight {
 			get {
 				var driver = Application.Driver;
@@ -433,21 +448,65 @@ namespace Terminal.Gui {
 		/// <summary>
 		/// Gets or sets the single child element of a <see cref="View"/>.
 		/// </summary>
-		public View Child { get; set; }
+		[JsonIgnore]
+		public View Child {
+			get => child;
+			set {
+				child = value;
+				if (child != null && Parent != null) {
+					Parent.Initialized += Parent_Initialized;
+					Parent.Removed += Parent_Removed;
+				}
+			}
+		}
+
+		private void Parent_Removed (object sender, SuperViewChangedEventArgs e)
+		{
+			BorderBrush = default;
+			Background = default;
+			child.Removed -= Parent_Removed;
+		}
+
+		private void Parent_Initialized (object s, EventArgs e)
+		{
+			SetMarginFrameTitleBrush ();
+			child.Initialized -= Parent_Initialized;
+		}
+
+		private void SetMarginFrameTitleBrush ()
+		{
+			if (child != null) {
+				var view = Parent?.Border != null ? Parent : child;
+				if (view.ColorScheme != null) {
+					if (borderBrush == default) {
+						BorderBrush = view.GetNormalColor ().Foreground;
+					}
+					if (background == default) {
+						Background = view.GetNormalColor ().Background;
+					}
+					return;
+				}
+			}
+			BorderBrush = default;
+			Background = default;
+		}
 
 		/// <summary>
 		/// Gets the parent <see cref="Child"/> parent if any.
 		/// </summary>
+		[JsonIgnore]
 		public View Parent { get => Child?.SuperView; }
 
 		/// <summary>
 		/// Gets or private sets by the <see cref="ToplevelContainer"/>
 		/// </summary>
+		[JsonIgnore]
 		public ToplevelContainer ChildContainer { get; private set; }
 
 		/// <summary>
 		/// Gets or sets the 3D effect around the <see cref="Border"/>.
 		/// </summary>
+		[JsonInclude]
 		public bool Effect3D {
 			get => effect3D;
 			set {
@@ -459,6 +518,7 @@ namespace Terminal.Gui {
 		/// <summary>
 		/// Get or sets the offset start position for the <see cref="Effect3D"/>
 		/// </summary>
+		[JsonInclude]
 		public Point Effect3DOffset {
 			get => effect3DOffset;
 			set {
@@ -469,8 +529,16 @@ namespace Terminal.Gui {
 		/// <summary>
 		/// Gets or sets the color for the <see cref="Border"/>
 		/// </summary>
+		[JsonInclude, JsonConverter (typeof (Configuration.AttributeJsonConverter))]
 		public Attribute? Effect3DBrush {
-			get => effect3DBrush;
+			get {
+				if (effect3DBrush == null && effect3D) {
+					return effect3DBrush = new Attribute (Color.Gray, Color.DarkGray);
+				} else {
+					return effect3DBrush;
+				}
+			}
+
 			set {
 				effect3DBrush = value;
 				OnBorderChanged ();
@@ -480,6 +548,7 @@ namespace Terminal.Gui {
 		/// <summary>
 		/// The title to be displayed for this view.
 		/// </summary>
+		[JsonIgnore]
 		public ustring Title {
 			get => title;
 			set {
@@ -550,7 +619,7 @@ namespace Terminal.Gui {
 
 			// Draw 3D effects
 			if (Effect3D) {
-				driver.SetAttribute (GetEffect3DBrush ());
+				driver.SetAttribute ((Attribute)Effect3DBrush);
 
 				var effectBorder = new Rect () {
 					X = borderRect.X + Effect3DOffset.X,
@@ -583,7 +652,7 @@ namespace Terminal.Gui {
 				Child.Clear (borderRect);
 			}
 
-			driver.SetAttribute (savedAttribute);
+			driver.SetAttribute (new Attribute (BorderBrush, Background));
 
 			// Draw margin frame
 			if (DrawMarginFrame) {
@@ -607,6 +676,7 @@ namespace Terminal.Gui {
 					driver.DrawWindowFrame (borderRect, 1, 1, 1, 1, BorderStyle != BorderStyle.None, fill: true, this);
 				}
 			}
+			driver.SetAttribute (savedAttribute);
 		}
 
 		private void DrawChildBorder (Rect frame, bool fill = true)
@@ -624,6 +694,10 @@ namespace Terminal.Gui {
 			// Draw the upper BorderThickness
 			for (int r = frame.Y - drawMarginFrame - sumThickness.Top;
 				r < frame.Y - drawMarginFrame - padding.Top; r++) {
+
+				if (r < 0) {
+					continue;
+				}
 				for (int c = frame.X - drawMarginFrame - sumThickness.Left;
 					c < Math.Min (frame.Right + drawMarginFrame + sumThickness.Right, driver.Cols); c++) {
 
@@ -634,6 +708,10 @@ namespace Terminal.Gui {
 			// Draw the left BorderThickness
 			for (int r = frame.Y - drawMarginFrame - padding.Top;
 				r < Math.Min (frame.Bottom + drawMarginFrame + padding.Bottom, driver.Rows); r++) {
+
+				if (r < 0) {
+					continue;
+				}
 				for (int c = frame.X - drawMarginFrame - sumThickness.Left;
 					c < frame.X - drawMarginFrame - padding.Left; c++) {
 
@@ -644,6 +722,10 @@ namespace Terminal.Gui {
 			// Draw the right BorderThickness
 			for (int r = frame.Y - drawMarginFrame - padding.Top;
 				r < Math.Min (frame.Bottom + drawMarginFrame + padding.Bottom, driver.Rows); r++) {
+
+				if (r < 0) {
+					continue;
+				}
 				for (int c = frame.Right + drawMarginFrame + padding.Right;
 					c < Math.Min (frame.Right + drawMarginFrame + sumThickness.Right, driver.Cols); c++) {
 
@@ -666,6 +748,10 @@ namespace Terminal.Gui {
 			// Draw the upper Padding
 			for (int r = frame.Y - drawMarginFrame - padding.Top;
 				r < frame.Y - drawMarginFrame; r++) {
+
+				if (r < 0) {
+					continue;
+				}
 				for (int c = frame.X - drawMarginFrame - padding.Left;
 					c < Math.Min (frame.Right + drawMarginFrame + padding.Right, driver.Cols); c++) {
 
@@ -703,10 +789,11 @@ namespace Terminal.Gui {
 				}
 			}
 
-			driver.SetAttribute (savedAttribute);
+			driver.SetAttribute (new Attribute (BorderBrush, Background));
 
 			// Draw the MarginFrame
 			if (DrawMarginFrame) {
+
 				var rect = new Rect () {
 					X = frame.X - drawMarginFrame,
 					Y = frame.Y - drawMarginFrame,
@@ -717,10 +804,28 @@ namespace Terminal.Gui {
 					driver.DrawWindowFrame (rect, 1, 1, 1, 1, BorderStyle != BorderStyle.None, fill, this);
 					DrawTitle (Child);
 				}
+
+				//var rect = Child.ViewToScreen (new Rect (-1, -1, Child.Frame.Width + 2, Child.Frame.Height + 2));
+				//if (rect.Width > 0 && rect.Height > 0) {
+
+				//	var lc = new LineCanvas ();
+
+				//	lc.AddLine (rect.Location, rect.Width-1, Orientation.Horizontal, BorderStyle);
+				//	lc.AddLine (rect.Location, rect.Height-1, Orientation.Vertical, BorderStyle);
+
+				//	lc.AddLine (new Point (rect.X, rect.Y + rect.Height-1), rect.Width, Orientation.Horizontal, BorderStyle);
+				//	lc.AddLine (new Point (rect.X + rect.Width-1, rect.Y), rect.Height, Orientation.Vertical, BorderStyle);
+
+				//	//driver.SetAttribute (new Attribute(Color.Red, Color.BrightYellow));
+				//	foreach (var p in lc.GenerateImage (rect)) {
+				//		AddRuneAt (driver, p.Key.X, p.Key.Y, p.Value);
+				//	}
+				//	DrawTitle (Child);
+				//}
 			}
 
 			if (Effect3D) {
-				driver.SetAttribute (GetEffect3DBrush ());
+				driver.SetAttribute ((Attribute)Effect3DBrush);
 
 				// Draw the upper Effect3D
 				for (int r = frame.Y - drawMarginFrame - sumThickness.Top + effect3DOffset.Y;
@@ -779,6 +884,9 @@ namespace Terminal.Gui {
 			// Draw the upper BorderThickness
 			for (int r = frame.Y;
 				r < Math.Min (frame.Y + borderThickness.Top, frame.Bottom); r++) {
+				if (r < 0) {
+					continue;
+				}
 				for (int c = frame.X;
 					c < Math.Min (frame.Right, driver.Cols); c++) {
 
@@ -789,6 +897,10 @@ namespace Terminal.Gui {
 			// Draw the left BorderThickness
 			for (int r = Math.Min (frame.Y + borderThickness.Top, frame.Bottom);
 				r < Math.Min (frame.Bottom - borderThickness.Bottom, driver.Rows); r++) {
+
+				if (r < 0) {
+					continue;
+				}
 				for (int c = frame.X;
 					c < Math.Min (frame.X + borderThickness.Left, frame.Right); c++) {
 
@@ -799,6 +911,10 @@ namespace Terminal.Gui {
 			// Draw the right BorderThickness
 			for (int r = Math.Min (frame.Y + borderThickness.Top, frame.Bottom);
 				r < Math.Min (frame.Bottom - borderThickness.Bottom, driver.Rows); r++) {
+
+				if (r < 0) {
+					continue;
+				}
 				for (int c = Math.Max (frame.Right - borderThickness.Right, frame.X);
 					c < Math.Min (frame.Right, driver.Cols); c++) {
 
@@ -821,6 +937,10 @@ namespace Terminal.Gui {
 			// Draw the upper Padding
 			for (int r = frame.Y + borderThickness.Top;
 				r < Math.Min (frame.Y + sumThickness.Top, frame.Bottom - borderThickness.Bottom); r++) {
+
+				if (r < 0) {
+					continue;
+				}
 				for (int c = frame.X + borderThickness.Left;
 					c < Math.Min (frame.Right - borderThickness.Right, driver.Cols); c++) {
 
@@ -831,6 +951,10 @@ namespace Terminal.Gui {
 			// Draw the left Padding
 			for (int r = frame.Y + sumThickness.Top;
 				r < Math.Min (frame.Bottom - sumThickness.Bottom, driver.Rows); r++) {
+
+				if (r < 0) {
+					continue;
+				}
 				for (int c = frame.X + borderThickness.Left;
 					c < Math.Min (frame.X + sumThickness.Left, frame.Right - borderThickness.Right); c++) {
 
@@ -841,6 +965,10 @@ namespace Terminal.Gui {
 			// Draw the right Padding
 			for (int r = frame.Y + sumThickness.Top;
 				r < Math.Min (frame.Bottom - sumThickness.Bottom, driver.Rows); r++) {
+
+				if (r < 0) {
+					continue;
+				}
 				for (int c = Math.Max (frame.Right - sumThickness.Right, frame.X + sumThickness.Left);
 					c < Math.Max (frame.Right - borderThickness.Right, frame.X + sumThickness.Left); c++) {
 
@@ -858,7 +986,7 @@ namespace Terminal.Gui {
 				}
 			}
 
-			driver.SetAttribute (savedAttribute);
+			driver.SetAttribute (new Attribute (BorderBrush, Background));
 
 			// Draw the MarginFrame
 			if (DrawMarginFrame) {
@@ -875,7 +1003,7 @@ namespace Terminal.Gui {
 			}
 
 			if (Effect3D) {
-				driver.SetAttribute (GetEffect3DBrush ());
+				driver.SetAttribute ((Attribute)Effect3DBrush);
 
 				// Draw the upper Effect3D
 				for (int r = Math.Max (frame.Y + effect3DOffset.Y, 0);
@@ -920,13 +1048,6 @@ namespace Terminal.Gui {
 			driver.SetAttribute (savedAttribute);
 		}
 
-		private Attribute GetEffect3DBrush ()
-		{
-			return Effect3DBrush == null
-				? new Attribute (Color.Gray, Color.DarkGray)
-				: (Attribute)Effect3DBrush;
-		}
-
 		private void AddRuneAt (ConsoleDriver driver, int col, int row, Rune ch)
 		{
 			if (col < driver.Cols && row < driver.Rows && col > 0 && driver.Contents [row, col, 2] == 0
@@ -947,9 +1068,10 @@ namespace Terminal.Gui {
 		{
 			var driver = Application.Driver;
 			if (DrawMarginFrame) {
-				driver.SetAttribute (Child.GetNormalColor ());
-				if (Child.HasFocus)
-					driver.SetAttribute (Child.ColorScheme.HotNormal);
+				driver.SetAttribute (new Attribute (BorderBrush, Background));
+				if (view.HasFocus) {
+					driver.SetAttribute (new Attribute (Child.ColorScheme.HotNormal.Foreground, Background));
+				}
 				var padding = view.Border.GetSumThickness ();
 				Rect scrRect;
 				if (view == Child) {
@@ -958,7 +1080,7 @@ namespace Terminal.Gui {
 					driver.DrawWindowTitle (scrRect, Title, 0, 0, 0, 0);
 				} else {
 					scrRect = view.ViewToScreen (new Rect (0, 0, view.Frame.Width, view.Frame.Height));
-					driver.DrawWindowTitle (scrRect, Title,
+					driver.DrawWindowTitle (scrRect, Parent.Border.Title,
 						padding.Left, padding.Top, padding.Right, padding.Bottom);
 				}
 			}
@@ -974,9 +1096,9 @@ namespace Terminal.Gui {
 		{
 			var driver = Application.Driver;
 			if (DrawMarginFrame) {
-				driver.SetAttribute (view.GetNormalColor ());
+				driver.SetAttribute (new Attribute (BorderBrush, Background));
 				if (view.HasFocus) {
-					driver.SetAttribute (view.ColorScheme.HotNormal);
+					driver.SetAttribute (new Attribute (view.ColorScheme.HotNormal.Foreground, Background));
 				}
 				var padding = Parent.Border.GetSumThickness ();
 				var scrRect = Parent.ViewToScreen (new Rect (0, 0, rect.Width, rect.Height));
@@ -991,7 +1113,7 @@ namespace Terminal.Gui {
 		/// </summary>
 		public virtual void OnBorderChanged ()
 		{
-			BorderChanged?.Invoke (this);
+			BorderChanged?.Invoke (this, new EventArgs());
 		}
 	}
 }

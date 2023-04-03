@@ -1,6 +1,7 @@
 ﻿using NStack;
 using System.Collections.Generic;
 using Terminal.Gui;
+using Terminal.Gui.Configuration;
 
 namespace UICatalog.Scenarios {
 	[ScenarioMetadata (Name: "Keys", Description: "Shows how to handle keyboard input")]
@@ -48,19 +49,20 @@ namespace UICatalog.Scenarios {
 			}
 		}
 
-		public override void Init (Toplevel top, ColorScheme colorScheme)
+		public override void Init ()
 		{
 			Application.Init ();
-			Top = top;
-
-			Win = new TestWindow ($"CTRL-Q to Close - Scenario: {GetName ()}") {
+			ConfigurationManager.Themes.Theme = Theme;
+			ConfigurationManager.Apply ();
+			
+			Win = new TestWindow ($"{Application.QuitKey} to Quit - Scenario: {GetName ()}") {
 				X = 0,
 				Y = 0,
 				Width = Dim.Fill (),
 				Height = Dim.Fill (),
-				ColorScheme = colorScheme,
+				ColorScheme = Colors.ColorSchemes [TopLevelColorScheme],
 			};
-			Top.Add (Win);
+			Application.Top.Add (Win);
 		}
 
 		public override void Setup ()
@@ -93,7 +95,7 @@ namespace UICatalog.Scenarios {
 			};
 			Win.Add (labelKeypress);
 
-			Win.KeyPress += (a) => labelKeypress.Text = a.KeyEvent.ToString ();
+			Win.KeyPress += (s,e) => labelKeypress.Text = e.KeyEvent.ToString ();
 
 			// Key stroke log:
 			var keyLogLabel = new Label ("Key stroke log:") {
@@ -107,7 +109,7 @@ namespace UICatalog.Scenarios {
 				Shift = true
 			});
 			var maxLogEntry = $"Key{"",-5}: {fakeKeyPress}".Length;
-			var yOffset = (Top == Application.Top ? 1 : 6);
+			var yOffset = (Application.Top == Application.Top ? 1 : 6);
 			var keyStrokelist = new List<string> ();
 			var keyStrokeListView = new ListView (keyStrokelist) {
 				X = 0,
@@ -126,7 +128,7 @@ namespace UICatalog.Scenarios {
 			Win.Add (processKeyLogLabel);
 
 			maxLogEntry = $"{fakeKeyPress}".Length;
-			yOffset = (Top == Application.Top ? 1 : 6);
+			yOffset = (Application.Top == Application.Top ? 1 : 6);
 			var processKeyListView = new ListView (((TestWindow)Win)._processKeyList) {
 				X = Pos.Left (processKeyLogLabel),
 				Y = Pos.Top (processKeyLogLabel) + yOffset,
@@ -144,7 +146,7 @@ namespace UICatalog.Scenarios {
 			};
 			Win.Add (processHotKeyLogLabel);
 
-			yOffset = (Top == Application.Top ? 1 : 6);
+			yOffset = (Application.Top == Application.Top ? 1 : 6);
 			var processHotKeyListView = new ListView (((TestWindow)Win)._processHotKeyList) {
 				X = Pos.Left (processHotKeyLogLabel),
 				Y = Pos.Top (processHotKeyLogLabel) + yOffset,
@@ -162,7 +164,7 @@ namespace UICatalog.Scenarios {
 			};
 			Win.Add (processColdKeyLogLabel);
 
-			yOffset = (Top == Application.Top ? 1 : 6);
+			yOffset = (Application.Top == Application.Top ? 1 : 6);
 			var processColdKeyListView = new ListView (((TestWindow)Win)._processColdKeyList) {
 				X = Pos.Left (processColdKeyLogLabel),
 				Y = Pos.Top (processColdKeyLogLabel) + yOffset,
@@ -170,9 +172,9 @@ namespace UICatalog.Scenarios {
 				Height = Dim.Fill (),
 			};
 
-			Win.KeyDown += (a) => KeyDownPressUp (a.KeyEvent, "Down");
-			Win.KeyPress += (a) => KeyDownPressUp (a.KeyEvent, "Press");
-			Win.KeyUp += (a) => KeyDownPressUp (a.KeyEvent, "Up");
+			Win.KeyDown += (s,a) => KeyDownPressUp (a.KeyEvent, "Down");
+			Win.KeyPress += (s, a) => KeyDownPressUp (a.KeyEvent, "Press");
+			Win.KeyUp += (s, a) => KeyDownPressUp (a.KeyEvent, "Up");
 
 			void KeyDownPressUp (KeyEvent keyEvent, string updown)
 			{

@@ -24,7 +24,7 @@ namespace UICatalog.Scenarios {
 			Win.Title = this.GetName ();
 			Win.Y = 1; // menu
 			Win.Height = Dim.Fill (1); // status bar
-			Top.LayoutSubviews ();
+			Application.Top.LayoutSubviews ();
 
 			var menu = new MenuBar (new MenuBarItem [] {
 				new MenuBarItem ("_File", new MenuItem [] {
@@ -50,7 +50,7 @@ namespace UICatalog.Scenarios {
 
 					})
 				});
-			Top.Add (menu);
+			Application.Top.Add (menu);
 
 			tabView = new TabView () {
 				X = 0,
@@ -85,7 +85,6 @@ namespace UICatalog.Scenarios {
 				Height = Dim.Fill (),
 			};
 
-
 			frameRight.Add (new TextView () {
 				Text = "This demos the tabs control\nSwitch between tabs using cursor keys",
 				Width = Dim.Fill (),
@@ -94,15 +93,12 @@ namespace UICatalog.Scenarios {
 
 			Win.Add (frameRight);
 
-
-
 			var frameBelow = new FrameView ("Bottom Frame") {
 				X = 0,
 				Y = Pos.Bottom (tabView),
 				Width = tabView.Width,
 				Height = Dim.Fill (),
 			};
-
 
 			frameBelow.Add (new TextView () {
 				Text = "This frame exists to check you can still tab here\nand that the tab control doesn't overspill it's bounds",
@@ -113,9 +109,9 @@ namespace UICatalog.Scenarios {
 			Win.Add (frameBelow);
 
 			var statusBar = new StatusBar (new StatusItem [] {
-				new StatusItem(Key.CtrlMask | Key.Q, "~^Q~ Quit", () => Quit()),
+				new StatusItem(Application.QuitKey, $"{Application.QuitKey} to Quit", () => Quit()),
 			});
-			Top.Add (statusBar);
+			Application.Top.Add (statusBar);
 		}
 
 		private void AddBlankTab ()
@@ -180,21 +176,21 @@ namespace UICatalog.Scenarios {
 		{
 			miShowTopLine.Checked = !miShowTopLine.Checked;
 
-			tabView.Style.ShowTopLine = miShowTopLine.Checked;
+			tabView.Style.ShowTopLine = (bool)miShowTopLine.Checked;
 			tabView.ApplyStyleChanges ();
 		}
 		private void ShowBorder ()
 		{
 			miShowBorder.Checked = !miShowBorder.Checked;
 
-			tabView.Style.ShowBorder = miShowBorder.Checked;
+			tabView.Style.ShowBorder = (bool)miShowBorder.Checked;
 			tabView.ApplyStyleChanges ();
 		}
 		private void SetTabsOnBottom ()
 		{
 			miTabsOnBottom.Checked = !miTabsOnBottom.Checked;
 
-			tabView.Style.TabsOnBottom = miTabsOnBottom.Checked;
+			tabView.Style.TabsOnBottom = (bool)miTabsOnBottom.Checked;
 			tabView.ApplyStyleChanges ();
 		}
 
