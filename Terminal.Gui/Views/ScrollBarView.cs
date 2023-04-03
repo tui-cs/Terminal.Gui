@@ -104,7 +104,7 @@ namespace Terminal.Gui {
 		}
 
 		string lines, cols, line, col, top, left;// bottom, right;
-		//int savedBottom, savedRight;
+							 //int savedBottom, savedRight;
 
 		/// <summary>
 		/// Initializes a new instance of the <see cref="Gui.ScrollBarView"/> class based on the <see cref="ScrollBarType"/>.
@@ -140,7 +140,7 @@ namespace Terminal.Gui {
 			//savedRight = GetPropertyValue (right);
 		}
 
-		private void Host_LayoutComplete (LayoutEventArgs obj)
+		private void Host_LayoutComplete (object sender, LayoutEventArgs e)
 		{
 			Refresh ();
 		}
@@ -151,7 +151,7 @@ namespace Terminal.Gui {
 		private void SetPropertyValue (string propertyName, int value) =>
 			Host.GetType ().GetProperty (propertyName).SetValue (Host, value);
 
-		private void Host_DrawContent (Rect obj)
+		private void Host_DrawContent (object sender, DrawEventArgs e)
 		{
 			Size = GetPropertyValue (lines);
 			Position = GetPropertyValue (top);
@@ -163,7 +163,7 @@ namespace Terminal.Gui {
 			Refresh ();
 		}
 
-		private void ScrollBarView_ChangedPosition ()
+		private void ScrollBarView_ChangedPosition (object sender, EventArgs e)
 		{
 			SetPropertyValue (top, position);
 			if (GetPropertyValue (top) != Position) {
@@ -181,7 +181,7 @@ namespace Terminal.Gui {
 		//	}
 		//}
 
-		private void OtherScrollBarView_ChangedPosition ()
+		private void OtherScrollBarView_ChangedPosition (object sender, EventArgs e)
 		{
 			SetPropertyValue (left, OtherScrollBarView.Position);
 			if (GetPropertyValue (left) != OtherScrollBarView.Position) {
@@ -251,6 +251,7 @@ namespace Terminal.Gui {
 			ClearOnVisibleFalse = false;
 		}
 
+		/// <inheritdoc/>
 		public override void RemoveAll ()
 		{
 			if (Host != null) {
@@ -264,7 +265,7 @@ namespace Terminal.Gui {
 			base.RemoveAll ();
 		}
 
-		private void Host_VisibleChanged ()
+		private void Host_VisibleChanged (object sender, EventArgs e)
 		{
 			if (!Host.Visible) {
 				Visible = Host.Visible;

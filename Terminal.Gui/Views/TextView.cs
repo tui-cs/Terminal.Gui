@@ -2440,8 +2440,8 @@ namespace Terminal.Gui {
 		{
 			var currentLine = this.GetCurrentLine ();
 			var cursorPosition = Math.Min (this.CurrentColumn, currentLine.Count);
-			Autocomplete.GenerateSuggestions(
-				new AutocompleteContext(currentLine,cursorPosition)
+			Autocomplete.GenerateSuggestions (
+				new AutocompleteContext (currentLine, cursorPosition)
 				);
 		}
 
@@ -4415,16 +4415,6 @@ namespace Terminal.Gui {
 			}
 
 			line = r;
-		}
-
-		///<inheritdoc/>
-		public override bool OnLeave (View view)
-		{
-			if (Application.MouseGrabView != null && Application.MouseGrabView == this) {
-				Application.UngrabMouse ();
-			}
-
-			return base.OnLeave (view);
 		}
 
 		/// <summary>

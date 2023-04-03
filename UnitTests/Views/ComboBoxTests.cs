@@ -1014,7 +1014,7 @@ Three ", output);
 			Assert.Equal ("One", cb1.Text);
 			Assert.Equal (new Rect (0, 1, 5, 3), cb1.Subviews [1].Frame);
 			Application.Refresh ();
-			GraphViewTests.AssertDriverContentsWithFrameAre (@"
+			TestHelpers.AssertDriverContentsWithFrameAre (@"
 One  ▼  First  ▼
 One             
 Two             
@@ -1034,7 +1034,7 @@ Three
 				Application.Top.ColorScheme.Normal
 			};
 
-			GraphViewTests.AssertDriverColorsAre (@"
+			TestHelpers.AssertDriverColorsAre (@"
 0000004400000000
 33333
 22222
@@ -1052,13 +1052,13 @@ Three
 			Assert.Equal ("One", cb1.Text);
 			Assert.Equal (new Rect (0, 1, 5, 3), cb1.Subviews [1].Frame);
 			Application.Refresh ();
-			GraphViewTests.AssertDriverContentsWithFrameAre (@"
+			TestHelpers.AssertDriverContentsWithFrameAre (@"
 One  ▼  First  ▼
 One             
 Two             
 Three           
 ", output);
-			GraphViewTests.AssertDriverColorsAre (@"
+			TestHelpers.AssertDriverColorsAre (@"
 0000004400000000
 11111
 33333
@@ -1082,14 +1082,14 @@ Three
 			Assert.Equal (new Rect (0, 1, 7, 3), cb2.Subviews [1].Frame);
 
 			Application.Refresh ();
-			GraphViewTests.AssertDriverContentsWithFrameAre (@"
+			TestHelpers.AssertDriverContentsWithFrameAre (@"
 One  ▼  First  ▼
         First   
         Second  
         Third   
 ", output);
 
-			GraphViewTests.AssertDriverColorsAre (@"
+			TestHelpers.AssertDriverColorsAre (@"
 0000004400000000
 444444443333333
 444444442222222
@@ -1113,14 +1113,14 @@ One  ▼  First  ▼
 			Assert.Equal (new Rect (0, 1, 7, 3), cb2.Subviews [1].Frame);
 
 			Application.Refresh ();
-			GraphViewTests.AssertDriverContentsWithFrameAre (@"
+			TestHelpers.AssertDriverContentsWithFrameAre (@"
 One  ▼  First  ▼
         First   
         Second  
         Third   
 ", output);
 
-			GraphViewTests.AssertDriverColorsAre (@"
+			TestHelpers.AssertDriverColorsAre (@"
 0000004400000000
 444444441111111
 444444443333333
@@ -1138,14 +1138,14 @@ One  ▼  First  ▼
 			Assert.Equal ("One", cb1.Text);
 			Assert.Equal (new Rect (0, 1, 5, 3), cb1.Subviews [1].Frame);
 			Application.Refresh ();
-			GraphViewTests.AssertDriverContentsWithFrameAre (@"
+			TestHelpers.AssertDriverContentsWithFrameAre (@"
 One  ▼  First  ▼
 One             
 Two             
 Three           
 ", output);
 
-			GraphViewTests.AssertDriverColorsAre (@"
+			TestHelpers.AssertDriverColorsAre (@"
 0000004400000000
 33333
 22222
@@ -1169,11 +1169,11 @@ Three
 			Assert.Equal (new Rect (0, 1, 7, 0), cb2.Subviews [1].Frame);
 
 			Application.Refresh ();
-			GraphViewTests.AssertDriverContentsWithFrameAre (@"
+			TestHelpers.AssertDriverContentsWithFrameAre (@"
 One  ▼  First  ▼
 ", output);
 
-			GraphViewTests.AssertDriverColorsAre (@"
+			TestHelpers.AssertDriverColorsAre (@"
 0000004400000000", attributes);
 		}
 
@@ -1263,7 +1263,7 @@ One  ▼  First  ▼
 				});
 
 			Application.Top.Redraw (Application.Top.Bounds);
-			GraphViewTests.AssertDriverContentsWithFrameAre (@"
+			TestHelpers.AssertDriverContentsWithFrameAre (@"
 ┌ Window ──────────┐
 │One  ▼            │
 │One               │
@@ -1286,7 +1286,7 @@ One  ▼  First  ▼
 				});
 
 			Application.Top.Redraw (Application.Top.Bounds);
-			GraphViewTests.AssertDriverContentsWithFrameAre (@"
+			TestHelpers.AssertDriverContentsWithFrameAre (@"
 ┌ Window ──────────┐
 │One  ▼            │
 │                  │

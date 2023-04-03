@@ -802,20 +802,6 @@ namespace Terminal.Gui {
 			UnGrabbedMouse?.Invoke (view, new ViewEventArgs (view));
 		}
 
-		static void OnGrabbedMouse (View view)
-		{
-			if (view == null)
-				return;
-			GrabbedMouse?.Invoke (view);
-		}
-
-		static void OnUnGrabbedMouse (View view)
-		{
-			if (view == null)
-				return;
-			UnGrabbedMouse?.Invoke (view);
-		}
-
 		/// <summary>
 		/// Merely a debugging aid to see the raw mouse events
 		/// </summary>

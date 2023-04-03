@@ -20,10 +20,12 @@ namespace UICatalog.Scenarios {
 		private ComboBox _headersAlignCB;
 		private ComboBox _membersAlignCB;
 
-		private List<Type> _scenarios = Scenario.GetDerivedClasses<Scenario> ().OrderBy (t => Scenario.ScenarioMetadata.GetName (t)).ToList ();
+		private List<Scenario> _scenarios;
 
 		public override void Setup ()
 		{
+			_scenarios = Scenario.GetScenarios ();
+
 			var listRender = new List<string> {
 				"Render with single-lines",
 				"Render with multi-lines",
@@ -56,7 +58,7 @@ namespace UICatalog.Scenarios {
 				X = Pos.Right (_allowMarkingCB) + 1,
 				Y = 0,
 				Height = 1,
-				Visible = _allowMarkingCB.Checked
+				Visible = (bool)_allowMarkingCB.Checked
 			};
 			Win.Add (_allowMultipleCB);
 			_allowMultipleCB.Toggled += AllowMultipleCB_Toggled;
@@ -79,7 +81,7 @@ namespace UICatalog.Scenarios {
 			int lastTop = 0;
 			int lastLeft = 0;
 
-			scrollBar.ChangedPosition += () => {
+			scrollBar.ChangedPosition += (s, e) => {
 				var os = GetOffset (scrollBar.Position, _listView.TopItem, _listView.Source.Count - 1, lastVertPos, _listView.ItemHeight);
 				_listView.TopItem = os;
 				if (_listView.TopItem != os) {
@@ -90,7 +92,7 @@ namespace UICatalog.Scenarios {
 				_listView.SetNeedsDisplay ();
 			};
 
-			scrollBar.OtherScrollBarView.ChangedPosition += () => {
+			scrollBar.OtherScrollBarView.ChangedPosition += (s, e) => {
 				var os = GetOffset (scrollBar.OtherScrollBarView.Position, _listView.LeftItem, _listView.Maxlength - 1, lastHoriPos);
 				_listView.LeftItem = os;
 				if (_listView.LeftItem != os) {
@@ -101,7 +103,7 @@ namespace UICatalog.Scenarios {
 				_listView.SetNeedsDisplay ();
 			};
 
-			_listView.DrawContent += (e) => {
+			_listView.DrawContent += (s, e) => {
 				if (_listView.Source == null)
 					return;
 				scrollBar.Size = GetSize (_listView.Source.Count, _listView.ItemHeight, _listView.ShowColumnHeaders ? -1 : scrollBar.OtherScrollBarView.ShowScrollIndicator ? 1 : 0);
@@ -128,17 +130,17 @@ namespace UICatalog.Scenarios {
 				X = Pos.AnchorEnd (k.Length + 3),
 				Y = 0,
 			};
-			keepCheckBox.Toggled += (_) => scrollBar.KeepContentAlwaysInViewport = keepCheckBox.Checked;
+			keepCheckBox.Toggled += (s, _) => scrollBar.KeepContentAlwaysInViewport = (bool)keepCheckBox.Checked;
 			Win.Add (keepCheckBox);
 			keepCheckBox.SuperView.SendSubviewToBack (keepCheckBox);
 
-			_customRenderCB.Collapsed += () => keepCheckBox.SuperView.SendSubviewToBack (keepCheckBox);
+			_customRenderCB.Collapsed += (s, e) => keepCheckBox.SuperView.SendSubviewToBack (keepCheckBox);
 
 			_showColHeaders = new CheckBox ("Show Column Headers", _listView.ShowColumnHeaders) {
 				X = Pos.X (_allowMarkingCB),
 				Y = Pos.Bottom (_allowMultipleCB)
 			};
-			_showColHeaders.Toggled += (_) => _listView.ShowColumnHeaders = _showColHeaders.Checked;
+			_showColHeaders.Toggled += (s, _) => _listView.ShowColumnHeaders = (bool)_showColHeaders.Checked;
 			Win.Add (_showColHeaders);
 
 			var label = new Label ("Item Height:") {
@@ -152,12 +154,12 @@ namespace UICatalog.Scenarios {
 				Y = Pos.Top (label),
 				Width = 3
 			};
-			_txtItemHeight.TextChanging += (e) => {
+			_txtItemHeight.TextChanging += (s, e) => {
 				if (!int.TryParse (e.NewText.ToString (), out _)) {
 					e.Cancel = true;
 				}
 			};
-			_txtItemHeight.TextChanged += (_) => {
+			_txtItemHeight.TextChanged += (s, _) => {
 				try {
 					_listView.ItemHeight = int.Parse (_txtItemHeight.Text.ToString ());
 				} catch (Exception ex) {
@@ -184,7 +186,7 @@ namespace UICatalog.Scenarios {
 				HideDropdownListOnClick = true,
 				SelectedItem = 0
 			};
-			_headersAlignCB.OpenSelectedItem += (e) => {
+			_headersAlignCB.OpenSelectedItem += (s, e) => {
 				if (_listView.ColumnHeaders != null) {
 					foreach (var ch in _listView.ColumnHeaders) {
 						ch.HeaderAlignment = (TextAlignment)e.Item;
@@ -210,7 +212,7 @@ namespace UICatalog.Scenarios {
 				HideDropdownListOnClick = true,
 				SelectedItem = 0
 			};
-			_membersAlignCB.OpenSelectedItem += (e) => {
+			_membersAlignCB.OpenSelectedItem += (s, e) => {
 				if (_listView.ColumnHeaders != null) {
 					foreach (var ch in _listView.ColumnHeaders) {
 						ch.MemberAlignment = (TextAlignment)e.Item;
@@ -259,29 +261,29 @@ namespace UICatalog.Scenarios {
 			return (size * stp) + (stp - 1) + sizeOffset;
 		}
 
-		private void ListView_RowRender (ListViewRowEventArgs obj)
+		private void ListView_RowRender (object sender, ListViewRowEventArgs e)
 		{
-			if (obj.Row == _listView.SelectedItem) {
+			if (e.Row == _listView.SelectedItem) {
 				return;
 			}
-			if (_listView.AllowsMarking && _listView.Source.IsMarked (obj.Row)) {
-				obj.RowAttribute = new Attribute (Color.BrightRed, Color.BrightYellow);
+			if (_listView.AllowsMarking && _listView.Source.IsMarked (e.Row)) {
+				e.RowAttribute = new Attribute (Color.BrightRed, Color.BrightYellow);
 				return;
 			}
-			if (obj.Row % 2 == 0) {
-				obj.RowAttribute = new Attribute (Color.BrightGreen, Color.Magenta);
+			if (e.Row % 2 == 0) {
+				e.RowAttribute = new Attribute (Color.BrightGreen, Color.Magenta);
 			} else {
-				obj.RowAttribute = new Attribute (Color.BrightMagenta, Color.Green);
+				e.RowAttribute = new Attribute (Color.BrightMagenta, Color.Green);
 			}
 		}
 
-		private void _customRenderCB_OpenSelectedItem (ListViewItemEventArgs obj)
+		private void _customRenderCB_OpenSelectedItem (object sender, ListViewItemEventArgs e)
 		{
-			switch (obj.Item) {
+			switch (e.Item) {
 			case 0:
 				_listView.Source = new ListWrapper (_scenarios);
 				_txtItemHeight.Text = "1";
-				_listView.ShowColumnHeaders = _showColHeaders.Checked;
+				_listView.ShowColumnHeaders = (bool)_showColHeaders.Checked;
 				_listView.ColumnHeaders = null;
 				_headersAlignCB.SelectedItem = (int)_listView.HeadersAlignment;
 				_membersAlignCB.SelectedItem = (int)_listView.ItemsAlignment;
@@ -289,12 +291,12 @@ namespace UICatalog.Scenarios {
 			case 1:
 				var listScenarioItem = new List<ScenarioItem> ();
 				foreach (var item in _scenarios) {
-					var si = new ScenarioItem (ScenarioMetadata.GetName (item), ScenarioMetadata.GetDescription (item));
+					var si = new ScenarioItem (item.GetName (), item.GetDescription ());
 					listScenarioItem.Add (si);
 				}
 				_listView.Source = new ListWrapper (listScenarioItem);
 				_txtItemHeight.Text = "2";
-				_listView.ShowColumnHeaders = _showColHeaders.Checked;
+				_listView.ShowColumnHeaders = (bool)_showColHeaders.Checked;
 				_listView.ColumnHeaders = new List<ListView.ColumnHeader> (){
 					new ListView.ColumnHeader () {
 						MemberName = "Name",
@@ -316,7 +318,7 @@ namespace UICatalog.Scenarios {
 				}
 				_listView.Source = new ListWrapper (listNumericItem);
 				_txtItemHeight.Text = "1";
-				_listView.ShowColumnHeaders = _showColHeaders.Checked;
+				_listView.ShowColumnHeaders = (bool)_showColHeaders.Checked;
 				_listView.ColumnHeaders = new List<ListView.ColumnHeader> (){
 					new ListView.ColumnHeader () {
 						MemberName = "Item",
@@ -359,12 +361,12 @@ namespace UICatalog.Scenarios {
 				var listStr = new List<string> ();
 				var idx = 0;
 				foreach (var item in _scenarios) {
-					listStr.Add ($"{idx}\n{ScenarioMetadata.GetName (item)}\n{ScenarioMetadata.GetDescription (item)}");
+					listStr.Add ($"{idx}\n{item.GetName ()}\n{item.GetDescription ()}");
 					idx++;
 				}
 				_listView.Source = new ListWrapper (listStr);
 				_txtItemHeight.Text = "1";
-				_listView.ShowColumnHeaders = _showColHeaders.Checked;
+				_listView.ShowColumnHeaders = (bool)_showColHeaders.Checked;
 				_listView.ColumnHeaders = new List<ListView.ColumnHeader> (){
 					new ListView.ColumnHeader () {
 						HeaderName = "Index",
@@ -390,7 +392,7 @@ namespace UICatalog.Scenarios {
 			case 4:
 				_listView.Source = new ListWrapper (null);
 				_txtItemHeight.Text = "1";
-				_listView.ShowColumnHeaders = _showColHeaders.Checked;
+				_listView.ShowColumnHeaders = (bool)_showColHeaders.Checked;
 				_listView.ColumnHeaders = null;
 				_headersAlignCB.SelectedItem = (int)_listView.HeadersAlignment;
 				_membersAlignCB.SelectedItem = (int)_listView.ItemsAlignment;
@@ -398,7 +400,7 @@ namespace UICatalog.Scenarios {
 			case 5:
 				_listView.Source = new ListWrapper (null);
 				_txtItemHeight.Text = "1";
-				_listView.ShowColumnHeaders = _showColHeaders.Checked;
+				_listView.ShowColumnHeaders = (bool)_showColHeaders.Checked;
 				_listView.ColumnHeaders = new List<ListView.ColumnHeader> (){
 					new ListView.ColumnHeader () {
 						HeaderName = "Name",
@@ -418,16 +420,16 @@ namespace UICatalog.Scenarios {
 			Win.SetNeedsDisplay ();
 		}
 
-		private void AllowMarkingCB_Toggled (bool prev)
+		private void AllowMarkingCB_Toggled (object sender, ToggleEventArgs e)
 		{
-			_listView.AllowsMarking = !prev;
+			_listView.AllowsMarking = (bool)!e.OldValue;
 			_allowMultipleCB.Visible = _listView.AllowsMarking;
 			Win.SetNeedsDisplay ();
 		}
 
-		private void AllowMultipleCB_Toggled (bool prev)
+		private void AllowMultipleCB_Toggled (object sender, ToggleEventArgs e)
 		{
-			_listView.AllowsMultipleSelection = !prev;
+			_listView.AllowsMultipleSelection = (bool)!e.OldValue;
 			Win.SetNeedsDisplay ();
 		}
 

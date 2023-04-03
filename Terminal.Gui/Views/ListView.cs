@@ -335,7 +335,7 @@ namespace Terminal.Gui {
 			}
 		}
 
-		private void ListView_Added (View obj)
+		private void ListView_Added (object sender, SuperViewChangedEventArgs e)
 		{
 			CreateScrollBar ();
 		}
@@ -369,7 +369,7 @@ namespace Terminal.Gui {
 			}
 		}
 
-		private void ListView_LayoutComplete (LayoutEventArgs obj)
+		private void ListView_LayoutComplete (object sender, LayoutEventArgs e)
 		{
 			if (scrollBar != null) {
 				scrollBar.Refresh ();
@@ -392,7 +392,7 @@ namespace Terminal.Gui {
 			}
 		}
 
-		private void ScrollBar_ChangedPosition ()
+		private void ScrollBar_ChangedPosition (object sender, EventArgs e)
 		{
 			TopItem = scrollBar.Position;
 			if (TopItem != scrollBar.Position) {
@@ -401,7 +401,7 @@ namespace Terminal.Gui {
 			SetNeedsDisplay ();
 		}
 
-		private void OtherScrollBarView_ChangedPosition ()
+		private void OtherScrollBarView_ChangedPosition (object sender, EventArgs e)
 		{
 			LeftItem = scrollBar.OtherScrollBarView.Position;
 			if (LeftItem != scrollBar.OtherScrollBarView.Position) {
