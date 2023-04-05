@@ -104,7 +104,7 @@ namespace Terminal.Gui {
 		}
 
 		string lines, cols, line, col, top, left;// bottom, right;
-		//int savedBottom, savedRight;
+							 //int savedBottom, savedRight;
 
 		/// <summary>
 		/// Initializes a new instance of the <see cref="Gui.ScrollBarView"/> class based on the <see cref="ScrollBarType"/>.
@@ -316,7 +316,7 @@ namespace Terminal.Gui {
 			this.position = position;
 			this.size = size;
 			WantContinuousButtonPressed = true;
-			
+
 			Initialized += (s, e) => {
 				SetWidthHeight ();
 				SetRelativeLayout (SuperView?.Frame ?? Host?.Frame ?? Frame);
@@ -376,7 +376,7 @@ namespace Terminal.Gui {
 					position = value;
 					return;
 				}
-				
+
 				SetPosition (value);
 			}
 		}
@@ -431,49 +431,6 @@ namespace Terminal.Gui {
 		//	return false;
 		//}
 
-		//bool MustScroll (ref int value, bool isVertical = false)
-		//{
-		//	if (position != value) {
-		//		return false;
-		//	}
-		//	var s = isVertical ? Host.Bounds.Height + (otherScrollBarView != null && otherScrollBarView.showBothScrollIndicator ? 1 : 0) :
-		//		Host.Bounds.Width + (otherScrollBarView != null && otherScrollBarView.showBothScrollIndicator ? 1 : 0);
-		//	if (position + s > size) {
-		//		value++;
-		//		return true;
-		//	}
-		//	return false;
-		//}
-
-		//bool MustScroll (ref int value, bool isVertical = false)
-		//{
-		//	if (position != value) {
-		//		return false;
-		//	}
-		//	var s = isVertical ? Host.Bounds.Height + (otherScrollBarView != null && otherScrollBarView.showBothScrollIndicator ? 1 : 0) :
-		//		Host.Bounds.Width + (otherScrollBarView != null && otherScrollBarView.showBothScrollIndicator ? 1 : 0);
-		//	if (position + s > size) {
-		//		value++;
-		//		return true;
-		//	}
-		//	return false;
-		//}
-
-		//bool MustScroll (ref int value, bool isVertical = false)
-		//{
-		//	if (position != value) {
-		//		return false;
-		//	}
-		//	var s = isVertical ? Host.Bounds.Height + (otherScrollBarView != null && otherScrollBarView.showBothScrollIndicator ? 1 : 0) :
-		//		Host.Bounds.Width + (otherScrollBarView != null && otherScrollBarView.showBothScrollIndicator ? 1 : 0);
-		//	if (position + s > size) {
-		//		value++;
-		//		return true;
-		//	}
-		//	return false;
-		//}
-
-		// BUGBUG: v2 - for consistency this should be named "Parent" not "Host"
 		/// <summary>
 		/// Get or sets the view that host this <see cref="ScrollBarView"/>
 		/// </summary>
@@ -697,10 +654,10 @@ namespace Terminal.Gui {
 			}
 
 			if (showBothScrollIndicator) {
-				Width = vertical ? 1 : Host != SuperView ? Dim.Width (Host) - 1: Dim.Fill () - 1;
-				Height = vertical ? Host != SuperView ? Dim.Height (Host) - 1: Dim.Fill () - 1 : 1;
+				Width = vertical ? 1 : Host != SuperView ? Dim.Width (Host) - 1 : Dim.Fill () - 1;
+				Height = vertical ? Host != SuperView ? Dim.Height (Host) - 1 : Dim.Fill () - 1 : 1;
 
-				otherScrollBarView.Width = otherScrollBarView.vertical ? 1 : Host != SuperView ? Dim.Width (Host) - 1: Dim.Fill () - 1;
+				otherScrollBarView.Width = otherScrollBarView.vertical ? 1 : Host != SuperView ? Dim.Width (Host) - 1 : Dim.Fill () - 1;
 				otherScrollBarView.Height = otherScrollBarView.vertical ? Host != SuperView ? Dim.Height (Host) - 1 : Dim.Fill () - 1 : 1;
 			} else if (showScrollIndicator) {
 				Width = vertical ? 1 : Host != SuperView ? Dim.Width (Host) : Dim.Fill ();
