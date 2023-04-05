@@ -542,6 +542,9 @@ namespace Terminal.Gui {
 			if (barItems.Children == null) {
 				return;
 			}
+			var savedClip = Driver.Clip;
+			Application.Driver.Clip = Application.Top.Frame;
+
 			Driver.SetAttribute (GetNormalColor ());
 			DrawFrame (Bounds, padding: 0, fill: true);
 
@@ -640,6 +643,8 @@ namespace Terminal.Gui {
 					}
 				}
 			}
+			Driver.Clip = savedClip;
+
 			PositionCursor ();
 		}
 
@@ -1372,7 +1377,13 @@ namespace Terminal.Gui {
 				// menu it belongs to's text
 				for (int i = 0; i < index; i++)
 					pos += Menus [i].TitleLength + (Menus [i].Help.ConsoleWidth > 0 ? Menus [i].Help.ConsoleWidth + 2 : 0) + leftPadding + rightPadding;
-				var locationOffset = SuperView == null ? new Point (0, 0) : new Point (SuperView.Frame.X, SuperView.Frame.Y);
+				var superView = SuperView == null ? Application.Top : SuperView;
+				Point locationOffset;
+				if (superView.Border != null && superView.Border.BorderStyle != BorderStyle.None) {
+					locationOffset = new Point (superView.Frame.X + 1, superView.Frame.Y + 1);
+				} else {
+					locationOffset = new Point (superView.Frame.X, superView.Frame.Y);
+				}
 				openMenu = new Menu (this, Frame.X + pos + locationOffset.X, Frame.Y + 1 + locationOffset.Y, Menus [index]);
 				openCurrentMenu = openMenu;
 				openCurrentMenu.previousSubFocused = openMenu;

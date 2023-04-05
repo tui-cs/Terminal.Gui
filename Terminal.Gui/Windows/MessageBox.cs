@@ -40,7 +40,7 @@ namespace Terminal.Gui {
 		/// </remarks>
 		public static int Query (int width, int height, ustring title, ustring message, params ustring [] buttons)
 		{
-			return QueryFull (false, width, height, title, message, 0, null, true, buttons);
+			return QueryFull (false, width, height, title, message, 0, true, buttons);
 		}
 
 		/// <summary>
@@ -56,7 +56,7 @@ namespace Terminal.Gui {
 		/// </remarks>
 		public static int Query (ustring title, ustring message, params ustring [] buttons)
 		{
-			return QueryFull (false, 0, 0, title, message, 0, null, true, buttons);
+			return QueryFull (false, 0, 0, title, message, 0, true, buttons);
 		}
 
 		/// <summary>
@@ -73,7 +73,7 @@ namespace Terminal.Gui {
 		/// </remarks>
 		public static int ErrorQuery (int width, int height, ustring title, ustring message, params ustring [] buttons)
 		{
-			return QueryFull (true, width, height, title, message, 0, null, true, buttons);
+			return QueryFull (true, width, height, title, message, 0, true, buttons);
 		}
 
 		/// <summary>
@@ -89,7 +89,7 @@ namespace Terminal.Gui {
 		/// </remarks>
 		public static int ErrorQuery (ustring title, ustring message, params ustring [] buttons)
 		{
-			return QueryFull (true, 0, 0, title, message, 0, null, true, buttons);
+			return QueryFull (true, 0, 0, title, message, 0, true, buttons);
 		}
 
 		/// <summary>
@@ -107,7 +107,7 @@ namespace Terminal.Gui {
 		/// </remarks>
 		public static int Query (int width, int height, ustring title, ustring message, int defaultButton = 0, params ustring [] buttons)
 		{
-			return QueryFull (false, width, height, title, message, defaultButton, null, true, buttons);
+			return QueryFull (false, width, height, title, message, defaultButton, true, buttons);
 		}
 
 		/// <summary>
@@ -124,7 +124,7 @@ namespace Terminal.Gui {
 		/// </remarks>
 		public static int Query (ustring title, ustring message, int defaultButton = 0, params ustring [] buttons)
 		{
-			return QueryFull (false, 0, 0, title, message, defaultButton, null, true, buttons);
+			return QueryFull (false, 0, 0, title, message, defaultButton, true, buttons);
 		}
 
 		/// <summary>
@@ -136,15 +136,14 @@ namespace Terminal.Gui {
 		/// <param name="title">Title for the query.</param>
 		/// <param name="message">Message to display, might contain multiple lines.</param>
 		/// <param name="defaultButton">Index of the default button.</param>
-		/// <param name="border">The border settings.</param>
 		/// <param name="wrapMessagge">If wrap the message or not.</param>
 		/// <param name="buttons">Array of buttons to add.</param>
 		/// <remarks>
 		/// Use <see cref="Query(ustring, ustring, ustring[])"/> instead; it automatically sizes the MessageBox based on the contents.
 		/// </remarks>
-		public static int Query (int width, int height, ustring title, ustring message, int defaultButton = 0, Border border = null, bool wrapMessagge = true, params ustring [] buttons)
+		public static int Query (int width, int height, ustring title, ustring message, int defaultButton = 0, bool wrapMessagge = true, params ustring [] buttons)
 		{
-			return QueryFull (false, width, height, title, message, defaultButton, border, wrapMessagge, buttons);
+			return QueryFull (false, width, height, title, message, defaultButton, wrapMessagge, buttons);
 		}
 
 		/// <summary>
@@ -154,16 +153,15 @@ namespace Terminal.Gui {
 		/// <param name="title">Title for the query.</param>
 		/// <param name="message">Message to display, might contain multiple lines.</param>
 		/// <param name="defaultButton">Index of the default button.</param>
-		/// <param name="border">The border settings.</param>
 		/// <param name="wrapMessagge">If wrap the message or not.</param>
 		/// <param name="buttons">Array of buttons to add.</param>
 		/// <remarks>
 		/// The message box will be vertically and horizontally centered in the container and the size will be automatically determined
 		/// from the size of the message and buttons.
 		/// </remarks>
-		public static int Query (ustring title, ustring message, int defaultButton = 0, Border border = null, bool wrapMessagge = true, params ustring [] buttons)
+		public static int Query (ustring title, ustring message, int defaultButton = 0, bool wrapMessagge = true, params ustring [] buttons)
 		{
-			return QueryFull (false, 0, 0, title, message, defaultButton, border, wrapMessagge, buttons);
+			return QueryFull (false, 0, 0, title, message, defaultButton, wrapMessagge, buttons);
 		}
 
 
@@ -182,7 +180,7 @@ namespace Terminal.Gui {
 		/// </remarks>
 		public static int ErrorQuery (int width, int height, ustring title, ustring message, int defaultButton = 0, params ustring [] buttons)
 		{
-			return QueryFull (true, width, height, title, message, defaultButton, null, true, buttons);
+			return QueryFull (true, width, height, title, message, defaultButton, true, buttons);
 		}
 
 		/// <summary>
@@ -199,7 +197,7 @@ namespace Terminal.Gui {
 		/// </remarks>
 		public static int ErrorQuery (ustring title, ustring message, int defaultButton = 0, params ustring [] buttons)
 		{
-			return QueryFull (true, 0, 0, title, message, defaultButton, null, true, buttons);
+			return QueryFull (true, 0, 0, title, message, defaultButton, true, buttons);
 		}
 
 		/// <summary>
@@ -211,15 +209,14 @@ namespace Terminal.Gui {
 		/// <param name="title">Title for the query.</param>
 		/// <param name="message">Message to display, might contain multiple lines.</param>
 		/// <param name="defaultButton">Index of the default button.</param>
-		/// <param name="border">The border settings.</param>
 		/// <param name="wrapMessagge">If wrap the message or not.</param>
 		/// <param name="buttons">Array of buttons to add.</param>
 		/// <remarks>
 		/// Use <see cref="ErrorQuery(ustring, ustring, ustring[])"/> instead; it automatically sizes the MessageBox based on the contents.
 		/// </remarks>
-		public static int ErrorQuery (int width, int height, ustring title, ustring message, int defaultButton = 0, Border border = null, bool wrapMessagge = true, params ustring [] buttons)
+		public static int ErrorQuery (int width, int height, ustring title, ustring message, int defaultButton = 0, bool wrapMessagge = true, params ustring [] buttons)
 		{
-			return QueryFull (true, width, height, title, message, defaultButton, border, wrapMessagge, buttons);
+			return QueryFull (true, width, height, title, message, defaultButton, wrapMessagge, buttons);
 		}
 
 		/// <summary>
@@ -229,16 +226,15 @@ namespace Terminal.Gui {
 		/// <param name="title">Title for the query.</param>
 		/// <param name="message">Message to display, might contain multiple lines.</param>
 		/// <param name="defaultButton">Index of the default button.</param>
-		/// <param name="border">The border settings.</param>
 		/// <param name="wrapMessagge">If wrap the message or not.</param>
 		/// <param name="buttons">Array of buttons to add.</param>
 		/// <remarks>
 		/// The message box will be vertically and horizontally centered in the container and the size will be automatically determined
 		/// from the size of the title, message. and buttons.
 		/// </remarks>
-		public static int ErrorQuery (ustring title, ustring message, int defaultButton = 0, Border border = null, bool wrapMessagge = true, params ustring [] buttons)
+		public static int ErrorQuery (ustring title, ustring message, int defaultButton = 0, bool wrapMessagge = true, params ustring [] buttons)
 		{
-			return QueryFull (true, 0, 0, title, message, defaultButton, border, wrapMessagge, buttons);
+			return QueryFull (true, 0, 0, title, message, defaultButton, wrapMessagge, buttons);
 		}
 
 		/// <summary>
@@ -247,13 +243,10 @@ namespace Terminal.Gui {
 		[SerializableConfigurationProperty (Scope = typeof (ThemeScope))]
 		public static Border DefaultBorder { get; set; } = new Border () {
 			BorderStyle = BorderStyle.Single,
-			DrawMarginFrame = false,
-			Effect3D = true,
-			Effect3DOffset = new Point (1, 1),
 		};
 
 		static int QueryFull (bool useErrorColors, int width, int height, ustring title, ustring message,
-			int defaultButton = 0, Border border = null, bool wrapMessagge = true, params ustring [] buttons)
+			int defaultButton = 0, bool wrapMessagge = true, params ustring [] buttons)
 		{
 			int defaultWidth = 50;
 			if (defaultWidth > Application.Driver.Cols / 2) {
@@ -290,28 +283,28 @@ namespace Terminal.Gui {
 				buttonList.Add (b);
 				count++;
 			}
-			if (border == null) {
-				border = DefaultBorder;
-				border.Title = title;
-			}
+
 			// Create Dialog (retain backwards compat by supporting specifying height/width)
 			Dialog d;
 			if (width == 0 & height == 0) {
-				d = new Dialog (title, border, buttonList.ToArray ()) {
-					Height = msgboxHeight
+				d = new Dialog (title, buttonList.ToArray ()) {
+					Height = msgboxHeight,
+					Border = DefaultBorder
 				};
 			} else {
-				d = new Dialog (title, width, Math.Max (height, 4), border, buttonList.ToArray ());
+				d = new Dialog (title, width, Math.Max (height, 4), buttonList.ToArray ()) {
+					Border = DefaultBorder
+				};
 			}
 
 			if (useErrorColors) {
 				d.ColorScheme = Colors.Error;
-				d.Border.BorderBrush = Colors.Error.Normal.Foreground;
-				d.Border.Background = Colors.Error.Normal.Background;
+				//d.Border.ForgroundColor = Colors.Error.Normal.Foreground;
+				//d.Border.BackgroundColor = Colors.Error.Normal.Background;
 			} else {
 				d.ColorScheme = Colors.Dialog;
-				d.Border.BorderBrush = Colors.Dialog.Normal.Foreground;
-				d.Border.Background = Colors.Dialog.Normal.Background;
+				//d.Border.ForgroundColor = Colors.Dialog.Normal.Foreground;
+				//d.Border.BackgroundColor = Colors.Dialog.Normal.Background;
 			}
 
 			if (!ustring.IsNullOrEmpty (message)) {

@@ -20,42 +20,43 @@ namespace Terminal.Gui {
 		/// <inheritdoc/>
 		public Label ()
 		{
-			Initialize ();
+			SetInitialProperties ();
 		}
 
 		/// <inheritdoc/>
 		public Label (Rect frame, bool autosize = false) : base (frame)
 		{
-			Initialize (autosize);
+			SetInitialProperties (autosize);
 		}
 
 		/// <inheritdoc/>
 		public Label (ustring text, bool autosize = true) : base (text)
 		{
-			Initialize (autosize);
+			SetInitialProperties (autosize);
 		}
 
 		/// <inheritdoc/>
 		public Label (Rect rect, ustring text, bool autosize = false) : base (rect, text)
 		{
-			Initialize (autosize);
+			SetInitialProperties (autosize);
 		}
 
 		/// <inheritdoc/>
 		public Label (int x, int y, ustring text, bool autosize = true) : base (x, y, text)
 		{
-			Initialize (autosize);
+			SetInitialProperties (autosize);
 		}
 
 		/// <inheritdoc/>
 		public Label (ustring text, TextDirection direction, bool autosize = true)
 			: base (text, direction)
 		{
-			Initialize (autosize);
+			SetInitialProperties (autosize);
 		}
 
-		void Initialize (bool autosize = true)
+		void SetInitialProperties (bool autosize = true)
 		{
+			Height = 1;
 			AutoSize = autosize;
 		}
 
@@ -69,21 +70,6 @@ namespace Terminal.Gui {
 		///   the mouse or the keyboard.
 		/// </remarks>
 		public event EventHandler Clicked;
-
-		///// <inheritdoc/>
-		//public new ustring Text {
-		//	get => base.Text;
-		//	set {
-		//		base.Text = value;
-		//		// This supports Label auto-sizing when Text changes (preserving backwards compat behavior)
-		//		if (Frame.Height == 1 && !ustring.IsNullOrEmpty (value)) {
-		//			int w = Text.RuneCount;
-		//			Width = w;
-		//			Frame = new Rect (Frame.Location, new Size (w, Frame.Height));
-		//		}
-		//		SetNeedsDisplay ();
-		//	}
-		//}
 
 		/// <summary>
 		/// Method invoked when a mouse event is generated

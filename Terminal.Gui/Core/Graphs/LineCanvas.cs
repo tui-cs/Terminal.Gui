@@ -201,6 +201,8 @@ namespace Terminal.Gui.Graphs {
 			// TODO: Remove these two once we have all of the below ported to IntersectionRuneResolvers
 			var useDouble = intersects.Any (i => i.Line.Style == BorderStyle.Double);
 			var useRounded = intersects.Any (i => i.Line.Style == BorderStyle.Rounded);
+			// TODO: Support ruler
+			//var useRuler = intersects.Any (i => i.Line.Style == BorderStyle.Ruler && i.Line.Length != 0);
 
 			// TODO: maybe make these resolvers to for simplicity?
 			// or for dotted lines later on or that kind of thing?

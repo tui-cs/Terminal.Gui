@@ -30,35 +30,36 @@ namespace UICatalog.Scenarios {
 			_charMap = new CharMap () {
 				X = 0,
 				Y = 0,
-				Height = Dim.Fill (),
+				Height = Dim.Fill ()
 			};
+			Win.Add (_charMap);
 
 			var jumpLabel = new Label ("Jump To Glyph:") { X = Pos.Right (_charMap) + 1, Y = Pos.Y (_charMap) };
 			Win.Add (jumpLabel);
-			var jumpEdit = new TextField () { X = Pos.Right (jumpLabel) + 1, Y = Pos.Y (_charMap), Width = 10, };
+			var jumpEdit = new TextField () { X = Pos.Right (jumpLabel) + 1, Y = Pos.Y (_charMap), Width = 10, Caption = "e.g. 01BE3"};
 			Win.Add (jumpEdit);
-			var unicodeLabel = new Label ("") { X = Pos.Right (jumpEdit) + 1, Y = Pos.Y (_charMap) };
-			Win.Add (unicodeLabel);
+			var errorLabel = new Label ("") { X = Pos.Right (jumpEdit) + 1, Y = Pos.Y (_charMap), ColorScheme = Colors.ColorSchemes ["error"] };
+			Win.Add (errorLabel);
 			jumpEdit.TextChanged += (s, e) => {
 				uint result = 0;
 				if (jumpEdit.Text.Length == 0) return;
 				try {
 					result = Convert.ToUInt32 (jumpEdit.Text.ToString (), 10);
 				} catch (OverflowException) {
-					unicodeLabel.Text = $"Invalid (overflow)";
+					errorLabel.Text = $"Invalid (overflow)";
 					return;
 				} catch (FormatException) {
 					try {
 						result = Convert.ToUInt32 (jumpEdit.Text.ToString (), 16);
 					} catch (OverflowException) {
-						unicodeLabel.Text = $"Invalid (overflow)";
+						errorLabel.Text = $"Invalid (overflow)";
 						return;
 					} catch (FormatException) {
-						unicodeLabel.Text = $"Invalid (can't parse)";
+						errorLabel.Text = $"Invalid (can't parse)";
 						return;
 					}
 				}
-				unicodeLabel.Text = $"U+{result:x4}";
+				errorLabel.Text = $"U+{result:x4}";
 				_charMap.SelectedGlyph = result;
 			};
 
@@ -73,7 +74,6 @@ namespace UICatalog.Scenarios {
 				return ($"{title} (U+{start:x5}-{end:x5})", start, end);
 			}
 
-			Win.Add (_charMap);
 			var label = new Label ("Jump To Unicode Block:") { X = Pos.Right (_charMap) + 1, Y = Pos.Bottom (jumpLabel) + 1 };
 			Win.Add (label);
 
@@ -231,10 +231,10 @@ namespace UICatalog.Scenarios {
 			Rect viewport = e.Rect;
 
 			var oldClip = Driver.Clip;
-			Driver.Clip = Frame;
+			Driver.Clip = Bounds;
 			// Redraw doesn't know about the scroll indicators, so if off, add one to height
 			if (!ShowHorizontalScrollIndicator) {
-				Driver.Clip = new Rect (Frame.X, Frame.Y, Frame.Width, Frame.Height + 1);
+				Driver.Clip = new Rect (Bounds.X, Bounds.Y, Bounds.Width, Bounds.Height + 1);
 			}
 			Driver.SetAttribute (HasFocus ? ColorScheme.HotFocus : ColorScheme.Focus);
 			Move (0, 0);

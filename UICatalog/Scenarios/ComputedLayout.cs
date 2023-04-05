@@ -30,11 +30,12 @@ namespace UICatalog.Scenarios {
 		{
 			// Demonstrate using Dim to create a horizontal ruler that always measures the parent window's width
 			const string rule = "|123456789";
-			var horizontalRuler = new Label ("") {
+			var horizontalRuler = new Label (rule, false) {
 				AutoSize = false,
 				X = 0,
 				Y = 0,
 				Width = Dim.Fill (),
+				Height = 1,
 				ColorScheme = Colors.Error
 			};
 
@@ -43,7 +44,7 @@ namespace UICatalog.Scenarios {
 			// Demonstrate using Dim to create a vertical ruler that always measures the parent window's height
 			const string vrule = "|\n1\n2\n3\n4\n5\n6\n7\n8\n9\n";
 
-			var verticalRuler = new Label ("") {
+			var verticalRuler = new Label (vrule, false) {
 				AutoSize = false,
 				X = 0,
 				Y = 0,
@@ -94,9 +95,8 @@ namespace UICatalog.Scenarios {
 			labelList.Add (new Label ($"{i++}-{txt}") { TextAlignment = Terminal.Gui.TextAlignment.Justified, Width = Dim.Fill (), X = 0, Y = Pos.Bottom (labelList.LastOrDefault ()), ColorScheme = Colors.Dialog });
 			subWin.Add (labelList.ToArray ());
 
-			// #522 repro?
 			var frameView = new FrameView () {
-				X = 2, //Pos.Center (),
+				X = 2, 
 				Y = Pos.Bottom (subWin),
 				Width = 30,
 				Height = 7

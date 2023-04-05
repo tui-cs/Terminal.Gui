@@ -17,6 +17,8 @@ namespace Terminal.Gui.ViewTests {
 		public void Constructors_Defaults ()
 		{
 			var cb = new ComboBox ();
+			cb.BeginInit ();
+			cb.EndInit ();
 			Assert.Equal (string.Empty, cb.Text);
 			Assert.Null (cb.Source);
 			Assert.False (cb.AutoSize);
@@ -26,6 +28,8 @@ namespace Terminal.Gui.ViewTests {
 			Assert.True (cb.HideDropdownListOnClick);
 
 			cb = new ComboBox ("Test");
+			cb.BeginInit ();
+			cb.EndInit ();
 			Assert.Equal ("Test", cb.Text);
 			Assert.Null (cb.Source);
 			Assert.False (cb.AutoSize);
@@ -35,6 +39,8 @@ namespace Terminal.Gui.ViewTests {
 			Assert.True (cb.HideDropdownListOnClick);
 
 			cb = new ComboBox (new Rect (1, 2, 10, 20), new List<string> () { "One", "Two", "Three" });
+			cb.BeginInit ();
+			cb.EndInit ();
 			Assert.Equal (string.Empty, cb.Text);
 			Assert.NotNull (cb.Source);
 			Assert.False (cb.AutoSize);
@@ -44,6 +50,8 @@ namespace Terminal.Gui.ViewTests {
 			Assert.True (cb.HideDropdownListOnClick);
 
 			cb = new ComboBox (new List<string> () { "One", "Two", "Three" });
+			cb.BeginInit ();
+			cb.EndInit ();
 			Assert.Equal (string.Empty, cb.Text);
 			Assert.NotNull (cb.Source);
 			Assert.False (cb.AutoSize);

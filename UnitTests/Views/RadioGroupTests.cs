@@ -92,7 +92,7 @@ namespace Terminal.Gui.ViewTests {
 			Assert.Equal (14, rg.Width);
 			Assert.Equal (2, rg.Height);
 			var expected = @"
-┌ Test Demo 你 ──────────────┐
+┌┤Test Demo 你├──────────────┐
 │● Test                      │
 │◌ New Test 你               │
 │                            │
@@ -113,7 +113,7 @@ namespace Terminal.Gui.ViewTests {
 			Assert.Equal (1, rg.Height);
 
 			expected = @"
-┌ Test Demo 你 ──────────────┐
+┌┤Test Demo 你├──────────────┐
 │● Test  ◌ New Test 你       │
 │                            │
 │                            │
@@ -133,7 +133,7 @@ namespace Terminal.Gui.ViewTests {
 			Assert.Equal (23, rg.Width);
 			Assert.Equal (1, rg.Height);
 			expected = @"
-┌ Test Demo 你 ──────────────┐
+┌┤Test Demo 你├──────────────┐
 │● Test    ◌ New Test 你     │
 │                            │
 │                            │

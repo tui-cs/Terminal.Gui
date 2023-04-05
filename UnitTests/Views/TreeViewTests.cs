@@ -109,6 +109,8 @@ namespace Terminal.Gui.ViewTests {
 		public void ContentWidth_BiggerAfterExpand ()
 		{
 			var tree = CreateTree (out Factory f, out Car car1, out _);
+			tree.BeginInit (); tree.EndInit ();
+
 			tree.Bounds = new Rect (0, 0, 10, 10);
 
 			InitFakeDriver ();
@@ -134,6 +136,8 @@ namespace Terminal.Gui.ViewTests {
 		public void ContentWidth_VisibleVsAll ()
 		{
 			var tree = CreateTree (out Factory f, out Car car1, out Car car2);
+			tree.BeginInit (); tree.EndInit ();
+			
 			// control only allows 1 row to be viewed at once
 			tree.Bounds = new Rect (0, 0, 20, 1);
 
@@ -492,7 +496,7 @@ namespace Terminal.Gui.ViewTests {
 			bool called = false;
 
 			// register for the event
-			tree.ObjectActivated += (s,e) => {
+			tree.ObjectActivated += (s, e) => {
 				activated = e.ActivatedObject;
 				called = true;
 			};
@@ -521,6 +525,7 @@ namespace Terminal.Gui.ViewTests {
 		public void GoTo_OnlyAppliesToExposedObjects ()
 		{
 			var tree = CreateTree (out Factory f, out Car car1, out _);
+			tree.BeginInit (); tree.EndInit ();
 
 			// Make tree bounds 1 in height so that EnsureVisible always requires updating scroll offset
 			tree.Bounds = new Rect (0, 0, 50, 1);
@@ -565,7 +570,7 @@ namespace Terminal.Gui.ViewTests {
 			bool called = false;
 
 			// register for the event
-			tree.ObjectActivated += (s,e) => {
+			tree.ObjectActivated += (s, e) => {
 				activated = e.ActivatedObject;
 				called = true;
 			};
@@ -638,7 +643,7 @@ namespace Terminal.Gui.ViewTests {
 			bool called = false;
 
 			// register for the event
-			tree.ObjectActivated += (s,e) => {
+			tree.ObjectActivated += (s, e) => {
 				activated = e.ActivatedObject;
 				called = true;
 			};
@@ -670,7 +675,7 @@ namespace Terminal.Gui.ViewTests {
 			bool called = false;
 
 			// register for the event
-			tree.ObjectActivated += (s,e) => {
+			tree.ObjectActivated += (s, e) => {
 				activated = e.ActivatedObject;
 				called = true;
 			};
@@ -733,7 +738,7 @@ namespace Terminal.Gui.ViewTests {
 		public void TestGetObjectOnRow ()
 		{
 			var tv = new TreeView { Width = 20, Height = 10 };
-
+			tv.BeginInit (); tv.EndInit ();
 			var n1 = new TreeNode ("normal");
 			var n1_1 = new TreeNode ("pink");
 			var n1_2 = new TreeNode ("normal");
@@ -746,6 +751,7 @@ namespace Terminal.Gui.ViewTests {
 			tv.Expand (n1);
 
 			tv.ColorScheme = new ColorScheme ();
+			tv.LayoutSubviews ();
 			tv.Redraw (tv.Bounds);
 
 			TestHelpers.AssertDriverContentsAre (
@@ -795,6 +801,7 @@ namespace Terminal.Gui.ViewTests {
 			tv.Expand (n1);
 
 			tv.ColorScheme = new ColorScheme ();
+			tv.LayoutSubviews ();
 			tv.Redraw (tv.Bounds);
 
 			TestHelpers.AssertDriverContentsAre (
@@ -811,6 +818,7 @@ namespace Terminal.Gui.ViewTests {
 
 			tv.Collapse (n1);
 
+			tv.LayoutSubviews ();
 			tv.Redraw (tv.Bounds);
 
 
@@ -827,6 +835,7 @@ namespace Terminal.Gui.ViewTests {
 			// scroll down 1
 			tv.ScrollOffsetVertical = 1;
 
+			tv.LayoutSubviews ();
 			tv.Redraw (tv.Bounds);
 
 
@@ -858,17 +867,18 @@ namespace Terminal.Gui.ViewTests {
 			var hotpink = new Attribute (Color.BrightMagenta, Color.Black);
 
 			tv.ColorScheme = new ColorScheme ();
+			tv.LayoutSubviews ();
 			tv.Redraw (tv.Bounds);
 
 			// Normal drawing of the tree view
-			TestHelpers.AssertDriverContentsAre(
+			TestHelpers.AssertDriverContentsAre (
 @"├-normal
 │ ├─pink
 │ └─normal
 └─pink
 ", output);
 			// Should all be the same color
-			TestHelpers.AssertDriverColorsAre(
+			TestHelpers.AssertDriverColorsAre (
 @"00000000
 00000000
 0000000000
@@ -891,7 +901,7 @@ namespace Terminal.Gui.ViewTests {
 			tv.Redraw (tv.Bounds);
 
 			// Same text
-			TestHelpers.AssertDriverContentsAre(
+			TestHelpers.AssertDriverContentsAre (
 @"├-normal
 │ ├─pink
 │ └─normal
@@ -899,7 +909,7 @@ namespace Terminal.Gui.ViewTests {
 ", output);
 			// but now the item (only not lines) appear
 			// in pink when they are the word "pink"
-			TestHelpers.AssertDriverColorsAre(
+			TestHelpers.AssertDriverColorsAre (
 @"00000000
 00001111
 0000000000

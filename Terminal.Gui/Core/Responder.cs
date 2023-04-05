@@ -237,6 +237,7 @@ namespace Terminal.Gui {
 		/// </summary>
 		public virtual void OnVisibleChanged () { }
 
+		// TODO: v2 - nuke this
 		/// <summary>
 		/// Utilty function to determine <paramref name="method"/> is overridden in the <paramref name="subclass"/>.
 		/// </summary>

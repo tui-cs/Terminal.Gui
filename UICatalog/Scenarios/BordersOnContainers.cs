@@ -23,11 +23,11 @@ namespace UICatalog.Scenarios {
 				BorderStyle = borderStyle,
 				DrawMarginFrame = drawMarginFrame,
 				BorderThickness = borderThickness,
-				BorderBrush = borderBrush,
-				Padding = padding,
-				Background = background,
+				ForgroundColor = borderBrush,
+				PaddingThickness = padding,
+				BackgroundColor = background,
 				Effect3D = effect3D,
-				Title = typeName
+				//Title = typeName
 			};
 			smartView.ColorScheme = Colors.TopLevel;
 
@@ -37,7 +37,7 @@ namespace UICatalog.Scenarios {
 				X = Pos.Center (),
 				Y = Pos.Center (),
 			};
-			button.Clicked += (s,e) => MessageBox.Query (20, 7, "Hi", $"I'm a {typeName}?", "Yes", "No");
+			button.Clicked += (s, e) => MessageBox.Query (20, 7, "Hi", $"I'm a {typeName}?", "Yes", "No");
 			var label = new Label ($"I'm a {typeName}") {
 				X = Pos.Center (),
 				Y = Pos.Center () - 1,
@@ -64,18 +64,18 @@ namespace UICatalog.Scenarios {
 				Y = 1,
 				Width = 5
 			};
-			paddingTopEdit.TextChanging += (s,e) => {
+			paddingTopEdit.TextChanging += (s, e) => {
 				try {
-					smartView.Border.Padding = new Thickness (smartView.Border.Padding.Left,
-						int.Parse (e.NewText.ToString ()), smartView.Border.Padding.Right,
-						smartView.Border.Padding.Bottom);
+					smartView.Border.PaddingThickness = new Thickness (smartView.Border.PaddingThickness.Left,
+						int.Parse (e.NewText.ToString ()), smartView.Border.PaddingThickness.Right,
+						smartView.Border.PaddingThickness.Bottom);
 				} catch {
 					if (!e.NewText.IsEmpty) {
 						e.Cancel = true;
 					}
 				}
 			};
-			paddingTopEdit.Text = $"{smartView.Border.Padding.Top}";
+			paddingTopEdit.Text = $"{smartView.Border.PaddingThickness.Top}";
 
 			Add (paddingTopEdit);
 
@@ -84,18 +84,18 @@ namespace UICatalog.Scenarios {
 				Y = 2,
 				Width = 5
 			};
-			paddingLeftEdit.TextChanging += (s,e) => {
+			paddingLeftEdit.TextChanging += (s, e) => {
 				try {
-					smartView.Border.Padding = new Thickness (int.Parse (e.NewText.ToString ()),
-						smartView.Border.Padding.Top, smartView.Border.Padding.Right,
-						smartView.Border.Padding.Bottom);
+					smartView.Border.PaddingThickness = new Thickness (int.Parse (e.NewText.ToString ()),
+						smartView.Border.PaddingThickness.Top, smartView.Border.PaddingThickness.Right,
+						smartView.Border.PaddingThickness.Bottom);
 				} catch {
 					if (!e.NewText.IsEmpty) {
 						e.Cancel = true;
 					}
 				}
 			};
-			paddingLeftEdit.Text = $"{smartView.Border.Padding.Left}";
+			paddingLeftEdit.Text = $"{smartView.Border.PaddingThickness.Left}";
 			Add (paddingLeftEdit);
 
 			var paddingRightEdit = new TextField ("") {
@@ -103,18 +103,18 @@ namespace UICatalog.Scenarios {
 				Y = 2,
 				Width = 5
 			};
-			paddingRightEdit.TextChanging += (s,e) => {
+			paddingRightEdit.TextChanging += (s, e) => {
 				try {
-					smartView.Border.Padding = new Thickness (smartView.Border.Padding.Left,
-						smartView.Border.Padding.Top, int.Parse (e.NewText.ToString ()),
-						smartView.Border.Padding.Bottom);
+					smartView.Border.PaddingThickness = new Thickness (smartView.Border.PaddingThickness.Left,
+						smartView.Border.PaddingThickness.Top, int.Parse (e.NewText.ToString ()),
+						smartView.Border.PaddingThickness.Bottom);
 				} catch {
 					if (!e.NewText.IsEmpty) {
 						e.Cancel = true;
 					}
 				}
 			};
-			paddingRightEdit.Text = $"{smartView.Border.Padding.Right}";
+			paddingRightEdit.Text = $"{smartView.Border.PaddingThickness.Right}";
 			Add (paddingRightEdit);
 
 			var paddingBottomEdit = new TextField ("") {
@@ -122,10 +122,10 @@ namespace UICatalog.Scenarios {
 				Y = 3,
 				Width = 5
 			};
-			paddingBottomEdit.TextChanging += (s,e) => {
+			paddingBottomEdit.TextChanging += (s, e) => {
 				try {
-					smartView.Border.Padding = new Thickness (smartView.Border.Padding.Left,
-						smartView.Border.Padding.Top, smartView.Border.Padding.Right,
+					smartView.Border.PaddingThickness = new Thickness (smartView.Border.PaddingThickness.Left,
+						smartView.Border.PaddingThickness.Top, smartView.Border.PaddingThickness.Right,
 						int.Parse (e.NewText.ToString ()));
 				} catch {
 					if (!e.NewText.IsEmpty) {
@@ -133,15 +133,15 @@ namespace UICatalog.Scenarios {
 					}
 				}
 			};
-			paddingBottomEdit.Text = $"{smartView.Border.Padding.Bottom}";
+			paddingBottomEdit.Text = $"{smartView.Border.PaddingThickness.Bottom}";
 			Add (paddingBottomEdit);
 
 			var replacePadding = new Button ("Replace all based on top") {
 				X = Pos.Left (paddingLeftEdit),
 				Y = 5
 			};
-			replacePadding.Clicked += (s,e) => {
-				smartView.Border.Padding = new Thickness (smartView.Border.Padding.Top);
+			replacePadding.Clicked += (s, e) => {
+				smartView.Border.PaddingThickness = new Thickness (smartView.Border.PaddingThickness.Top);
 				if (paddingTopEdit.Text.IsEmpty) {
 					paddingTopEdit.Text = "0";
 				}
@@ -158,7 +158,7 @@ namespace UICatalog.Scenarios {
 				Y = 1,
 				Width = 5
 			};
-			borderTopEdit.TextChanging += (s,e) => {
+			borderTopEdit.TextChanging += (s, e) => {
 				try {
 					smartView.Border.BorderThickness = new Thickness (smartView.Border.BorderThickness.Left,
 						int.Parse (e.NewText.ToString ()), smartView.Border.BorderThickness.Right,
@@ -178,7 +178,7 @@ namespace UICatalog.Scenarios {
 				Y = 2,
 				Width = 5
 			};
-			borderLeftEdit.TextChanging += (s,e) => {
+			borderLeftEdit.TextChanging += (s, e) => {
 				try {
 					smartView.Border.BorderThickness = new Thickness (int.Parse (e.NewText.ToString ()),
 						smartView.Border.BorderThickness.Top, smartView.Border.BorderThickness.Right,
@@ -197,7 +197,7 @@ namespace UICatalog.Scenarios {
 				Y = 2,
 				Width = 5
 			};
-			borderRightEdit.TextChanging += (s,e) => {
+			borderRightEdit.TextChanging += (s, e) => {
 				try {
 					smartView.Border.BorderThickness = new Thickness (smartView.Border.BorderThickness.Left,
 						smartView.Border.BorderThickness.Top, int.Parse (e.NewText.ToString ()),
@@ -216,7 +216,7 @@ namespace UICatalog.Scenarios {
 				Y = 3,
 				Width = 5
 			};
-			borderBottomEdit.TextChanging += (s,e) => {
+			borderBottomEdit.TextChanging += (s, e) => {
 				try {
 					smartView.Border.BorderThickness = new Thickness (smartView.Border.BorderThickness.Left,
 						smartView.Border.BorderThickness.Top, smartView.Border.BorderThickness.Right,
@@ -234,7 +234,7 @@ namespace UICatalog.Scenarios {
 				X = Pos.Left (borderLeftEdit),
 				Y = 5
 			};
-			replaceBorder.Clicked += (s,e) => {
+			replaceBorder.Clicked += (s, e) => {
 				smartView.Border.BorderThickness = new Thickness (smartView.Border.BorderThickness.Top);
 				if (borderTopEdit.Text.IsEmpty) {
 					borderTopEdit.Text = "0";
@@ -272,7 +272,7 @@ namespace UICatalog.Scenarios {
 			};
 			Add (cbDrawMarginFrame);
 
-			rbBorderStyle.SelectedItemChanged += (s,e) => {
+			rbBorderStyle.SelectedItemChanged += (s, e) => {
 				smartView.Border.BorderStyle = (BorderStyle)e.SelectedItem;
 				smartView.SetNeedsDisplay ();
 				if (cbDrawMarginFrame.Checked != smartView.Border.DrawMarginFrame) {
@@ -301,7 +301,7 @@ namespace UICatalog.Scenarios {
 				Y = 3,
 				Width = 5
 			};
-			effect3DOffsetX.TextChanging += (s,e) => {
+			effect3DOffsetX.TextChanging += (s, e) => {
 				try {
 					smartView.Border.Effect3DOffset = new Point (int.Parse (e.NewText.ToString ()),
 						smartView.Border.Effect3DOffset.Y);
@@ -324,7 +324,7 @@ namespace UICatalog.Scenarios {
 				Y = 3,
 				Width = 5
 			};
-			effect3DOffsetY.TextChanging += (s,e) => {
+			effect3DOffsetY.TextChanging += (s, e) => {
 				try {
 					smartView.Border.Effect3DOffset = new Point (smartView.Border.Effect3DOffset.X,
 						int.Parse (e.NewText.ToString ()));
@@ -354,10 +354,10 @@ namespace UICatalog.Scenarios {
 
 				X = 2,
 				Y = 6,
-				SelectedItem = (int)smartView.Border.Background
+				SelectedItem = (int)smartView.Border.BackgroundColor
 			};
-			rbBackground.SelectedItemChanged += (s,e) => {
-				smartView.Border.Background = (Color)e.SelectedItem;
+			rbBackground.SelectedItemChanged += (s, e) => {
+				smartView.Border.BackgroundColor = (Color)e.SelectedItem;
 			};
 			Add (rbBackground);
 
@@ -371,10 +371,10 @@ namespace UICatalog.Scenarios {
 
 				X = Pos.AnchorEnd (18),
 				Y = 6,
-				SelectedItem = (int)smartView.Border.BorderBrush
+				SelectedItem = (int)smartView.Border.ForgroundColor
 			};
-			rbBorderBrush.SelectedItemChanged += (s,e) => {
-				smartView.Border.BorderBrush = (Color)e.SelectedItem;
+			rbBorderBrush.SelectedItemChanged += (s, e) => {
+				smartView.Border.ForgroundColor = (Color)e.SelectedItem;
 			};
 			Add (rbBorderBrush);
 

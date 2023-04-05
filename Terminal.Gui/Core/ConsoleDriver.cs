@@ -903,6 +903,21 @@ namespace Terminal.Gui {
 		}
 
 		/// <summary>
+		/// Fills the specified rectangle with the specified rune.
+		/// </summary>
+		/// <param name="rect"></param>
+		/// <param name="rune"></param>
+		public virtual void FillRect (Rect rect, System.Rune rune = default)
+		{
+			for (var r = rect.Y; r < rect.Y + rect.Height; r++) {
+				for (var c = rect.X; c < rect.X + rect.Width; c++) {
+					Application.Driver.Move (c, r);
+					Application.Driver.AddRune (rune == default ? ' ' : rune);
+				}
+			}
+		}
+
+		/// <summary>
 		/// Draws the title for a Window-style view incorporating padding. 
 		/// </summary>
 		/// <param name="region">Screen relative region where the frame will be drawn.</param>
@@ -915,14 +930,14 @@ namespace Terminal.Gui {
 		/// <remarks></remarks>
 		public virtual void DrawWindowTitle (Rect region, ustring title, int paddingLeft, int paddingTop, int paddingRight, int paddingBottom, TextAlignment textAlignment = TextAlignment.Left)
 		{
-			var width = region.Width - (paddingLeft + 2) * 2;
-			if (!ustring.IsNullOrEmpty (title) && width > 4 && region.Y + paddingTop <= region.Y + paddingBottom) {
-				Move (region.X + 1 + paddingLeft, region.Y + paddingTop);
-				AddRune (' ');
+			var width = region.Width - (paddingLeft + 1) * 2;
+			if (!ustring.IsNullOrEmpty (title) && width > 2 && region.Y + paddingTop <= region.Y + paddingBottom) {
+				Move (region.X + 2 + paddingLeft, region.Y + paddingTop);
+				//AddRune (' ');
 				var str = title.Sum (r => Math.Max (Rune.ColumnWidth (r), 1)) >= width
 					? TextFormatter.Format (title, width - 2, false, false) [0] : title;
 				AddStr (str);
-				AddRune (' ');
+				//AddRune (' ');
 			}
 		}
 
@@ -1144,25 +1159,6 @@ namespace Terminal.Gui {
 				}
 			}
 		}
-
-		/// <summary>
-		/// Draws a frame on the specified region with the specified padding around the frame.
-		/// </summary>
-		/// <param name="region">Screen relative region where the frame will be drawn.</param>
-		/// <param name="padding">Padding to add on the sides.</param>
-		/// <param name="fill">If set to <c>true</c> it will clear the contents with the current color, otherwise the contents will be left untouched.</param>
-		/// <remarks>This API has been superseded by <see cref="DrawWindowFrame(Rect, int, int, int, int, bool, bool, Border)"/>.</remarks>
-		/// <remarks>This API is equivalent to calling <c>DrawWindowFrame(Rect, p - 1, p - 1, p - 1, p - 1)</c>. In other words,
-		/// A padding value of 0 means there is actually a one cell border.
-		/// </remarks>
-		public virtual void DrawFrame (Rect region, int padding, bool fill)
-		{
-			// DrawFrame assumes the border is always at least one row/col thick
-			// DrawWindowFrame assumes a padding of 0 means NO padding and no frame
-			DrawWindowFrame (new Rect (region.X, region.Y, region.Width, region.Height),
-				padding + 1, padding + 1, padding + 1, padding + 1, border: false, fill: fill);
-		}
-
 
 		/// <summary>
 		/// Suspend the application, typically needs to save the state, suspend the app and upon return, reset the console driver.

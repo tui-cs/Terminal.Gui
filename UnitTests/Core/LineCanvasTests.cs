@@ -426,6 +426,7 @@ namespace Terminal.Gui.CoreTests {
 				Height = 5,
 				Bounds = new Rect (0, 0, 10, 5)
 			};
+			v.LayoutSubviews ();
 
 			var canvasCopy = canvas = new LineCanvas ();
 			v.DrawContentComplete += (s, e) => {

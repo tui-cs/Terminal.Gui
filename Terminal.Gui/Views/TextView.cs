@@ -1412,9 +1412,10 @@ namespace Terminal.Gui {
 		void TextView_Initialized (object sender, EventArgs e)
 		{
 			Autocomplete.HostControl = this;
-
-			Application.Top.AlternateForwardKeyChanged += Top_AlternateForwardKeyChanged;
-			Application.Top.AlternateBackwardKeyChanged += Top_AlternateBackwardKeyChanged;
+			if (Application.Top != null) {
+				Application.Top.AlternateForwardKeyChanged += Top_AlternateForwardKeyChanged;
+				Application.Top.AlternateBackwardKeyChanged += Top_AlternateBackwardKeyChanged;
+			}
 			OnContentsChanged ();
 		}
 
@@ -1476,8 +1477,10 @@ namespace Terminal.Gui {
 			get => base.Frame;
 			set {
 				base.Frame = value;
-				WrapTextModel ();
-				Adjust ();
+				if (IsInitialized) {
+					WrapTextModel ();
+					Adjust ();
+				}
 			}
 		}
 
@@ -1853,7 +1856,7 @@ namespace Terminal.Gui {
 		/// </summary>
 		public override void PositionCursor ()
 		{
-			if (!CanFocus || !Enabled) {
+			if (!CanFocus || !Enabled || Application.Driver == null) {
 				return;
 			}
 
@@ -2356,7 +2359,7 @@ namespace Terminal.Gui {
 		}
 
 		///<inheritdoc/>
-		public override void Redraw (Rect bounds)
+		public override void OnDrawContent (Rect contentArea)
 		{
 			SetNormalColor ();
 
@@ -2397,7 +2400,7 @@ namespace Terminal.Gui {
 					} else {
 						AddRune (col, row, rune);
 					}
-					if (!TextModel.SetCol (ref col, bounds.Right, cols)) {
+					if (!TextModel.SetCol (ref col, contentArea.Right, cols)) {
 						break;
 					}
 					if (idxCol + 1 < lineRuneCount && col + Rune.ColumnWidth (line [idxCol + 1]) > right) {
@@ -2412,7 +2415,7 @@ namespace Terminal.Gui {
 			}
 			if (row < bottom) {
 				SetNormalColor ();
-				ClearRegion (bounds.Left, row, right, bottom);
+				ClearRegion (contentArea.Left, row, right, bottom);
 			}
 
 			PositionCursor ();
@@ -2492,7 +2495,7 @@ namespace Terminal.Gui {
 				InsertText (new KeyEvent () { Key = key });
 			}
 
-			if (NeedDisplay.IsEmpty) {
+			if (_needsDisplay.IsEmpty) {
 				PositionCursor ();
 			} else {
 				Adjust ();
@@ -2647,7 +2650,7 @@ namespace Terminal.Gui {
 		{
 			var offB = OffSetBackground ();
 			var line = GetCurrentLine ();
-			bool need = !NeedDisplay.IsEmpty || wrapNeeded;
+			bool need = !_needsDisplay.IsEmpty || wrapNeeded;
 			var tSize = TextModel.DisplaySize (line, -1, -1, false, TabWidth);
 			var dSize = TextModel.DisplaySize (line, leftColumn, currentColumn, true, TabWidth);
 			if (!wordWrap && currentColumn < leftColumn) {
@@ -2743,7 +2746,7 @@ namespace Terminal.Gui {
 			}
 
 			// Give autocomplete first opportunity to respond to key presses
-			if (SelectedLength == 0 && Autocomplete.ProcessKey (kb)) {
+			if (SelectedLength == 0 && Autocomplete.Suggestions.Count > 0 && Autocomplete.ProcessKey (kb)) {
 				return true;
 			}
 
@@ -3727,7 +3730,7 @@ namespace Terminal.Gui {
 
 		void DoNeededAction ()
 		{
-			if (NeedDisplay.IsEmpty) {
+			if (_needsDisplay.IsEmpty) {
 				PositionCursor ();
 			} else {
 				Adjust ();

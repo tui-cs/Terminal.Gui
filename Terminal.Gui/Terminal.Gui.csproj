@@ -61,8 +61,8 @@
     </EmbeddedResource>
   </ItemGroup>
   <PropertyGroup>
-    <TargetFrameworks>net472;netstandard2.0;net6.0</TargetFrameworks>
-    <LangVersion>9</LangVersion>
+    <TargetFrameworks>net7.0</TargetFrameworks>
+    <LangVersion>9.0</LangVersion>
     <RootNamespace>Terminal.Gui</RootNamespace>
     <AssemblyName>Terminal.Gui</AssemblyName>
     <DocumentationFile>bin\Release\Terminal.Gui.xml</DocumentationFile>

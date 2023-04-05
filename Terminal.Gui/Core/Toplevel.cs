@@ -190,7 +190,7 @@ namespace Terminal.Gui {
 		/// <param name="frame">A superview-relative rectangle specifying the location and size for the new Toplevel</param>
 		public Toplevel (Rect frame) : base (frame)
 		{
-			Initialize ();
+			SetInitialProperties ();
 		}
 
 		/// <summary>
@@ -199,12 +199,12 @@ namespace Terminal.Gui {
 		/// </summary>
 		public Toplevel () : base ()
 		{
-			Initialize ();
+			SetInitialProperties ();
 			Width = Dim.Fill ();
 			Height = Dim.Fill ();
 		}
 
-		void Initialize ()
+		void SetInitialProperties ()
 		{
 			ColorScheme = Colors.TopLevel;
 
@@ -614,8 +614,20 @@ namespace Terminal.Gui {
 			}
 		}
 
+		/// <summary>
+		///  Ensures the new position of the <see cref="Toplevel"/> is within the bounds of the screen (e.g. for dragging a Window).
+		///  The `out` parameters are the new X and Y coordinates.
+		/// </summary>
+		/// <param name="top">The Toplevel that is to be moved.</param>
+		/// <param name="x">The target x location.</param>
+		/// <param name="y">The target y location.</param>
+		/// <param name="nx">The x location after ensuring <paramref name="top"/> will remain visible.</param>
+		/// <param name="ny">The y location after ensuring <paramref name="top"/> will remain visible.</param>
+		/// <param name="mb">The new top most menuBar</param>
+		/// <param name="sb">The new top most statusBar</param>
+		/// <returns>The <see cref="Toplevel"/> that is Application.Top</returns>
 		internal View EnsureVisibleBounds (Toplevel top, int x, int y,
-			out int nx, out int ny, out MenuBar mb, out StatusBar sb)
+					out int nx, out int ny, out MenuBar mb, out StatusBar sb)
 		{
 			int l;
 			View superView;
@@ -626,7 +638,8 @@ namespace Terminal.Gui {
 				l = top.SuperView.Frame.Width;
 				superView = top.SuperView;
 			}
-			var mfLength = top.Border?.DrawMarginFrame == true ? 2 : 1;
+			// BUGBUG: v2 hack for now
+			var mfLength = top.BorderFrame.Thickness.Top > 0 ? 2 : 1;
 			if (top.Frame.Width <= l) {
 				nx = Math.Max (x, 0);
 				nx = nx + top.Frame.Width > l ? Math.Max (l - top.Frame.Width, 0) : nx;
@@ -683,6 +696,7 @@ namespace Terminal.Gui {
 			return superView;
 		}
 
+		// TODO: v2 - Not sure this is needed anymore.
 		internal void PositionToplevels ()
 		{
 			PositionToplevel (this);
@@ -731,48 +745,47 @@ namespace Terminal.Gui {
 		}
 
 		///<inheritdoc/>
-		public override void Redraw (Rect bounds)
-		{
-			if (!Visible) {
-				return;
-			}
+		//public override void Redraw (Rect bounds)
+		//{
+		//	if (!Visible) {
+		//		return;
+		//	}
 
-			if (!NeedDisplay.IsEmpty || ChildNeedsDisplay || LayoutNeeded) {
-				Driver.SetAttribute (GetNormalColor ());
+		//	if (!_needsDisplay.IsEmpty || _childNeedsDisplay || LayoutNeeded) {
+		//		Driver.SetAttribute (GetNormalColor ());
 
-				// This is the Application.Top. Clear just the region we're being asked to redraw 
-				// (the bounds passed to us).
-				Clear ();
-				Driver.SetAttribute (Enabled ? Colors.Base.Normal : Colors.Base.Disabled);
+		//		// This is the Application.Top. Clear just the region we're being asked to redraw 
+		//		// (the bounds passed to us).
+		//		Clear ();
+		//		Driver.SetAttribute (Enabled ? Colors.Base.Normal : Colors.Base.Disabled);
 
-				LayoutSubviews ();
-				PositionToplevels ();
+		//		LayoutSubviews ();
+		//		PositionToplevels ();
 
-				if (this == Application.MdiTop) {
-					foreach (var top in Application.MdiChildes.AsEnumerable ().Reverse ()) {
-						if (top.Frame.IntersectsWith (bounds)) {
-							if (top != this && !top.IsCurrentTop && !OutsideTopFrame (top) && top.Visible) {
-								top.SetNeedsLayout ();
-								top.SetNeedsDisplay (top.Bounds);
-								top.Redraw (top.Bounds);
-							}
-						}
-					}
-				}
+		//		if (this == Application.MdiTop) {
+		//			foreach (var top in Application.MdiChildes.AsEnumerable ().Reverse ()) {
+		//				if (top.Frame.IntersectsWith (bounds)) {
+		//					if (top != this && !top.IsCurrentTop && !OutsideTopFrame (top) && top.Visible) {
+		//						top.SetNeedsLayout ();
+		//						top.SetNeedsDisplay (top.Bounds);
+		//						top.Redraw (top.Bounds);
+		//					}
+		//				}
+		//			}
+		//		}
 
-				foreach (var view in Subviews) {
-					if (view.Frame.IntersectsWith (bounds) && !OutsideTopFrame (this)) {
-						view.SetNeedsLayout ();
-						view.SetNeedsDisplay (view.Bounds);
-					}
-				}
+		//		foreach (var view in Subviews) {
+		//			if (view.Frame.IntersectsWith (bounds) && !OutsideTopFrame (this)) {
+		//				view.SetNeedsLayout ();
+		//				view.SetNeedsDisplay (view.Bounds);
+		//			}
+		//		}
 
-				ClearLayoutNeeded ();
-				ClearNeedsDisplay ();
-			}
+		//		// BUGBUG: shouldn't we just return here? the call to base.Redraw below is redundant
+		//	}
 
-			base.Redraw (Bounds);
-		}
+		//	base.Redraw (Bounds);
+		//}
 
 		bool OutsideTopFrame (Toplevel top)
 		{

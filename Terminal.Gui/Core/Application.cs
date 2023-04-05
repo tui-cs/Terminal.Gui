@@ -795,10 +795,11 @@ namespace Terminal.Gui {
 
 			var view = View.FindDeepestView (Current, me.X, me.Y, out int rx, out int ry);
 
-			if (view != null && view.WantContinuousButtonPressed)
+			if (view != null && view.WantContinuousButtonPressed) {
 				WantContinuousButtonPressedView = view;
-			else
+			} else {
 				WantContinuousButtonPressedView = null;
+			}
 			if (view != null) {
 				me.View = view;
 			}
@@ -1012,8 +1013,9 @@ namespace Terminal.Gui {
 			}
 
 			Driver.PrepareToRun (MainLoop, ProcessKeyEvent, ProcessKeyDownEvent, ProcessKeyUpEvent, ProcessMouseEvent);
-			if (toplevel.LayoutStyle == LayoutStyle.Computed)
+			if (toplevel.LayoutStyle == LayoutStyle.Computed) {
 				toplevel.SetRelativeLayout (new Rect (0, 0, Driver.Cols, Driver.Rows));
+			}
 			toplevel.LayoutSubviews ();
 			toplevel.PositionToplevels ();
 			toplevel.WillPresent ();
@@ -1228,7 +1230,7 @@ namespace Terminal.Gui {
 			firstIteration = false;
 
 			if (state.Toplevel != Top
-				&& (!Top.NeedDisplay.IsEmpty || Top.ChildNeedsDisplay || Top.LayoutNeeded)) {
+				&& (!Top._needsDisplay.IsEmpty || Top._childNeedsDisplay || Top.LayoutNeeded)) {
 				state.Toplevel.SetNeedsDisplay (state.Toplevel.Bounds);
 				Top.Redraw (Top.Bounds);
 				foreach (var top in toplevels.Reverse ()) {
@@ -1240,16 +1242,16 @@ namespace Terminal.Gui {
 			}
 			if (toplevels.Count == 1 && state.Toplevel == Top
 				&& (Driver.Cols != state.Toplevel.Frame.Width || Driver.Rows != state.Toplevel.Frame.Height)
-				&& (!state.Toplevel.NeedDisplay.IsEmpty || state.Toplevel.ChildNeedsDisplay || state.Toplevel.LayoutNeeded)) {
+				&& (!state.Toplevel._needsDisplay.IsEmpty || state.Toplevel._childNeedsDisplay || state.Toplevel.LayoutNeeded)) {
 
 				Driver.SetAttribute (Colors.TopLevel.Normal);
 				state.Toplevel.Clear (new Rect (0, 0, Driver.Cols, Driver.Rows));
 
 			}
-			if (!state.Toplevel.NeedDisplay.IsEmpty || state.Toplevel.ChildNeedsDisplay || state.Toplevel.LayoutNeeded
+
+			if (!state.Toplevel._needsDisplay.IsEmpty || state.Toplevel._childNeedsDisplay || state.Toplevel.LayoutNeeded
 				|| MdiChildNeedsDisplay ()) {
 				state.Toplevel.Redraw (state.Toplevel.Bounds);
-				state.Toplevel.OnDrawContentComplete (state.Toplevel.Bounds);
 				if (DebugDrawBounds) {
 					DrawBounds (state.Toplevel);
 				}
@@ -1259,7 +1261,7 @@ namespace Terminal.Gui {
 				Driver.UpdateCursor ();
 			}
 			if (state.Toplevel != Top && !state.Toplevel.Modal
-				&& (!Top.NeedDisplay.IsEmpty || Top.ChildNeedsDisplay || Top.LayoutNeeded)) {
+				&& (!Top._needsDisplay.IsEmpty || Top._childNeedsDisplay || Top.LayoutNeeded)) {
 				Top.Redraw (Top.Bounds);
 			}
 		}
@@ -1288,7 +1290,7 @@ namespace Terminal.Gui {
 			}
 
 			foreach (var top in toplevels) {
-				if (top != Current && top.Visible && (!top.NeedDisplay.IsEmpty || top.ChildNeedsDisplay || top.LayoutNeeded)) {
+				if (top != Current && top.Visible && (!top._needsDisplay.IsEmpty || top._childNeedsDisplay || top.LayoutNeeded)) {
 					MdiTop.SetSubViewNeedsDisplay ();
 					return true;
 				}

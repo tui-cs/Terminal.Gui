@@ -29,9 +29,13 @@ namespace Terminal.Gui {
 	/// </para>
 	/// </remarks>
 	public class ScrollView : View {
+
+		// The ContentView is the view that contains the subviews  and content that are being scrolled
+		// The ContentView is the size of the ContentSize and is offset by the ContentOffset
 		private class ContentView : View {
 			public ContentView (Rect frame) : base (frame)
 			{
+				Id = "ScrollView.ContentView";
 				CanFocus = true;
 			}
 		}
@@ -66,9 +70,7 @@ namespace Terminal.Gui {
 				Width = 1,
 				Height = Dim.Fill (showHorizontalScrollIndicator ? 1 : 0)
 			};
-			vertical.ChangedPosition += delegate {
-				ContentOffset = new Point (ContentOffset.X, vertical.Position);
-			};
+
 			vertical.Host = this;
 			horizontal = new ScrollBarView (1, 0, isVertical: false) {
 				X = 0,
@@ -76,9 +78,7 @@ namespace Terminal.Gui {
 				Width = Dim.Fill (showVerticalScrollIndicator ? 1 : 0),
 				Height = 1
 			};
-			horizontal.ChangedPosition += delegate {
-				ContentOffset = new Point (horizontal.Position, ContentOffset.Y);
-			};
+
 			horizontal.Host = this;
 			vertical.OtherScrollBarView = horizontal;
 			horizontal.OtherScrollBarView = vertical;
@@ -122,7 +122,32 @@ namespace Terminal.Gui {
 			AddKeyBinding (Key.End, Command.BottomEnd);
 			AddKeyBinding (Key.Home | Key.CtrlMask, Command.LeftHome);
 			AddKeyBinding (Key.End | Key.CtrlMask, Command.RightEnd);
+
+			Initialized += (s, e) => {
+				if (!vertical.IsInitialized) {
+					vertical.BeginInit ();
+					vertical.EndInit ();
+				}
+				if (!horizontal.IsInitialized) {
+					horizontal.BeginInit ();
+					horizontal.EndInit ();
+				}
+				SetContentOffset (contentOffset);
+				contentView.Frame = new Rect (ContentOffset, ContentSize);
+				vertical.ChangedPosition += delegate {
+					ContentOffset = new Point (ContentOffset.X, vertical.Position);
+				};
+				horizontal.ChangedPosition += delegate {
+					ContentOffset = new Point (horizontal.Position, ContentOffset.Y);
+				};
+			};
 		}
+
+		//public override void BeginInit ()
+		//{
+		//	SetContentOffset (contentOffset);
+		//	base.BeginInit ();
+		//}
 
 		Size contentSize;
 		Point contentOffset;
@@ -159,21 +184,30 @@ namespace Terminal.Gui {
 				return contentOffset;
 			}
 			set {
-				var co = new Point (-Math.Abs (value.X), -Math.Abs (value.Y));
-				if (contentOffset != co) {
-					contentOffset = co;
-					contentView.Frame = new Rect (contentOffset, contentSize);
-					var p = Math.Max (0, -contentOffset.Y);
-					if (vertical.Position != p) {
-						vertical.Position = Math.Max (0, -contentOffset.Y);
-					}
-					p = Math.Max (0, -contentOffset.X);
-					if (horizontal.Position != p) {
-						horizontal.Position = Math.Max (0, -contentOffset.X);
-					}
-					SetNeedsDisplay ();
+				if (!IsInitialized) {
+					// We're not initialized so we can't do anything fancy. Just cache value.
+					contentOffset = new Point (-Math.Abs (value.X), -Math.Abs (value.Y)); ;
+					return;
 				}
+
+				SetContentOffset (value);
 			}
+		}
+
+		private void SetContentOffset (Point offset)
+		{
+			var co = new Point (-Math.Abs (offset.X), -Math.Abs (offset.Y));
+			contentOffset = co;
+			contentView.Frame = new Rect (contentOffset, contentSize);
+			var p = Math.Max (0, -contentOffset.Y);
+			if (vertical.Position != p) {
+				vertical.Position = Math.Max (0, -contentOffset.Y);
+			}
+			p = Math.Max (0, -contentOffset.X);
+			if (horizontal.Position != p) {
+				horizontal.Position = Math.Max (0, -contentOffset.X);
+			}
+			SetNeedsDisplay ();
 		}
 
 		/// <summary>
@@ -322,38 +356,40 @@ namespace Terminal.Gui {
 		}
 
 		/// <inheritdoc/>
-		public override void Redraw (Rect region)
+		public override void Redraw (Rect bounds)
 		{
-			Driver.SetAttribute (GetNormalColor ());
 			SetViewsNeedsDisplay ();
-			//Clear ();
 
 			var savedClip = ClipToBounds ();
+			Driver.SetAttribute (GetNormalColor ());
+			Clear ();
+
+			contentView.Redraw (contentView.Bounds);
 			OnDrawContent (new Rect (ContentOffset,
 				new Size (Math.Max (Bounds.Width - (ShowVerticalScrollIndicator ? 1 : 0), 0),
 					Math.Max (Bounds.Height - (ShowHorizontalScrollIndicator ? 1 : 0), 0))));
-			contentView.Redraw (contentView.Frame);
-			Driver.Clip = savedClip;
 
 			if (autoHideScrollBars) {
 				ShowHideScrollBars ();
 			} else {
 				if (ShowVerticalScrollIndicator) {
-					vertical.SetRelativeLayout (Bounds);
+					//vertical.SetRelativeLayout (Bounds);
 					vertical.Redraw (vertical.Bounds);
 				}
 
 				if (ShowHorizontalScrollIndicator) {
-					horizontal.SetRelativeLayout (Bounds);
+					//horizontal.SetRelativeLayout (Bounds);
 					horizontal.Redraw (horizontal.Bounds);
 				}
 			}
 
 			// Fill in the bottom left corner
+			// BUGBUG: ScrollBarView should be responsible for this via contentBottomRightCorner
 			if (ShowVerticalScrollIndicator && ShowHorizontalScrollIndicator) {
 				AddRune (Bounds.Width - 1, Bounds.Height - 1, ' ');
 			}
 			Driver.SetAttribute (GetNormalColor ());
+			Driver.Clip = savedClip;
 		}
 
 		void ShowHideScrollBars ()
@@ -508,7 +544,7 @@ namespace Terminal.Gui {
 		{
 			if (me.Flags != MouseFlags.WheeledDown && me.Flags != MouseFlags.WheeledUp &&
 				me.Flags != MouseFlags.WheeledRight && me.Flags != MouseFlags.WheeledLeft &&
-//				me.Flags != MouseFlags.Button1Pressed && me.Flags != MouseFlags.Button1Clicked &&
+				//				me.Flags != MouseFlags.Button1Pressed && me.Flags != MouseFlags.Button1Clicked &&
 				!me.Flags.HasFlag (MouseFlags.Button1Pressed | MouseFlags.ReportMousePosition)) {
 				return false;
 			}

@@ -10,23 +10,16 @@ namespace UICatalog.Scenarios {
 			Application.Init ();
 
 			var borderStyle = BorderStyle.Double;
-			var drawMarginFrame = false;
 			var borderThickness = new Thickness (1, 2, 3, 4);
-			var borderBrush = Color.BrightMagenta;
-			;
-			var padding = new Thickness (1, 2, 3, 4);
-			var background = Color.Cyan;
-			var effect3D = true;
+			var padding = 1;
 
-			var win = new Window (new Rect (5, 5, 40, 20), "Test", 8,
-				new Border () {
+			Application.Top.Text = $"Border Thickness: {borderThickness}\nPadding: {padding}";
+
+			var win = new Window (new Rect (5, 5, 40, 20), "Window",
+				padding: padding,
+				border: new Border () {
 					BorderStyle = borderStyle,
-					DrawMarginFrame = drawMarginFrame,
-					BorderThickness = borderThickness,
-					BorderBrush = borderBrush,
-					Padding = padding,
-					Background = background,
-					Effect3D = effect3D
+					BorderThickness = borderThickness
 				});
 
 			var tf1 = new TextField ("1234567890") { Width = 10 };
@@ -54,19 +47,10 @@ namespace UICatalog.Scenarios {
 			win.Add (tf1, button, label, tv, tf2);
 			Application.Top.Add (win);
 
-			var top2 = new Border.ToplevelContainer (new Rect (50, 5, 40, 20),
-				new Border () {
-					BorderStyle = borderStyle,
-					DrawMarginFrame = drawMarginFrame,
-					BorderThickness = borderThickness,
-					BorderBrush = borderBrush,
-					Padding = padding,
-					Background = background,
-					Effect3D = effect3D,
-					Title = "Test2"
-				}) {
-				ColorScheme = Colors.Base,
-			};
+			var topLevel = new Toplevel (new Rect (50, 5, 40, 20));
+			//topLevel.BorderFrame.Thickness = borderThickness;
+			//topLevel.BorderFrame.BorderStyle = borderStyle;
+			//topLevel.Padding.Thickness = paddingThickness;
 
 			var tf3 = new TextField ("1234567890") { Width = 10 };
 
@@ -90,19 +74,18 @@ namespace UICatalog.Scenarios {
 				Y = Pos.AnchorEnd (1),
 				Width = 10
 			};
-			top2.Add (tf3, button2, label2, tv2, tf4);
-			Application.Top.Add (top2);
+			topLevel.Add (tf3, button2, label2, tv2, tf4);
+			Application.Top.Add (topLevel);
 
-			var frm = new FrameView (new Rect (95, 5, 40, 20), "Test3", null,
-				new Border () {
+			var frameView = new FrameView (new Rect (95, 5, 40, 20), "FrameView", null,
+				border: new Border () {
 					BorderStyle = borderStyle,
-					DrawMarginFrame = drawMarginFrame,
-					BorderThickness = borderThickness,
-					BorderBrush = borderBrush,
-					Padding = padding,
-					Background = background,
-					Effect3D = effect3D
-				}) { ColorScheme = Colors.Base };
+					BorderThickness = borderThickness
+				}
+			);
+			//frameView.BorderFrame.Thickness = borderThickness;
+			//frameView.BorderFrame.BorderStyle = borderStyle;
+			//frameView.Padding.Thickness = paddingThickness;
 
 			var tf5 = new TextField ("1234567890") { Width = 10 };
 
@@ -126,8 +109,8 @@ namespace UICatalog.Scenarios {
 				Y = Pos.AnchorEnd (1),
 				Width = 10
 			};
-			frm.Add (tf5, button3, label3, tv3, tf6);
-			Application.Top.Add (frm);
+			frameView.Add (tf5, button3, label3, tv3, tf6);
+			Application.Top.Add (frameView);
 
 			Application.Run ();
 		}

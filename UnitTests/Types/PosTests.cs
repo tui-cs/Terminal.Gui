@@ -78,11 +78,6 @@ namespace Terminal.Gui.TypeTests {
 
 			Assert.Equal (new Rect (0, 0, 80, 25), top.Frame);
 			Assert.Equal (new Rect (0, 0, 80, 25), win.Frame);
-			Assert.Equal (new Rect (1, 1, 78, 23), win.Subviews [0].Frame);
-			Assert.Equal ("ContentView()({X=1,Y=1,Width=78,Height=23})", win.Subviews [0].ToString ());
-			Assert.Equal (new Rect (1, 1, 79, 24), new Rect (
-				win.Subviews [0].Frame.Left, win.Subviews [0].Frame.Top,
-				win.Subviews [0].Frame.Right, win.Subviews [0].Frame.Bottom));
 			Assert.Equal (new Rect (68, 22, 10, 1), tv.Frame);
 		}
 
@@ -113,10 +108,6 @@ namespace Terminal.Gui.TypeTests {
 			Assert.Equal (new Rect (0, 0, 80, 1), menu.Frame);
 			Assert.Equal (new Rect (0, 24, 80, 1), status.Frame);
 			Assert.Equal (new Rect (0, 1, 80, 23), win.Frame);
-			Assert.Equal (new Rect (1, 1, 78, 21), win.Subviews [0].Frame);
-			Assert.Equal (new Rect (1, 1, 79, 22), new Rect (
-				win.Subviews [0].Frame.Left, win.Subviews [0].Frame.Top,
-				win.Subviews [0].Frame.Right, win.Subviews [0].Frame.Bottom));
 			Assert.Equal (new Rect (68, 20, 10, 1), tv.Frame);
 		}
 
@@ -144,11 +135,6 @@ namespace Terminal.Gui.TypeTests {
 			Assert.True (label.AutoSize);
 			Assert.Equal (new Rect (0, 0, 40, 10), top.Frame);
 			Assert.Equal (new Rect (0, 0, 40, 10), win.Frame);
-			Assert.Equal (new Rect (1, 1, 38, 8), win.Subviews [0].Frame);
-			Assert.Equal ("ContentView()({X=1,Y=1,Width=38,Height=8})", win.Subviews [0].ToString ());
-			Assert.Equal (new Rect (0, 0, 40, 10), new Rect (
-				win.Frame.Left, win.Frame.Top,
-				win.Frame.Right, win.Frame.Bottom));
 			Assert.Equal (new Rect (0, 7, 38, 1), label.Frame);
 			var expected = @"
 ┌──────────────────────────────────────┐
@@ -191,11 +177,6 @@ namespace Terminal.Gui.TypeTests {
 			Assert.Equal (29, label.Text.Length);
 			Assert.Equal (new Rect (0, 0, 40, 10), top.Frame);
 			Assert.Equal (new Rect (0, 0, 40, 10), win.Frame);
-			Assert.Equal (new Rect (1, 1, 38, 8), win.Subviews [0].Frame);
-			Assert.Equal ("ContentView()({X=1,Y=1,Width=38,Height=8})", win.Subviews [0].ToString ());
-			Assert.Equal (new Rect (0, 0, 40, 10), new Rect (
-				win.Frame.Left, win.Frame.Top,
-				win.Frame.Right, win.Frame.Bottom));
 			Assert.Equal (new Rect (0, 7, 38, 1), label.Frame);
 			var expected = @"
 ┌──────────────────────────────────────┐
@@ -240,10 +221,6 @@ namespace Terminal.Gui.TypeTests {
 			Assert.Equal (new Rect (0, 0, 80, 1), menu.Frame);
 			Assert.Equal (new Rect (0, 24, 80, 1), status.Frame);
 			Assert.Equal (new Rect (0, 1, 80, 23), win.Frame);
-			Assert.Equal (new Rect (1, 1, 78, 21), win.Subviews [0].Frame);
-			Assert.Equal (new Rect (0, 1, 80, 24), new Rect (
-				win.Frame.Left, win.Frame.Top,
-				win.Frame.Right, win.Frame.Bottom));
 			Assert.Equal (new Rect (0, 20, 78, 1), label.Frame);
 			var expected = @"
  Menu                                                                           
@@ -303,10 +280,6 @@ namespace Terminal.Gui.TypeTests {
 			Assert.Equal (new Rect (0, 0, 80, 1), menu.Frame);
 			Assert.Equal (new Rect (0, 24, 80, 1), status.Frame);
 			Assert.Equal (new Rect (0, 1, 80, 23), win.Frame);
-			Assert.Equal (new Rect (1, 1, 78, 21), win.Subviews [0].Frame);
-			Assert.Equal (new Rect (0, 1, 80, 24), new Rect (
-				win.Frame.Left, win.Frame.Top,
-				win.Frame.Right, win.Frame.Bottom));
 			Assert.Equal (new Rect (0, 20, 78, 1), label.Frame);
 			var expected = @"
  Menu                                                                           
@@ -784,52 +757,51 @@ namespace Terminal.Gui.TypeTests {
 
 		// DONE: Test PosCombine
 		// DONE: Test operators
-		[Fact]
-		public void PosCombine_Do_Not_Throws ()
-		{
-			Application.Init (new FakeDriver ());
+		// BUGBUG: v2 - This test is bogus. v1 and references it's superview's (f) superview (w). 
+		//[Fact]
+		//public void PosCombine_Do_Not_Throws ()
+		//{
+		//	Application.Init (new FakeDriver ());
 
-			var t = Application.Top;
+		//	var w = new Window ("w") {
+		//		X = Pos.Left (Application.Top) + 2,
+		//		Y = Pos.Top (Application.Top) + 2
+		//	};
+		//	var f = new FrameView ("f");
+		//	var v1 = new View ("v1") {
+		//		X = Pos.Left (w) + 2,
+		//		Y = Pos.Top (w) + 2
+		//	};
+		//	var v2 = new View ("v2") {
+		//		X = Pos.Left (v1) + 2,
+		//		Y = Pos.Top (v1) + 2
+		//	};
 
-			var w = new Window ("w") {
-				X = Pos.Left (t) + 2,
-				Y = Pos.Top (t) + 2
-			};
-			var f = new FrameView ("f");
-			var v1 = new View ("v1") {
-				X = Pos.Left (w) + 2,
-				Y = Pos.Top (w) + 2
-			};
-			var v2 = new View ("v2") {
-				X = Pos.Left (v1) + 2,
-				Y = Pos.Top (v1) + 2
-			};
+		//	f.Add (v1, v2);
+		//	w.Add (f);
+		//	Application.Top.Add (w);
 
-			f.Add (v1, v2);
-			w.Add (f);
-			t.Add (w);
+		//	f.X = Pos.X (Application.Top) + Pos.X (v2) - Pos.X (v1);
+		//	f.Y = Pos.Y (Application.Top) + Pos.Y (v2) - Pos.Y (v1);
 
-			f.X = Pos.X (t) + Pos.X (v2) - Pos.X (v1);
-			f.Y = Pos.Y (t) + Pos.Y (v2) - Pos.Y (v1);
+		//	Application.Top.LayoutComplete += (s, e) => {
+		//		Assert.Equal (0, Application.Top.Frame.X);
+		//		Assert.Equal (0, Application.Top.Frame.Y);
+		//		Assert.Equal (2, w.Frame.X);
+		//		Assert.Equal (2, w.Frame.Y);
+		//		Assert.Equal (2, f.Frame.X);
+		//		Assert.Equal (2, f.Frame.Y);
+		//		Assert.Equal (4, v1.Frame.X);
+		//		Assert.Equal (4, v1.Frame.Y);
+		//		Assert.Equal (6, v2.Frame.X);
+		//		Assert.Equal (6, v2.Frame.Y);
+		//	};
 
-			t.Ready += (s, e) => {
-				Assert.Equal (0, t.Frame.X);
-				Assert.Equal (0, t.Frame.Y);
-				Assert.Equal (2, w.Frame.X);
-				Assert.Equal (2, w.Frame.Y);
-				Assert.Equal (2, f.Frame.X);
-				Assert.Equal (2, f.Frame.Y);
-				Assert.Equal (4, v1.Frame.X);
-				Assert.Equal (4, v1.Frame.Y);
-				Assert.Equal (6, v2.Frame.X);
-				Assert.Equal (6, v2.Frame.Y);
-			};
+		//	Application.Iteration += () => Application.RequestStop ();
 
-			Application.Iteration += () => Application.RequestStop ();
-
-			Application.Run ();
-			Application.Shutdown ();
-		}
+		//	Application.Run ();
+		//	Application.Shutdown ();
+		//}
 
 		[Fact]
 		public void PosCombine_Will_Throws ()

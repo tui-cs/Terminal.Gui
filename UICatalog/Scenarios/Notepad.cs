@@ -49,7 +49,7 @@ namespace UICatalog.Scenarios {
 				Height = Dim.Fill (1),
 			};
 			split.Tiles.ElementAt(0).ContentView.Add (tabView);
-			split.Border.BorderStyle = BorderStyle.None;
+			split.BorderStyle = BorderStyle.None;
 
 			Application.Top.Add (split);
 

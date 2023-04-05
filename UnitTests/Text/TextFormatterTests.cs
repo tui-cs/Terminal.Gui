@@ -3060,8 +3060,6 @@ Demo Simple Rune
 			Application.Top.Add (label);
 			Application.Begin (Application.Top);
 
-			Assert.True (label.AutoSize);
-			Assert.Equal (new Rect (0, 0, 1, 16), label.Frame);
 			Assert.NotNull (label.Width);
 			Assert.NotNull (label.Height);
 
@@ -3114,9 +3112,6 @@ e
 			};
 			Application.Top.Add (label);
 			Application.Begin (Application.Top);
-
-			Assert.True (label.AutoSize);
-			Assert.Equal (new Rect (0, 0, 2, 7), label.Frame);
 
 			var expected = @"
 デ
@@ -3467,7 +3462,7 @@ This TextFormatter (tf2) is rewritten.
 				Height = 1,
 				Text = text
 			};
-			var win = new Window ("Window") {
+			var win = new Window () {
 				Width = Dim.Fill (),
 				Height = Dim.Fill ()
 			};
@@ -3484,7 +3479,7 @@ This TextFormatter (tf2) is rewritten.
 			Assert.Equal (new Rect (0, 0, 10, 4), win.Frame);
 			Assert.Equal (new Rect (0, 0, 10, 4), Application.Top.Frame);
 			var expected = @"
-┌ Wind ──┐
+┌────────┐
 │Vie     │
 │        │
 └────────┘
@@ -3502,7 +3497,7 @@ This TextFormatter (tf2) is rewritten.
 			Assert.Equal (new Size (0, 1), view.TextFormatter.Size);
 			Assert.Equal (new List<ustring> () { ustring.Empty }, view.TextFormatter.Lines);
 			expected = @"
-┌ Wind ──┐
+┌────────┐
 │        │
 │        │
 └────────┘
@@ -3520,7 +3515,7 @@ This TextFormatter (tf2) is rewritten.
 				Width = Dim.Fill () - text.Length,
 				Text = text
 			};
-			var win = new Window ("Window") {
+			var win = new Window () {
 				Width = Dim.Fill (),
 				Height = Dim.Fill ()
 			};
@@ -3537,7 +3532,7 @@ This TextFormatter (tf2) is rewritten.
 			Assert.Equal (new Rect (0, 0, 10, 4), win.Frame);
 			Assert.Equal (new Rect (0, 0, 10, 4), Application.Top.Frame);
 			var expected = @"
-┌ Wind ──┐
+┌────────┐
 │Vie     │
 │        │
 └────────┘
@@ -3556,7 +3551,7 @@ This TextFormatter (tf2) is rewritten.
 			var exception = Record.Exception (() => Assert.Equal (new List<ustring> () { ustring.Empty }, view.TextFormatter.Lines));
 			Assert.Null (exception);
 			expected = @"
-┌ Wind ──┐
+┌────────┐
 │        │
 │        │
 └────────┘
@@ -3575,7 +3570,7 @@ This TextFormatter (tf2) is rewritten.
 				Height = 1,
 				Text = text
 			};
-			var win = new Window ("Window") {
+			var win = new Window () {
 				Width = Dim.Fill (),
 				Height = Dim.Fill ()
 			};
@@ -3592,7 +3587,7 @@ This TextFormatter (tf2) is rewritten.
 			Assert.Equal (new Rect (0, 0, 10, 4), win.Frame);
 			Assert.Equal (new Rect (0, 0, 10, 4), Application.Top.Frame);
 			var expected = @"
-┌ Wind ──┐
+┌────────┐
 │Label   │
 │        │
 └────────┘
@@ -3611,7 +3606,7 @@ This TextFormatter (tf2) is rewritten.
 			Assert.Equal (new Size (5, 1), label.TextFormatter.Size);
 			Assert.Single (label.TextFormatter.Lines);
 			expected = @"
-┌ Wind ──┐
+┌────────┐
 │Label   │
 │        │
 └────────┘
@@ -3631,7 +3626,7 @@ This TextFormatter (tf2) is rewritten.
 				Text = text,
 				AutoSize = false
 			};
-			var win = new Window ("Window") {
+			var win = new Window () {
 				Width = Dim.Fill (),
 				Height = Dim.Fill ()
 			};
@@ -3648,7 +3643,7 @@ This TextFormatter (tf2) is rewritten.
 			Assert.Equal (new Rect (0, 0, 10, 4), win.Frame);
 			Assert.Equal (new Rect (0, 0, 10, 4), Application.Top.Frame);
 			var expected = @"
-┌ Wind ──┐
+┌────────┐
 │Lab     │
 │        │
 └────────┘
@@ -3667,7 +3662,7 @@ This TextFormatter (tf2) is rewritten.
 			Assert.Equal (new Size (0, 1), label.TextFormatter.Size);
 			Assert.Equal (new List<ustring> { ustring.Empty }, label.TextFormatter.Lines);
 			expected = @"
-┌ Wind ──┐
+┌────────┐
 │        │
 │        │
 └────────┘
@@ -3685,7 +3680,7 @@ This TextFormatter (tf2) is rewritten.
 				Width = Dim.Fill () - text.Length,
 				Text = text
 			};
-			var win = new Window ("Window") {
+			var win = new Window () {
 				Width = Dim.Fill (),
 				Height = Dim.Fill ()
 			};
@@ -3702,7 +3697,7 @@ This TextFormatter (tf2) is rewritten.
 			Assert.Equal (new Rect (0, 0, 10, 4), win.Frame);
 			Assert.Equal (new Rect (0, 0, 10, 4), Application.Top.Frame);
 			var expected = @"
-┌ Wind ──┐
+┌────────┐
 │Label   │
 │        │
 └────────┘
@@ -3721,7 +3716,7 @@ This TextFormatter (tf2) is rewritten.
 			var exception = Record.Exception (() => Assert.Single (label.TextFormatter.Lines));
 			Assert.Null (exception);
 			expected = @"
-┌ Wind ──┐
+┌────────┐
 │Label   │
 │        │
 └────────┘
@@ -3740,7 +3735,7 @@ This TextFormatter (tf2) is rewritten.
 				Text = text,
 				AutoSize = false
 			};
-			var win = new Window ("Window") {
+			var win = new Window () {
 				Width = Dim.Fill (),
 				Height = Dim.Fill ()
 			};
@@ -3757,7 +3752,7 @@ This TextFormatter (tf2) is rewritten.
 			Assert.Equal (new Rect (0, 0, 10, 4), win.Frame);
 			Assert.Equal (new Rect (0, 0, 10, 4), Application.Top.Frame);
 			var expected = @"
-┌ Wind ──┐
+┌────────┐
 │Lab     │
 │        │
 └────────┘
@@ -3776,7 +3771,7 @@ This TextFormatter (tf2) is rewritten.
 			var exception = Record.Exception (() => Assert.Equal (new List<ustring> () { ustring.Empty }, label.TextFormatter.Lines));
 			Assert.Null (exception);
 			expected = @"
-┌ Wind ──┐
+┌────────┐
 │        │
 │        │
 └────────┘
@@ -3796,7 +3791,7 @@ This TextFormatter (tf2) is rewritten.
 				Text = text,
 				AutoSize = true
 			};
-			var win = new Window ("Window") {
+			var win = new Window () {
 				Width = Dim.Fill (),
 				Height = Dim.Fill ()
 			};
@@ -3863,7 +3858,7 @@ This TextFormatter (tf2) is rewritten.
 				Height = Dim.Fill () - text.Length,
 				Text = text
 			};
-			var win = new Window ("Window") {
+			var win = new Window () {
 				Width = Dim.Fill (),
 				Height = Dim.Fill ()
 			};
@@ -3931,7 +3926,7 @@ This TextFormatter (tf2) is rewritten.
 				Text = text,
 				AutoSize = true
 			};
-			var win = new Window ("Window") {
+			var win = new Window () {
 				Width = Dim.Fill (),
 				Height = Dim.Fill ()
 			};
@@ -3998,7 +3993,7 @@ This TextFormatter (tf2) is rewritten.
 				Height = Dim.Fill () - text.Length,
 				Text = text
 			};
-			var win = new Window ("Window") {
+			var win = new Window () {
 				Width = Dim.Fill (),
 				Height = Dim.Fill ()
 			};
@@ -4176,7 +4171,7 @@ This TextFormatter (tf2) is rewritten.
 			((FakeDriver)Application.Driver).SetBufferSize (10, 4);
 
 			var expected = @"
-┌ 𝔹 ────┐
+┌┤𝔹├────┐
 │𝔹      │
 │𝔹      │
 └────────┘";
@@ -4194,7 +4189,7 @@ This TextFormatter (tf2) is rewritten.
 			};
 
 			TestHelpers.AssertDriverColorsAre (@"
-0222200000
+0022000000
 0000000000
 0111000000
 0000000000", expectedColors);
@@ -4224,7 +4219,7 @@ This TextFormatter (tf2) is rewritten.
 			((FakeDriver)Application.Driver).SetBufferSize (10, 4);
 
 			var expected = @"
-┌ 豈 ────┐
+┌┤豈├────┐
 │豈      │
 │豈      │
 └────────┘";
@@ -4242,7 +4237,7 @@ This TextFormatter (tf2) is rewritten.
 			};
 
 			TestHelpers.AssertDriverColorsAre (@"
-0222200000
+0022000000
 0000000000
 0111000000
 0000000000", expectedColors);
@@ -4292,7 +4287,8 @@ t     ", output);
 		[Fact, AutoInitShutdown]
 		public void Draw_Negative_Bounds_Horizontal_Without_New_Lines ()
 		{
-			var subView = new View () { Id = "subView", Y = 1, Width = 7, Text = "subView" };
+			// BUGBUG: This previously assumed the default height of a View was 1. 
+			var subView = new View () { Id = "subView", Y = 1, Width = 7, Height = 1, Text = "subView" };
 			var view = new View () { Id = "view", Width = 20, Height = 2, Text = "01234567890123456789" };
 			view.Add (subView);
 			var content = new View () { Id = "content", Width = 20, Height = 20 };
@@ -4301,7 +4297,13 @@ t     ", output);
 			container.Add (content);
 			var top = Application.Top;
 			top.Add (container);
-			Application.Driver.Clip = container.Frame;
+			// BUGBUG: v2 - it's bogus to reference .Frame before BeginInit. And why is the clip being set anyway???
+
+			void Top_LayoutComplete (object sender, LayoutEventArgs e)
+			{
+				Application.Driver.Clip = container.Frame;
+			}
+			top.LayoutComplete += Top_LayoutComplete;
 			Application.Begin (top);
 
 			TestHelpers.AssertDriverContentsWithFrameAre (@"
@@ -4328,6 +4330,7 @@ t     ", output);
 			Application.Refresh ();
 			TestHelpers.AssertDriverContentsWithFrameAre ("", output);
 		}
+
 
 		[Fact, AutoInitShutdown]
 		public void Draw_Negative_Bounds_Horizontal_With_New_Lines ()

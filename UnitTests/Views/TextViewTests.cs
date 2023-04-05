@@ -2028,6 +2028,7 @@ namespace Terminal.Gui.ViewTests {
 
 			Application.Top.Add (tv);
 
+			tv.LayoutSubviews ();
 			tv.Redraw (tv.Bounds);
 
 			TestHelpers.AssertDriverContentsWithFrameAre (@"
@@ -2110,7 +2111,7 @@ a
 			tv.WordWrap = true;
 
 			Application.Top.Add (tv);
-
+			Application.Top.LayoutSubviews ();
 			tv.Redraw (tv.Bounds);
 			TestHelpers.AssertDriverContentsWithFrameAre (@"
 This is  
@@ -2125,6 +2126,7 @@ line.
 			tv.ReadOnly = true;
 			tv.CursorPosition = new Point (6, 2);
 			Assert.Equal (new Point (5, 2), tv.CursorPosition);
+			Application.Top.LayoutSubviews ();
 			tv.Redraw (tv.Bounds);
 			TestHelpers.AssertDriverContentsWithFrameAre (@"
 This is  
@@ -6806,6 +6808,9 @@ This is the second line.
 				Width = 50,
 				Height = 10,
 			};
+			// BUGBUG: v2 - views must be initialzed before doing things. 
+			tv.BeginInit (); tv.EndInit ();
+			
 			tv.ContentsChanged += (s, e) => {
 				eventcount++;
 			};

@@ -6,6 +6,7 @@ using System.Linq;
 using System.Reflection;
 using NStack;
 
+
 namespace Terminal.Gui {
 	/// <summary>
 	/// Determines the LayoutStyle for a <see cref="View"/>, if Absolute, during <see cref="View.LayoutSubviews"/>, the
@@ -14,20 +15,21 @@ namespace Terminal.Gui {
 	/// </summary>
 	public enum LayoutStyle {
 		/// <summary>
-		/// The position and size of the view are based on the Frame value.
+		/// The position and size of the view are based <see cref="View.Frame"/>. 
 		/// </summary>
 		Absolute,
 
 		/// <summary>
-		/// The position and size of the view will be computed based on the
-		/// X, Y, Width and Height properties and set on the Frame.
+		/// The position and size of the view will be computed based on 
+		/// <see cref="View.X"/>, <see cref="View.Y"/>, <see cref="View.Width"/>, and <see cref="View.Height"/>. <see cref="View.Frame"/> will
+		/// provide the absolute computed values.
 		/// </summary>
 		Computed
 	}
 
 	/// <summary>
 	/// View is the base class for all views on the screen and represents a visible element that can render itself and 
-	/// contains zero or more nested views.
+	/// contains zero or more nested views, called SubViews.
 	/// </summary>
 	/// <remarks>
 	/// <para>
@@ -123,7 +125,7 @@ namespace Terminal.Gui {
 		}
 
 		// container == SuperView
-		View container = null;
+		View _superView = null;
 		View focused = null;
 		Direction focusDirection;
 		bool autoSize;
@@ -203,7 +205,13 @@ namespace Terminal.Gui {
 		/// Gets or sets the specifier character for the hotkey (e.g. '_'). Set to '\xffff' to disable hotkey support for this View instance. The default is '\xffff'. 
 		/// </summary>
 		public virtual Rune HotKeySpecifier {
-			get => TextFormatter.HotKeySpecifier;
+			get {
+				if (TextFormatter != null) {
+					return TextFormatter.HotKeySpecifier;
+				} else {
+					return new Rune ('\xFFFF');
+				}
+			}
 			set {
 				TextFormatter.HotKeySpecifier = value;
 				SetHotKey ();
@@ -417,8 +425,6 @@ namespace Terminal.Gui {
 			}
 		}
 
-		internal Rect NeedDisplay { get; private set; } = Rect.Empty;
-
 		// The frame for the object. Superview relative.
 		Rect frame;
 
@@ -427,7 +433,7 @@ namespace Terminal.Gui {
 		/// </summary>
 		/// <value>The identifier.</value>
 		/// <remarks>The id should be unique across all Views that share a SuperView.</remarks>
-		public ustring Id { get; set; } = "";
+		public string Id { get; set; } = "";
 
 		/// <summary>
 		/// Returns a value indicating if this View is currently on Top (Active)
@@ -462,23 +468,145 @@ namespace Terminal.Gui {
 			get => frame;
 			set {
 				frame = new Rect (value.X, value.Y, Math.Max (value.Width, 0), Math.Max (value.Height, 0));
-				TextFormatter.Size = GetSizeNeededForTextAndHotKey ();
-				SetNeedsLayout ();
-				SetNeedsDisplay ();
+				if (IsInitialized || LayoutStyle == LayoutStyle.Absolute) {
+					TextFormatter.Size = GetSizeNeededForTextAndHotKey ();
+					LayoutFrames ();
+					SetNeedsLayout ();
+					SetNeedsDisplay ();
+				}
 			}
 		}
 
-		///// <summary>
-		///// Gets an enumerator that enumerates the subviews in this view.
-		///// </summary>
-		///// <returns>The enumerator.</returns>
-		//public IEnumerator GetEnumerator ()
-		//{
-		//	foreach (var v in InternalSubviews)
-		//		yield return v;
-		//}
+		/// <summary>
+		/// The Thickness that separates a View from other SubViews of the same SuperView. 
+		/// The Margin is not part of the View's content and is not clipped by the View's Clip Area. 
+		/// </summary>
+		public Frame Margin { get; private set; }
 
-		LayoutStyle layoutStyle;
+		// TODO: Rename BorderFrame to Border
+		/// <summary>
+		///  Thickness where a visual border (drawn using line-drawing glyphs) and the Title are drawn. 
+		///  The Border expands inward; in other words if `Border.Thickness.Top == 2` the border and 
+		///  title will take up the first row and the second row will be filled with spaces. 
+		///  The Border is not part of the View's content and is not clipped by the View's `ClipArea`.
+		/// </summary>
+		public Frame BorderFrame { get; private set; }
+
+		/// <summary>
+		/// Means the Thickness inside of an element that offsets the `Content` from the Border. 
+		/// Padding is `{0, 0, 0, 0}` by default. Padding is not part of the View's content and is not clipped by the View's `ClipArea`.
+		/// </summary>
+		/// <remarks>
+		/// (NOTE: in v1 `Padding` is OUTSIDE of the `Border`). 
+		/// </remarks>
+		public Frame Padding { get; private set; }
+
+		/// <summary>
+		/// Helper to get the X and Y offset of the Bounds from the Frame. This is the sum of the Left and Top properties of
+		/// <see cref="Margin"/>, <see cref="BorderFrame"/> and <see cref="Padding"/>.
+		/// </summary>
+		public Point GetBoundsOffset () => new Point (Padding?.Thickness.GetInside (Padding.Frame).X ?? 0, Padding?.Thickness.GetInside (Padding.Frame).Y ?? 0);
+
+		/// <summary>
+		/// Creates the view's <see cref="Frame"/> objects. This internal method is overridden by Frame to do nothing
+		/// to prevent recursion during View construction.
+		/// </summary>
+		internal virtual void CreateFrames ()
+		{
+			void ThicknessChangedHandler (object sender, EventArgs e)
+			{
+				SetNeedsLayout ();
+			}
+
+			if (Margin != null) {
+				Margin.ThicknessChanged -= ThicknessChangedHandler;
+				Margin.Dispose ();
+			}
+			Margin = new Frame () { Id = "Margin", Thickness = new Thickness (0) };
+			Margin.ThicknessChanged += ThicknessChangedHandler;
+			Margin.Parent = this;
+
+			if (BorderFrame != null) {
+				BorderFrame.ThicknessChanged -= ThicknessChangedHandler;
+				BorderFrame.Dispose ();
+			}
+			// TODO: create default for borderstyle
+			BorderFrame = new Frame () { Id = "BorderFrame", Thickness = new Thickness (0), BorderStyle = BorderStyle.Single };
+			BorderFrame.ThicknessChanged += ThicknessChangedHandler;
+			BorderFrame.Parent = this;
+
+			// TODO: Create View.AddAdornment
+
+			if (Padding != null) {
+				Padding.ThicknessChanged -= ThicknessChangedHandler;
+				Padding.Dispose ();
+			}
+			Padding = new Frame () { Id = "Padding", Thickness = new Thickness (0) };
+			Padding.ThicknessChanged += ThicknessChangedHandler;
+			Padding.Parent = this;
+		}
+
+		ustring title = ustring.Empty;
+
+		/// <summary>
+		/// The title to be displayed for this <see cref="View"/>. The title will be displayed if <see cref="BorderFrame"/>.<see cref="Thickness.Top"/>
+		/// is greater than 0.
+		/// </summary>
+		/// <value>The title.</value>
+		public ustring Title {
+			get => title;
+			set {
+				if (!OnTitleChanging (title, value)) {
+					var old = title;
+					title = value;
+					SetNeedsDisplay ();
+#if DEBUG
+					if (title != null && string.IsNullOrEmpty (Id)) {
+						Id = title.ToString ();
+					}
+#endif // DEBUG
+					OnTitleChanged (old, title);
+				}
+			}
+		}
+
+		/// <summary>
+		/// Called before the <see cref="View.Title"/> changes. Invokes the <see cref="TitleChanging"/> event, which can be cancelled.
+		/// </summary>
+		/// <param name="oldTitle">The <see cref="View.Title"/> that is/has been replaced.</param>
+		/// <param name="newTitle">The new <see cref="View.Title"/> to be replaced.</param>
+		/// <returns>`true` if an event handler canceled the Title change.</returns>
+		public virtual bool OnTitleChanging (ustring oldTitle, ustring newTitle)
+		{
+			var args = new TitleEventArgs (oldTitle, newTitle);
+			TitleChanging?.Invoke (this, args);
+			return args.Cancel;
+		}
+
+		/// <summary>
+		/// Event fired when the <see cref="View.Title"/> is changing. Set <see cref="TitleEventArgs.Cancel"/> to 
+		/// `true` to cancel the Title change.
+		/// </summary>
+		public event EventHandler<TitleEventArgs> TitleChanging;
+
+		/// <summary>
+		/// Called when the <see cref="View.Title"/> has been changed. Invokes the <see cref="TitleChanged"/> event.
+		/// </summary>
+		/// <param name="oldTitle">The <see cref="View.Title"/> that is/has been replaced.</param>
+		/// <param name="newTitle">The new <see cref="View.Title"/> to be replaced.</param>
+		public virtual void OnTitleChanged (ustring oldTitle, ustring newTitle)
+		{
+			var args = new TitleEventArgs (oldTitle, newTitle);
+			TitleChanged?.Invoke (this, args);
+		}
+
+		/// <summary>
+		/// Event fired after the <see cref="View.Title"/> has been changed. 
+		/// </summary>
+		public event EventHandler<TitleEventArgs> TitleChanged;
+
+
+		LayoutStyle _layoutStyle;
 
 		/// <summary>
 		/// Controls how the View's <see cref="Frame"/> is computed during the LayoutSubviews method, if the style is set to
@@ -489,32 +617,67 @@ namespace Terminal.Gui {
 		/// </summary>
 		/// <value>The layout style.</value>
 		public LayoutStyle LayoutStyle {
-			get => layoutStyle;
+			get => _layoutStyle;
 			set {
-				layoutStyle = value;
+				_layoutStyle = value;
 				SetNeedsLayout ();
 			}
 		}
 
 		/// <summary>
-		/// The bounds represent the View-relative rectangle used for this view; the area inside of the view.
+		/// The View-relative rectangle where View content is displayed. SubViews are positioned relative to 
+		/// Bounds.<see cref="Rect.Location">Location</see> (which is always (0, 0)) and <see cref="Redraw(Rect)"/> clips drawing to 
+		/// Bounds.<see cref="Rect.Size">Size</see>.
 		/// </summary>
 		/// <value>The bounds.</value>
 		/// <remarks>
 		/// <para>
-		/// Updates to the Bounds update the <see cref="Frame"/>,
-		/// and has the same side effects as updating the <see cref="Frame"/>.
-		/// </para>
-		/// <para>
-		/// Because <see cref="Bounds"/> coordinates are relative to the upper-left corner of the <see cref="View"/>, 
-		/// the coordinates of the upper-left corner of the rectangle returned by this property are (0,0). 
-		/// Use this property to obtain the size and coordinates of the client area of the 
-		/// control for tasks such as drawing on the surface of the control.
+		/// The <see cref="Rect.Location"/> of Bounds is always (0, 0). To obtain the offset of the Bounds from the Frame use 
+		/// <see cref="GetBoundsOffset"/>.
 		/// </para>
 		/// </remarks>
-		public Rect Bounds {
-			get => new Rect (Point.Empty, Frame.Size);
-			set => Frame = new Rect (frame.Location, value.Size);
+		public virtual Rect Bounds {
+			get {
+#if DEBUG
+				if (LayoutStyle == LayoutStyle.Computed && !IsInitialized) {
+					Debug.WriteLine ($"WARNING: Bounds is being accessed before the View has been initialized. This is likely a bug. View: {this}");
+				}
+#endif // DEBUG
+				var frameRelativeBounds = Padding?.Thickness.GetInside (Padding.Frame) ?? new Rect (default, Frame.Size);
+				return new Rect (default, frameRelativeBounds.Size);
+			}
+			set {
+				// BUGBUG: Margin etc.. can be null (if typeof(Frame))
+				Frame = new Rect (Frame.Location,
+					new Size (
+						value.Size.Width + Margin.Thickness.Horizontal + BorderFrame.Thickness.Horizontal + Padding.Thickness.Horizontal,
+						value.Size.Height + Margin.Thickness.Vertical + BorderFrame.Thickness.Vertical + Padding.Thickness.Vertical
+						)
+					);
+				;
+			}
+		}
+
+		// Diagnostics to highlight when X or Y is read before the view has been initialized
+		private Pos VerifyIsIntialized (Pos pos)
+		{
+#if DEBUG
+			if (LayoutStyle == LayoutStyle.Computed && (!IsInitialized)) {
+				Debug.WriteLine ($"WARNING: \"{this}\" has not been initialized; position is indeterminate {pos}. This is likely a bug.");
+			}
+#endif // DEBUG
+			return pos;
+		}
+
+		// Diagnostics to highlight when Width or Height is read before the view has been initialized
+		private Dim VerifyIsIntialized (Dim dim)
+		{
+#if DEBUG
+			if (LayoutStyle == LayoutStyle.Computed && (!IsInitialized)) {
+				Debug.WriteLine ($"WARNING: \"{this}\" has not been initialized; dimension is indeterminate: {dim}. This is likely a bug.");
+			}
+#endif // DEBUG		
+			return dim;
 		}
 
 		Pos x, y;
@@ -527,7 +690,7 @@ namespace Terminal.Gui {
 		/// If <see cref="LayoutStyle"/> is <see cref="Terminal.Gui.LayoutStyle.Absolute"/> changing this property has no effect and its value is indeterminate. 
 		/// </remarks>
 		public Pos X {
-			get => x;
+			get => VerifyIsIntialized (x);
 			set {
 				if (ForceValidatePosDim && !ValidatePosDim (x, value)) {
 					throw new ArgumentException ();
@@ -547,7 +710,7 @@ namespace Terminal.Gui {
 		/// If <see cref="LayoutStyle"/> is <see cref="Terminal.Gui.LayoutStyle.Absolute"/> changing this property has no effect and its value is indeterminate. 
 		/// </remarks>
 		public Pos Y {
-			get => y;
+			get => VerifyIsIntialized (y);
 			set {
 				if (ForceValidatePosDim && !ValidatePosDim (y, value)) {
 					throw new ArgumentException ();
@@ -568,7 +731,7 @@ namespace Terminal.Gui {
 		/// If <see cref="LayoutStyle"/> is <see cref="Terminal.Gui.LayoutStyle.Absolute"/> changing this property has no effect and its value is indeterminate. 
 		/// </remarks>
 		public Dim Width {
-			get => width;
+			get => VerifyIsIntialized (width);
 			set {
 				if (ForceValidatePosDim && !ValidatePosDim (width, value)) {
 					throw new ArgumentException ("ForceValidatePosDim is enabled", nameof (Width));
@@ -593,7 +756,7 @@ namespace Terminal.Gui {
 		/// <value>The height.</value>
 		/// If <see cref="LayoutStyle"/> is <see cref="Terminal.Gui.LayoutStyle.Absolute"/> changing this property has no effect and its value is indeterminate. 
 		public Dim Height {
-			get => height;
+			get => VerifyIsIntialized (height);
 			set {
 				if (ForceValidatePosDim && !ValidatePosDim (height, value)) {
 					throw new ArgumentException ("ForceValidatePosDim is enabled", nameof (Height));
@@ -620,10 +783,10 @@ namespace Terminal.Gui {
 
 		bool ValidatePosDim (object oldValue, object newValue)
 		{
-			if (!IsInitialized || layoutStyle == LayoutStyle.Absolute || oldValue == null || oldValue.GetType () == newValue.GetType () || this is Toplevel) {
+			if (!IsInitialized || _layoutStyle == LayoutStyle.Absolute || oldValue == null || oldValue.GetType () == newValue.GetType () || this is Toplevel) {
 				return true;
 			}
-			if (layoutStyle == LayoutStyle.Computed) {
+			if (_layoutStyle == LayoutStyle.Computed) {
 				if (oldValue.GetType () != newValue.GetType () && !(newValue is Pos.PosAbsolute || newValue is Dim.DimAbsolute)) {
 					return true;
 				}
@@ -631,6 +794,8 @@ namespace Terminal.Gui {
 			return false;
 		}
 
+		// BUGBUG: This API is broken - It should be renamed to `GetMinimumBoundsForFrame and 
+		// should not assume Frame.Height == Bounds.Height
 		/// <summary>
 		/// Gets the minimum dimensions required to fit the View's <see cref="Text"/>, factoring in <see cref="TextDirection"/>.
 		/// </summary>
@@ -643,7 +808,7 @@ namespace Terminal.Gui {
 		/// </remarks>
 		public bool GetMinimumBounds (out Size size)
 		{
-			size = Size.Empty;
+			size = Bounds.Size;
 
 			if (!AutoSize && !ustring.IsNullOrEmpty (TextFormatter.Text)) {
 				switch (TextFormatter.IsVerticalDirection (TextDirection)) {
@@ -674,6 +839,7 @@ namespace Terminal.Gui {
 			return false;
 		}
 
+		// BUGBUG - v2 - Should be renamed "SetBoundsToFitFrame"
 		/// <summary>
 		/// Sets the size of the View to the minimum width or height required to fit <see cref="Text"/> (see <see cref="GetMinimumBounds(out Size)"/>.
 		/// </summary>
@@ -681,7 +847,7 @@ namespace Terminal.Gui {
 		/// will not fit.</returns>
 		public bool SetMinWidthHeight ()
 		{
-			if (GetMinimumBounds (out Size size)) {
+			if (IsInitialized && GetMinimumBounds (out Size size)) {
 				Bounds = new Rect (Bounds.Location, size);
 				return true;
 			}
@@ -697,7 +863,14 @@ namespace Terminal.Gui {
 		/// Returns the container for this view, or null if this view has not been added to a container.
 		/// </summary>
 		/// <value>The super view.</value>
-		public View SuperView => container;
+		public virtual View SuperView {
+			get {
+				return _superView;
+			}
+			set {
+				throw new NotImplementedException ();
+			}
+		}
 
 		/// <summary>
 		/// Initializes a new instance of a <see cref="Terminal.Gui.LayoutStyle.Absolute"/> <see cref="View"/> class with the absolute
@@ -708,10 +881,7 @@ namespace Terminal.Gui {
 		/// This constructor initialize a View with a <see cref="LayoutStyle"/> of <see cref="Terminal.Gui.LayoutStyle.Absolute"/>.
 		/// Use <see cref="View"/> to initialize a View with  <see cref="LayoutStyle"/> of <see cref="Terminal.Gui.LayoutStyle.Computed"/> 
 		/// </remarks>
-		public View (Rect frame)
-		{
-			SetInitialProperties (ustring.Empty, frame, LayoutStyle.Absolute, TextDirection.LeftRight_TopBottom);
-		}
+		public View (Rect frame) : this (frame, null, null) { }
 
 		/// <summary>
 		///   Initializes a new instance of <see cref="View"/> using <see cref="Terminal.Gui.LayoutStyle.Computed"/> layout.
@@ -805,29 +975,35 @@ namespace Terminal.Gui {
 		void SetInitialProperties (ustring text, Rect rect, LayoutStyle layoutStyle = LayoutStyle.Computed,
 		    TextDirection direction = TextDirection.LeftRight_TopBottom, Border border = null)
 		{
-
 			TextFormatter = new TextFormatter ();
 			TextFormatter.HotKeyChanged += TextFormatter_HotKeyChanged;
 			TextDirection = direction;
+
 			shortcutHelper = new ShortcutHelper ();
 			CanFocus = false;
 			TabIndex = -1;
 			TabStop = false;
 			LayoutStyle = layoutStyle;
-			// BUGBUG: CalcRect doesn't account for line wrapping
 
-			// TODO: Remove this once v2's new Frames is ready
 			Border = border;
-			if (Border != null) {
-				Border.Child = this;
-			}
 
+			Text = text == null ? ustring.Empty : text;
+			LayoutStyle = layoutStyle;
 			var r = rect.IsEmpty ? TextFormatter.CalcRect (0, 0, text, direction) : rect;
 			Frame = r;
-
-			Text = text;
-
 			OnResizeNeeded ();
+
+			CreateFrames ();
+
+			LayoutFrames ();
+		}
+
+		// TODO: v2 - Hack for now
+		private void Border_BorderChanged (Border border)
+		{
+			//if (!border.DrawMarginFrame) BorderFrame.BorderStyle = BorderStyle.None;
+			BorderFrame.BorderStyle = border.BorderStyle;
+			BorderFrame.Thickness = new Thickness (BorderFrame.BorderStyle == BorderStyle.None ? 0 : 1);
 		}
 
 		/// <summary>
@@ -836,7 +1012,9 @@ namespace Terminal.Gui {
 		/// </summary>
 		protected virtual void UpdateTextFormatterText ()
 		{
-			TextFormatter.Text = text;
+			if (TextFormatter != null) {
+				TextFormatter.Text = text;
+			}
 		}
 
 		/// <summary>
@@ -853,30 +1031,28 @@ namespace Terminal.Gui {
 				var s = GetAutoSize ();
 				var w = width is Dim.DimAbsolute && width.Anchor (0) > s.Width ? width.Anchor (0) : s.Width;
 				var h = height is Dim.DimAbsolute && height.Anchor (0) > s.Height ? height.Anchor (0) : s.Height;
-				frame = new Rect (new Point (actX, actY), new Size (w, h));
+				frame = new Rect (new Point (actX, actY), new Size (w, h)); // Set frame, not Frame!
 			} else {
 				var w = width is Dim.DimAbsolute ? width.Anchor (0) : frame.Width;
 				var h = height is Dim.DimAbsolute ? height.Anchor (0) : frame.Height;
-				frame = new Rect (new Point (actX, actY), new Size (w, h));
-				SetMinWidthHeight ();
+				// BUGBUG: v2 - ? - If layoutstyle is absolute, this overwrites the current frame h/w with 0. Hmmm...
+				frame = new Rect (new Point (actX, actY), new Size (w, h)); // Set frame, not Frame!
+
+
 			}
-			// BUGBUG: I think these calls are redundant or should be moved into just the AutoSize case
-			TextFormatter.Size = GetSizeNeededForTextAndHotKey ();
-			SetNeedsLayout ();
-			SetNeedsDisplay ();
+			//// BUGBUG: I think these calls are redundant or should be moved into just the AutoSize case
+			if (IsInitialized || LayoutStyle == LayoutStyle.Absolute) {
+				TextFormatter.Size = GetSizeNeededForTextAndHotKey ();
+				LayoutFrames ();
+				SetMinWidthHeight ();
+				SetNeedsLayout ();
+				SetNeedsDisplay ();
+			}
 		}
 
 		void TextFormatter_HotKeyChanged (object sender, KeyChangedEventArgs e)
 		{
 			HotKeyChanged?.Invoke (this, e);
-		}
-
-		/// <summary>
-		/// Sets a flag indicating this view needs to be redisplayed because its state has changed.
-		/// </summary>
-		public void SetNeedsDisplay ()
-		{
-			SetNeedsDisplay (Bounds);
 		}
 
 		internal bool LayoutNeeded { get; private set; } = true;
@@ -903,22 +1079,34 @@ namespace Terminal.Gui {
 			LayoutNeeded = false;
 		}
 
+		// The view-relative region that needs to be redrawn
+		internal Rect _needsDisplay { get; private set; } = Rect.Empty;
+
 		/// <summary>
-		/// Flags the view-relative region on this View as needing to be repainted.
+		/// Sets a flag indicating this view needs to be redisplayed because its state has changed.
 		/// </summary>
-		/// <param name="region">The view-relative region that must be flagged for repaint.</param>
+		public void SetNeedsDisplay ()
+		{
+			if (!IsInitialized) return;
+			SetNeedsDisplay (Bounds);
+		}
+
+		/// <summary>
+		/// Flags the view-relative region on this View as needing to be redrawn.
+		/// </summary>
+		/// <param name="region">The view-relative region that needs to be redrawn.</param>
 		public void SetNeedsDisplay (Rect region)
 		{
-			if (NeedDisplay.IsEmpty)
-				NeedDisplay = region;
+			if (_needsDisplay.IsEmpty)
+				_needsDisplay = region;
 			else {
-				var x = Math.Min (NeedDisplay.X, region.X);
-				var y = Math.Min (NeedDisplay.Y, region.Y);
-				var w = Math.Max (NeedDisplay.Width, region.Width);
-				var h = Math.Max (NeedDisplay.Height, region.Height);
-				NeedDisplay = new Rect (x, y, w, h);
+				var x = Math.Min (_needsDisplay.X, region.X);
+				var y = Math.Min (_needsDisplay.Y, region.Y);
+				var w = Math.Max (_needsDisplay.Width, region.Width);
+				var h = Math.Max (_needsDisplay.Height, region.Height);
+				_needsDisplay = new Rect (x, y, w, h);
 			}
-			container?.SetSubViewNeedsDisplay ();
+			_superView?.SetSubViewNeedsDisplay ();
 
 			if (subviews == null)
 				return;
@@ -932,19 +1120,31 @@ namespace Terminal.Gui {
 				}
 		}
 
-		internal bool ChildNeedsDisplay { get; private set; }
+		private Rect GetNeedsDisplayRectScreen (Rect containerBounds)
+		{
+			Rect rect = ViewToScreen (_needsDisplay);
+			if (!containerBounds.IsEmpty) {
+				rect.Width = Math.Min (_needsDisplay.Width, containerBounds.Width);
+				rect.Height = Math.Min (_needsDisplay.Height, containerBounds.Height);
+			}
+
+			return rect;
+		}
+
+
+		internal bool _childNeedsDisplay { get; private set; }
 
 		/// <summary>
-		/// Indicates that any child views (in the <see cref="Subviews"/> list) need to be repainted.
+		/// Indicates that any Subviews (in the <see cref="Subviews"/> list) need to be repainted.
 		/// </summary>
 		public void SetSubViewNeedsDisplay ()
 		{
-			if (ChildNeedsDisplay) {
+			if (_childNeedsDisplay) {
 				return;
 			}
-			ChildNeedsDisplay = true;
-			if (container != null && !container.ChildNeedsDisplay)
-				container.SetSubViewNeedsDisplay ();
+			_childNeedsDisplay = true;
+			if (_superView != null && !_superView._childNeedsDisplay)
+				_superView.SetSubViewNeedsDisplay ();
 		}
 
 		internal bool addingView;
@@ -958,8 +1158,9 @@ namespace Terminal.Gui {
 		/// </remarks>
 		public virtual void Add (View view)
 		{
-			if (view == null)
+			if (view == null) {
 				return;
+			}
 			if (subviews == null) {
 				subviews = new List<View> ();
 			}
@@ -968,7 +1169,7 @@ namespace Terminal.Gui {
 			}
 			subviews.Add (view);
 			tabIndexes.Add (view);
-			view.container = this;
+			view._superView = this;
 			if (view.CanFocus) {
 				addingView = true;
 				if (SuperView?.CanFocus == false) {
@@ -987,6 +1188,7 @@ namespace Terminal.Gui {
 			SetNeedsLayout ();
 			SetNeedsDisplay ();
 
+
 			OnAdded (new SuperViewChangedEventArgs (this, view));
 			if (IsInitialized && !view.IsInitialized) {
 				view.BeginInit ();
@@ -1004,10 +1206,12 @@ namespace Terminal.Gui {
 		/// </remarks>
 		public void Add (params View [] views)
 		{
-			if (views == null)
+			if (views == null) {
 				return;
-			foreach (var view in views)
+			}
+			foreach (var view in views) {
 				Add (view);
+			}
 		}
 
 		/// <summary>
@@ -1015,8 +1219,9 @@ namespace Terminal.Gui {
 		/// </summary>
 		public virtual void RemoveAll ()
 		{
-			if (subviews == null)
+			if (subviews == null) {
 				return;
+			}
 
 			while (subviews.Count > 0) {
 				Remove (subviews [0]);
@@ -1030,16 +1235,16 @@ namespace Terminal.Gui {
 		/// </remarks>
 		public virtual void Remove (View view)
 		{
-			if (view == null || subviews == null)
-				return;
+			if (view == null || subviews == null) return;
 
 			var touched = view.Frame;
 			subviews.Remove (view);
 			tabIndexes.Remove (view);
-			view.container = null;
+			view._superView = null;
 			view.tabIndex = -1;
 			SetNeedsLayout ();
 			SetNeedsDisplay ();
+
 			foreach (var v in subviews) {
 				if (v.Frame.IntersectsWith (touched))
 					view.SetNeedsDisplay ();
@@ -1145,6 +1350,9 @@ namespace Terminal.Gui {
 			}
 		}
 
+
+		// BUGBUG: Stupid that this takes screen-relative. We should have a tenet that says 
+		// "View APIs only deal with View-relative coords". 
 		/// <summary>
 		///   Clears the specified region with the current color. 
 		/// </summary>
@@ -1159,34 +1367,6 @@ namespace Terminal.Gui {
 				Driver.Move (regionScreen.X, line);
 				for (var col = 0; col < w; col++)
 					Driver.AddRune (' ');
-			}
-		}
-
-		/// <summary>
-		/// Converts a view-relative (col,row) position to a screen-relative position (col,row). The values are optionally clamped to the screen dimensions.
-		/// </summary>
-		/// <param name="col">View-relative column.</param>
-		/// <param name="row">View-relative row.</param>
-		/// <param name="rcol">Absolute column; screen-relative.</param>
-		/// <param name="rrow">Absolute row; screen-relative.</param>
-		/// <param name="clipped">Whether to clip the result of the ViewToScreen method, if set to <see langword="true"/>, the rcol, rrow values are clamped to the screen (terminal) dimensions (0..TerminalDim-1).</param>
-		public void ViewToScreen (int col, int row, out int rcol, out int rrow, bool clipped = true)
-		{
-			// Computes the real row, col relative to the screen.
-			rrow = row + frame.Y;
-			rcol = col + frame.X;
-
-			var curContainer = container;
-			while (curContainer != null) {
-				rrow += curContainer.frame.Y;
-				rcol += curContainer.frame.X;
-				curContainer = curContainer.container;
-			}
-
-			// The following ensures that the cursor is always in the screen boundaries.
-			if (clipped) {
-				rrow = Math.Min (rrow, Driver.Rows - 1);
-				rcol = Math.Min (rcol, Driver.Cols - 1);
 			}
 		}
 
@@ -1207,11 +1387,56 @@ namespace Terminal.Gui {
 		}
 
 		/// <summary>
+		/// Converts a point from screen-relative coordinates to bounds-relative coordinates.
+		/// </summary>
+		/// <returns>The mapped point.</returns>
+		/// <param name="x">X screen-coordinate point.</param>
+		/// <param name="y">Y screen-coordinate point.</param>
+		public Point ScreenToBounds (int x, int y)
+		{
+			if (SuperView == null) {
+				return new Point (x - Frame.X + GetBoundsOffset ().X, y - Frame.Y + GetBoundsOffset ().Y);
+			} else {
+				var parent = SuperView.ScreenToView (x, y);
+				return new Point (parent.X - frame.X, parent.Y - frame.Y);
+			}
+		}
+
+		/// <summary>
+		/// Converts a view-relative location to a screen-relative location (col,row). The output is optionally clamped to the screen dimensions.
+		/// </summary>
+		/// <param name="col">View-relative column.</param>
+		/// <param name="row">View-relative row.</param>
+		/// <param name="rcol">Absolute column; screen-relative.</param>
+		/// <param name="rrow">Absolute row; screen-relative.</param>
+		/// <param name="clamped">If <see langword="true"/>, <paramref name="rcol"/> and <paramref name="rrow"/> will be clamped to the 
+		/// screen dimensions (they never be negative and will always be less than to <see cref="ConsoleDriver.Cols"/> and
+		/// <see cref="ConsoleDriver.Rows"/>, respectively.</param>
+		public virtual void ViewToScreen (int col, int row, out int rcol, out int rrow, bool clamped = true)
+		{
+			rcol = col + Frame.X + GetBoundsOffset ().X;
+			rrow = row + Frame.Y + GetBoundsOffset ().Y;
+
+			var super = SuperView;
+			while (super != null) {
+				rcol += super.Frame.X + super.GetBoundsOffset ().X;
+				rrow += super.Frame.Y + super.GetBoundsOffset ().Y;
+				super = super.SuperView;
+			}
+
+			// The following ensures that the cursor is always in the screen boundaries.
+			if (clamped) {
+				rrow = Math.Min (rrow, Driver.Rows - 1);
+				rcol = Math.Min (rcol, Driver.Cols - 1);
+			}
+		}
+
+		/// <summary>
 		/// Converts a region in view-relative coordinates to screen-relative coordinates.
 		/// </summary>
 		internal Rect ViewToScreen (Rect region)
 		{
-			ViewToScreen (region.X, region.Y, out var x, out var y, clipped: false);
+			ViewToScreen (region.X, region.Y, out var x, out var y, clamped: false);
 			return new Rect (x, y, region.Width, region.Height);
 		}
 
@@ -1227,22 +1452,34 @@ namespace Terminal.Gui {
 		}
 
 		/// <summary>
-		/// Sets the <see cref="ConsoleDriver"/>'s clip region to the current View's <see cref="Bounds"/>.
+		/// Sets the <see cref="ConsoleDriver"/>'s clip region to <see cref="Bounds"/>.
 		/// </summary>
-		/// <returns>The existing driver's clip region, which can be then re-applied by setting <c><see cref="Driver"/>.Clip</c> (<see cref="ConsoleDriver.Clip"/>).</returns>
+		/// <returns>The current screen-relative clip region, which can be then re-applied by setting <see cref="ConsoleDriver.Clip"/>.</returns>
 		/// <remarks>
+		/// <para>
 		/// <see cref="Bounds"/> is View-relative.
+		/// </para>
+		/// <para>
+		/// If <see cref="ConsoleDriver.Clip"/> and <see cref="Bounds"/> do not intersect, the clip region will be set to <see cref="Rect.Empty"/>.
+		/// </para>
 		/// </remarks>
 		public Rect ClipToBounds ()
 		{
-			return SetClip (Bounds);
+			var clip = Bounds;
+
+
+			return SetClip (clip);
 		}
 
+		// BUGBUG: v2 - SetClip should return VIEW-relative so that it can be used to reset it; using Driver.Clip directly should not be necessary. 
 		/// <summary>
 		/// Sets the clip region to the specified view-relative region.
 		/// </summary>
-		/// <returns>The previous screen-relative clip region.</returns>
+		/// <returns>The current screen-relative clip region, which can be then re-applied by setting <see cref="ConsoleDriver.Clip"/>.</returns>
 		/// <param name="region">View-relative clip region.</param>
+		/// <remarks>
+		/// If <see cref="ConsoleDriver.Clip"/> and <paramref name="region"/> do not intersect, the clip region will be set to <see cref="Rect.Empty"/>.
+		/// </remarks>
 		public Rect SetClip (Rect region)
 		{
 			var previous = Driver.Clip;
@@ -1256,6 +1493,7 @@ namespace Terminal.Gui {
 		/// <param name="region">View-relative region for the frame to be drawn.</param>
 		/// <param name="padding">The padding to add around the outside of the drawn frame.</param>
 		/// <param name="fill">If set to <see langword="true"/> it fill will the contents.</param>
+		[ObsoleteAttribute ("This method is obsolete in v2. Use use LineCanvas or Frame instead.", false)]
 		public void DrawFrame (Rect region, int padding = 0, bool fill = false)
 		{
 			var scrRect = ViewToScreen (region);
@@ -1306,10 +1544,10 @@ namespace Terminal.Gui {
 		/// This moves the cursor to the specified column and row in the view.
 		/// </summary>
 		/// <returns>The move.</returns>
-		/// <param name="col">Col.</param>
-		/// <param name="row">Row.</param>
+		/// <param name="col">The column to move to, in view-relative coordinates.</param>
+		/// <param name="row">the row to move to, in view-relative coordinates.</param>
 		/// <param name="clipped">Whether to clip the result of the ViewToScreen method,
-		///  if set to <see langword="true"/>, the col, row values are clamped to the screen (terminal) dimensions (0..TerminalDim-1).</param>
+		///  If  <see langword="true"/>, the <paramref name="col"/> and <paramref name="row"/> values are clamped to the screen (terminal) dimensions (0..TerminalDim-1).</param>
 		public void Move (int col, int row, bool clipped = true)
 		{
 			if (Driver.Rows == 0) {
@@ -1334,6 +1572,8 @@ namespace Terminal.Gui {
 				return;
 			}
 
+			// BUGBUG: v2 - This needs to support children of Frames too
+
 			if (focused == null && SuperView != null) {
 				SuperView.EnsureFocus ();
 			} else if (focused?.Visible == true && focused?.Enabled == true && focused?.Frame.Width > 0 && focused.Frame.Height > 0) {
@@ -1347,15 +1587,16 @@ namespace Terminal.Gui {
 			}
 		}
 
-		bool hasFocus;
+		// BUGBUG: v2 - Seems weird that this is in View and not Responder.
+		bool _hasFocus;
 
 		/// <inheritdoc/>
-		public override bool HasFocus => hasFocus;
+		public override bool HasFocus => _hasFocus;
 
 		void SetHasFocus (bool value, View view, bool force = false)
 		{
-			if (hasFocus != value || force) {
-				hasFocus = value;
+			if (_hasFocus != value || force) {
+				_hasFocus = value;
 				if (value) {
 					OnEnter (view);
 				} else {
@@ -1485,12 +1726,33 @@ namespace Terminal.Gui {
 		}
 
 		/// <summary>
-		/// Removes the <see cref="NeedDisplay"/> and the <see cref="ChildNeedsDisplay"/> setting on this view.
+		/// Removes the <see cref="_needsDisplay"/> and the <see cref="_childNeedsDisplay"/> setting on this view.
 		/// </summary>
 		protected void ClearNeedsDisplay ()
 		{
-			NeedDisplay = Rect.Empty;
-			ChildNeedsDisplay = false;
+			_needsDisplay = Rect.Empty;
+			_childNeedsDisplay = false;
+		}
+
+		// TODO: Make this cancelable
+		/// <summary>
+		/// 
+		/// </summary>
+		/// <returns></returns>
+		public virtual bool OnDrawFrames (Rect bounds)
+		{
+			var prevClip = Driver.Clip;
+			if (SuperView != null) {
+				Driver.Clip = SuperView.ClipToBounds ();
+			}
+
+			Margin?.Redraw (Margin.Frame);
+			BorderFrame?.Redraw (BorderFrame.Frame);
+			Padding?.Redraw (Padding.Frame);
+
+			Driver.Clip = prevClip;
+
+			return true;
 		}
 
 		/// <summary>
@@ -1516,101 +1778,51 @@ namespace Terminal.Gui {
 				return;
 			}
 
-			var clipRect = new Rect (Point.Empty, frame.Size);
+			OnDrawFrames (Frame);
+
+			var prevClip = ClipToBounds ();
+
+			// TODO: Implement complete event
+			// OnDrawFramesComplete (Frame)
 
 			if (ColorScheme != null) {
-				Driver.SetAttribute (HasFocus ? GetFocusColor () : GetNormalColor ());
+				//Driver.SetAttribute (HasFocus ? GetFocusColor () : GetNormalColor ());
+				Driver.SetAttribute (GetNormalColor ());
 			}
 
-			var boundsAdjustedForBorder = Bounds;
-			if (!IgnoreBorderPropertyOnRedraw && Border != null) {
-				Border.DrawContent (this);
-			} else if (ustring.IsNullOrEmpty (TextFormatter.Text) &&
-				(GetType ().IsNestedPublic && !IsOverridden (this, "Redraw") || GetType ().Name == "View") &&
-				(!NeedDisplay.IsEmpty || ChildNeedsDisplay || LayoutNeeded)) {
-
-				Clear ();
-				SetSubViewNeedsDisplay ();
-			}
-
-			if (!ustring.IsNullOrEmpty (TextFormatter.Text)) {
-				Rect containerBounds = GetContainerBounds ();
-				if (!containerBounds.IsEmpty) {
-					Clear (GetNeedDisplay (containerBounds));
-					SetSubViewNeedsDisplay ();
-					// Draw any Text
-					if (TextFormatter != null) {
-						TextFormatter.NeedsFormat = true;
-					}
-					TextFormatter?.Draw (ViewToScreen (Bounds), HasFocus ? GetFocusColor () : GetNormalColor (),
-					    HasFocus ? ColorScheme.HotFocus : GetHotNormalColor (),
-					    containerBounds);
-				}
-			}
+			Clear (ViewToScreen (bounds));
 
 			// Invoke DrawContentEvent
-			OnDrawContent (boundsAdjustedForBorder);
+			OnDrawContent (bounds);
 
+			// Draw subviews
+			// TODO: Implement OnDrawSubviews (cancelable);
 			if (subviews != null) {
 				foreach (var view in subviews) {
-					if (!view.NeedDisplay.IsEmpty || view.ChildNeedsDisplay || view.LayoutNeeded) {
-						if (view.Frame.IntersectsWith (clipRect) && (view.Frame.IntersectsWith (bounds) || bounds.X < 0 || bounds.Y < 0)) {
+					if (view.Visible) { //!view._needsDisplay.IsEmpty || view._childNeedsDisplay || view.LayoutNeeded) {
+						if (true) { //view.Frame.IntersectsWith (bounds)) { // && (view.Frame.IntersectsWith (bounds) || bounds.X < 0 || bounds.Y < 0)) {
 							if (view.LayoutNeeded) {
 								view.LayoutSubviews ();
 							}
 
 							// Draw the subview
 							// Use the view's bounds (view-relative; Location will always be (0,0)
-							if (view.Visible && view.Frame.Width > 0 && view.Frame.Height > 0) {
-								var rect = view.Bounds;
-								view.OnDrawContent (rect);
-								view.Redraw (rect);
-								view.OnDrawContentComplete (rect);
-							}
+							//if (view.Visible && view.Frame.Width > 0 && view.Frame.Height > 0) {
+							view.Redraw (view.Bounds);
+							//}
 						}
-						view.NeedDisplay = Rect.Empty;
-						view.ChildNeedsDisplay = false;
+						view.ClearNeedsDisplay ();
 					}
 				}
 			}
 
 			// Invoke DrawContentCompleteEvent
-			OnDrawContentComplete (boundsAdjustedForBorder);
+			OnDrawContentComplete (bounds);
 
+			// BUGBUG: v2 - We should be able to use View.SetClip here and not have to resort to knowing Driver details.
+			Driver.Clip = prevClip;
 			ClearLayoutNeeded ();
 			ClearNeedsDisplay ();
-		}
-
-		Rect GetNeedDisplay (Rect containerBounds)
-		{
-			Rect rect = ViewToScreen (NeedDisplay);
-			if (!containerBounds.IsEmpty) {
-				rect.Width = Math.Min (NeedDisplay.Width, containerBounds.Width);
-				rect.Height = Math.Min (NeedDisplay.Height, containerBounds.Height);
-			}
-
-			return rect;
-		}
-
-		Rect GetContainerBounds ()
-		{
-			var containerBounds = SuperView == null ? default : SuperView.ViewToScreen (SuperView.Bounds);
-			var driverClip = Driver == null ? Rect.Empty : Driver.Clip;
-			containerBounds.X = Math.Max (containerBounds.X, driverClip.X);
-			containerBounds.Y = Math.Max (containerBounds.Y, driverClip.Y);
-			var lenOffset = (driverClip.X + driverClip.Width) - (containerBounds.X + containerBounds.Width);
-			if (containerBounds.X + containerBounds.Width > driverClip.X + driverClip.Width) {
-				containerBounds.Width = Math.Max (containerBounds.Width + lenOffset, 0);
-			} else {
-				containerBounds.Width = Math.Min (containerBounds.Width, driverClip.Width);
-			}
-			lenOffset = (driverClip.Y + driverClip.Height) - (containerBounds.Y + containerBounds.Height);
-			if (containerBounds.Y + containerBounds.Height > driverClip.Y + driverClip.Height) {
-				containerBounds.Height = Math.Max (containerBounds.Height + lenOffset, 0);
-			} else {
-				containerBounds.Height = Math.Min (containerBounds.Height, driverClip.Height);
-			}
-			return containerBounds;
 		}
 
 		/// <summary>
@@ -1629,13 +1841,25 @@ namespace Terminal.Gui {
 		/// <summary>
 		/// Enables overrides to draw infinitely scrolled content and/or a background behind added controls. 
 		/// </summary>
-		/// <param name="viewport">The view-relative rectangle describing the currently visible viewport into the <see cref="View"/></param>
+		/// <param name="contentArea">The view-relative rectangle describing the currently visible viewport into the <see cref="View"/></param>
 		/// <remarks>
 		/// This method will be called before any subviews added with <see cref="Add(View)"/> have been drawn. 
 		/// </remarks>
-		public virtual void OnDrawContent (Rect viewport)
+		public virtual void OnDrawContent (Rect contentArea)
 		{
-			DrawContent?.Invoke (this, new DrawEventArgs (viewport));
+			// TODO: Make DrawContent a cancelable event
+			// if (!DrawContent?.Invoke(this, new DrawEventArgs (viewport)) {
+			DrawContent?.Invoke (this, new DrawEventArgs (contentArea));
+
+			if (!ustring.IsNullOrEmpty (TextFormatter.Text)) {
+				if (TextFormatter != null) {
+					TextFormatter.NeedsFormat = true;
+				}
+				TextFormatter?.Draw (ViewToScreen (contentArea), HasFocus ? GetFocusColor () : GetNormalColor (),
+				    HasFocus ? ColorScheme.HotFocus : GetHotNormalColor (),
+				    new Rect (ViewToScreen (contentArea).Location, Bounds.Size), true);
+				SetSubViewNeedsDisplay ();
+			}
 		}
 
 		/// <summary>
@@ -1669,24 +1893,26 @@ namespace Terminal.Gui {
 		/// <param name="view">View.</param>
 		void SetFocus (View view)
 		{
-			if (view == null)
+			if (view == null) {
 				return;
+			}
 			//Console.WriteLine ($"Request to focus {view}");
-			if (!view.CanFocus || !view.Visible || !view.Enabled)
+			if (!view.CanFocus || !view.Visible || !view.Enabled) {
 				return;
-			if (focused?.hasFocus == true && focused == view)
+			}
+			if (focused?._hasFocus == true && focused == view) {
 				return;
-			if ((focused?.hasFocus == true && focused?.SuperView == view)
-				|| view == this) {
+			}
+			if ((focused?._hasFocus == true && focused?.SuperView == view) || view == this) {
 
-				if (!view.hasFocus) {
-					view.hasFocus = true;
+				if (!view._hasFocus) {
+					view._hasFocus = true;
 				}
 				return;
 			}
 			// Make sure that this view is a subview
 			View c;
-			for (c = view.container; c != null; c = c.container)
+			for (c = view._superView; c != null; c = c._superView)
 				if (c == this)
 					break;
 			if (c == null)
@@ -2339,6 +2565,10 @@ namespace Terminal.Gui {
 		{
 			switch (pos) {
 			case Pos.PosView pv:
+				// See #2461
+				//if (!from.InternalSubviews.Contains (pv.Target)) {
+				//	throw new InvalidOperationException ($"View {pv.Target} is not a subview of {from}");
+				//}
 				if (pv.Target != this) {
 					nEdges.Add ((pv.Target, from));
 				}
@@ -2359,6 +2589,10 @@ namespace Terminal.Gui {
 		{
 			switch (dim) {
 			case Dim.DimView dv:
+				// See #2461
+				//if (!from.InternalSubviews.Contains (dv.Target)) {
+				//	throw new InvalidOperationException ($"View {dv.Target} is not a subview of {from}");
+				//}
 				if (dv.Target != this) {
 					nEdges.Add ((dv.Target, from));
 				}
@@ -2379,7 +2613,7 @@ namespace Terminal.Gui {
 		{
 			foreach (var v in from.InternalSubviews) {
 				nNodes.Add (v);
-				if (v.layoutStyle != LayoutStyle.Computed) {
+				if (v._layoutStyle != LayoutStyle.Computed) {
 					continue;
 				}
 				CollectPos (v.X, v, ref nNodes, ref nEdges);
@@ -2396,6 +2630,7 @@ namespace Terminal.Gui {
 
 			// Set of all nodes with no incoming edges
 			var noEdgeNodes = new HashSet<View> (nodes.Where (n => edges.All (e => !e.To.Equals (n))));
+
 
 			while (noEdgeNodes.Any ()) {
 				//  remove a node n from S
@@ -2439,6 +2674,45 @@ namespace Terminal.Gui {
 			return result;
 		} // TopologicalSort
 
+		/// <summary>
+		/// Overriden by <see cref="Frame"/> to do nothing, as the <see cref="Frame"/> does not have frames.
+		/// </summary>
+		internal virtual void LayoutFrames ()
+		{
+			if (Margin == null) return; // CreateFrames() has not been called yet
+
+			if (Margin.Frame.Size != Frame.Size) {
+				Margin.X = 0;
+				Margin.Y = 0;
+				Margin.Width = Frame.Size.Width;
+				Margin.Height = Frame.Size.Height;
+				Margin.SetNeedsLayout ();
+				Margin.LayoutSubviews ();
+				Margin.SetNeedsDisplay ();
+			}
+
+			var border = Margin.Thickness.GetInside (Margin.Frame);
+			if (border != BorderFrame.Frame) {
+				BorderFrame.X = border.Location.X;
+				BorderFrame.Y = border.Location.Y;
+				BorderFrame.Width = border.Size.Width;
+				BorderFrame.Height = border.Size.Height;
+				BorderFrame.SetNeedsLayout ();
+				BorderFrame.LayoutSubviews ();
+				BorderFrame.SetNeedsDisplay ();
+			}
+
+			var padding = BorderFrame.Thickness.GetInside (BorderFrame.Frame);
+			if (padding != Padding.Frame) {
+				Padding.X = padding.Location.X;
+				Padding.Y = padding.Location.Y;
+				Padding.Width = padding.Size.Width;
+				Padding.Height = padding.Size.Height;
+				Padding.SetNeedsLayout ();
+				Padding.LayoutSubviews ();
+				Padding.SetNeedsDisplay ();
+			}
+		}
 
 		/// <summary>
 		/// Invoked when a view starts executing or when the dimensions of the view have changed, for example in
@@ -2453,6 +2727,8 @@ namespace Terminal.Gui {
 				return;
 			}
 
+			LayoutFrames ();
+
 			var oldBounds = Bounds;
 			OnLayoutStarted (new LayoutEventArgs () { OldBounds = oldBounds });
 
@@ -2464,7 +2740,7 @@ namespace Terminal.Gui {
 			CollectAll (this, ref nodes, ref edges);
 			var ordered = View.TopologicalSort (SuperView, nodes, edges);
 			foreach (var v in ordered) {
-				LayoutSubview (v, Frame);
+				LayoutSubview (v, new Rect (GetBoundsOffset (), Bounds.Size));
 			}
 
 			// If the 'to' is rooted to 'from' and the layoutstyle is Computed it's a special-case.
@@ -2481,10 +2757,10 @@ namespace Terminal.Gui {
 			OnLayoutComplete (new LayoutEventArgs () { OldBounds = oldBounds });
 		}
 
-		private void LayoutSubview (View v, Rect hostFrame)
+		private void LayoutSubview (View v, Rect contentArea)
 		{
 			if (v.LayoutStyle == LayoutStyle.Computed) {
-				v.SetRelativeLayout (hostFrame);
+				v.SetRelativeLayout (contentArea);
 			}
 
 			v.LayoutSubviews ();
@@ -2515,9 +2791,21 @@ namespace Terminal.Gui {
 			get => text;
 			set {
 				text = value;
-				SetHotKey ();
+				if (IsInitialized) {
+					SetHotKey ();
+					UpdateTextFormatterText ();
+					OnResizeNeeded ();
+				}
+
+				// BUGBUG: v2 - This is here as a HACK until we fix the unit tests to not check a view's dims until
+				// after it's been initialized. See #2450
 				UpdateTextFormatterText ();
-				OnResizeNeeded ();
+
+#if DEBUG
+				if (text != null && string.IsNullOrEmpty (Id)) {
+					Id = text.ToString ();
+				}
+#endif
 			}
 		}
 
@@ -2597,27 +2885,35 @@ namespace Terminal.Gui {
 		public virtual TextDirection TextDirection {
 			get => TextFormatter.Direction;
 			set {
-				if (TextFormatter.Direction != value) {
-					var isValidOldAutSize = autoSize && IsValidAutoSize (out var _);
-					var directionChanged = TextFormatter.IsHorizontalDirection (TextFormatter.Direction)
-					    != TextFormatter.IsHorizontalDirection (value);
-
+				if (!IsInitialized) {
 					TextFormatter.Direction = value;
-					UpdateTextFormatterText ();
-
-					if ((!ForceValidatePosDim && directionChanged && AutoSize)
-					    || (ForceValidatePosDim && directionChanged && AutoSize && isValidOldAutSize)) {
-						OnResizeNeeded ();
-					} else if (directionChanged && IsAdded) {
-						SetWidthHeight (Bounds.Size);
-						SetMinWidthHeight ();
-					} else {
-						SetMinWidthHeight ();
-					}
-					TextFormatter.Size = GetSizeNeededForTextAndHotKey ();
-					SetNeedsDisplay ();
+				} else {
+					UpdateTextDirection (value);
 				}
 			}
+		}
+
+		private void UpdateTextDirection (TextDirection newDirection)
+		{
+			var directionChanged = TextFormatter.IsHorizontalDirection (TextFormatter.Direction)
+			    != TextFormatter.IsHorizontalDirection (newDirection);
+			TextFormatter.Direction = newDirection;
+
+			var isValidOldAutoSize = autoSize && IsValidAutoSize (out var _);
+
+			UpdateTextFormatterText ();
+
+			if ((!ForceValidatePosDim && directionChanged && AutoSize)
+			    || (ForceValidatePosDim && directionChanged && AutoSize && isValidOldAutoSize)) {
+				OnResizeNeeded ();
+			} else if (directionChanged && IsAdded) {
+				SetWidthHeight (Bounds.Size);
+				SetMinWidthHeight ();
+			} else {
+				SetMinWidthHeight ();
+			}
+			TextFormatter.Size = GetSizeNeededForTextAndHotKey ();
+			SetNeedsDisplay ();
 		}
 
 		/// <summary>
@@ -2699,6 +2995,7 @@ namespace Terminal.Gui {
 			}
 		}
 
+		// TODO: v2 Nuke teh Border property (rename BorderFrame to Border)
 		Border border;
 
 		/// <inheritdoc/>
@@ -2707,17 +3004,20 @@ namespace Terminal.Gui {
 			set {
 				if (border != value) {
 					border = value;
+
 					SetNeedsDisplay ();
+
+					if (border != null) {
+						Border_BorderChanged (border);
+						border.BorderChanged += Border_BorderChanged;
+					}
+
 				}
 			}
 		}
 
+		// TODO: v2 nuke This
 		/// <summary>
-		/// Get or sets whether the view will use <see cref="Terminal.Gui.Border"/> (if <see cref="Border"/> is set) to draw 
-		/// a border. If <see langword="false"/> (the default),
-		/// <see cref="View.Redraw(Rect)"/> will call <see cref="Border.DrawContent(View, bool)"/>
-		/// to draw the view's border. If <see langword="true"/> no border is drawn (and the view is expected to draw the border
-		/// itself).
 		/// </summary>
 		public virtual bool IgnoreBorderPropertyOnRedraw { get; set; }
 
@@ -2732,6 +3032,9 @@ namespace Terminal.Gui {
 
 		void SetHotKey ()
 		{
+			if (TextFormatter == null) {
+				return; // throw new InvalidOperationException ("Can't set HotKey unless a TextFormatter has been created");
+			}
 			TextFormatter.FindHotKey (text, HotKeySpecifier, true, out _, out var hk);
 			if (hotKey != hk) {
 				HotKey = hk;
@@ -2750,7 +3053,8 @@ namespace Terminal.Gui {
 				if (ForceValidatePosDim) {
 					aSize = SetWidthHeight (nBoundsSize);
 				} else {
-					Bounds = new Rect (Bounds.X, Bounds.Y, nBoundsSize.Width, nBoundsSize.Height);
+					Height = nBoundsSize.Height;
+					Width = nBoundsSize.Width; // = new Rect (Bounds.X, Bounds.Y, nBoundsSize.Width, nBoundsSize.Height);
 				}
 			}
 			// BUGBUG: This call may be redundant
@@ -2862,13 +3166,16 @@ namespace Terminal.Gui {
 		public Size GetSizeNeededForTextAndHotKey ()
 		{
 			if (ustring.IsNullOrEmpty (TextFormatter.Text)) {
+
+				if (!IsInitialized) return Size.Empty;
+
 				return Bounds.Size;
 			}
 
 			// BUGBUG: This IGNORES what Text is set to, using on only the current View size. This doesn't seem to make sense.
 			// BUGBUG: This uses Frame; in v2 it should be Bounds
 			return new Size (frame.Size.Width + GetHotKeySpecifierLength (),
-			    frame.Size.Height + GetHotKeySpecifierLength (false));
+					 frame.Size.Height + GetHotKeySpecifierLength (false));
 		}
 
 		/// <inheritdoc/>
@@ -2962,6 +3269,13 @@ namespace Terminal.Gui {
 		/// <inheritdoc/>
 		protected override void Dispose (bool disposing)
 		{
+			Margin?.Dispose ();
+			Margin = null;
+			BorderFrame?.Dispose ();
+			Border = null;
+			Padding?.Dispose ();
+			Padding = null;
+
 			for (var i = InternalSubviews.Count - 1; i >= 0; i--) {
 				var subview = InternalSubviews [i];
 				Remove (subview);
@@ -2995,13 +3309,18 @@ namespace Terminal.Gui {
 				oldCanFocus = CanFocus;
 				oldTabIndex = tabIndex;
 
-				//UpdateTextFormatterText ();
+				UpdateTextDirection (TextDirection);
+				UpdateTextFormatterText ();
+				SetHotKey ();
+
 				// TODO: Figure out why ScrollView and other tests fail if this call is put here 
 				// instead of the constructor.
-				// OnSizeChanged ();
+				OnResizeNeeded ();
+				//InitializeFrames ();
 
 			} else {
 				//throw new InvalidOperationException ("The view is already initialized.");
+
 			}
 
 			if (subviews?.Count > 0) {
@@ -3053,20 +3372,26 @@ namespace Terminal.Gui {
 		{
 			var w = desiredWidth;
 			bool canSetWidth;
-			if (Width is Dim.DimCombine || Width is Dim.DimView || Width is Dim.DimFill) {
-				// It's a Dim.DimCombine and so can't be assigned. Let it have it's width anchored.
+			switch (Width) {
+			case Dim.DimCombine _:
+			case Dim.DimView _:
+			case Dim.DimFill _:
+				// It's a Dim.DimCombine and so can't be assigned. Let it have it's Width anchored.
 				w = Width.Anchor (w);
 				canSetWidth = !ForceValidatePosDim;
-			} else if (Width is Dim.DimFactor factor) {
-				// Tries to get the SuperView width otherwise the view width.
+				break;
+			case Dim.DimFactor factor:
+				// Tries to get the SuperView Width otherwise the view Width.
 				var sw = SuperView != null ? SuperView.Frame.Width : w;
 				if (factor.IsFromRemaining ()) {
 					sw -= Frame.X;
 				}
 				w = Width.Anchor (sw);
 				canSetWidth = !ForceValidatePosDim;
-			} else {
+				break;
+			default:
 				canSetWidth = true;
+				break;
 			}
 			resultWidth = w;
 
@@ -3160,14 +3485,17 @@ namespace Terminal.Gui {
 		}
 
 		/// <summary>
-		/// Finds which view that belong to the <paramref name="start"/> at the provided location.
+		/// Finds which view that belong to the <paramref name="start"/> superview at the provided location.
 		/// </summary>
-		/// <param name="start">The view where to look for.</param>
-		/// <param name="x">The column location.</param>
-		/// <param name="y">The row location.</param>
-		/// <param name="resx">The found view column location.</param>
-		/// <param name="resy">The found view row location.</param>
-		/// <returns>The view that belong to the provided location.</returns>
+		/// <param name="start">The superview where to look for.</param>
+		/// <param name="x">The column location in the superview.</param>
+		/// <param name="y">The row location in the superview.</param>
+		/// <param name="resx">The found view screen relative column location.</param>
+		/// <param name="resy">The found view screen relative row location.</param>
+		/// <returns>
+		///  The view that was found at the <praramref name="x"/> and <praramref name="y"/> coordinates.
+		///  <see langword="null"/> if no view was found.
+		/// </returns>
 		public static View FindDeepestView (View start, int x, int y, out int resx, out int resy)
 		{
 			var startFrame = start.Frame;
@@ -3177,12 +3505,11 @@ namespace Terminal.Gui {
 				resy = 0;
 				return null;
 			}
-
 			if (start.InternalSubviews != null) {
 				int count = start.InternalSubviews.Count;
 				if (count > 0) {
-					var rx = x - startFrame.X;
-					var ry = y - startFrame.Y;
+					var rx = x - (startFrame.X + start.GetBoundsOffset ().X);
+					var ry = y - (startFrame.Y + start.GetBoundsOffset ().Y);
 					for (int i = count - 1; i >= 0; i--) {
 						View v = start.InternalSubviews [i];
 						if (v.Visible && v.Frame.Contains (rx, ry)) {

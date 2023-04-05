@@ -44,7 +44,7 @@ namespace Terminal.Gui {
 			/// </summary>
 			/// <remarks>
 			/// Title are not rendered for root level tiles 
-			/// <see cref="Border.BorderStyle"/> is <see cref="BorderStyle.None"/>.
+			/// <see cref="BorderStyle"/> is <see cref="BorderStyle.None"/>.
 			///</remarks>
 			public string Title {
 				get => _title;
@@ -143,10 +143,6 @@ namespace Terminal.Gui {
 		public TileView (int tiles)
 		{
 			RebuildForTileCount (tiles);
-			IgnoreBorderPropertyOnRedraw = true;
-			Border = new Border () {
-				BorderStyle = BorderStyle.None
-			};
 		}
 
 		/// <summary>
@@ -377,6 +373,20 @@ namespace Terminal.Gui {
 			return true;
 		}
 
+		/// <summary>
+		/// BUGBUG: v2 Temporary for now
+		/// </summary>
+		public BorderStyle BorderStyle { get; set; } = BorderStyle.None;
+
+		/// <summary>
+		/// Overriden so no Frames get drawn (BUGBUG: v2 fix this hack)
+		/// </summary>
+		/// <param name="bounds"></param>
+		/// <returns></returns>
+		public override bool OnDrawFrames (Rect bounds)
+		{
+			return false;
+		}
 
 		/// <inheritdoc/>
 		public override void Redraw (Rect bounds)
@@ -394,11 +404,11 @@ namespace Terminal.Gui {
 			if (IsRootTileView ()) {
 				if (HasBorder ()) {
 
-					lc.AddLine (new Point (0, 0), bounds.Width - 1, Orientation.Horizontal, Border.BorderStyle);
-					lc.AddLine (new Point (0, 0), bounds.Height - 1, Orientation.Vertical, Border.BorderStyle);
+					lc.AddLine (new Point (0, 0), bounds.Width - 1, Orientation.Horizontal, BorderStyle);
+					lc.AddLine (new Point (0, 0), bounds.Height - 1, Orientation.Vertical, BorderStyle);
 
-					lc.AddLine (new Point (bounds.Width - 1, bounds.Height - 1), -bounds.Width + 1, Orientation.Horizontal, Border.BorderStyle);
-					lc.AddLine (new Point (bounds.Width - 1, bounds.Height - 1), -bounds.Height + 1, Orientation.Vertical, Border.BorderStyle);
+					lc.AddLine (new Point (bounds.Width - 1, bounds.Height - 1), -bounds.Width + 1, Orientation.Horizontal, BorderStyle);
+					lc.AddLine (new Point (bounds.Width - 1, bounds.Height - 1), -bounds.Height + 1, Orientation.Vertical, BorderStyle);
 				}
 
 				foreach (var line in allLines) {
@@ -419,7 +429,7 @@ namespace Terminal.Gui {
 						length += 2;
 					}
 
-					lc.AddLine (origin, length, line.Orientation, Border.BorderStyle);
+					lc.AddLine (origin, length, line.Orientation, BorderStyle);
 				}
 			}
 
@@ -697,9 +707,9 @@ namespace Terminal.Gui {
 
 			return root;
 		}
-		private void Setup (Rect bounds)
+		private void Setup (Rect contentArea)
 		{
-			if (bounds.IsEmpty || bounds.Height <= 0 || bounds.Width <= 0) {
+			if (contentArea.IsEmpty || contentArea.Height <= 0 || contentArea.Width <= 0) {
 				return;
 			}
 
@@ -733,14 +743,14 @@ namespace Terminal.Gui {
 				var tile = visibleTiles [i];
 
 				if (Orientation == Orientation.Vertical) {
-					tile.ContentView.X = i == 0 ? bounds.X : Pos.Right (visibleSplitterLines [i - 1]);
-					tile.ContentView.Y = bounds.Y;
-					tile.ContentView.Height = bounds.Height;
+					tile.ContentView.X = i == 0 ? contentArea.X : Pos.Right (visibleSplitterLines [i - 1]);
+					tile.ContentView.Y = contentArea.Y;
+					tile.ContentView.Height = contentArea.Height;
 					tile.ContentView.Width = GetTileWidthOrHeight (i, Bounds.Width, visibleTiles, visibleSplitterLines);
 				} else {
-					tile.ContentView.X = bounds.X;
-					tile.ContentView.Y = i == 0 ? bounds.Y : Pos.Bottom (visibleSplitterLines [i - 1]);
-					tile.ContentView.Width = bounds.Width;
+					tile.ContentView.X = contentArea.X;
+					tile.ContentView.Y = i == 0 ? contentArea.Y : Pos.Bottom (visibleSplitterLines [i - 1]);
+					tile.ContentView.Width = contentArea.Width;
 					tile.ContentView.Height = GetTileWidthOrHeight (i, Bounds.Height, visibleTiles, visibleSplitterLines);
 				}
 			}
@@ -1061,7 +1071,7 @@ namespace Terminal.Gui {
 
 		private bool HasBorder ()
 		{
-			return Border?.BorderStyle != BorderStyle.None;
+			return BorderStyle != BorderStyle.None;
 		}
 
 		/// <inheritdoc/>

@@ -657,7 +657,7 @@ namespace Terminal.Gui.MenuTests {
 			Application.Top.Redraw (Application.Top.Bounds);
 			var expected = @"
  File  Edit                                 
-┌ Window ──────────────────────────────────┐
+┌┤Window├──────────────────────────────────┐
 │                                          │
 │                                          │
 │                                          │
@@ -907,14 +907,14 @@ namespace Terminal.Gui.MenuTests {
 		public void Draw_A_ContextManu_Over_A_Dialog ()
 		{
 			var top = Application.Top;
-			var win = new Window ("Window");
+			var win = new Window ();
 			top.Add (win);
 			Application.Begin (top);
 			((FakeDriver)Application.Driver).SetBufferSize (20, 15);
 
 			Assert.Equal (new Rect (0, 0, 20, 15), win.Frame);
 			TestHelpers.AssertDriverContentsWithFrameAre (@"
-┌ Window ──────────┐
+┌──────────────────┐
 │                  │
 │                  │
 │                  │
@@ -930,15 +930,15 @@ namespace Terminal.Gui.MenuTests {
 │                  │
 └──────────────────┘", output);
 
-			var dialog = new Dialog ("Dialog") { X = 2, Y = 2, Width = 15, Height = 4 };
+			var dialog = new Dialog () { X = 2, Y = 2, Width = 15, Height = 4 };
 			dialog.Add (new TextField ("Test") { X = Pos.Center (), Width = 10 });
 			var rs = Application.Begin (dialog);
 
 			Assert.Equal (new Rect (2, 2, 15, 4), dialog.Frame);
 			TestHelpers.AssertDriverContentsWithFrameAre (@"
-┌ Window ──────────┐
+┌──────────────────┐
 │                  │
-│ ┌ Dialog ─────┐  │
+│ ┌─────────────┐  │
 │ │ Test        │  │
 │ │             │  │
 │ └─────────────┘  │
@@ -964,9 +964,9 @@ namespace Terminal.Gui.MenuTests {
 			var firstIteration = false;
 			Application.RunMainLoopIteration (ref rs, true, ref firstIteration);
 			TestHelpers.AssertDriverContentsWithFrameAre (@"
-┌ Window ──────────┐
+┌──────────────────┐
 │                  │
-│ ┌ Dialog ─────┐  │
+│ ┌─────────────┐  │
 │ │ Test        │  │
 ┌───────────────────
 │ Select All   Ctrl+

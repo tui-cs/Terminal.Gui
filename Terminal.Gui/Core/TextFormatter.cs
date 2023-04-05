@@ -1188,10 +1188,13 @@ namespace Terminal.Gui {
 			if (maxBounds.Width == 0 || maxBounds.Height == 0) {
 				return;
 			}
-			var savedClip = Application.Driver?.Clip;
-			if (Application.Driver != null) {
-				Application.Driver.Clip = maxBounds;
-			}
+
+			// BUGBUG: v2 - TextFormatter should not change the clip region. If a caller wants to break out of the clip region it should do
+			// so explicitly.
+			//var savedClip = Application.Driver?.Clip;
+			//if (Application.Driver != null) {
+			//	Application.Driver.Clip = maxBounds;
+			//}
 			var lineOffset = !isVertical && bounds.Y < 0 ? Math.Abs (bounds.Y) : 0;
 
 			for (int line = lineOffset; line < linesFormated.Count; line++) {
@@ -1326,9 +1329,9 @@ namespace Terminal.Gui {
 					}
 				}
 			}
-			if (Application.Driver != null) {
-				Application.Driver.Clip = (Rect)savedClip;
-			}
+			//if (Application.Driver != null) {
+			//	Application.Driver.Clip = (Rect)savedClip;
+			//}
 		}
 	}
 }

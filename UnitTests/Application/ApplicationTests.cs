@@ -93,7 +93,8 @@ namespace Terminal.Gui.ApplicationTests {
 			Application.Shutdown ();
 
 #if DEBUG_IDISPOSABLE
-			Assert.Single (Responder.Instances);
+			// 4 for Application.Top and it's 3 Frames
+			Assert.Equal (4, Responder.Instances.Count);
 			Assert.True (Responder.Instances [0].WasDisposed);
 #endif
 		}
@@ -459,6 +460,19 @@ namespace Terminal.Gui.ApplicationTests {
 			Assert.Null (SynchronizationContext.Current);
 		}
 		#endregion
+
+		[Fact, AutoInitShutdown]
+		public void Begin_Sets_Application_Top_To_Console_Size()
+		{
+			Assert.Equal (new Rect (0, 0, 80, 25), Application.Top.Frame);
+
+			((FakeDriver)Application.Driver).SetBufferSize (5, 5);
+			Application.Begin (Application.Top);
+			// BUGBUG: v2 - 
+			Assert.Equal (new Rect (0, 0, 80, 25), Application.Top.Frame);
+			((FakeDriver)Application.Driver).SetBufferSize (5, 5);
+			Assert.Equal (new Rect (0, 0, 5, 5), Application.Top.Frame);
+		}
 
 		[Fact]
 		[AutoInitShutdown]

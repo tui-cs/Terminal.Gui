@@ -12,6 +12,7 @@ using Xunit.Abstractions;
 using Rune = System.Rune;
 
 namespace Terminal.Gui.ViewTests {
+// BUGBUG: v2 see https://github.com/gui-cs/Terminal.Gui/issues/2463
 
 	#region Helper Classes
 	class FakeHAxis : HorizontalAxis {
@@ -85,6 +86,8 @@ namespace Terminal.Gui.ViewTests {
 			GraphViewTests.InitFakeDriver ();
 
 			var gv = new GraphView ();
+			gv.BeginInit (); gv.EndInit ();
+
 			gv.ColorScheme = new ColorScheme ();
 			gv.MarginBottom = 1;
 			gv.MarginLeft = 1;
@@ -99,6 +102,8 @@ namespace Terminal.Gui.ViewTests {
 		public void ScreenToGraphSpace_DefaultCellSize ()
 		{
 			var gv = new GraphView ();
+			gv.BeginInit (); gv.EndInit ();
+
 			gv.Bounds = new Rect (0, 0, 20, 10);
 
 			// origin should be bottom left
@@ -118,6 +123,8 @@ namespace Terminal.Gui.ViewTests {
 		public void ScreenToGraphSpace_DefaultCellSize_WithMargin ()
 		{
 			var gv = new GraphView ();
+			gv.BeginInit (); gv.EndInit ();
+
 			gv.Bounds = new Rect (0, 0, 20, 10);
 
 			// origin should be bottom left
@@ -152,6 +159,8 @@ namespace Terminal.Gui.ViewTests {
 		public void ScreenToGraphSpace_CustomCellSize ()
 		{
 			var gv = new GraphView ();
+			gv.BeginInit (); gv.EndInit ();
+
 			gv.Bounds = new Rect (0, 0, 20, 10);
 
 			// Each cell of screen measures 5 units in graph data model vertically and 1/4 horizontally
@@ -181,6 +190,8 @@ namespace Terminal.Gui.ViewTests {
 		public void GraphSpaceToScreen_DefaultCellSize ()
 		{
 			var gv = new GraphView ();
+			gv.BeginInit (); gv.EndInit ();
+
 			gv.Bounds = new Rect (0, 0, 20, 10);
 
 			// origin should be bottom left
@@ -198,6 +209,8 @@ namespace Terminal.Gui.ViewTests {
 		public void GraphSpaceToScreen_DefaultCellSize_WithMargin ()
 		{
 			var gv = new GraphView ();
+			gv.BeginInit (); gv.EndInit ();
+
 			gv.Bounds = new Rect (0, 0, 20, 10);
 
 			// origin should be bottom left
@@ -225,6 +238,8 @@ namespace Terminal.Gui.ViewTests {
 		public void GraphSpaceToScreen_ScrollOffset ()
 		{
 			var gv = new GraphView ();
+			gv.BeginInit (); gv.EndInit ();
+
 			gv.Bounds = new Rect (0, 0, 20, 10);
 
 			//graph is scrolled to present chart space -5 to 5 in both axes
@@ -244,6 +259,8 @@ namespace Terminal.Gui.ViewTests {
 		public void GraphSpaceToScreen_CustomCellSize ()
 		{
 			var gv = new GraphView ();
+			gv.BeginInit (); gv.EndInit ();
+			
 			gv.Bounds = new Rect (0, 0, 20, 10);
 
 			// Each cell of screen is responsible for rendering 5 units in graph data model
@@ -282,6 +299,8 @@ namespace Terminal.Gui.ViewTests {
 		public void GraphSpaceToScreen_CustomCellSize_WithScrollOffset ()
 		{
 			var gv = new GraphView ();
+			gv.BeginInit (); gv.EndInit ();
+
 			gv.Bounds = new Rect (0, 0, 20, 10);
 
 			// Each cell of screen is responsible for rendering 5 units in graph data model
@@ -325,6 +344,8 @@ namespace Terminal.Gui.ViewTests {
 			InitFakeDriver ();
 
 			var gv = new GraphView ();
+			gv.BeginInit (); gv.EndInit ();
+
 			gv.ColorScheme = new ColorScheme ();
 			gv.Bounds = new Rect (0, 0, 50, 30);
 			gv.Series.Add (new ScatterSeries () { Points = new List<PointF> { new PointF (1, 1) } });
@@ -348,6 +369,7 @@ namespace Terminal.Gui.ViewTests {
 		public void TestReversing_ScreenToGraphSpace ()
 		{
 			var gv = new GraphView ();
+			gv.BeginInit (); gv.EndInit ();
 			gv.Bounds = new Rect (0, 0, 50, 30);
 
 			// How much graph space each cell of the console depicts
@@ -399,6 +421,7 @@ namespace Terminal.Gui.ViewTests {
 			GraphViewTests.InitFakeDriver ();
 
 			var gv = new GraphView ();
+			gv.BeginInit (); gv.EndInit ();
 			gv.ColorScheme = new ColorScheme ();
 			gv.Bounds = new Rect (0, 0, 50, 30);
 
@@ -408,7 +431,7 @@ namespace Terminal.Gui.ViewTests {
 			var series = new FakeSeries ((v, s, g) => { graphScreenBounds = s; fullGraphBounds = g; });
 			gv.Series.Add (series);
 
-
+			gv.LayoutSubviews ();
 			gv.Redraw (gv.Bounds);
 			Assert.Equal (new RectangleF (0, 0, 50, 30), fullGraphBounds);
 			Assert.Equal (new Rect (0, 0, 50, 30), graphScreenBounds);
@@ -421,6 +444,7 @@ namespace Terminal.Gui.ViewTests {
 
 			// Even with a margin the graph should be drawn from 
 			// the origin, we just get less visible width/height
+			gv.LayoutSubviews ();
 			gv.Redraw (gv.Bounds);
 			Assert.Equal (new RectangleF (0, 0, 45, 28), fullGraphBounds);
 
@@ -444,6 +468,7 @@ namespace Terminal.Gui.ViewTests {
 			GraphViewTests.InitFakeDriver ();
 
 			var gv = new GraphView ();
+			gv.BeginInit (); gv.EndInit ();
 			gv.ColorScheme = new ColorScheme ();
 			gv.Bounds = new Rect (0, 0, 50, 30);
 
@@ -457,6 +482,7 @@ namespace Terminal.Gui.ViewTests {
 
 			gv.Series.Add (series);
 
+			gv.LayoutSubviews ();
 			gv.Redraw (gv.Bounds);
 			// Since each cell of the console is 2x5 of graph space the graph
 			// bounds to be rendered are larger
@@ -470,6 +496,7 @@ namespace Terminal.Gui.ViewTests {
 
 			// Even with a margin the graph should be drawn from 
 			// the origin, we just get less visible width/height
+			gv.LayoutSubviews ();
 			gv.Redraw (gv.Bounds);
 			Assert.Equal (new RectangleF (0, 0, 90, 140), fullGraphBounds);
 
@@ -614,6 +641,7 @@ namespace Terminal.Gui.ViewTests {
 			gv.AxisX = fakeXAxis = new FakeHAxis () { Increment = 0 };
 			gv.AxisY = new FakeVAxis () { Increment = 0 };
 
+			gv.LayoutSubviews ();
 			gv.Redraw (gv.Bounds);
 
 			// Since bar series has no bars yet no labels should be displayed
@@ -621,6 +649,7 @@ namespace Terminal.Gui.ViewTests {
 
 			multibarSeries.AddBars ("hey", 'M', 0.5001f, 0.5001f);
 			fakeXAxis.LabelPoints.Clear ();
+			gv.LayoutSubviews ();
 			gv.Redraw (gv.Bounds);
 
 			Assert.Equal (4, fakeXAxis.LabelPoints.Single ());
@@ -628,6 +657,7 @@ namespace Terminal.Gui.ViewTests {
 			multibarSeries.AddBars ("there", 'M', 0.24999f, 0.74999f);
 			multibarSeries.AddBars ("bob", 'M', 1, 2);
 			fakeXAxis.LabelPoints.Clear ();
+			gv.LayoutSubviews ();
 			gv.Redraw (gv.Bounds);
 
 			Assert.Equal (3, fakeXAxis.LabelPoints.Count);
@@ -662,6 +692,7 @@ namespace Terminal.Gui.ViewTests {
 			GraphViewTests.InitFakeDriver ();
 
 			var gv = new GraphView ();
+			gv.BeginInit (); gv.EndInit ();
 			gv.ColorScheme = new ColorScheme ();
 
 			// y axis goes from 0.1 to 1 across 10 console rows
@@ -893,7 +924,7 @@ namespace Terminal.Gui.ViewTests {
 		public void TestHAxisLocation_NoMargin ()
 		{
 			var gv = GetGraph (out FakeHAxis axis);
-
+			gv.LayoutSubviews ();
 			gv.Redraw (gv.Bounds);
 
 			Assert.DoesNotContain (new Point (-1, 29), axis.DrawAxisLinePoints);
@@ -917,6 +948,7 @@ namespace Terminal.Gui.ViewTests {
 			var gv = GetGraph (out FakeHAxis axis);
 
 			gv.MarginBottom = 10;
+			gv.LayoutSubviews ();
 			gv.Redraw (gv.Bounds);
 
 			Assert.DoesNotContain (new Point (-1, 19), axis.DrawAxisLinePoints);
@@ -940,6 +972,7 @@ namespace Terminal.Gui.ViewTests {
 			var gv = GetGraph (out FakeHAxis axis);
 
 			gv.MarginLeft = 5;
+			gv.LayoutSubviews ();
 			gv.Redraw (gv.Bounds);
 
 			Assert.DoesNotContain (new Point (4, 29), axis.DrawAxisLinePoints);
@@ -972,6 +1005,7 @@ namespace Terminal.Gui.ViewTests {
 		{
 			var gv = GetGraph (out FakeVAxis axis);
 
+			gv.LayoutSubviews ();
 			gv.Redraw (gv.Bounds);
 
 			Assert.DoesNotContain (new Point (0, -1), axis.DrawAxisLinePoints);
@@ -995,6 +1029,7 @@ namespace Terminal.Gui.ViewTests {
 			var gv = GetGraph (out FakeVAxis axis);
 
 			gv.MarginBottom = 10;
+			gv.LayoutSubviews ();
 			gv.Redraw (gv.Bounds);
 
 			Assert.DoesNotContain (new Point (0, -1), axis.DrawAxisLinePoints);
@@ -1019,6 +1054,7 @@ namespace Terminal.Gui.ViewTests {
 			var gv = GetGraph (out FakeVAxis axis);
 
 			gv.MarginLeft = 5;
+			gv.LayoutSubviews ();
 			gv.Redraw (gv.Bounds);
 
 			Assert.DoesNotContain (new Point (5, -1), axis.DrawAxisLinePoints);
@@ -1056,7 +1092,7 @@ namespace Terminal.Gui.ViewTests {
 				Text = "hey!",
 				ScreenPosition = new Point (3, 1)
 			});
-
+			gv.LayoutSubviews ();
 			gv.Redraw (gv.Bounds);
 
 			var expected =
@@ -1101,6 +1137,7 @@ namespace Terminal.Gui.ViewTests {
 				GraphPosition = new PointF (2, 2)
 			});
 
+			gv.LayoutSubviews ();
 			gv.Redraw (gv.Bounds);
 
 			var expected =
@@ -1145,6 +1182,7 @@ namespace Terminal.Gui.ViewTests {
 				GraphPosition = new PointF (2, 2)
 			});
 
+			gv.LayoutSubviews ();
 			gv.Redraw (gv.Bounds);
 
 			// long text should get truncated
@@ -1177,6 +1215,7 @@ namespace Terminal.Gui.ViewTests {
 				GraphPosition = new PointF (9, 2)
 			});
 
+			gv.LayoutSubviews ();
 			gv.Redraw (gv.Bounds);
 
 			// Text is off the screen (graph x axis runs to 8 not 9)
@@ -1212,7 +1251,7 @@ namespace Terminal.Gui.ViewTests {
 			var points = new ScatterSeries ();
 			points.Points.Add (new PointF (7, 2));
 			gv.Series.Add (points);
-
+			gv.LayoutSubviews ();
 			gv.Redraw (gv.Bounds);
 
 			var expected =
@@ -1319,6 +1358,7 @@ namespace Terminal.Gui.ViewTests {
 			path.Points.Add (new PointF (1, 1));
 
 			gv.Annotations.Add (path);
+			gv.LayoutSubviews ();
 			gv.Redraw (gv.Bounds);
 
 			var expected =
@@ -1357,6 +1397,7 @@ namespace Terminal.Gui.ViewTests {
 			gv.MarginBottom = 3;
 			gv.MarginLeft = 1;
 
+			gv.LayoutSubviews ();
 			gv.Redraw (gv.Bounds);
 
 			var expected =
@@ -1395,7 +1436,8 @@ namespace Terminal.Gui.ViewTests {
 			// reserve 3 cells of the left for the margin
 			gv.MarginLeft = 3;
 			gv.MarginBottom = 1;
-
+			
+			gv.LayoutSubviews ();
 			gv.Redraw (gv.Bounds);
 
 			var expected =
@@ -1428,7 +1470,7 @@ namespace Terminal.Gui.ViewTests {
 				Points = { new PointF (1, 1), new PointF (5, 0) }
 			});
 
-
+			gv.LayoutSubviews ();
 			gv.Redraw (gv.Bounds);
 
 			var expected =
@@ -1453,7 +1495,7 @@ namespace Terminal.Gui.ViewTests {
 				Points = { new PointF (1, 1), new PointF (5, 0) }
 			});
 
-
+			gv.LayoutSubviews ();
 			gv.Redraw (gv.Bounds);
 
 			var expected =
@@ -1483,6 +1525,8 @@ namespace Terminal.Gui.ViewTests {
 			path.Points.Add (new PointF (1, 2));
 
 			gv.Annotations.Add (path);
+
+			gv.LayoutSubviews ();
 			gv.Redraw (gv.Bounds);
 
 			var expected =
@@ -1567,4 +1611,5 @@ namespace Terminal.Gui.ViewTests {
 			Assert.Equal (6.6f, render.Value);
 		}
 	}
+
 }

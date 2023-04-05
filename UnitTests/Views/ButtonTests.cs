@@ -190,7 +190,12 @@ namespace Terminal.Gui.ViewTests {
 		[Fact]
 		public void Setting_Empty_Text_Sets_HoKey_To_KeyNull ()
 		{
+			var super = new View ();
 			var btn = new Button ("Test");
+			super.Add (btn);
+			super.BeginInit ();
+			super.EndInit ();
+
 			Assert.Equal ("Test", btn.Text);
 			Assert.Equal (Key.T, btn.HotKey);
 
@@ -228,7 +233,7 @@ namespace Terminal.Gui.ViewTests {
 			Assert.Equal (new Rect (0, 0, 16, 1), btn.Bounds);
 
 			var expected = @"
-┌ Test Demo 你 ──────────────┐
+┌┤Test Demo 你├──────────────┐
 │                            │
 │      [ Say Hello 你 ]      │
 │                            │
@@ -266,7 +271,7 @@ namespace Terminal.Gui.ViewTests {
 			Assert.Equal (new Rect (0, 0, 16, 1), btn.Bounds);
 
 			var expected = @"
-┌ Test Demo 你 ──────────────┐
+┌┤Test Demo 你├──────────────┐
 │                            │
 │      [ Say Hello 你 ]      │
 │                            │
@@ -303,7 +308,7 @@ namespace Terminal.Gui.ViewTests {
 			Application.Begin (Application.Top);
 			((FakeDriver)Application.Driver).SetBufferSize (30, 5);
 			var expected = @"
-┌ Test Demo 你 ──────────────┐
+┌┤Test Demo 你├──────────────┐
 │                            │
 │      [ Say Hello 你 ]      │
 │                            │
@@ -335,7 +340,7 @@ namespace Terminal.Gui.ViewTests {
 			Application.Begin (Application.Top);
 			((FakeDriver)Application.Driver).SetBufferSize (30, 5);
 			var expected = @"
-┌ Test Demo 你 ──────────────┐
+┌┤Test Demo 你├──────────────┐
 │                            │
 │      [ Say Hello 你 ]      │
 │                            │
@@ -349,7 +354,7 @@ namespace Terminal.Gui.ViewTests {
 			Assert.True (btn.AutoSize);
 			Application.Refresh ();
 			expected = @"
-┌ Test Demo 你 ──────────────┐
+┌┤Test Demo 你├──────────────┐
 │                            │
 │  [ Say Hello 你 changed ]  │
 │                            │
@@ -382,7 +387,7 @@ namespace Terminal.Gui.ViewTests {
 			Application.Begin (Application.Top);
 			((FakeDriver)Application.Driver).SetBufferSize (30, 5);
 			var expected = @"
-┌ Test Demo 你 ──────────────┐
+┌┤Test Demo 你├──────────────┐
 │                            │
 │            [ Say Hello 你 ]│
 │                            │
@@ -396,7 +401,7 @@ namespace Terminal.Gui.ViewTests {
 			Assert.True (btn.AutoSize);
 			Application.Refresh ();
 			expected = @"
-┌ Test Demo 你 ──────────────┐
+┌┤Test Demo 你├──────────────┐
 │                            │
 │    [ Say Hello 你 changed ]│
 │                            │
@@ -507,7 +512,7 @@ namespace Terminal.Gui.ViewTests {
 			Assert.Equal (new Rect (0, 3, 12, 1), ckbMatchCase.Frame);
 			Assert.Equal (new Rect (0, 4, 18, 1), ckbMatchWholeWord.Frame);
 			var expected = @"
-┌ Find ──────────────────────────────────────────────┐
+┌┤Find├──────────────────────────────────────────────┐
 │┌────┐                                              │
 ││Find│                                              │
 ││    └─────────────────────────────────────────────┐│

@@ -103,21 +103,21 @@ namespace UICatalog.Scenarios {
 
 		public override void Setup ()
 		{
-			Win.X = 3;
-			Win.Y = 3;
-			Win.Width = Dim.Fill (3);
-			Win.Height = Dim.Fill (3);
-			var label = new Label ("ScrollView (new Rect (2, 2, 50, 20)) with a 200, 100 ContentSize...") {
+			// Offset Win to stress clipping
+			Win.X = 1;
+			Win.Y = 1;
+			Win.Width = Dim.Fill (1);
+			Win.Height = Dim.Fill (1);
+			var label = new Label () {
 				X = 0,
-				Y = 0,
-				ColorScheme = Colors.Dialog
+				Y = 0
 			};
 			Win.Add (label);
 
-			// FIXED: ScrollView only supports Absolute Positioning (#72)
 			var scrollView = new ScrollView {
+				Id = "scrollView",
 				X = 2,
-				Y = 2,
+				Y = Pos.Bottom(label) + 1,
 				Width = 50,
 				Height = 20,
 				ColorScheme = Colors.TopLevel,
@@ -126,8 +126,9 @@ namespace UICatalog.Scenarios {
 				ShowVerticalScrollIndicator = true,
 				ShowHorizontalScrollIndicator = true,
 			};
+			label.Text = $"{scrollView}\nContentSize: {scrollView.ContentSize}\nContentOffset: {scrollView.ContentOffset}";
 
-			const string rule = "0123456789";
+			//const string rule = "0123456789";
 
 			var horizontalRuler = new Label () {
 				X = 0,
@@ -139,7 +140,7 @@ namespace UICatalog.Scenarios {
 			};
 			scrollView.Add (horizontalRuler);
 
-			const string vrule = "0\n1\n2\n3\n4\n5\n6\n7\n8\n9\n";
+			//const string vrule = "0\n1\n2\n3\n4\n5\n6\n7\n8\n9\n";
 
 			var verticalRuler = new Label () {
 				X = 0,
@@ -153,9 +154,10 @@ namespace UICatalog.Scenarios {
 
 			void Top_Loaded (object sender, EventArgs args)
 			{
-				horizontalRuler.Text = rule.Repeat ((int)Math.Ceiling ((double)(horizontalRuler.Bounds.Width) / (double)rule.Length)) [0..(horizontalRuler.Bounds.Width)] +
-					"\n" + "|         ".Repeat ((int)Math.Ceiling ((double)(horizontalRuler.Bounds.Width) / (double)rule.Length)) [0..(horizontalRuler.Bounds.Width)];
-				verticalRuler.Text = vrule.Repeat ((int)Math.Ceiling ((double)(verticalRuler.Bounds.Height * 2) / (double)rule.Length)) [0..(verticalRuler.Bounds.Height * 2)];
+				// BUGBUG: v2 - this broke somehow - fix later
+				//horizontalRuler.Text = rule.Repeat ((int)Math.Ceiling ((double)(horizontalRuler.Bounds.Width) / (double)rule.Length)) [0..(horizontalRuler.Bounds.Width)] +
+				//	"\n" + "|         ".Repeat ((int)Math.Ceiling ((double)(horizontalRuler.Bounds.Width) / (double)rule.Length)) [0..(horizontalRuler.Bounds.Width)];
+				//verticalRuler.Text = vrule.Repeat ((int)Math.Ceiling ((double)(verticalRuler.Bounds.Height * 2) / (double)rule.Length)) [0..(verticalRuler.Bounds.Height * 2)];
 				Application.Top.Loaded -= Top_Loaded;
 			}
 			Application.Top.Loaded += Top_Loaded;
@@ -216,25 +218,25 @@ namespace UICatalog.Scenarios {
 
 			var hCheckBox = new CheckBox ("Horizontal Scrollbar", scrollView.ShowHorizontalScrollIndicator) {
 				X = Pos.X (scrollView),
-				Y = Pos.Bottom (scrollView) + 1,
+				Y = Pos.Bottom (scrollView),
 			};
 			Win.Add (hCheckBox);
 
 			var vCheckBox = new CheckBox ("Vertical Scrollbar", scrollView.ShowVerticalScrollIndicator) {
 				X = Pos.Right (hCheckBox) + 3,
-				Y = Pos.Bottom (scrollView) + 1,
+				Y = Pos.Bottom (scrollView),
 			};
 			Win.Add (vCheckBox);
 
 			var t = "Auto Hide Scrollbars";
 			var ahCheckBox = new CheckBox (t, scrollView.AutoHideScrollBars) {
-				X = Pos.Left (scrollView) + (scrollView.Bounds.Width / 2) - (t.Length / 2),
-				Y = Pos.Bottom (scrollView) + 3,
+				X = Pos.Left (scrollView),
+				Y = Pos.Bottom (hCheckBox),
 			};
 			var k = "Keep Content Always In Viewport";
 			var keepCheckBox = new CheckBox (k, scrollView.AutoHideScrollBars) {
-				X = Pos.Left (scrollView) + (scrollView.Bounds.Width / 2) - (k.Length / 2),
-				Y = Pos.Bottom (scrollView) + 4,
+				X = Pos.Left (scrollView),
+				Y = Pos.Bottom (ahCheckBox),
 			};
 			hCheckBox.Toggled += (s, e) => {
 				if (ahCheckBox.Checked == false) {
@@ -262,27 +264,27 @@ namespace UICatalog.Scenarios {
 			keepCheckBox.Toggled += (s,e) => scrollView.KeepContentAlwaysInViewport = (bool)keepCheckBox.Checked;
 			Win.Add (keepCheckBox);
 
-			var scrollView2 = new ScrollView (new Rect (55, 2, 20, 8)) {
-				ContentSize = new Size (20, 50),
-				//ContentOffset = new Point (0, 0),
-				ShowVerticalScrollIndicator = true,
-				ShowHorizontalScrollIndicator = true
-			};
-			var filler = new Filler (new Rect (0, 0, 60, 40));
-			scrollView2.Add (filler);
-			scrollView2.DrawContent += (s,e) => {
-				scrollView2.ContentSize = filler.GetContentSize ();
-			};
-			Win.Add (scrollView2);
+			//var scrollView2 = new ScrollView (new Rect (55, 2, 20, 8)) {
+			//	ContentSize = new Size (20, 50),
+			//	//ContentOffset = new Point (0, 0),
+			//	ShowVerticalScrollIndicator = true,
+			//	ShowHorizontalScrollIndicator = true
+			//};
+			//var filler = new Filler (new Rect (0, 0, 60, 40));
+			//scrollView2.Add (filler);
+			//scrollView2.DrawContent += (s,e) => {
+			//	scrollView2.ContentSize = filler.GetContentSize ();
+			//};
+			//Win.Add (scrollView2);
 
-			// This is just to debug the visuals of the scrollview when small
-			var scrollView3 = new ScrollView (new Rect (55, 15, 3, 3)) {
-				ContentSize = new Size (100, 100),
-				ShowVerticalScrollIndicator = true,
-				ShowHorizontalScrollIndicator = true
-			};
-			scrollView3.Add (new Box10x (0, 0));
-			Win.Add (scrollView3);
+			//// This is just to debug the visuals of the scrollview when small
+			//var scrollView3 = new ScrollView (new Rect (55, 15, 3, 3)) {
+			//	ContentSize = new Size (100, 100),
+			//	ShowVerticalScrollIndicator = true,
+			//	ShowHorizontalScrollIndicator = true
+			//};
+			//scrollView3.Add (new Box10x (0, 0));
+			//Win.Add (scrollView3);
 
 			int count = 0;
 			var mousePos = new Label ("Mouse: ") {

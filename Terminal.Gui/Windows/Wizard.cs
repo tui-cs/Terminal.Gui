@@ -78,6 +78,7 @@ namespace Terminal.Gui {
 			/// </summary>
 			/// <remarks>The Title is only displayed when the <see cref="Wizard"/> is used as a modal pop-up (see <see cref="Wizard.Modal"/>.</remarks>
 			public new ustring Title {
+				// BUGBUG: v2 - No need for this as View now has Title w/ notifications.
 				get => title;
 				set {
 					if (!OnTitleChanging (title, value)) {
@@ -91,72 +92,6 @@ namespace Terminal.Gui {
 			}
 
 			private ustring title = ustring.Empty;
-
-			/// <summary>
-			/// An <see cref="EventArgs"/> which allows passing a cancelable new <see cref="Title"/> value event.
-			/// </summary>
-			public class TitleEventArgs : EventArgs {
-				/// <summary>
-				/// The new Window Title.
-				/// </summary>
-				public ustring NewTitle { get; set; }
-
-				/// <summary>
-				/// The old Window Title.
-				/// </summary>
-				public ustring OldTitle { get; set; }
-
-				/// <summary>
-				/// Flag which allows cancelling the Title change.
-				/// </summary>
-				public bool Cancel { get; set; }
-
-				/// <summary>
-				/// Initializes a new instance of <see cref="TitleEventArgs"/>
-				/// </summary>
-				/// <param name="oldTitle">The <see cref="Title"/> that is/has been replaced.</param>
-				/// <param name="newTitle">The new <see cref="Title"/> to be replaced.</param>
-				public TitleEventArgs (ustring oldTitle, ustring newTitle)
-				{
-					OldTitle = oldTitle;
-					NewTitle = newTitle;
-				}
-			}
-
-			/// <summary>
-			/// Called before the <see cref="Title"/> changes. Invokes the <see cref="TitleChanging"/> event, which can be cancelled.
-			/// </summary>
-			/// <param name="oldTitle">The <see cref="Title"/> that is/has been replaced.</param>
-			/// <param name="newTitle">The new <see cref="Title"/> to be replaced.</param>
-			/// <returns><c>true</c> if an event handler cancelled the Title change.</returns>
-			public virtual bool OnTitleChanging (ustring oldTitle, ustring newTitle)
-			{
-				var args = new TitleEventArgs (oldTitle, newTitle);
-				TitleChanging?.Invoke (this, args);
-				return args.Cancel;
-			}
-
-			/// <summary>
-			/// Event fired when the <see cref="Title"/> is changing. Set <see cref="TitleEventArgs.Cancel"/> to 
-			/// <c>true</c> to cancel the Title change.
-			/// </summary>
-			public event EventHandler<TitleEventArgs> TitleChanging;
-
-			/// <summary>
-			/// Called when the <see cref="Title"/> has been changed. Invokes the <see cref="TitleChanged"/> event.
-			/// </summary>
-			/// <param name="oldTitle">The <see cref="Title"/> that is/has been replaced.</param>
-			/// <param name="newTitle">The new <see cref="Title"/> to be replaced.</param>
-			public virtual void OnTitleChanged (ustring oldTitle, ustring newTitle)
-			{
-				var args = new TitleEventArgs (oldTitle, newTitle);
-				TitleChanged?.Invoke (this, args);
-			}
-
-			/// <summary>
-			/// Event fired after the <see cref="Title"/> has been changed. 
-			/// </summary>
-			public event EventHandler<TitleEventArgs> TitleChanged;
 
 			// The contentView works like the ContentView in FrameView.
 			private View contentView = new View () { Data = "WizardContentView" };
@@ -200,60 +135,59 @@ namespace Terminal.Gui {
 			{
 				this.Title = title; // this.Title holds just the "Wizard Title"; base.Title holds "Wizard Title - Step Title"
 				this.Border.BorderStyle = BorderStyle.Rounded;
-
 				base.Add (contentView);
 
 				helpTextView.ReadOnly = true;
 				helpTextView.WordWrap = true;
 				base.Add (helpTextView);
 
+				// BUGBUG: v2 - Disabling scrolling for now
+				//var scrollBar = new ScrollBarView (helpTextView, true);
+
+				//scrollBar.ChangedPosition += (s,e) => {
+				//	helpTextView.TopRow = scrollBar.Position;
+				//	if (helpTextView.TopRow != scrollBar.Position) {
+				//		scrollBar.Position = helpTextView.TopRow;
+				//	}
+				//	helpTextView.SetNeedsDisplay ();
+				//};
+
+				//scrollBar.OtherScrollBarView.ChangedPosition += (s,e) => {
+				//	helpTextView.LeftColumn = scrollBar.OtherScrollBarView.Position;
+				//	if (helpTextView.LeftColumn != scrollBar.OtherScrollBarView.Position) {
+				//		scrollBar.OtherScrollBarView.Position = helpTextView.LeftColumn;
+				//	}
+				//	helpTextView.SetNeedsDisplay ();
+				//};
+
+				//scrollBar.VisibleChanged += (s,e) => {
+				//	if (scrollBar.Visible && helpTextView.RightOffset == 0) {
+				//		helpTextView.RightOffset = 1;
+				//	} else if (!scrollBar.Visible && helpTextView.RightOffset == 1) {
+				//		helpTextView.RightOffset = 0;
+				//	}
+				//};
+
+				//scrollBar.OtherScrollBarView.VisibleChanged += (s,e) => {
+				//	if (scrollBar.OtherScrollBarView.Visible && helpTextView.BottomOffset == 0) {
+				//		helpTextView.BottomOffset = 1;
+				//	} else if (!scrollBar.OtherScrollBarView.Visible && helpTextView.BottomOffset == 1) {
+				//		helpTextView.BottomOffset = 0;
+				//	}
+				//};
+
+				//helpTextView.DrawContent += (s,e) => {
+				//	scrollBar.Size = helpTextView.Lines;
+				//	scrollBar.Position = helpTextView.TopRow;
+				//	if (scrollBar.OtherScrollBarView != null) {
+				//		scrollBar.OtherScrollBarView.Size = helpTextView.Maxlength;
+				//		scrollBar.OtherScrollBarView.Position = helpTextView.LeftColumn;
+				//	}
+				//	scrollBar.LayoutSubviews ();
+				//	scrollBar.Refresh ();
+				//};
+				//base.Add (scrollBar);
 				ShowHide ();
-
-				var scrollBar = new ScrollBarView (helpTextView, true);
-
-				scrollBar.ChangedPosition += (s,e) => {
-					helpTextView.TopRow = scrollBar.Position;
-					if (helpTextView.TopRow != scrollBar.Position) {
-						scrollBar.Position = helpTextView.TopRow;
-					}
-					helpTextView.SetNeedsDisplay ();
-				};
-
-				scrollBar.OtherScrollBarView.ChangedPosition += (s,e) => {
-					helpTextView.LeftColumn = scrollBar.OtherScrollBarView.Position;
-					if (helpTextView.LeftColumn != scrollBar.OtherScrollBarView.Position) {
-						scrollBar.OtherScrollBarView.Position = helpTextView.LeftColumn;
-					}
-					helpTextView.SetNeedsDisplay ();
-				};
-
-				scrollBar.VisibleChanged += (s,e) => {
-					if (scrollBar.Visible && helpTextView.RightOffset == 0) {
-						helpTextView.RightOffset = 1;
-					} else if (!scrollBar.Visible && helpTextView.RightOffset == 1) {
-						helpTextView.RightOffset = 0;
-					}
-				};
-
-				scrollBar.OtherScrollBarView.VisibleChanged += (s,e) => {
-					if (scrollBar.OtherScrollBarView.Visible && helpTextView.BottomOffset == 0) {
-						helpTextView.BottomOffset = 1;
-					} else if (!scrollBar.OtherScrollBarView.Visible && helpTextView.BottomOffset == 1) {
-						helpTextView.BottomOffset = 0;
-					}
-				};
-
-				helpTextView.DrawContent += (s,e) => {
-					scrollBar.Size = helpTextView.Lines;
-					scrollBar.Position = helpTextView.TopRow;
-					if (scrollBar.OtherScrollBarView != null) {
-						scrollBar.OtherScrollBarView.Size = helpTextView.Maxlength;
-						scrollBar.OtherScrollBarView.Position = helpTextView.LeftColumn;
-					}
-					scrollBar.LayoutSubviews ();
-					scrollBar.Refresh ();
-				};
-				base.Add (scrollBar);
 			}
 
 			/// <summary>
@@ -293,8 +227,9 @@ namespace Terminal.Gui {
 			public override void Add (View view)
 			{
 				contentView.Add (view);
-				if (view.CanFocus)
+				if (view.CanFocus) {
 					CanFocus = true;
+				}
 				ShowHide ();
 			}
 
@@ -305,15 +240,17 @@ namespace Terminal.Gui {
 			/// </remarks>
 			public override void Remove (View view)
 			{
-				if (view == null)
+				if (view == null) {
 					return;
+				}
 
 				SetNeedsDisplay ();
 				var touched = view.Frame;
 				contentView.Remove (view);
 
-				if (contentView.InternalSubviews.Count < 1)
+				if (contentView.InternalSubviews.Count < 1) {
 					this.CanFocus = false;
+				}
 				ShowHide ();
 			}
 
@@ -356,7 +293,7 @@ namespace Terminal.Gui {
 			// the left and right edge
 			ButtonAlignment = ButtonAlignments.Justify;
 			this.Border.BorderStyle = BorderStyle.Double;
-			this.Border.Padding = new Thickness (0);
+			this.Border.PaddingThickness = new Thickness (0);
 
 			//// Add a horiz separator
 			//var separator = new LineView (Graphs.Orientation.Horizontal) {
@@ -382,6 +319,7 @@ namespace Terminal.Gui {
 				ClearKeybinding (Command.QuitToplevel);
 				AddKeyBinding (Key.Esc, Command.QuitToplevel);
 			}
+			SetNeedsLayout ();
 
 		}
 
@@ -799,8 +737,8 @@ namespace Terminal.Gui {
 				if (base.Modal) {
 					ColorScheme = Colors.Dialog;
 					Border.BorderStyle = BorderStyle.Rounded;
-					Border.Effect3D = true;
-					Border.DrawMarginFrame = true;
+//					Border.Effect3D = true;
+//					Border.DrawMarginFrame = true;
 				} else {
 					if (SuperView != null) {
 						ColorScheme = SuperView.ColorScheme;
@@ -808,9 +746,9 @@ namespace Terminal.Gui {
 						ColorScheme = Colors.Base;
 					}
 					CanFocus = true;
-					Border.Effect3D = false;
+//					Border.Effect3D = false;
 					Border.BorderStyle = BorderStyle.None;
-					Border.DrawMarginFrame = false;
+//					Border.DrawMarginFrame = false;
 				}
 			}
 		}

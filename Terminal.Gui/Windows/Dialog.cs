@@ -38,13 +38,9 @@ namespace Terminal.Gui {
 		[SerializableConfigurationProperty (Scope = typeof (ThemeScope))]
 		public static Border DefaultBorder { get; set; } = new Border () {
 			BorderStyle = BorderStyle.Single,
-			DrawMarginFrame = false,
-			Effect3D = true,
-			Effect3DOffset = new Point (1, 1),
 		};
 
 		internal List<Button> buttons = new List<Button> ();
-		const int padding = 0;
 
 		/// <summary>
 		/// Initializes a new instance of the <see cref="Dialog"/> class using <see cref="LayoutStyle.Computed"/> positioning 
@@ -62,7 +58,12 @@ namespace Terminal.Gui {
 		/// <remarks>
 		/// Use the constructor that does not take a <c>width</c> and <c>height</c> instead.
 		/// </remarks>
-		public Dialog (ustring title, int width, int height, params Button [] buttons) : base (title: title, padding: padding)
+		public Dialog (ustring title, int width, int height, params Button [] buttons) : base (title: title, padding: 0, border: DefaultBorder)
+		{
+			SetInitialProperties (width, height, buttons);
+		}
+
+		private void SetInitialProperties (int width, int height, Button [] buttons)
 		{
 			X = Pos.Center ();
 			Y = Pos.Center ();
@@ -78,10 +79,6 @@ namespace Terminal.Gui {
 			ColorScheme = Colors.Dialog;
 			Modal = true;
 			ButtonAlignment = DefaultButtonAlignment;
-			if (Border == null) {
-				Border = DefaultBorder;
-				Border.Title = title;
-			}
 
 			if (buttons != null) {
 				foreach (var b in buttons) {
@@ -107,7 +104,7 @@ namespace Terminal.Gui {
 		/// Use <see cref="AddButton(Button)"/> to add buttons to the dialog.
 		/// </para>
 		/// </remarks>
-		public Dialog () : this (title: string.Empty, width: 0, height: 0, buttons: null) { }
+		public Dialog () : this (title: ustring.Empty, width: 0, height: 0, buttons: null) { }
 
 		/// <summary>
 		/// Initializes a new instance of the <see cref="Dialog"/> class using <see cref="LayoutStyle.Computed"/> positioning 
@@ -120,42 +117,6 @@ namespace Terminal.Gui {
 		/// After initialization use <c>X</c>, <c>Y</c>, <c>Width</c>, and <c>Height</c> to override this with a location or size.
 		/// </remarks>
 		public Dialog (ustring title, params Button [] buttons) : this (title: title, width: 0, height: 0, buttons: buttons) { }
-
-		/// <summary>
-		/// Initializes a new instance of the <see cref="Dialog"/> class using <see cref="LayoutStyle.Computed"/> positioning, 
-		/// with a <see cref="Border"/> and with an optional set of <see cref="Button"/>s to display
-		/// </summary>
-		/// <param name="title">Title for the dialog.</param>
-		/// <param name="border">The border.</param>
-		/// <param name="buttons">Optional buttons to lay out at the bottom of the dialog.</param>
-		public Dialog (ustring title, Border border, params Button [] buttons)
-			: this (title: title, width: 0, height: 0, buttons: buttons)
-		{
-			Initialize (title, border);
-		}
-
-		/// <summary>
-		/// Initializes a new instance of the <see cref="Dialog"/> class using <see cref="LayoutStyle.Computed"/> positioning, 
-		/// with a <see cref="Border"/> and with an optional set of <see cref="Button"/>s to display
-		/// </summary>
-		/// <param name="title">Title for the dialog.</param>
-		/// <param name="width">Width for the dialog.</param>
-		/// <param name="height">Height for the dialog.</param>
-		/// <param name="border">The border.</param>
-		/// <param name="buttons">Optional buttons to lay out at the bottom of the dialog.</param>
-		public Dialog (ustring title, int width, int height, Border border, params Button [] buttons)
-			: this (title: title, width: width, height: height, buttons: buttons)
-		{
-			Initialize (title, border);
-		}
-
-		void Initialize (ustring title, Border border)
-		{
-			if (border != null) {
-				Border = border;
-				Border.Title = title;
-			}
-		}
 
 		/// <summary>
 		/// Adds a <see cref="Button"/> to the <see cref="Dialog"/>, its layout will be controlled by the <see cref="Dialog"/>
@@ -178,7 +139,7 @@ namespace Terminal.Gui {
 			if (buttons.Count == 0) {
 				return 0;
 			}
-			return buttons.Select (b => b.Bounds.Width).Sum ();
+			return buttons.Select (b => b.Frame.Width).Sum ();
 		}
 
 		/// <summary>
@@ -223,14 +184,14 @@ namespace Terminal.Gui {
 			switch (ButtonAlignment) {
 			case ButtonAlignments.Center:
 				// Center Buttons
-				shiftLeft = (Bounds.Width - buttonsWidth - buttons.Count - 2) / 2 + 1;
+				shiftLeft = (Bounds.Width - buttonsWidth - buttons.Count - 1) / 2 + 1;
 				for (int i = buttons.Count - 1; i >= 0; i--) {
 					Button button = buttons [i];
 					shiftLeft += button.Frame.Width + (i == buttons.Count - 1 ? 0 : 1);
 					if (shiftLeft > -1) {
 						button.X = Pos.AnchorEnd (shiftLeft);
 					} else {
-						button.X = Frame.Width - shiftLeft;
+						button.X = Bounds.Width - shiftLeft;
 					}
 					button.Y = Pos.AnchorEnd (1);
 				}
@@ -240,7 +201,7 @@ namespace Terminal.Gui {
 				// Justify Buttons
 				// leftmost and rightmost buttons are hard against edges. The rest are evenly spaced.
 
-				var spacing = (int)Math.Ceiling ((double)(Bounds.Width - buttonsWidth - (Border.DrawMarginFrame ? 2 : 0)) / (buttons.Count - 1));
+				var spacing = (int)Math.Ceiling ((double)(Bounds.Width - buttonsWidth) / (buttons.Count - 1));
 				for (int i = buttons.Count - 1; i >= 0; i--) {
 					Button button = buttons [i];
 					if (i == buttons.Count - 1) {
@@ -249,7 +210,7 @@ namespace Terminal.Gui {
 					} else {
 						if (i == 0) {
 							// first (leftmost) button - always hard flush left
-							var left = Bounds.Width - ((Border.DrawMarginFrame ? 2 : 0) + Border.BorderThickness.Left + Border.BorderThickness.Right);
+							var left = Bounds.Width + Border.BorderThickness.Horizontal;
 							button.X = Pos.AnchorEnd (left);
 						} else {
 							shiftLeft += button.Frame.Width + (spacing);

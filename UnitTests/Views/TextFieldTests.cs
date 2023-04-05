@@ -1,6 +1,7 @@
 ﻿using NStack;
 using System;
 using System.Globalization;
+using System.Linq;
 using System.Reflection;
 using Xunit;
 using Xunit.Abstractions;
@@ -1440,6 +1441,107 @@ Les Miśerables", output);
 			TestHelpers.AssertDriverContentsWithFrameAre (@"
 ắ", output);
 		}
+	
+		[Fact, AutoInitShutdown]
+		public void CaptionedTextField_RendersCaption_WhenNotFocused ()
+		{
+			var tf = GetTextFieldsInView();
+
+			tf.Redraw(tf.Bounds);
+			TestHelpers.AssertDriverContentsAre("",output);
+
+			// Caption has no effect when focused
+			tf.Caption  = "Enter txt";
+			Assert.True(tf.HasFocus);
+			tf.Redraw(tf.Bounds);
+			TestHelpers.AssertDriverContentsAre("",output);
+
+			Application.Driver.SendKeys('\t',ConsoleKey.Tab,false,false,false);
+
+			Assert.False(tf.HasFocus);
+			tf.Redraw(tf.Bounds);
+			TestHelpers.AssertDriverContentsAre("Enter txt",output);		
+		}
+
+		[Theory, AutoInitShutdown]
+		[InlineData("blah")]
+		[InlineData(" ")]
+		public void CaptionedTextField_DoNotRenderCaption_WhenTextPresent (string content)
+		{
+			var tf = GetTextFieldsInView();
+
+			tf.Redraw(tf.Bounds);
+			TestHelpers.AssertDriverContentsAre("",output);
+
+			tf.Caption  = "Enter txt";
+			Application.Driver.SendKeys('\t',ConsoleKey.Tab,false,false,false);
+
+			// Caption should appear when not focused and no text
+			Assert.False(tf.HasFocus);
+			tf.Redraw(tf.Bounds);
+			TestHelpers.AssertDriverContentsAre("Enter txt",output);
+
+			// but disapear when text is added
+			tf.Text = content;
+			tf.Redraw(tf.Bounds);
+			TestHelpers.AssertDriverContentsAre(content,output);
+		}
+
+
+		[Fact, AutoInitShutdown]
+		public void CaptionedTextField_DoesNotOverspillBounds_Unicode ()
+		{
+			var caption = "Mise" + Char.ConvertFromUtf32 (Int32.Parse ("0301", NumberStyles.HexNumber)) + "rables";
+
+			Assert.Equal(11,caption.Length);
+			Assert.Equal(10,caption.Sum(c => Rune.ColumnWidth(c)));
+
+			var tf = GetTextFieldsInView();
+			
+			tf.Caption  = caption;
+			Application.Driver.SendKeys('\t',ConsoleKey.Tab,false,false,false);
+			Assert.False(tf.HasFocus);
+
+			tf.Redraw(tf.Bounds);
+			TestHelpers.AssertDriverContentsAre("Misérables",output);
+		}
+
+		[Theory, AutoInitShutdown]
+		[InlineData("0123456789","0123456789")]
+		[InlineData("01234567890","0123456789")]
+		public void CaptionedTextField_DoesNotOverspillBounds (string caption, string expectedRender)
+		{
+			var tf = GetTextFieldsInView();
+			// Caption has no effect when focused
+			tf.Caption  = caption;
+			Application.Driver.SendKeys('\t',ConsoleKey.Tab,false,false,false);
+			Assert.False(tf.HasFocus);
+
+			tf.Redraw(tf.Bounds);
+			TestHelpers.AssertDriverContentsAre(expectedRender,output);
+		}
+
+
+		private TextField GetTextFieldsInView ()
+		{
+            var tf = new TextField{
+				Width = 10
+			};
+            var tf2 = new TextField{
+				Y = 1,
+				Width = 10
+			};
+
+			var top = Application.Top;
+			top.Add (tf);
+			top.Add (tf2);
+
+			Application.Begin (top);
+			
+			Assert.Same(tf,top.Focused);
+
+			return tf;
+    	}
 
 		[Fact]
 		public void OnEnter_Does_Not_Throw_If_Not_IsInitialized_SetCursorVisibility ()

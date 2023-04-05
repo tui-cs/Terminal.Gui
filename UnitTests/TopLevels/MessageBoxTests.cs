@@ -31,7 +31,7 @@ namespace Terminal.Gui.TopLevelTests {
 				} else if (iterations == 1) {
 					Application.Refresh ();
 					TestHelpers.AssertDriverContentsWithFrameAre (@"
-                ┌ Title ───────────────────────────────────────┐
+                ┌┤Title├───────────────────────────────────────┐
                 │                   Message                    │
                 │                                              │
                 │                                              │
@@ -73,7 +73,7 @@ namespace Terminal.Gui.TopLevelTests {
 				} else if (iterations == 1) {
 					Application.Refresh ();
 					TestHelpers.AssertDriverContentsWithFrameAre (@"
-         ┌ About UI Catalog ──────────────────────────────────────────┐
+         ┌┤About UI Catalog├──────────────────────────────────────────┐
          │             A comprehensive sample library for             │
          │                                                            │
          │  _______                  _             _   _____       _  │
@@ -97,7 +97,7 @@ namespace Terminal.Gui.TopLevelTests {
 		}
 
 		[Fact, AutoInitShutdown]
-		public void MessageBox_With_A_Lower_Fixed_Size ()
+		public void MessageBox_With_A_Smaller_Fixed_Size ()
 		{
 			var iterations = -1;
 			Application.Begin (Application.Top);
@@ -112,7 +112,7 @@ namespace Terminal.Gui.TopLevelTests {
 				} else if (iterations == 1) {
 					Application.Refresh ();
 					TestHelpers.AssertDriverContentsWithFrameAre (@"
-                                    ┌─────┐
+                                    ┌┤Tit├┐
                                     │Messa│
                                     │ ge  │
                                     │ Ok ◦│
@@ -142,7 +142,7 @@ namespace Terminal.Gui.TopLevelTests {
 				} else if (iterations == 1) {
 					Application.Refresh ();
 					TestHelpers.AssertDriverContentsWithFrameAre (@"
-                                  ┌ Title ──┐
+                                  ┌┤Title├──┐
                                   │ Message │
                                   │         │
                                   │[◦ Ok ◦] │
@@ -172,7 +172,7 @@ namespace Terminal.Gui.TopLevelTests {
 				} else if (iterations == 1) {
 					Application.Refresh ();
 					TestHelpers.AssertDriverContentsWithFrameAre (@"
-┌ mywindow ────────────────────────────────────────────────────────────────────┐
+┌┤mywindow├────────────────────────────────────────────────────────────────────┐
 │ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff│
 │ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff│
 │ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff│
@@ -225,7 +225,7 @@ namespace Terminal.Gui.TopLevelTests {
 				} else if (iterations == 1) {
 					Application.Refresh ();
 					TestHelpers.AssertDriverContentsWithFrameAre (@"
-┌ mywindow ────────────────────────────────────────────────────────────────────┐
+┌┤mywindow├────────────────────────────────────────────────────────────────────┐
 │ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff │
 │ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff │
 │ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff │
@@ -268,7 +268,7 @@ namespace Terminal.Gui.TopLevelTests {
 				iterations++;
 
 				if (iterations == 0) {
-					MessageBox.Query ("mywindow", new string ('f', 2000), 0, null, false, "ok");
+					MessageBox.Query ("mywindow", new string ('f', 2000), 0,  false, "ok");
 
 					Application.RequestStop ();
 				} else if (iterations == 1) {
@@ -301,7 +301,7 @@ ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
 					for (int i = 0; i < 1000; i++)
 						sb.Append ("ff ");
 
-					MessageBox.Query ("mywindow", sb.ToString (), 0, null, false, "ok");
+					MessageBox.Query ("mywindow", sb.ToString (), 0,  false, "ok");
 
 					Application.RequestStop ();
 				} else if (iterations == 1) {
@@ -334,13 +334,13 @@ ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
 				iterations++;
 
 				if (iterations == 0) {
-					MessageBox.Query ("mywindow", message, 0, null, wrapMessage, "ok");
+					MessageBox.Query ("mywindow", message, 0, wrapMessage, "ok");
 
 					Application.RequestStop ();
 				} else if (iterations == 1) {
 					Application.Refresh ();
 					TestHelpers.AssertDriverContentsWithFrameAre (@"
-                ┌ mywindow ────────────────────────────────────┐
+                ┌┤mywindow├────────────────────────────────────┐
                 │                                              │
                 │                                              │
                 │                   [◦ ok ◦]                   │

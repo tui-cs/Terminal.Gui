@@ -48,7 +48,7 @@ namespace Terminal.Gui {
 		/// <param name="isVertical">If set to <c>true</c> this is a vertical scrollbar, otherwise, the scrollbar is horizontal. Sets the <see cref="IsVertical"/> property.</param>
 		public ScrollBarView (Rect rect, int size, int position, bool isVertical) : base (rect)
 		{
-			Init (size, position, isVertical);
+			SetInitialProperties (size, position, isVertical);
 		}
 
 		/// <summary>
@@ -64,7 +64,7 @@ namespace Terminal.Gui {
 		/// <param name="isVertical">If set to <c>true</c> this is a vertical scrollbar, otherwise, the scrollbar is horizontal.</param>
 		public ScrollBarView (int size, int position, bool isVertical) : base ()
 		{
-			Init (size, position, isVertical);
+			SetInitialProperties (size, position, isVertical);
 		}
 
 		/// <summary>
@@ -95,6 +95,7 @@ namespace Terminal.Gui {
 			AutoHideScrollBars = true;
 			if (showBothScrollIndicator) {
 				OtherScrollBarView = new ScrollBarView (0, 0, !isVertical) {
+					Id = "OtherScrollBarView",
 					ColorScheme = host.ColorScheme,
 					Host = host,
 					CanFocus = false,
@@ -103,6 +104,7 @@ namespace Terminal.Gui {
 					OtherScrollBarView = this
 				};
 				OtherScrollBarView.hosted = true;
+				// BUGBUG: v2 - Host may be superview and thus this may be bogus
 				OtherScrollBarView.X = OtherScrollBarView.IsVertical ? Pos.Right (host) - 1 : Pos.Left (host);
 				OtherScrollBarView.Y = OtherScrollBarView.IsVertical ? Pos.Top (host) : Pos.Bottom (host) - 1;
 				OtherScrollBarView.Host.SuperView.Add (OtherScrollBarView);
@@ -111,6 +113,7 @@ namespace Terminal.Gui {
 			ShowScrollIndicator = true;
 			contentBottomRightCorner = new View (" ") { Visible = host.Visible };
 			Host.SuperView.Add (contentBottomRightCorner);
+			// BUGBUG: v2 - Host may be superview and thus this may be bogus
 			contentBottomRightCorner.X = Pos.Right (host) - 1;
 			contentBottomRightCorner.Y = Pos.Bottom (host) - 1;
 			contentBottomRightCorner.Width = 1;
@@ -161,12 +164,23 @@ namespace Terminal.Gui {
 			}
 		}
 
-		void Init (int size, int position, bool isVertical)
+		void SetInitialProperties (int size, int position, bool isVertical)
 		{
+			Id = "ScrollBarView";
 			vertical = isVertical;
 			this.position = position;
 			this.size = size;
 			WantContinuousButtonPressed = true;
+			
+			Initialized += (s, e) => {
+				SetWidthHeight ();
+				SetRelativeLayout (SuperView?.Frame ?? Host?.Frame ?? Frame);
+				if (Id == "OtherScrollBarView" || OtherScrollBarView == null) {
+					// Only do this once if both scrollbars are enabled
+					ShowHideScrollBars ();
+				}
+				SetPosition (position);
+			};
 		}
 
 		/// <summary>
@@ -176,7 +190,9 @@ namespace Terminal.Gui {
 			get => vertical;
 			set {
 				vertical = value;
-				SetNeedsDisplay ();
+				if (IsInitialized) {
+					SetWidthHeight ();
+				}
 			}
 		}
 
@@ -190,9 +206,11 @@ namespace Terminal.Gui {
 			get => size;
 			set {
 				size = value;
-				SetRelativeLayout (Bounds);
-				ShowHideScrollBars (false);
-				SetNeedsDisplay ();
+				if (IsInitialized) {
+					SetRelativeLayout (SuperView?.Frame ?? Host.Frame);
+					ShowHideScrollBars (false);
+					SetNeedsDisplay ();
+				}
 			}
 		}
 
@@ -208,25 +226,37 @@ namespace Terminal.Gui {
 		public int Position {
 			get => position;
 			set {
-				if (position != value) {
-					if (CanScroll (value - position, out int max, vertical)) {
-						if (max == value - position) {
-							position = value;
-						} else {
-							position = Math.Max (position + max, 0);
-						}
-					} else if (max < 0) {
-						position = Math.Max (position + max, 0);
-					}
-					var s = GetBarsize (vertical);
-					OnChangedPosition ();
-					SetNeedsDisplay ();
+				if (!IsInitialized) {
+					// We're not initialized so we can't do anything fancy. Just cache value.
+					position = value;
+					return;
 				}
+				
+				SetPosition (value);
 			}
 		}
 
+		// Helper to assist Initialized event handler
+		private void SetPosition (int newPosition)
+		{
+			if (CanScroll (newPosition - position, out int max, vertical)) {
+				if (max == newPosition - position) {
+					position = newPosition;
+				} else {
+					position = Math.Max (position + max, 0);
+				}
+			} else if (max < 0) {
+				position = Math.Max (position + max, 0);
+			} else {
+				position = Math.Max (newPosition, 0);
+			}
+			OnChangedPosition ();
+			SetNeedsDisplay ();
+		}
+
+		// BUGBUG: v2 - for consistency this should be named "Parent" not "Host"
 		/// <summary>
-		/// Get or sets the view that host this <see cref="View"/>
+		/// Get or sets the view that host this <see cref="ScrollBarView"/>
 		/// </summary>
 		public View Host { get; internal set; }
 
@@ -243,6 +273,7 @@ namespace Terminal.Gui {
 			}
 		}
 
+		// BUGBUG: v2 - Why can't we get rid of this and just use Visible?
 		/// <summary>
 		/// Gets or sets the visibility for the vertical or horizontal scroll indicator.
 		/// </summary>
@@ -250,19 +281,21 @@ namespace Terminal.Gui {
 		public bool ShowScrollIndicator {
 			get => showScrollIndicator;
 			set {
-				if (value == showScrollIndicator) {
-					return;
-				}
+				//if (value == showScrollIndicator) {
+				//	return;
+				//}
 
 				showScrollIndicator = value;
-				SetNeedsLayout ();
-				if (value) {
-					Visible = true;
-				} else {
-					Visible = false;
-					Position = 0;
+				if (IsInitialized) {
+					SetNeedsLayout ();
+					if (value) {
+						Visible = true;
+					} else {
+						Visible = false;
+						Position = 0;
+					}
+					SetWidthHeight ();
 				}
-				SetWidthHeight ();
 			}
 		}
 
@@ -340,9 +373,9 @@ namespace Terminal.Gui {
 			}
 
 			SetWidthHeight ();
-			SetRelativeLayout (Bounds);
+			SetRelativeLayout (SuperView?.Frame ?? Host.Frame);
 			if (otherScrollBarView != null) {
-				OtherScrollBarView.SetRelativeLayout (OtherScrollBarView.Bounds);
+				OtherScrollBarView.SetRelativeLayout (SuperView?.Frame ?? Host.Frame);
 			}
 
 			if (showBothScrollIndicator) {
@@ -430,20 +463,28 @@ namespace Terminal.Gui {
 			return pending;
 		}
 
+		// BUGBUG: v2 - rationalize this with View.SetMinWidthHeight
 		void SetWidthHeight ()
 		{
-			if (showBothScrollIndicator) {
-				Width = vertical ? 1 : Dim.Width (Host) - 1;
-				Height = vertical ? Dim.Height (Host) - 1 : 1;
+			// BUGBUG: v2 - If Host is also the ScrollBarView's superview, this is all bogus because it's not
+			// supported that a view can reference it's superview's Dims. This code also assumes the host does 
+			//  not have a margin/borderframe/padding.
+			if (!IsInitialized) {
+				return;
+			}
 
-				otherScrollBarView.Width = otherScrollBarView.vertical ? 1 : Dim.Width (Host) - 1;
-				otherScrollBarView.Height = otherScrollBarView.vertical ? Dim.Height (Host) - 1 : 1;
+			if (showBothScrollIndicator) {
+				Width = vertical ? 1 : Host != SuperView ? Dim.Width (Host) - 1: Dim.Fill () - 1;
+				Height = vertical ? Host != SuperView ? Dim.Height (Host) - 1: Dim.Fill () - 1 : 1;
+
+				otherScrollBarView.Width = otherScrollBarView.vertical ? 1 : Host != SuperView ? Dim.Width (Host) - 1: Dim.Fill () - 1;
+				otherScrollBarView.Height = otherScrollBarView.vertical ? Host != SuperView ? Dim.Height (Host) - 1 : Dim.Fill () - 1 : 1;
 			} else if (showScrollIndicator) {
-				Width = vertical ? 1 : Dim.Width (Host) - 0;
-				Height = vertical ? Dim.Height (Host) - 0 : 1;
+				Width = vertical ? 1 : Host != SuperView ? Dim.Width (Host) : Dim.Fill ();
+				Height = vertical ? Host != SuperView ? Dim.Height (Host) : Dim.Fill () : 1;
 			} else if (otherScrollBarView?.showScrollIndicator == true) {
-				otherScrollBarView.Width = otherScrollBarView.vertical ? 1 : Dim.Width (Host) - 0;
-				otherScrollBarView.Height = otherScrollBarView.vertical ? Dim.Height (Host) - 0 : 1;
+				otherScrollBarView.Width = otherScrollBarView.vertical ? 1 : Host != SuperView ? Dim.Width (Host) : Dim.Fill () - 0;
+				otherScrollBarView.Height = otherScrollBarView.vertical ? Host != SuperView ? Dim.Height (Host) : Dim.Fill () - 0 : 1;
 			}
 		}
 
@@ -462,11 +503,11 @@ namespace Terminal.Gui {
 				return;
 			}
 
-			Driver.SetAttribute (Host.HasFocus ? ColorScheme.Focus : GetNormalColor ());
-
-			if ((vertical && Bounds.Height == 0) || (!vertical && Bounds.Width == 0)) {
+			if (Size == 0 || (vertical && Bounds.Height == 0) || (!vertical && Bounds.Width == 0)) {
 				return;
 			}
+
+			Driver.SetAttribute (Host.HasFocus ? ColorScheme.Focus : GetNormalColor ());
 
 			if (vertical) {
 				if (region.Right < Bounds.Width - 1) {
@@ -505,8 +546,6 @@ namespace Terminal.Gui {
 
 					Move (col, 0);
 					Driver.AddRune (Driver.UpArrow);
-					Move (col, Bounds.Height - 1);
-					Driver.AddRune (Driver.DownArrow);
 
 					bool hasTopTee = false;
 					bool hasDiamond = false;
@@ -539,6 +578,8 @@ namespace Terminal.Gui {
 						Move (col, Bounds.Height - 2);
 						Driver.AddRune (Driver.TopTee);
 					}
+					Move (col, Bounds.Height - 1);
+					Driver.AddRune (Driver.DownArrow);
 				}
 			} else {
 				if (region.Bottom < Bounds.Height - 1) {
@@ -602,11 +643,13 @@ namespace Terminal.Gui {
 				}
 			}
 
-			if (contentBottomRightCorner != null && hosted && showBothScrollIndicator) {
-				contentBottomRightCorner.Redraw (contentBottomRightCorner.Bounds);
-			} else if (otherScrollBarView != null && otherScrollBarView.contentBottomRightCorner != null && otherScrollBarView.hosted && otherScrollBarView.showBothScrollIndicator) {
-				otherScrollBarView.contentBottomRightCorner.Redraw (otherScrollBarView.contentBottomRightCorner.Bounds);
-			}
+			// BUGBUG: v2 - contentBottomRightCorner is a view. it will be drawn by Host.Superview.OnDraw; no 
+			// need to draw it here.
+			//if (contentBottomRightCorner != null && hosted && showBothScrollIndicator) {
+			//	contentBottomRightCorner.Redraw (contentBottomRightCorner.Bounds);
+			//} else if (otherScrollBarView != null && otherScrollBarView.contentBottomRightCorner != null && otherScrollBarView.hosted && otherScrollBarView.showBothScrollIndicator) {
+			//	otherScrollBarView.contentBottomRightCorner.Redraw (otherScrollBarView.contentBottomRightCorner.Bounds);
+			//}
 		}
 
 		int lastLocation = -1;

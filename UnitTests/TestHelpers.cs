@@ -28,8 +28,8 @@ public class AutoInitShutdownAttribute : Xunit.Sdk.BeforeAfterTestAttribute {
 	/// </summary>
 	/// <param name="autoInit">If true, Application.Init will be called Before the test runs.</param>
 	/// <param name="autoShutdown">If true, Application.Shutdown will be called After the test runs.</param>
-	/// <param name="consoleDriverType">Determins which ConsoleDriver (FakeDriver, WindowsDriver, 
-	/// CursesDriver, NetDriver) will be used when Appliation.Init is called. If null FakeDriver will be used.
+	/// <param name="consoleDriverType">Determines which ConsoleDriver (FakeDriver, WindowsDriver, 
+	/// CursesDriver, NetDriver) will be used when Application.Init is called. If null FakeDriver will be used.
 	/// Only valid if <paramref name="autoInit"/> is true.</param>
 	/// <param name="useFakeClipboard">If true, will force the use of <see cref="FakeDriver.FakeClipboard"/>. 
 	/// Only valid if <see cref="consoleDriver"/> == <see cref="FakeDriver"/> and <paramref name="autoInit"/> is true.</param>
@@ -126,7 +126,7 @@ class TestHelpers {
 			actualLook = actualLook.Replace ("\r\n", "\n");
 
 			// If test is about to fail show user what things looked like
-			if(!string.Equals(expectedLook,actualLook)) {
+			if (!string.Equals (expectedLook, actualLook)) {
 				output?.WriteLine ("Expected:" + Environment.NewLine + expectedLook);
 				output?.WriteLine ("But Was:" + Environment.NewLine + actualLook);
 			}
@@ -282,4 +282,3 @@ class TestHelpers {
 		return $"{a.Foreground},{a.Background}";
 	}
 }
-

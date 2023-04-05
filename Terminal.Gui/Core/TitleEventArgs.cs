@@ -1,15 +1,4 @@
-﻿//
-// Authors:
-//   Miguel de Icaza (miguel@gnome.org)
-//
-// NOTE: Window is functionally identical to FrameView with the following exceptions. 
-//  - Window is a Toplevel
-//  - FrameView Does not support padding (but should)
-//  - FrameView Does not support mouse dragging
-//  - FrameView Does not support IEnumerable
-// Any updates done here should probably be done in FrameView as well; TODO: Merge these classes
-
-using System;
+﻿using System;
 using NStack;
 
 namespace Terminal.Gui {
@@ -35,8 +24,8 @@ namespace Terminal.Gui {
 		/// <summary>
 		/// Initializes a new instance of <see cref="TitleEventArgs"/>
 		/// </summary>
-		/// <param name="oldTitle">The <see cref="Window.Title"/> that is/has been replaced.</param>
-		/// <param name="newTitle">The new <see cref="Window.Title"/> to be replaced.</param>
+		/// <param name="oldTitle">The <see cref="View.Title"/> that is/has been replaced.</param>
+		/// <param name="newTitle">The new <see cref="View.Title"/> to be replaced.</param>
 		public TitleEventArgs (ustring oldTitle, ustring newTitle)
 		{
 			OldTitle = oldTitle;
