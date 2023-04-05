@@ -1252,6 +1252,7 @@ namespace Terminal.Gui {
 			if (!state.Toplevel._needsDisplay.IsEmpty || state.Toplevel._childNeedsDisplay || state.Toplevel.LayoutNeeded
 				|| MdiChildNeedsDisplay ()) {
 				state.Toplevel.Redraw (state.Toplevel.Bounds);
+				state.Toplevel.OnDrawContentComplete (state.Toplevel.Bounds);
 				if (DebugDrawBounds) {
 					DrawBounds (state.Toplevel);
 				}
