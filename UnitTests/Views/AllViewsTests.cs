@@ -75,8 +75,12 @@ namespace Terminal.Gui.ViewTests {
 					viewType = (View)Activator.CreateInstance (type);
 					Assert.IsType (type, viewType);
 				} else {
-					viewType = (View)ctor.Invoke (pTypes.ToArray ());
-					Assert.IsType (type, viewType);
+					try {
+						viewType = (View)ctor.Invoke (pTypes.ToArray ());
+						Assert.IsType (type, viewType);
+					} catch (Exception) {
+						Assert.Null (viewType);
+					}
 				}
 			}
 

@@ -224,62 +224,252 @@ namespace Terminal.Gui.ViewTests {
 		}
 
 		public class HostView : View {
+			ScrollBarView.ScrollBarType _scrollBarType;
+			private ScrollBarView _scrollBar;
+
 			public int Top { get; set; }
 			public int Lines { get; set; }
 			public int Left { get; set; }
 			public int Cols { get; set; }
+			//public int Bottom { get; set; }
+			//public int Right { get; set; }
+			public ScrollBarView ScrollBar { get => _scrollBar; }
+			public ScrollBarView.ScrollBarType ScrollBarType {
+				get => _scrollBarType;
+				set {
+					if (_scrollBarType != value) {
+						_scrollBarType = value;
+						DisposeScrollBar ();
+						if (_scrollBarType != ScrollBarView.ScrollBarType.None) {
+							if (!IsAdded) {
+								Added += HostView_Added;
+							} else {
+								CreateScrollBar ();
+							}
+						}
+						SetNeedsDisplay ();
+					}
+				}
+			}
+
+			private void HostView_Added (object sender, SuperViewChangedEventArgs e)
+			{
+				CreateScrollBar ();
+			}
+
+			private void CreateScrollBar ()
+			{
+				_scrollBar = new ScrollBarView (this, _scrollBarType, false);
+				AddHandlers ();
+			}
+
+			private void AddHandlers ()
+			{
+				if (_scrollBar != null) {
+					LayoutComplete += HostView_LayoutComplete;
+					_scrollBar.ChangedPosition += ScrollBar_ChangedPosition;
+					//_scrollBar.VisibleChanged += ScrollBar_VisibleChanged;
+					//if (_scrollBar.IsVertical) {
+					//	Bottom = 1;
+					//} else {
+					//	Right = 1;
+					//}
+					if (_scrollBar.OtherScrollBarView != null) {
+						_scrollBar.OtherScrollBarView.ChangedPosition += OtherScrollBarView_ChangedPosition;
+						//_scrollBar.OtherScrollBarView.VisibleChanged += OtherScrollBarView_VisibleChanged;
+						//if (_scrollBar.OtherScrollBarView.IsVertical) {
+						//	Bottom = 1;
+						//} else {
+						//	Right = 1;
+						//}
+					}
+				}
+			}
+
+			private void HostView_LayoutComplete (object sender, LayoutEventArgs e)
+			{
+				if (_scrollBar != null) {
+					_scrollBar.Refresh ();
+				}
+			}
+
+			private void DisposeScrollBar ()
+			{
+				if (_scrollBar != null) {
+					_scrollBar.ChangedPosition -= ScrollBar_ChangedPosition;
+					//_scrollBar.VisibleChanged -= ScrollBar_VisibleChanged;
+					if (_scrollBar.OtherScrollBarView != null) {
+						_scrollBar.OtherScrollBarView.ChangedPosition -= OtherScrollBarView_ChangedPosition;
+						//_scrollBar.OtherScrollBarView.VisibleChanged -= OtherScrollBarView_VisibleChanged;
+					}
+					_scrollBar.RemoveAll ();
+					_scrollBar = null;
+					//Bottom = 0;
+					//Right = 0;
+				}
+			}
+
+			public override void Redraw (Rect bounds)
+			{
+				if (_scrollBar != null) {
+					_scrollBar.Size = Lines;
+					_scrollBar.Position = Top;
+					_scrollBar.OtherScrollBarView.Size = Cols;
+					_scrollBar.OtherScrollBarView.Position = Left;
+					_scrollBar.Refresh ();
+				}
+
+				base.Redraw (bounds);
+			}
+
+			private void ScrollBar_ChangedPosition (object sender, EventArgs e)
+			{
+				Top = _scrollBar.Position;
+				if (Top != _scrollBar.Position) {
+					_scrollBar.Position = Top;
+				}
+				SetNeedsDisplay ();
+			}
+
+			private void OtherScrollBarView_ChangedPosition (object sender, EventArgs e)
+			{
+				Left = _scrollBar.OtherScrollBarView.Position;
+				if (Left != _scrollBar.OtherScrollBarView.Position) {
+					_scrollBar.OtherScrollBarView.Position = Left;
+				}
+				SetNeedsDisplay ();
+			}
+
+			//private void ScrollBar_VisibleChanged ()
+			//{
+			//	if (_scrollBar.Visible && Right == 0) {
+			//		Right = 1;
+			//	} else if (!_scrollBar.Visible && Right == 1) {
+			//		Right = 0;
+			//	}
+			//}
+
+			//private void OtherScrollBarView_VisibleChanged ()
+			//{
+			//	if (_scrollBar.OtherScrollBarView.Visible && Bottom == 0) {
+			//		Bottom = 1;
+			//	} else if (!_scrollBar.OtherScrollBarView.Visible && Bottom == 1) {
+			//		Bottom = 0;
+			//	}
+			//}
+		}
+
+		public class HostViewAuto : View {
+			ScrollBarView.ScrollBarType _scrollBarType;
+			private ScrollBarView _scrollBar;
+
+			public int Lines { get; set; }
+			public int Cols { get; set; }
+			public int Top { get; set; }
+			public int Left { get; set; }
+			public int Bottom { get => GetScrollOffset (false); }
+			public int Right { get => GetScrollOffset (true); }
+			public ScrollBarView ScrollBar { get => _scrollBar; }
+			public ScrollBarView.ScrollBarType ScrollBarType {
+				get => _scrollBarType;
+				set {
+					if (_scrollBarType != value) {
+						_scrollBarType = value;
+						DisposeScrollBar ();
+						//if (_scrollBarType == ScrollBarView.ScrollBarType.None) {
+						//	Bottom = 0;
+						//	Right = 0;
+						//} else {
+						//	if (!IsAdded) {
+						//		Added += HostViewAuto_Added;
+						//	} else {
+						//		CreateScrollBar ();
+						//	}
+						//}
+						if (_scrollBarType != ScrollBarView.ScrollBarType.None) {
+							if (!IsAdded) {
+								Added += HostViewAuto_Added;
+							} else {
+								CreateScrollBar ();
+							}
+						}
+						SetNeedsDisplay ();
+					}
+				}
+			}
+
+			private int GetScrollOffset (bool isVertical)
+			{
+				switch (_scrollBarType) {
+				case ScrollBarView.ScrollBarType.Vertical:
+					return isVertical ? _scrollBar.ShowScrollIndicator ? 1 : 0 : 0;
+				case ScrollBarView.ScrollBarType.Horizontal:
+					return !isVertical ? _scrollBar.ShowScrollIndicator ? 1 : 0 : 0;
+				case ScrollBarView.ScrollBarType.Both:
+					return isVertical ? _scrollBar.ShowScrollIndicator ? 1 : 0
+						: _scrollBar.OtherScrollBarView.ShowScrollIndicator ? 1 : 0;
+				}
+				return 0;
+			}
+
+			private void HostViewAuto_Added (object sender, SuperViewChangedEventArgs e)
+			{
+				CreateScrollBar ();
+			}
+
+			private void CreateScrollBar ()
+			{
+				//switch (_scrollBarType) {
+				//case ScrollBarView.ScrollBarType.Vertical:
+				//	Bottom = 1;
+				//	Right = 0;
+				//	break;
+				//case ScrollBarView.ScrollBarType.Horizontal:
+				//	Bottom = 0;
+				//	Right = 1;
+				//	break;
+				//case ScrollBarView.ScrollBarType.Both:
+				//	Bottom = 1;
+				//	Right = 1;
+				//	break;
+				//}
+				_scrollBar = new ScrollBarView (this, _scrollBarType, true,
+					nameof (Lines), nameof (Cols),
+					nameof (Top), nameof (Left));
+				//nameof (Bottom), nameof (Right));
+			}
+
+			private void DisposeScrollBar ()
+			{
+				_scrollBar?.RemoveAll ();
+				_scrollBar = null;
+			}
+
+			public override void Redraw (Rect bounds)
+			{
+				for (int r = Top; r < Frame.Height; r++) {
+					var str = $"Line{r}:";
+					int c = Left;
+					Driver.Move (c, r);
+					if (r < Lines) {
+						Driver.AddStr (str);
+						c += str.Length;
+					}
+					Driver.Move (c, r);
+					for (; c < Frame.Width; c++) {
+						if (c < Cols) {
+							Driver.AddStr ($"{c}");
+						} else {
+							Driver.AddStr (" ");
+						}
+					}
+				}
+
+				base.Redraw (bounds);
+			}
 		}
 
 		private static HostView _hostView;
-		private ScrollBarView _scrollBar;
-		private bool _added;
-
-		private void AddHandlers ()
-		{
-			if (!_added) {
-				_hostView.DrawContent += _hostView_DrawContent;
-				_scrollBar.ChangedPosition += _scrollBar_ChangedPosition;
-				_scrollBar.OtherScrollBarView.ChangedPosition += _scrollBar_OtherScrollBarView_ChangedPosition;
-			}
-			_added = true;
-		}
-
-		private void RemoveHandlers ()
-		{
-			if (_added) {
-				_hostView.DrawContent -= _hostView_DrawContent;
-				_scrollBar.ChangedPosition -= _scrollBar_ChangedPosition;
-				_scrollBar.OtherScrollBarView.ChangedPosition -= _scrollBar_OtherScrollBarView_ChangedPosition;
-			}
-			_added = false;
-		}
-
-		private void _hostView_DrawContent (object sender, DrawEventArgs e)
-		{
-			_scrollBar.Size = _hostView.Lines;
-			_scrollBar.Position = _hostView.Top;
-			_scrollBar.OtherScrollBarView.Size = _hostView.Cols;
-			_scrollBar.OtherScrollBarView.Position = _hostView.Left;
-			_scrollBar.Refresh ();
-		}
-
-		private void _scrollBar_ChangedPosition (object sender, EventArgs e)
-		{
-			_hostView.Top = _scrollBar.Position;
-			if (_hostView.Top != _scrollBar.Position) {
-				_scrollBar.Position = _hostView.Top;
-			}
-			_hostView.SetNeedsDisplay ();
-		}
-
-		private void _scrollBar_OtherScrollBarView_ChangedPosition (object sender, EventArgs e)
-		{
-			_hostView.Left = _scrollBar.OtherScrollBarView.Position;
-			if (_hostView.Left != _scrollBar.OtherScrollBarView.Position) {
-				_scrollBar.OtherScrollBarView.Position = _hostView.Left;
-			}
-			_hostView.SetNeedsDisplay ();
-		}
 
 		[Fact]
 		[ScrollBarAutoInitShutdown]
@@ -345,28 +535,25 @@ namespace Terminal.Gui.ViewTests {
 		[ScrollBarAutoInitShutdown]
 		public void Hosting_A_View_To_A_ScrollBarView ()
 		{
-			RemoveHandlers ();
+			_hostView.ScrollBarType = ScrollBarView.ScrollBarType.Both;
 
-			_scrollBar = new ScrollBarView (_hostView, true);
+			Assert.True (_hostView.ScrollBar.IsVertical);
+			Assert.False (_hostView.ScrollBar.OtherScrollBarView.IsVertical);
 
-			Application.Begin (Application.Top);
+			Assert.Equal (_hostView.ScrollBar.Position, _hostView.Top);
+			Assert.NotEqual (_hostView.ScrollBar.Size, _hostView.Lines);
+			Assert.Equal (_hostView.ScrollBar.OtherScrollBarView.Position, _hostView.Left);
+			Assert.NotEqual (_hostView.ScrollBar.OtherScrollBarView.Size, _hostView.Cols);
 
-			Assert.True (_scrollBar.IsVertical);
-			Assert.False (_scrollBar.OtherScrollBarView.IsVertical);
-
-			Assert.Equal (_scrollBar.Position, _hostView.Top);
-			Assert.NotEqual (_scrollBar.Size, _hostView.Lines);
-			Assert.Equal (_scrollBar.OtherScrollBarView.Position, _hostView.Left);
-			Assert.NotEqual (_scrollBar.OtherScrollBarView.Size, _hostView.Cols);
-
-			AddHandlers ();
 			_hostView.SuperView.LayoutSubviews ();
 			_hostView.Redraw (_hostView.Bounds);
 
-			Assert.Equal (_scrollBar.Position, _hostView.Top);
-			Assert.Equal (_scrollBar.Size, _hostView.Lines);
-			Assert.Equal (_scrollBar.OtherScrollBarView.Position, _hostView.Left);
-			Assert.Equal (_scrollBar.OtherScrollBarView.Size, _hostView.Cols);
+			Assert.Equal (_hostView.ScrollBar.Position, _hostView.Top);
+			Assert.Equal (_hostView.ScrollBar.Size, _hostView.Lines);
+			Assert.Equal (_hostView.ScrollBar.OtherScrollBarView.Position, _hostView.Left);
+			Assert.Equal (_hostView.ScrollBar.OtherScrollBarView.Size, _hostView.Cols);
+			//Assert.Equal (1, _hostView.Bottom);
+			//Assert.Equal (1, _hostView.Right);
 		}
 
 		[Fact]
@@ -375,13 +562,11 @@ namespace Terminal.Gui.ViewTests {
 		{
 			Hosting_A_View_To_A_ScrollBarView ();
 
-			AddHandlers ();
+			_hostView.ScrollBar.Position = 2;
+			Assert.Equal (_hostView.ScrollBar.Position, _hostView.Top);
 
-			_scrollBar.Position = 2;
-			Assert.Equal (_scrollBar.Position, _hostView.Top);
-
-			_scrollBar.OtherScrollBarView.Position = 5;
-			Assert.Equal (_scrollBar.OtherScrollBarView.Position, _hostView.Left);
+			_hostView.ScrollBar.OtherScrollBarView.Position = 5;
+			Assert.Equal (_hostView.ScrollBar.OtherScrollBarView.Position, _hostView.Left);
 		}
 
 		[Fact]
@@ -390,24 +575,22 @@ namespace Terminal.Gui.ViewTests {
 		{
 			Hosting_A_View_To_A_ScrollBarView ();
 
-			AddHandlers ();
-
-			for (int i = 0; i < _scrollBar.Size; i++) {
-				_scrollBar.Position += 1;
-				Assert.Equal (_scrollBar.Position, _hostView.Top);
+			for (int i = 0; i < _hostView.ScrollBar.Size; i++) {
+				_hostView.ScrollBar.Position += 1;
+				Assert.Equal (_hostView.ScrollBar.Position, _hostView.Top);
 			}
-			for (int i = _scrollBar.Size - 1; i >= 0; i--) {
-				_scrollBar.Position -= 1;
-				Assert.Equal (_scrollBar.Position, _hostView.Top);
+			for (int i = _hostView.ScrollBar.Size - 1; i >= 0; i--) {
+				_hostView.ScrollBar.Position -= 1;
+				Assert.Equal (_hostView.ScrollBar.Position, _hostView.Top);
 			}
 
-			for (int i = 0; i < _scrollBar.OtherScrollBarView.Size; i++) {
-				_scrollBar.OtherScrollBarView.Position += i;
-				Assert.Equal (_scrollBar.OtherScrollBarView.Position, _hostView.Left);
+			for (int i = 0; i < _hostView.ScrollBar.OtherScrollBarView.Size; i++) {
+				_hostView.ScrollBar.OtherScrollBarView.Position += i;
+				Assert.Equal (_hostView.ScrollBar.OtherScrollBarView.Position, _hostView.Left);
 			}
-			for (int i = _scrollBar.OtherScrollBarView.Size - 1; i >= 0; i--) {
-				_scrollBar.OtherScrollBarView.Position -= 1;
-				Assert.Equal (_scrollBar.OtherScrollBarView.Position, _hostView.Left);
+			for (int i = _hostView.ScrollBar.OtherScrollBarView.Size - 1; i >= 0; i--) {
+				_hostView.ScrollBar.OtherScrollBarView.Position -= 1;
+				Assert.Equal (_hostView.ScrollBar.OtherScrollBarView.Position, _hostView.Left);
 			}
 		}
 
@@ -417,15 +600,13 @@ namespace Terminal.Gui.ViewTests {
 		{
 			Hosting_A_View_To_A_ScrollBarView ();
 
-			AddHandlers ();
+			_hostView.ScrollBar.Position = -20;
+			Assert.Equal (0, _hostView.ScrollBar.Position);
+			Assert.Equal (_hostView.ScrollBar.Position, _hostView.Top);
 
-			_scrollBar.Position = -20;
-			Assert.Equal (0, _scrollBar.Position);
-			Assert.Equal (_scrollBar.Position, _hostView.Top);
-
-			_scrollBar.OtherScrollBarView.Position = -50;
-			Assert.Equal (0, _scrollBar.OtherScrollBarView.Position);
-			Assert.Equal (_scrollBar.OtherScrollBarView.Position, _hostView.Left);
+			_hostView.ScrollBar.OtherScrollBarView.Position = -50;
+			Assert.Equal (0, _hostView.ScrollBar.OtherScrollBarView.Position);
+			Assert.Equal (_hostView.ScrollBar.OtherScrollBarView.Position, _hostView.Left);
 		}
 
 		[Fact]
@@ -434,15 +615,13 @@ namespace Terminal.Gui.ViewTests {
 		{
 			Hosting_A_View_To_A_ScrollBarView ();
 
-			AddHandlers ();
-
 			_hostView.Top = 3;
 			_hostView.Redraw (_hostView.Bounds);
-			Assert.Equal (_scrollBar.Position, _hostView.Top);
+			Assert.Equal (_hostView.ScrollBar.Position, _hostView.Top);
 
 			_hostView.Left = 6;
 			_hostView.Redraw (_hostView.Bounds);
-			Assert.Equal (_scrollBar.OtherScrollBarView.Position, _hostView.Left);
+			Assert.Equal (_hostView.ScrollBar.OtherScrollBarView.Position, _hostView.Left);
 		}
 
 		[Fact]
@@ -451,11 +630,9 @@ namespace Terminal.Gui.ViewTests {
 		{
 			Hosting_A_View_To_A_ScrollBarView ();
 
-			AddHandlers ();
-
-			Assert.NotNull (_scrollBar.OtherScrollBarView);
-			Assert.NotEqual (_scrollBar, _scrollBar.OtherScrollBarView);
-			Assert.Equal (_scrollBar.OtherScrollBarView.OtherScrollBarView, _scrollBar);
+			Assert.NotNull (_hostView.ScrollBar.OtherScrollBarView);
+			Assert.NotEqual (_hostView.ScrollBar, _hostView.ScrollBar.OtherScrollBarView);
+			Assert.Equal (_hostView.ScrollBar.OtherScrollBarView.OtherScrollBarView, _hostView.ScrollBar);
 		}
 
 		[Fact]
@@ -464,10 +641,8 @@ namespace Terminal.Gui.ViewTests {
 		{
 			Hosting_A_View_To_A_ScrollBarView ();
 
-			AddHandlers ();
-
-			Assert.True (_scrollBar.ShowScrollIndicator);
-			Assert.True (_scrollBar.OtherScrollBarView.ShowScrollIndicator);
+			Assert.True (_hostView.ScrollBar.ShowScrollIndicator);
+			Assert.True (_hostView.ScrollBar.OtherScrollBarView.ShowScrollIndicator);
 		}
 
 		[Fact]
@@ -476,38 +651,36 @@ namespace Terminal.Gui.ViewTests {
 		{
 			Hosting_A_View_To_A_ScrollBarView ();
 
-			AddHandlers ();
-
 			Assert.Equal (80, _hostView.Bounds.Width);
 			Assert.Equal (25, _hostView.Bounds.Height);
-			Assert.Equal (79, _scrollBar.OtherScrollBarView.Bounds.Width);
-			Assert.Equal (24, _scrollBar.Bounds.Height);
-			Assert.Equal (30, _scrollBar.Size);
-			Assert.Equal (100, _scrollBar.OtherScrollBarView.Size);
-			Assert.True (_scrollBar.ShowScrollIndicator);
-			Assert.True (_scrollBar.OtherScrollBarView.ShowScrollIndicator);
-			Assert.True (_scrollBar.Visible);
-			Assert.True (_scrollBar.OtherScrollBarView.Visible);
+			Assert.Equal (79, _hostView.ScrollBar.OtherScrollBarView.Bounds.Width);
+			Assert.Equal (24, _hostView.ScrollBar.Bounds.Height);
+			Assert.Equal (30, _hostView.ScrollBar.Size);
+			Assert.Equal (100, _hostView.ScrollBar.OtherScrollBarView.Size);
+			Assert.True (_hostView.ScrollBar.ShowScrollIndicator);
+			Assert.True (_hostView.ScrollBar.OtherScrollBarView.ShowScrollIndicator);
+			Assert.True (_hostView.ScrollBar.Visible);
+			Assert.True (_hostView.ScrollBar.OtherScrollBarView.Visible);
 
-			_scrollBar.Position = 50;
-			Assert.Equal (_scrollBar.Position, _scrollBar.Size - _scrollBar.Bounds.Height);
-			Assert.Equal (_scrollBar.Position, _hostView.Top);
-			Assert.Equal (6, _scrollBar.Position);
+			_hostView.ScrollBar.Position = 50;
+			Assert.Equal (_hostView.ScrollBar.Position, _hostView.ScrollBar.Size - _hostView.ScrollBar.Bounds.Height);
+			Assert.Equal (_hostView.ScrollBar.Position, _hostView.Top);
+			Assert.Equal (6, _hostView.ScrollBar.Position);
 			Assert.Equal (6, _hostView.Top);
-			Assert.True (_scrollBar.ShowScrollIndicator);
-			Assert.True (_scrollBar.OtherScrollBarView.ShowScrollIndicator);
-			Assert.True (_scrollBar.Visible);
-			Assert.True (_scrollBar.OtherScrollBarView.Visible);
+			Assert.True (_hostView.ScrollBar.ShowScrollIndicator);
+			Assert.True (_hostView.ScrollBar.OtherScrollBarView.ShowScrollIndicator);
+			Assert.True (_hostView.ScrollBar.Visible);
+			Assert.True (_hostView.ScrollBar.OtherScrollBarView.Visible);
 
-			_scrollBar.OtherScrollBarView.Position = 150;
-			Assert.Equal (_scrollBar.OtherScrollBarView.Position, _scrollBar.OtherScrollBarView.Size - _scrollBar.OtherScrollBarView.Bounds.Width);
-			Assert.Equal (_scrollBar.OtherScrollBarView.Position, _hostView.Left);
-			Assert.Equal (21, _scrollBar.OtherScrollBarView.Position);
+			_hostView.ScrollBar.OtherScrollBarView.Position = 150;
+			Assert.Equal (_hostView.ScrollBar.OtherScrollBarView.Position, _hostView.ScrollBar.OtherScrollBarView.Size - _hostView.ScrollBar.OtherScrollBarView.Bounds.Width);
+			Assert.Equal (_hostView.ScrollBar.OtherScrollBarView.Position, _hostView.Left);
+			Assert.Equal (21, _hostView.ScrollBar.OtherScrollBarView.Position);
 			Assert.Equal (21, _hostView.Left);
-			Assert.True (_scrollBar.ShowScrollIndicator);
-			Assert.True (_scrollBar.OtherScrollBarView.ShowScrollIndicator);
-			Assert.True (_scrollBar.Visible);
-			Assert.True (_scrollBar.OtherScrollBarView.Visible);
+			Assert.True (_hostView.ScrollBar.ShowScrollIndicator);
+			Assert.True (_hostView.ScrollBar.OtherScrollBarView.ShowScrollIndicator);
+			Assert.True (_hostView.ScrollBar.Visible);
+			Assert.True (_hostView.ScrollBar.OtherScrollBarView.Visible);
 		}
 
 		[Fact]
@@ -516,19 +689,17 @@ namespace Terminal.Gui.ViewTests {
 		{
 			Hosting_A_View_To_A_ScrollBarView ();
 
-			AddHandlers ();
-
-			_scrollBar.KeepContentAlwaysInViewport = false;
-			_scrollBar.Position = 50;
-			Assert.Equal (_scrollBar.Position, _scrollBar.Size - 1);
-			Assert.Equal (_scrollBar.Position, _hostView.Top);
-			Assert.Equal (29, _scrollBar.Position);
+			_hostView.ScrollBar.KeepContentAlwaysInViewport = false;
+			_hostView.ScrollBar.Position = 50;
+			Assert.Equal (_hostView.ScrollBar.Position, _hostView.ScrollBar.Size - 1);
+			Assert.Equal (_hostView.ScrollBar.Position, _hostView.Top);
+			Assert.Equal (29, _hostView.ScrollBar.Position);
 			Assert.Equal (29, _hostView.Top);
 
-			_scrollBar.OtherScrollBarView.Position = 150;
-			Assert.Equal (_scrollBar.OtherScrollBarView.Position, _scrollBar.OtherScrollBarView.Size - 1);
-			Assert.Equal (_scrollBar.OtherScrollBarView.Position, _hostView.Left);
-			Assert.Equal (99, _scrollBar.OtherScrollBarView.Position);
+			_hostView.ScrollBar.OtherScrollBarView.Position = 150;
+			Assert.Equal (_hostView.ScrollBar.OtherScrollBarView.Position, _hostView.ScrollBar.OtherScrollBarView.Size - 1);
+			Assert.Equal (_hostView.ScrollBar.OtherScrollBarView.Position, _hostView.Left);
+			Assert.Equal (99, _hostView.ScrollBar.OtherScrollBarView.Position);
 			Assert.Equal (99, _hostView.Left);
 		}
 
@@ -538,95 +709,89 @@ namespace Terminal.Gui.ViewTests {
 		{
 			Hosting_A_View_To_A_ScrollBarView ();
 
-			AddHandlers ();
-
 			_hostView.Redraw (_hostView.Bounds);
-			Assert.True (_scrollBar.ShowScrollIndicator);
-			Assert.True (_scrollBar.Visible);
-			Assert.Equal ("Absolute(1)", _scrollBar.Width.ToString ());
-			Assert.Equal (1, _scrollBar.Bounds.Width);
+			Assert.True (_hostView.ScrollBar.ShowScrollIndicator);
+			Assert.True (_hostView.ScrollBar.Visible);
+			Assert.Equal ("Absolute(1)", _hostView.ScrollBar.Width.ToString ());
+			Assert.Equal (1, _hostView.ScrollBar.Bounds.Width);
 			Assert.Equal ("Combine(View(Height,HostView()({X=0,Y=0,Width=80,Height=25}))-Absolute(1))",
-				_scrollBar.Height.ToString ());
-			Assert.Equal (24, _scrollBar.Bounds.Height);
-			Assert.True (_scrollBar.OtherScrollBarView.ShowScrollIndicator);
-			Assert.True (_scrollBar.OtherScrollBarView.Visible);
+				_hostView.ScrollBar.Height.ToString ());
+			Assert.Equal (24, _hostView.ScrollBar.Bounds.Height);
+			Assert.True (_hostView.ScrollBar.OtherScrollBarView.ShowScrollIndicator);
+			Assert.True (_hostView.ScrollBar.OtherScrollBarView.Visible);
 			Assert.Equal ("Combine(View(Width,HostView()({X=0,Y=0,Width=80,Height=25}))-Absolute(1))",
-				_scrollBar.OtherScrollBarView.Width.ToString ());
-			Assert.Equal (79, _scrollBar.OtherScrollBarView.Bounds.Width);
-			Assert.Equal ("Absolute(1)", _scrollBar.OtherScrollBarView.Height.ToString ());
-			Assert.Equal (1, _scrollBar.OtherScrollBarView.Bounds.Height);
+				_hostView.ScrollBar.OtherScrollBarView.Width.ToString ());
+			Assert.Equal (79, _hostView.ScrollBar.OtherScrollBarView.Bounds.Width);
+			Assert.Equal ("Absolute(1)", _hostView.ScrollBar.OtherScrollBarView.Height.ToString ());
+			Assert.Equal (1, _hostView.ScrollBar.OtherScrollBarView.Bounds.Height);
 
 			_hostView.Lines = 10;
 			_hostView.Redraw (_hostView.Bounds);
-			Assert.False (_scrollBar.ShowScrollIndicator);
-			Assert.False (_scrollBar.Visible);
-			Assert.Equal ("Absolute(1)", _scrollBar.Width.ToString ());
-			Assert.Equal (1, _scrollBar.Bounds.Width);
+			Assert.False (_hostView.ScrollBar.ShowScrollIndicator);
+			Assert.False (_hostView.ScrollBar.Visible);
+			Assert.Equal ("Absolute(1)", _hostView.ScrollBar.Width.ToString ());
+			Assert.Equal (1, _hostView.ScrollBar.Bounds.Width);
 			Assert.Equal ("Combine(View(Height,HostView()({X=0,Y=0,Width=80,Height=25}))-Absolute(1))",
-				_scrollBar.Height.ToString ());
-			Assert.Equal (24, _scrollBar.Bounds.Height);
-			Assert.True (_scrollBar.OtherScrollBarView.ShowScrollIndicator);
-			Assert.True (_scrollBar.OtherScrollBarView.Visible);
-			Assert.Equal ("View(Width,HostView()({X=0,Y=0,Width=80,Height=25}))",
-				_scrollBar.OtherScrollBarView.Width.ToString ());
-			// BUGBUG: v2 - Tig broke this test; not sure why. @bdisp?
-			//Assert.Equal (80, _scrollBar.OtherScrollBarView.Bounds.Width);
-			Assert.Equal ("Absolute(1)", _scrollBar.OtherScrollBarView.Height.ToString ());
-			Assert.Equal (1, _scrollBar.OtherScrollBarView.Bounds.Height);
+				_hostView.ScrollBar.Height.ToString ());
+			Assert.Equal (24, _hostView.ScrollBar.Bounds.Height);
+			Assert.True (_hostView.ScrollBar.OtherScrollBarView.ShowScrollIndicator);
+			Assert.True (_hostView.ScrollBar.OtherScrollBarView.Visible);
+			Assert.Equal ("Combine(View(Width,HostView()({X=0,Y=0,Width=80,Height=25}))-Absolute(0))",
+				_hostView.ScrollBar.OtherScrollBarView.Width.ToString ());
+			Assert.Equal (80, _hostView.ScrollBar.OtherScrollBarView.Bounds.Width);
+			Assert.Equal ("Absolute(1)", _hostView.ScrollBar.OtherScrollBarView.Height.ToString ());
+			Assert.Equal (1, _hostView.ScrollBar.OtherScrollBarView.Bounds.Height);
 
 			_hostView.Cols = 60;
 			_hostView.Redraw (_hostView.Bounds);
-			Assert.False (_scrollBar.ShowScrollIndicator);
-			Assert.False (_scrollBar.Visible);
-			Assert.Equal ("Absolute(1)", _scrollBar.Width.ToString ());
-			Assert.Equal (1, _scrollBar.Bounds.Width);
+			Assert.False (_hostView.ScrollBar.ShowScrollIndicator);
+			Assert.False (_hostView.ScrollBar.Visible);
+			Assert.Equal ("Absolute(1)", _hostView.ScrollBar.Width.ToString ());
+			Assert.Equal (1, _hostView.ScrollBar.Bounds.Width);
 			Assert.Equal ("Combine(View(Height,HostView()({X=0,Y=0,Width=80,Height=25}))-Absolute(1))",
-				_scrollBar.Height.ToString ());
-			Assert.Equal (24, _scrollBar.Bounds.Height);
-			Assert.False (_scrollBar.OtherScrollBarView.ShowScrollIndicator);
-			Assert.False (_scrollBar.OtherScrollBarView.Visible);
-			Assert.Equal ("View(Width,HostView()({X=0,Y=0,Width=80,Height=25}))",
-				_scrollBar.OtherScrollBarView.Width.ToString ());
-			// BUGBUG: v2 - Tig broke this test; not sure why. @bdisp?
-			//Assert.Equal (80, _scrollBar.OtherScrollBarView.Bounds.Width);
-			Assert.Equal ("Absolute(1)", _scrollBar.OtherScrollBarView.Height.ToString ());
-			Assert.Equal (1, _scrollBar.OtherScrollBarView.Bounds.Height);
+				_hostView.ScrollBar.Height.ToString ());
+			Assert.Equal (24, _hostView.ScrollBar.Bounds.Height);
+			Assert.False (_hostView.ScrollBar.OtherScrollBarView.ShowScrollIndicator);
+			Assert.False (_hostView.ScrollBar.OtherScrollBarView.Visible);
+			Assert.Equal ("Combine(View(Width,HostView()({X=0,Y=0,Width=80,Height=25}))-Absolute(0))",
+				_hostView.ScrollBar.OtherScrollBarView.Width.ToString ());
+			Assert.Equal (80, _hostView.ScrollBar.OtherScrollBarView.Bounds.Width);
+			Assert.Equal ("Absolute(1)", _hostView.ScrollBar.OtherScrollBarView.Height.ToString ());
+			Assert.Equal (1, _hostView.ScrollBar.OtherScrollBarView.Bounds.Height);
 
 			_hostView.Lines = 40;
 			_hostView.Redraw (_hostView.Bounds);
-			Assert.True (_scrollBar.ShowScrollIndicator);
-			Assert.True (_scrollBar.Visible);
-			Assert.Equal ("Absolute(1)", _scrollBar.Width.ToString ());
-			Assert.Equal (1, _scrollBar.Bounds.Width);
-			Assert.Equal ("View(Height,HostView()({X=0,Y=0,Width=80,Height=25}))",
-				_scrollBar.Height.ToString ());
-			// BUGBUG: v2 - Tig broke this test; not sure why. @bdisp?
-			//Assert.Equal (25, _scrollBar.Bounds.Height);
-			Assert.False (_scrollBar.OtherScrollBarView.ShowScrollIndicator);
-			Assert.False (_scrollBar.OtherScrollBarView.Visible);
-			Assert.Equal ("View(Width,HostView()({X=0,Y=0,Width=80,Height=25}))",
-				_scrollBar.OtherScrollBarView.Width.ToString ());
-			// BUGBUG: v2 - Tig broke this test; not sure why. @bdisp?
-			//Assert.Equal (80, _scrollBar.OtherScrollBarView.Bounds.Width);
-			Assert.Equal ("Absolute(1)", _scrollBar.OtherScrollBarView.Height.ToString ());
-			Assert.Equal (1, _scrollBar.OtherScrollBarView.Bounds.Height);
+			Assert.True (_hostView.ScrollBar.ShowScrollIndicator);
+			Assert.True (_hostView.ScrollBar.Visible);
+			Assert.Equal ("Absolute(1)", _hostView.ScrollBar.Width.ToString ());
+			Assert.Equal (1, _hostView.ScrollBar.Bounds.Width);
+			Assert.Equal ("Combine(View(Height,HostView()({X=0,Y=0,Width=80,Height=25}))-Absolute(0))",
+				_hostView.ScrollBar.Height.ToString ());
+			Assert.Equal (25, _hostView.ScrollBar.Bounds.Height);
+			Assert.False (_hostView.ScrollBar.OtherScrollBarView.ShowScrollIndicator);
+			Assert.False (_hostView.ScrollBar.OtherScrollBarView.Visible);
+			Assert.Equal ("Combine(View(Width,HostView()({X=0,Y=0,Width=80,Height=25}))-Absolute(0))",
+				_hostView.ScrollBar.OtherScrollBarView.Width.ToString ());
+			Assert.Equal (80, _hostView.ScrollBar.OtherScrollBarView.Bounds.Width);
+			Assert.Equal ("Absolute(1)", _hostView.ScrollBar.OtherScrollBarView.Height.ToString ());
+			Assert.Equal (1, _hostView.ScrollBar.OtherScrollBarView.Bounds.Height);
 
 			_hostView.Cols = 120;
 			_hostView.Redraw (_hostView.Bounds);
-			Assert.True (_scrollBar.ShowScrollIndicator);
-			Assert.True (_scrollBar.Visible);
-			Assert.Equal ("Absolute(1)", _scrollBar.Width.ToString ());
-			Assert.Equal (1, _scrollBar.Bounds.Width);
+			Assert.True (_hostView.ScrollBar.ShowScrollIndicator);
+			Assert.True (_hostView.ScrollBar.Visible);
+			Assert.Equal ("Absolute(1)", _hostView.ScrollBar.Width.ToString ());
+			Assert.Equal (1, _hostView.ScrollBar.Bounds.Width);
 			Assert.Equal ("Combine(View(Height,HostView()({X=0,Y=0,Width=80,Height=25}))-Absolute(1))",
-				_scrollBar.Height.ToString ());
-			Assert.Equal (24, _scrollBar.Bounds.Height);
-			Assert.True (_scrollBar.OtherScrollBarView.ShowScrollIndicator);
-			Assert.True (_scrollBar.OtherScrollBarView.Visible);
+				_hostView.ScrollBar.Height.ToString ());
+			Assert.Equal (24, _hostView.ScrollBar.Bounds.Height);
+			Assert.True (_hostView.ScrollBar.OtherScrollBarView.ShowScrollIndicator);
+			Assert.True (_hostView.ScrollBar.OtherScrollBarView.Visible);
 			Assert.Equal ("Combine(View(Width,HostView()({X=0,Y=0,Width=80,Height=25}))-Absolute(1))",
-				_scrollBar.OtherScrollBarView.Width.ToString ());
-			Assert.Equal (79, _scrollBar.OtherScrollBarView.Bounds.Width);
-			Assert.Equal ("Absolute(1)", _scrollBar.OtherScrollBarView.Height.ToString ());
-			Assert.Equal (1, _scrollBar.OtherScrollBarView.Bounds.Height);
+				_hostView.ScrollBar.OtherScrollBarView.Width.ToString ());
+			Assert.Equal (79, _hostView.ScrollBar.OtherScrollBarView.Bounds.Width);
+			Assert.Equal ("Absolute(1)", _hostView.ScrollBar.OtherScrollBarView.Height.ToString ());
+			Assert.Equal (1, _hostView.ScrollBar.OtherScrollBarView.Bounds.Height);
 		}
 
 		// BUGBUG: v2 - Tig broke these tests; @bdisp help?
@@ -664,22 +829,22 @@ namespace Terminal.Gui.ViewTests {
 		//		};
 		//		win.Add (newScrollBarView);
 
-		//		newScrollBarView.ChangedPosition += (s,e) => {
-		//			listView.TopItem = newScrollBarView.Position;
-		//			if (listView.TopItem != newScrollBarView.Position) {
-		//				newScrollBarView.Position = listView.TopItem;
-		//			}
-		//			Assert.Equal (newScrollBarView.Position, listView.TopItem);
-		//			listView.SetNeedsDisplay ();
-		//		};
+				newScrollBarView.ChangedPosition += (s, e) => {
+					listView.TopItem = newScrollBarView.Position;
+					if (listView.TopItem != newScrollBarView.Position) {
+						newScrollBarView.Position = listView.TopItem;
+					}
+					Assert.Equal (newScrollBarView.Position, listView.TopItem);
+					listView.SetNeedsDisplay ();
+				};
 
-		//		listView.DrawContent += (s,e) => {
-		//			newScrollBarView.Size = listView.Source.Count;
-		//			Assert.Equal (newScrollBarView.Size, listView.Source.Count);
-		//			newScrollBarView.Position = listView.TopItem;
-		//			Assert.Equal (newScrollBarView.Position, listView.TopItem);
-		//			newScrollBarView.Refresh ();
-		//		};
+				listView.DrawContent += (s, e) => {
+					newScrollBarView.Size = listView.Source.Count;
+					Assert.Equal (newScrollBarView.Size, listView.Source.Count);
+					newScrollBarView.Position = listView.TopItem;
+					Assert.Equal (newScrollBarView.Position, listView.TopItem);
+					newScrollBarView.Refresh ();
+				};
 
 		//		top.Ready += (s, e) => {
 		//			newScrollBarView.Position = 45;
@@ -740,22 +905,22 @@ namespace Terminal.Gui.ViewTests {
 			};
 			win.Add (newScrollBarView);
 
-			newScrollBarView.ChangedPosition += (s, e) => {
-				listView.LeftItem = newScrollBarView.Position;
-				if (listView.LeftItem != newScrollBarView.Position) {
-					newScrollBarView.Position = listView.LeftItem;
-				}
-				Assert.Equal (newScrollBarView.Position, listView.LeftItem);
-				listView.SetNeedsDisplay ();
-			};
+				newScrollBarView.ChangedPosition += (s, e) => {
+					listView.LeftItem = newScrollBarView.Position;
+					if (listView.LeftItem != newScrollBarView.Position) {
+						newScrollBarView.Position = listView.LeftItem;
+					}
+					Assert.Equal (newScrollBarView.Position, listView.LeftItem);
+					listView.SetNeedsDisplay ();
+				};
 
-			listView.DrawContent += (s, e) => {
-				newScrollBarView.Size = listView.Maxlength;
-				Assert.Equal (newScrollBarView.Size, listView.Maxlength);
-				newScrollBarView.Position = listView.LeftItem;
-				Assert.Equal (newScrollBarView.Position, listView.LeftItem);
-				newScrollBarView.Refresh ();
-			};
+				listView.DrawContent += (s, e) => {
+					newScrollBarView.Size = listView.Maxlength;
+					Assert.Equal (newScrollBarView.Size, listView.Maxlength);
+					newScrollBarView.Position = listView.LeftItem;
+					Assert.Equal (newScrollBarView.Position, listView.LeftItem);
+					newScrollBarView.Refresh ();
+				};
 
 			top.Ready += (s, e) => {
 				newScrollBarView.Position = 100;
@@ -774,6 +939,12 @@ namespace Terminal.Gui.ViewTests {
 			//});
 
 			//Assert.Null (exception);
+		}
+
+		[Fact, AutoInitShutdown]
+		public void Constructor_ScrollBarType_None_Returns_ArgumentException ()
+		{
+			Assert.Throws<ArgumentException> (() => new ScrollBarView (new View (), ScrollBarView.ScrollBarType.None, false));
 		}
 
 		[Fact]
@@ -876,8 +1047,7 @@ namespace Terminal.Gui.ViewTests {
 				}
 			};
 
-			// BUGBUG: v2 - Don't mix layout and redraw! Redraw should not change layout. It's ok for Layout to cause redraw.
-			textView.LayoutComplete += (s, e) => {
+			textView.DrawContent += (s, e) => {
 				scrollBar.Size = textView.Lines;
 				scrollBar.Position = textView.TopRow;
 				if (scrollBar.OtherScrollBarView != null) {
@@ -989,6 +1159,7 @@ namespace Terminal.Gui.ViewTests {
 			pos = TestHelpers.AssertDriverContentsWithFrameAre (expected, output);
 			Assert.Equal (new Rect (0, 0, 10, 10), pos);
 		}
+
 
 
 		[Fact, AutoInitShutdown]
@@ -1125,13 +1296,13 @@ This is a test
 ", output);
 
 			ReflectionTools.InvokePrivate (
-				typeof (Application),
-				"ProcessMouseEvent",
-				new MouseEvent () {
-					X = 15,
-					Y = 0,
-					Flags = MouseFlags.Button1Clicked
-				});
+			    typeof (Application),
+			    "ProcessMouseEvent",
+			    new MouseEvent () {
+				    X = 15,
+				    Y = 0,
+				    Flags = MouseFlags.Button1Clicked
+			    });
 
 			Assert.Null (Application.MouseGrabView);
 			Assert.True (clicked);
@@ -1152,19 +1323,344 @@ This is a test
 ", output);
 
 			ReflectionTools.InvokePrivate (
-				typeof (Application),
-				"ProcessMouseEvent",
-				new MouseEvent () {
-					X = 15,
-					Y = 0,
-					Flags = MouseFlags.Button1Clicked
-				});
+			    typeof (Application),
+			    "ProcessMouseEvent",
+			    new MouseEvent () {
+				    X = 15,
+				    Y = 0,
+				    Flags = MouseFlags.Button1Clicked
+			    });
 
 			Assert.Null (Application.MouseGrabView);
 			Assert.True (clicked);
 			Assert.Equal (5, sbv.Size);
 			Assert.False (sbv.ShowScrollIndicator);
 			Assert.False (sbv.Visible);
+		}
+
+		[Fact]
+		[ScrollBarAutoInitShutdown]
+		public void VisibleChanged_Update_The_BottomOffset_Or_RightOffset ()
+		{
+			Hosting_A_View_To_A_ScrollBarView ();
+
+			Assert.Equal (30, _hostView.Lines);
+			Assert.Equal (100, _hostView.Cols);
+			Assert.Equal (0, _hostView.Top);
+			Assert.Equal (0, _hostView.Left);
+			//Assert.Equal (1, _hostView.Bottom);
+			//Assert.Equal (1, _hostView.Right);
+
+			_hostView.Lines = 20;
+			_hostView.Redraw (_hostView.Bounds);
+			Assert.Equal (0, _hostView.Top);
+			Assert.Equal (0, _hostView.Left);
+			//Assert.Equal (1, _hostView.Bottom);
+			//Assert.Equal (0, _hostView.Right);
+
+			_hostView.Cols = 70;
+			_hostView.Redraw (_hostView.Bounds);
+			Assert.Equal (0, _hostView.Top);
+			Assert.Equal (0, _hostView.Left);
+			//Assert.Equal (0, _hostView.Bottom);
+			//Assert.Equal (0, _hostView.Right);
+		}
+
+		[Fact, AutoInitShutdown]
+		public void ScrollBarType_BottomOffset_RightOffset ()
+		{
+			Assert.Throws<ArgumentException> (() => new ScrollBarView (new View (), ScrollBarView.ScrollBarType.None, false));
+
+			var hostView = new HostView () {
+				Width = Dim.Fill (),
+				Height = Dim.Fill (),
+				Lines = 30,
+				Cols = 100
+			};
+			Application.Top.Add (hostView);
+
+			Assert.Equal (ScrollBarView.ScrollBarType.None, hostView.ScrollBarType);
+			Assert.Single (hostView.SuperView.Subviews);
+			Assert.Null (hostView.ScrollBar);
+			//Assert.Equal (0, hostView.Bottom);
+			//Assert.Equal (0, hostView.Right);
+
+			hostView.ScrollBarType = ScrollBarView.ScrollBarType.Vertical;
+			Assert.Equal (3, hostView.SuperView.Subviews.Count);
+			Assert.NotNull (hostView.ScrollBar);
+			Assert.True (hostView.ScrollBar.IsVertical);
+			Assert.Null (hostView.ScrollBar.OtherScrollBarView);
+			//Assert.Equal (1, hostView.Bottom);
+			//Assert.Equal (0, hostView.Right);
+
+			hostView.ScrollBarType = ScrollBarView.ScrollBarType.Horizontal;
+			Assert.Equal (3, hostView.SuperView.Subviews.Count);
+			Assert.NotNull (hostView.ScrollBar);
+			Assert.False (hostView.ScrollBar.IsVertical);
+			Assert.Null (hostView.ScrollBar.OtherScrollBarView);
+			//Assert.Equal (0, hostView.Bottom);
+			//Assert.Equal (1, hostView.Right);
+
+			hostView.ScrollBarType = ScrollBarView.ScrollBarType.Both;
+			Assert.Equal (4, hostView.SuperView.Subviews.Count);
+			Assert.NotNull (hostView.ScrollBar);
+			Assert.True (hostView.ScrollBar.IsVertical);
+			Assert.NotNull (hostView.ScrollBar.OtherScrollBarView);
+			Assert.False (hostView.ScrollBar.OtherScrollBarView.IsVertical);
+			//Assert.Equal (1, hostView.Bottom);
+			//Assert.Equal (1, hostView.Right);
+
+			hostView.ScrollBarType = ScrollBarView.ScrollBarType.None;
+			Assert.Single (hostView.SuperView.Subviews);
+			Assert.Null (hostView.ScrollBar);
+			//Assert.Equal (0, hostView.Bottom);
+			//Assert.Equal (0, hostView.Right);
+		}
+
+		[Fact, AutoInitShutdown]
+		public void Hosting_A_View_To_A_ScrollBarView_Built_In ()
+		{
+			var hostViewAuto = new HostViewAuto () {
+				Width = Dim.Fill (),
+				Height = Dim.Fill (),
+				Lines = 30,
+				Cols = 100
+			};
+			Application.Top.Add (hostViewAuto);
+
+			hostViewAuto.ScrollBarType = ScrollBarView.ScrollBarType.Both;
+
+			Assert.True (hostViewAuto.ScrollBar.IsVertical);
+			Assert.False (hostViewAuto.ScrollBar.OtherScrollBarView.IsVertical);
+
+			Assert.Equal (hostViewAuto.ScrollBar.Position, hostViewAuto.Top);
+			Assert.NotEqual (hostViewAuto.ScrollBar.Size, hostViewAuto.Lines);
+			Assert.Equal (hostViewAuto.ScrollBar.OtherScrollBarView.Position, hostViewAuto.Left);
+			Assert.NotEqual (hostViewAuto.ScrollBar.OtherScrollBarView.Size, hostViewAuto.Cols);
+
+			hostViewAuto.SuperView.LayoutSubviews ();
+			hostViewAuto.Redraw (hostViewAuto.Bounds);
+
+			Assert.Equal (hostViewAuto.ScrollBar.Position, hostViewAuto.Top);
+			Assert.Equal (hostViewAuto.ScrollBar.Size, hostViewAuto.Lines);
+			Assert.Equal (hostViewAuto.ScrollBar.OtherScrollBarView.Position, hostViewAuto.Left);
+			Assert.Equal (hostViewAuto.ScrollBar.OtherScrollBarView.Size, hostViewAuto.Cols);
+			Assert.Equal (1, hostViewAuto.Bottom);
+			Assert.Equal (1, hostViewAuto.Right);
+
+			hostViewAuto.Lines = 20;
+			hostViewAuto.Redraw (hostViewAuto.Bounds);
+		}
+
+		[Fact, AutoInitShutdown]
+		public void VisibleChanged_Update_The_BottomOffset_Or_RightOffset_Built_In ()
+		{
+			var hostViewAuto = new HostViewAuto () {
+				Width = Dim.Fill (),
+				Height = Dim.Fill (),
+				ScrollBarType = ScrollBarView.ScrollBarType.Both,
+				Lines = 30,
+				Cols = 100
+			};
+			Application.Top.Add (hostViewAuto);
+			Application.Begin (Application.Top);
+
+			Assert.Equal (30, hostViewAuto.Lines);
+			Assert.Equal (100, hostViewAuto.Cols);
+			Assert.Equal (0, hostViewAuto.Top);
+			Assert.Equal (0, hostViewAuto.Left);
+			Assert.Equal (1, hostViewAuto.Bottom);
+			Assert.Equal (1, hostViewAuto.Right);
+
+			hostViewAuto.Lines = 20;
+			hostViewAuto.Redraw (hostViewAuto.Bounds);
+			Assert.Equal (0, hostViewAuto.Top);
+			Assert.Equal (0, hostViewAuto.Left);
+			Assert.Equal (1, hostViewAuto.Bottom);
+			Assert.Equal (0, hostViewAuto.Right);
+
+			hostViewAuto.Cols = 70;
+			hostViewAuto.Redraw (hostViewAuto.Bounds);
+			Assert.Equal (0, hostViewAuto.Top);
+			Assert.Equal (0, hostViewAuto.Left);
+			Assert.Equal (0, hostViewAuto.Bottom);
+			Assert.Equal (0, hostViewAuto.Right);
+		}
+
+		[Fact, AutoInitShutdown]
+		public void ScrollBarType_BottomOffset_RightOffset_Built_In ()
+		{
+			Assert.Throws<ArgumentException> (() => new ScrollBarView (new View (), ScrollBarView.ScrollBarType.None, true));
+
+			var hostViewAuto = new HostViewAuto () {
+				Width = Dim.Fill (),
+				Height = Dim.Fill (),
+				Lines = 30,
+				Cols = 100
+			};
+			Application.Top.Add (hostViewAuto);
+			Application.Begin (Application.Top);
+
+			Assert.Single (hostViewAuto.SuperView.Subviews);
+
+			Assert.Equal (ScrollBarView.ScrollBarType.None, hostViewAuto.ScrollBarType);
+			Assert.Single (hostViewAuto.SuperView.Subviews);
+			Assert.Null (hostViewAuto.ScrollBar);
+			Assert.Equal (0, hostViewAuto.Bottom);
+			Assert.Equal (0, hostViewAuto.Right);
+
+			hostViewAuto.ScrollBarType = ScrollBarView.ScrollBarType.Vertical;
+			Assert.Equal (3, hostViewAuto.SuperView.Subviews.Count);
+			Assert.NotNull (hostViewAuto.ScrollBar);
+			Assert.True (hostViewAuto.ScrollBar.IsVertical);
+			Assert.Null (hostViewAuto.ScrollBar.OtherScrollBarView);
+			Assert.Equal (0, hostViewAuto.Bottom);
+			Assert.Equal (1, hostViewAuto.Right);
+
+			hostViewAuto.ScrollBarType = ScrollBarView.ScrollBarType.Horizontal;
+			Assert.Equal (3, hostViewAuto.SuperView.Subviews.Count);
+			Assert.NotNull (hostViewAuto.ScrollBar);
+			Assert.False (hostViewAuto.ScrollBar.IsVertical);
+			Assert.Null (hostViewAuto.ScrollBar.OtherScrollBarView);
+			Assert.Equal (1, hostViewAuto.Bottom);
+			Assert.Equal (0, hostViewAuto.Right);
+
+			hostViewAuto.ScrollBarType = ScrollBarView.ScrollBarType.Both;
+			Assert.Equal (4, hostViewAuto.SuperView.Subviews.Count);
+			Assert.NotNull (hostViewAuto.ScrollBar);
+			Assert.True (hostViewAuto.ScrollBar.IsVertical);
+			Assert.NotNull (hostViewAuto.ScrollBar.OtherScrollBarView);
+			Assert.False (hostViewAuto.ScrollBar.OtherScrollBarView.IsVertical);
+			Assert.Equal (1, hostViewAuto.Bottom);
+			Assert.Equal (1, hostViewAuto.Right);
+
+			hostViewAuto.ScrollBarType = ScrollBarView.ScrollBarType.None;
+			Assert.Single (hostViewAuto.SuperView.Subviews);
+			Assert.Null (hostViewAuto.ScrollBar);
+			Assert.Equal (0, hostViewAuto.Bottom);
+			Assert.Equal (0, hostViewAuto.Right);
+		}
+
+		[Fact, AutoInitShutdown]
+		public void Width_Equal_To_Zero_Or_Height_Equal_To_Zero_Disable_Both_ShowScrollIndicator ()
+		{
+			var hostView = new HostView () {
+				Width = Dim.Fill (),
+				Height = Dim.Fill (),
+				Lines = 30,
+				Cols = 100,
+				ScrollBarType = ScrollBarView.ScrollBarType.Both
+			};
+			Application.Top.Add (hostView);
+			Application.Begin (Application.Top);
+
+			Assert.True (hostView.ScrollBar.ShowScrollIndicator);
+			Assert.True (hostView.ScrollBar.OtherScrollBarView.ShowScrollIndicator);
+
+			hostView.Width = 0;
+			Application.Refresh ();
+			Assert.False (hostView.ScrollBar.ShowScrollIndicator);
+			Assert.False (hostView.ScrollBar.OtherScrollBarView.ShowScrollIndicator);
+
+			hostView.Width = Dim.Fill ();
+			Application.Refresh ();
+			Assert.True (hostView.ScrollBar.ShowScrollIndicator);
+			Assert.True (hostView.ScrollBar.OtherScrollBarView.ShowScrollIndicator);
+
+			hostView.Height = 0;
+			Application.Refresh ();
+			Assert.False (hostView.ScrollBar.ShowScrollIndicator);
+			Assert.False (hostView.ScrollBar.OtherScrollBarView.ShowScrollIndicator);
+		}
+
+		[Fact, AutoInitShutdown]
+		public void Width_Equal_To_Zero_Or_Height_Equal_To_Zero_Disable_Both_ShowScrollIndicator_Built_In ()
+		{
+			var hostViewAuto = new HostViewAuto () {
+				Width = Dim.Fill (),
+				Height = Dim.Fill (),
+				Lines = 30,
+				Cols = 100,
+				ScrollBarType = ScrollBarView.ScrollBarType.Both
+			};
+			Application.Top.Add (hostViewAuto);
+			Application.Begin (Application.Top);
+
+			Assert.True (hostViewAuto.ScrollBar.ShowScrollIndicator);
+			Assert.True (hostViewAuto.ScrollBar.OtherScrollBarView.ShowScrollIndicator);
+			TestHelpers.AssertDriverContentsWithFrameAre (@"
+Line0:6789101112131415161718192021222324252627282930313233343536373839404142434▲
+Line1:6789101112131415161718192021222324252627282930313233343536373839404142434┬
+Line2:6789101112131415161718192021222324252627282930313233343536373839404142434│
+Line3:6789101112131415161718192021222324252627282930313233343536373839404142434│
+Line4:6789101112131415161718192021222324252627282930313233343536373839404142434│
+Line5:6789101112131415161718192021222324252627282930313233343536373839404142434│
+Line6:6789101112131415161718192021222324252627282930313233343536373839404142434│
+Line7:6789101112131415161718192021222324252627282930313233343536373839404142434│
+Line8:6789101112131415161718192021222324252627282930313233343536373839404142434│
+Line9:6789101112131415161718192021222324252627282930313233343536373839404142434│
+Line10:789101112131415161718192021222324252627282930313233343536373839404142434│
+Line11:789101112131415161718192021222324252627282930313233343536373839404142434│
+Line12:789101112131415161718192021222324252627282930313233343536373839404142434│
+Line13:789101112131415161718192021222324252627282930313233343536373839404142434│
+Line14:789101112131415161718192021222324252627282930313233343536373839404142434│
+Line15:789101112131415161718192021222324252627282930313233343536373839404142434│
+Line16:789101112131415161718192021222324252627282930313233343536373839404142434│
+Line17:789101112131415161718192021222324252627282930313233343536373839404142434│
+Line18:789101112131415161718192021222324252627282930313233343536373839404142434┴
+Line19:789101112131415161718192021222324252627282930313233343536373839404142434░
+Line20:789101112131415161718192021222324252627282930313233343536373839404142434░
+Line21:789101112131415161718192021222324252627282930313233343536373839404142434░
+Line22:789101112131415161718192021222324252627282930313233343536373839404142434░
+Line23:789101112131415161718192021222324252627282930313233343536373839404142434▼
+◄├───────────────────────────────────────────────────────────┤░░░░░░░░░░░░░░░░► 
+", output);
+
+			hostViewAuto.Width = 0;
+			Application.Refresh ();
+			Assert.False (hostViewAuto.ScrollBar.ShowScrollIndicator);
+			Assert.False (hostViewAuto.ScrollBar.OtherScrollBarView.ShowScrollIndicator);
+			TestHelpers.AssertDriverContentsWithFrameAre (@"
+", output);
+
+			hostViewAuto.Width = Dim.Fill ();
+			Application.Refresh ();
+			Assert.True (hostViewAuto.ScrollBar.ShowScrollIndicator);
+			Assert.True (hostViewAuto.ScrollBar.OtherScrollBarView.ShowScrollIndicator);
+			TestHelpers.AssertDriverContentsWithFrameAre (@"
+Line0:6789101112131415161718192021222324252627282930313233343536373839404142434▲
+Line1:6789101112131415161718192021222324252627282930313233343536373839404142434┬
+Line2:6789101112131415161718192021222324252627282930313233343536373839404142434│
+Line3:6789101112131415161718192021222324252627282930313233343536373839404142434│
+Line4:6789101112131415161718192021222324252627282930313233343536373839404142434│
+Line5:6789101112131415161718192021222324252627282930313233343536373839404142434│
+Line6:6789101112131415161718192021222324252627282930313233343536373839404142434│
+Line7:6789101112131415161718192021222324252627282930313233343536373839404142434│
+Line8:6789101112131415161718192021222324252627282930313233343536373839404142434│
+Line9:6789101112131415161718192021222324252627282930313233343536373839404142434│
+Line10:789101112131415161718192021222324252627282930313233343536373839404142434│
+Line11:789101112131415161718192021222324252627282930313233343536373839404142434│
+Line12:789101112131415161718192021222324252627282930313233343536373839404142434│
+Line13:789101112131415161718192021222324252627282930313233343536373839404142434│
+Line14:789101112131415161718192021222324252627282930313233343536373839404142434│
+Line15:789101112131415161718192021222324252627282930313233343536373839404142434│
+Line16:789101112131415161718192021222324252627282930313233343536373839404142434│
+Line17:789101112131415161718192021222324252627282930313233343536373839404142434│
+Line18:789101112131415161718192021222324252627282930313233343536373839404142434┴
+Line19:789101112131415161718192021222324252627282930313233343536373839404142434░
+Line20:789101112131415161718192021222324252627282930313233343536373839404142434░
+Line21:789101112131415161718192021222324252627282930313233343536373839404142434░
+Line22:789101112131415161718192021222324252627282930313233343536373839404142434░
+Line23:789101112131415161718192021222324252627282930313233343536373839404142434▼
+◄├───────────────────────────────────────────────────────────┤░░░░░░░░░░░░░░░░► 
+", output);
+
+			hostViewAuto.Height = 0;
+			Application.Refresh ();
+			Assert.False (hostViewAuto.ScrollBar.ShowScrollIndicator);
+			Assert.False (hostViewAuto.ScrollBar.OtherScrollBarView.ShowScrollIndicator);
+			TestHelpers.AssertDriverContentsWithFrameAre (@"
+", output);
 		}
 	}
 }

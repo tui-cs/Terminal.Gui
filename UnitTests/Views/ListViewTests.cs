@@ -155,6 +155,10 @@ namespace Terminal.Gui.ViewTests {
 				throw new NotImplementedException ();
 			}
 
+			public void PreRender (ListView container, int width)
+			{
+			}
+
 			public void Render (ListView container, ConsoleDriver driver, bool selected, int item, int col, int line, int width, int start = 0)
 			{
 				throw new NotImplementedException ();

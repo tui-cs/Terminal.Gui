@@ -225,6 +225,10 @@ namespace UICatalog.Scenarios {
 			{
 				return Scenarios;
 			}
+
+			public void PreRender (ListView container, int width)
+			{
+			}
 		}
 	}
 }

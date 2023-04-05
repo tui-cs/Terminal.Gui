@@ -21,7 +21,7 @@ namespace UICatalog.Scenarios {
 		private string _fileName = "demo.txt";
 		private TextView _textView;
 		private bool _saved = true;
-		private ScrollBarView _scrollBar;
+		//private ScrollBarView _scrollBar;
 		private byte [] _originalText;
 		private string _textToFind;
 		private string _textToReplace;
@@ -54,8 +54,8 @@ namespace UICatalog.Scenarios {
 				Y = 0,
 				Width = Dim.Fill (),
 				Height = Dim.Fill (),
-				BottomOffset = 1,
-				RightOffset = 1
+				//BottomOffset = 1,
+				//RightOffset = 1
 			};
 
 			CreateDemoFile (_fileName);
@@ -129,50 +129,52 @@ namespace UICatalog.Scenarios {
 			});
 			Application.Top.Add (statusBar);
 
-			_scrollBar = new ScrollBarView (_textView, true);
+			//_scrollBar = new ScrollBarView (_textView, true);
 
-			_scrollBar.ChangedPosition += (s,e) => {
-				_textView.TopRow = _scrollBar.Position;
-				if (_textView.TopRow != _scrollBar.Position) {
-					_scrollBar.Position = _textView.TopRow;
-				}
-				_textView.SetNeedsDisplay ();
-			};
+			//_scrollBar.ChangedPosition += () => {
+			//	_textView.TopRow = _scrollBar.Position;
+			//	if (_textView.TopRow != _scrollBar.Position) {
+			//		_scrollBar.Position = _textView.TopRow;
+			//	}
+			//	_textView.SetNeedsDisplay ();
+			//};
 
-			_scrollBar.OtherScrollBarView.ChangedPosition += (s,e) => {
-				_textView.LeftColumn = _scrollBar.OtherScrollBarView.Position;
-				if (_textView.LeftColumn != _scrollBar.OtherScrollBarView.Position) {
-					_scrollBar.OtherScrollBarView.Position = _textView.LeftColumn;
-				}
-				_textView.SetNeedsDisplay ();
-			};
+			//_scrollBar.OtherScrollBarView.ChangedPosition += () => {
+			//	_textView.LeftColumn = _scrollBar.OtherScrollBarView.Position;
+			//	if (_textView.LeftColumn != _scrollBar.OtherScrollBarView.Position) {
+			//		_scrollBar.OtherScrollBarView.Position = _textView.LeftColumn;
+			//	}
+			//	_textView.SetNeedsDisplay ();
+			//};
 
-			_scrollBar.VisibleChanged += (s,e) => {
-				if (_scrollBar.Visible && _textView.RightOffset == 0) {
-					_textView.RightOffset = 1;
-				} else if (!_scrollBar.Visible && _textView.RightOffset == 1) {
-					_textView.RightOffset = 0;
-				}
-			};
+			//_scrollBar.VisibleChanged += () => {
+			//	if (_scrollBar.Visible && _textView.RightOffset == 0) {
+			//		_textView.RightOffset = 1;
+			//	} else if (!_scrollBar.Visible && _textView.RightOffset == 1) {
+			//		_textView.RightOffset = 0;
+			//	}
+			//};
 
-			_scrollBar.OtherScrollBarView.VisibleChanged += (s,e) => {
-				if (_scrollBar.OtherScrollBarView.Visible && _textView.BottomOffset == 0) {
-					_textView.BottomOffset = 1;
-				} else if (!_scrollBar.OtherScrollBarView.Visible && _textView.BottomOffset == 1) {
-					_textView.BottomOffset = 0;
-				}
-			};
+			//_scrollBar.OtherScrollBarView.VisibleChanged += () => {
+			//	if (_scrollBar.OtherScrollBarView.Visible && _textView.BottomOffset == 0) {
+			//		_textView.BottomOffset = 1;
+			//	} else if (!_scrollBar.OtherScrollBarView.Visible && _textView.BottomOffset == 1) {
+			//		_textView.BottomOffset = 0;
+			//	}
+			//};
 
-			_textView.DrawContent += (s,e) => {
-				_scrollBar.Size = _textView.Lines;
-				_scrollBar.Position = _textView.TopRow;
-				if (_scrollBar.OtherScrollBarView != null) {
-					_scrollBar.OtherScrollBarView.Size = _textView.Maxlength;
-					_scrollBar.OtherScrollBarView.Position = _textView.LeftColumn;
-				}
-				_scrollBar.LayoutSubviews ();
-				_scrollBar.Refresh ();
-			};
+			//_textView.DrawContent += (e) => {
+			//	_scrollBar.Size = _textView.Lines;
+			//	_scrollBar.Position = _textView.TopRow;
+			//	if (_scrollBar.OtherScrollBarView != null) {
+			//		_scrollBar.OtherScrollBarView.Size = _textView.Maxlength;
+			//		_scrollBar.OtherScrollBarView.Position = _textView.LeftColumn;
+			//	}
+			//	_scrollBar.LayoutSubviews ();
+			//	_scrollBar.Refresh ();
+			//};
+
+			_textView.ScrollBarType = ScrollBarView.ScrollBarType.Both;
 
 			Win.KeyPress += (s, e) => {
 				var keys = ShortcutHelper.GetModifiersKey (e.KeyEvent);
@@ -517,7 +519,7 @@ namespace UICatalog.Scenarios {
 			item.Title = "Keep Content Always In Viewport";
 			item.CheckType |= MenuItemCheckStyle.Checked;
 			item.Checked = true;
-			item.Action += () => _scrollBar.KeepContentAlwaysInViewport = (bool)(item.Checked = !item.Checked);
+			item.Action += () => _textView.ScrollBar.KeepContentAlwaysInViewport = (bool)(item.Checked = !item.Checked);
 
 			return new MenuItem [] { item };
 		}
@@ -532,7 +534,7 @@ namespace UICatalog.Scenarios {
 			item.Action += () => {
 				_textView.WordWrap = (bool)(item.Checked = !item.Checked);
 				if (_textView.WordWrap) {
-					_scrollBar.OtherScrollBarView.ShowScrollIndicator = false;
+					_textView.ScrollBar.OtherScrollBarView.ShowScrollIndicator = false;
 					_textView.BottomOffset = 0;
 				} else {
 					_textView.BottomOffset = 1;

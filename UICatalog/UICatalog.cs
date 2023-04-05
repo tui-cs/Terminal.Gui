@@ -714,6 +714,10 @@ namespace UICatalog {
 				}
 				ScenarioListView.SetSource (newlist.ToList ());
 			}
+
+			public void PreRender (ListView container, int width)
+			{
+			}
 		}
 
 		static void VerifyObjectsWereDisposed ()
