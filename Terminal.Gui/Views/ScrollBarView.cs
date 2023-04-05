@@ -431,6 +431,48 @@ namespace Terminal.Gui {
 		//	return false;
 		//}
 
+		//bool MustScroll (ref int value, bool isVertical = false)
+		//{
+		//	if (position != value) {
+		//		return false;
+		//	}
+		//	var s = isVertical ? Host.Bounds.Height + (otherScrollBarView != null && otherScrollBarView.showBothScrollIndicator ? 1 : 0) :
+		//		Host.Bounds.Width + (otherScrollBarView != null && otherScrollBarView.showBothScrollIndicator ? 1 : 0);
+		//	if (position + s > size) {
+		//		value++;
+		//		return true;
+		//	}
+		//	return false;
+		//}
+
+		//bool MustScroll (ref int value, bool isVertical = false)
+		//{
+		//	if (position != value) {
+		//		return false;
+		//	}
+		//	var s = isVertical ? Host.Bounds.Height + (otherScrollBarView != null && otherScrollBarView.showBothScrollIndicator ? 1 : 0) :
+		//		Host.Bounds.Width + (otherScrollBarView != null && otherScrollBarView.showBothScrollIndicator ? 1 : 0);
+		//	if (position + s > size) {
+		//		value++;
+		//		return true;
+		//	}
+		//	return false;
+		//}
+
+		//bool MustScroll (ref int value, bool isVertical = false)
+		//{
+		//	if (position != value) {
+		//		return false;
+		//	}
+		//	var s = isVertical ? Host.Bounds.Height + (otherScrollBarView != null && otherScrollBarView.showBothScrollIndicator ? 1 : 0) :
+		//		Host.Bounds.Width + (otherScrollBarView != null && otherScrollBarView.showBothScrollIndicator ? 1 : 0);
+		//	if (position + s > size) {
+		//		value++;
+		//		return true;
+		//	}
+		//	return false;
+		//}
+
 		// BUGBUG: v2 - for consistency this should be named "Parent" not "Host"
 		/// <summary>
 		/// Get or sets the view that host this <see cref="ScrollBarView"/>

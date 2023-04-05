@@ -751,8 +751,8 @@ namespace Terminal.Gui {
 			if (n != selected) {
 				selected = n;
 				if (source.Count * itemHeight >= top + VisibleItems)
-					top = Math.Max(selected, 0);
-                else
+					top = Math.Max (selected, 0);
+				else
 					top = 0;
 				OnSelectedChanged ();
 				SetNeedsDisplay ();
@@ -793,7 +793,7 @@ namespace Terminal.Gui {
 				OnSelectedChanged ();
 				SetNeedsDisplay ();
 			} else if (selected >= top + VisibleItems) {
-				top = Math.Max(source.Count - VisibleItems, 0);
+				top = Math.Max (source.Count - VisibleItems, 0);
 				SetNeedsDisplay ();
 			}
 
@@ -824,8 +824,8 @@ namespace Terminal.Gui {
 					selected = Source.Count - 1;
 				}
 				if (selected < top) {
-					top = Math.Max(selected, 0);
-                } else if (selected > top + VisibleItems) {
+					top = Math.Max (selected, 0);
+				} else if (selected > top + VisibleItems) {
 					top = Math.Max (selected - VisibleItems + 1, 0);
 				}
 				OnSelectedChanged ();
@@ -847,8 +847,8 @@ namespace Terminal.Gui {
 			if (source.Count > 0 && selected != source.Count - 1) {
 				selected = source.Count - 1;
 				if (top + selected > VisibleItems - 1) {
-					top = Math.Max(selected, 0);
-                }
+					top = Math.Max (selected, 0);
+				}
 				OnSelectedChanged ();
 				SetNeedsDisplay ();
 			}
@@ -987,8 +987,8 @@ namespace Terminal.Gui {
 		{
 			SuperView?.LayoutSubviews ();
 			if (selected < top) {
-				top = Math.Max(selected, 0);
-            } else if (VisibleItems > 0 && selected >= top + VisibleItems) {
+				top = Math.Max (selected, 0);
+			} else if (VisibleItems > 0 && selected >= top + VisibleItems) {
 				top = Math.Max (selected - VisibleItems + 1, 0);
 			}
 		}
@@ -1220,7 +1220,7 @@ namespace Terminal.Gui {
 						//if (ch != null && ch.Width == 0 && c == colHeadersCount - 1) {
 						//	maxLength [c] += colMargin;
 						//}
-					} 
+					}
 					//else if (colHeadersCount == 1 && maxLength [c] < width) {
 					//	maxLength [c] = width;
 					//}
@@ -1237,7 +1237,7 @@ namespace Terminal.Gui {
 							//	colWidth = maxLength [c];
 							//}
 							if (c < colHeadersCount - 1) {
-								colWidth = maxLength [c]; 
+								colWidth = maxLength [c];
 							}
 						} else {
 							colWidth = Math.Min (ch.Width, width);

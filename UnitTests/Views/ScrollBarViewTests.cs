@@ -829,22 +829,22 @@ namespace Terminal.Gui.ViewTests {
 		//		};
 		//		win.Add (newScrollBarView);
 
-				newScrollBarView.ChangedPosition += (s, e) => {
-					listView.TopItem = newScrollBarView.Position;
-					if (listView.TopItem != newScrollBarView.Position) {
-						newScrollBarView.Position = listView.TopItem;
-					}
-					Assert.Equal (newScrollBarView.Position, listView.TopItem);
-					listView.SetNeedsDisplay ();
-				};
+				//newScrollBarView.ChangedPosition += (s, e) => {
+				//	listView.TopItem = newScrollBarView.Position;
+				//	if (listView.TopItem != newScrollBarView.Position) {
+				//		newScrollBarView.Position = listView.TopItem;
+				//	}
+				//	Assert.Equal (newScrollBarView.Position, listView.TopItem);
+				//	listView.SetNeedsDisplay ();
+				//};
 
-				listView.DrawContent += (s, e) => {
-					newScrollBarView.Size = listView.Source.Count;
-					Assert.Equal (newScrollBarView.Size, listView.Source.Count);
-					newScrollBarView.Position = listView.TopItem;
-					Assert.Equal (newScrollBarView.Position, listView.TopItem);
-					newScrollBarView.Refresh ();
-				};
+				//listView.DrawContent += (s, e) => {
+				//	newScrollBarView.Size = listView.Source.Count;
+				//	Assert.Equal (newScrollBarView.Size, listView.Source.Count);
+				//	newScrollBarView.Position = listView.TopItem;
+				//	Assert.Equal (newScrollBarView.Position, listView.TopItem);
+				//	newScrollBarView.Refresh ();
+				//};
 
 		//		top.Ready += (s, e) => {
 		//			newScrollBarView.Position = 45;
