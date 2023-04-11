@@ -750,8 +750,8 @@ namespace Terminal.Gui {
 			if (n != selected) {
 				selected = n;
 				if (source.Count * itemHeight >= top + VisibleItems)
-					top = Math.Max(selected, 0);
-                else
+					top = Math.Max (selected, 0);
+				else
 					top = 0;
 				OnSelectedChanged ();
 				SetNeedsDisplay ();
@@ -792,7 +792,7 @@ namespace Terminal.Gui {
 				OnSelectedChanged ();
 				SetNeedsDisplay ();
 			} else if (selected >= top + VisibleItems) {
-				top = Math.Max(source.Count - VisibleItems, 0);
+				top = Math.Max (source.Count - VisibleItems, 0);
 				SetNeedsDisplay ();
 			}
 
@@ -823,8 +823,8 @@ namespace Terminal.Gui {
 					selected = Source.Count - 1;
 				}
 				if (selected < top) {
-					top = Math.Max(selected, 0);
-                } else if (selected > top + VisibleItems) {
+					top = Math.Max (selected, 0);
+				} else if (selected > top + VisibleItems) {
 					top = Math.Max (selected - VisibleItems + 1, 0);
 				}
 				OnSelectedChanged ();
@@ -846,8 +846,8 @@ namespace Terminal.Gui {
 			if (source.Count > 0 && selected != source.Count - 1) {
 				selected = source.Count - 1;
 				if (top + selected > VisibleItems - 1) {
-					top = Math.Max(selected, 0);
-                }
+					top = Math.Max (selected, 0);
+				}
 				OnSelectedChanged ();
 				SetNeedsDisplay ();
 			}

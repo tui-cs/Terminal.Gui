@@ -1352,6 +1352,8 @@ namespace Terminal.Gui {
 		bool multiline = true;
 		HistoryText historyText = new HistoryText ();
 		CultureInfo currentCulture;
+		ScrollBarView.ScrollBarType scrollBarType;
+		ScrollBarView scrollBar;
 
 		/// <summary>
 		/// Raised when the <see cref="Text"/> property of the <see cref="TextView"/> changes.
@@ -1884,6 +1886,103 @@ namespace Terminal.Gui {
 				Adjust ();
 			}
 		}
+
+		/// <summary>
+		/// Get the <see cref="ScrollBarView"/> used by this view or <see langword="null"/> if none are used.
+		/// </summary>
+		public ScrollBarView ScrollBar { get => scrollBar; }
+
+		/// <summary>
+		/// Gets or sets the <see cref="ScrollBarView.ScrollBarType"/> used by this view.
+		/// </summary>
+		public ScrollBarView.ScrollBarType ScrollBarType {
+			get => scrollBarType;
+			set {
+				if (scrollBarType != value) {
+					scrollBarType = value;
+					DisposeScrollBar ();
+					if (scrollBarType != ScrollBarView.ScrollBarType.None) {
+						scrollBar = new ScrollBarView (this, scrollBarType, false);
+						AddHandlers ();
+					}
+					SetNeedsDisplay ();
+				}
+			}
+		}
+
+		private void AddHandlers ()
+		{
+			if (scrollBar != null) {
+				scrollBar.ChangedPosition += ScrollBar_ChangedPosition;
+				//scrollBar.VisibleChanged += ScrollBar_VisibleChanged;
+				//if (scrollBar.IsVertical) {
+				//	BottomOffset = 1;
+				//} else {
+				//	RightOffset = 1;
+				//}
+				if (scrollBar.OtherScrollBarView != null) {
+					scrollBar.OtherScrollBarView.ChangedPosition += OtherScrollBarView_ChangedPosition;
+					//scrollBar.OtherScrollBarView.VisibleChanged += OtherScrollBarView_VisibleChanged;
+					//if (scrollBar.OtherScrollBarView.IsVertical) {
+					//	BottomOffset = 1;
+					//} else {
+					//	RightOffset = 1;
+					//}
+				}
+			}
+		}
+
+		private void DisposeScrollBar ()
+		{
+			if (scrollBar != null) {
+				scrollBar.ChangedPosition -= ScrollBar_ChangedPosition;
+				//scrollBar.VisibleChanged -= ScrollBar_VisibleChanged;
+				if (scrollBar.OtherScrollBarView != null) {
+					scrollBar.OtherScrollBarView.ChangedPosition -= OtherScrollBarView_ChangedPosition;
+					//scrollBar.OtherScrollBarView.VisibleChanged -= OtherScrollBarView_VisibleChanged;
+				}
+				scrollBar.RemoveAll ();
+				scrollBar = null;
+				//BottomOffset = 0;
+				//RightOffset = 0;
+			}
+		}
+
+		private void ScrollBar_ChangedPosition (object sender, EventArgs e)
+		{
+			TopRow = scrollBar.Position;
+			if (TopRow != scrollBar.Position) {
+				scrollBar.Position = TopRow;
+			}
+			SetNeedsDisplay ();
+		}
+
+		private void OtherScrollBarView_ChangedPosition (object sender, EventArgs e)
+		{
+			LeftColumn = scrollBar.OtherScrollBarView.Position;
+			if (LeftColumn != scrollBar.OtherScrollBarView.Position) {
+				scrollBar.OtherScrollBarView.Position = LeftColumn;
+			}
+			SetNeedsDisplay ();
+		}
+
+		//private void ScrollBar_VisibleChanged ()
+		//{
+		//	if (scrollBar.Visible && RightOffset == 0) {
+		//		RightOffset = 1;
+		//	} else if (!scrollBar.Visible && RightOffset == 1) {
+		//		RightOffset = 0;
+		//	}
+		//}
+
+		//private void OtherScrollBarView_VisibleChanged ()
+		//{
+		//	if (scrollBar.OtherScrollBarView.Visible && BottomOffset == 0) {
+		//		BottomOffset = 1;
+		//	} else if (!scrollBar.OtherScrollBarView.Visible && BottomOffset == 1) {
+		//		BottomOffset = 0;
+		//	}
+		//}
 
 		/// <summary>
 		/// Gets or sets a value indicating whether pressing ENTER in a <see cref="TextView"/>
@@ -2594,6 +2693,16 @@ namespace Terminal.Gui {
 		///<inheritdoc/>
 		public override void OnDrawContent (Rect contentArea)
 		{
+			if (scrollBar != null) {
+				scrollBar.Size = Lines - 1;
+				scrollBar.Position = TopRow;
+				scrollBar.Selected = CurrentRow;
+				scrollBar.OtherScrollBarView.Size = Maxlength + 4;
+				scrollBar.OtherScrollBarView.Position = LeftColumn;
+				scrollBar.OtherScrollBarView.Selected = CurrentColumn;
+				scrollBar.Refresh ();
+			}
+
 			SetNormalColor ();
 
 			var offB = OffSetBackground ();

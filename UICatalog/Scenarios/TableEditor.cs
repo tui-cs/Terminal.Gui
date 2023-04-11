@@ -132,7 +132,7 @@ namespace UICatalog.Scenarios {
 			};
 
 			// if user clicks the mouse in TableView
-			tableView.MouseClick += (s,e) => {
+			tableView.MouseClick += (s, e) => {
 
 				tableView.ScreenToCell (e.MouseEvent.X, e.MouseEvent.Y, out DataColumn clickedCol);
 
@@ -278,7 +278,7 @@ namespace UICatalog.Scenarios {
 		{
 			var accepted = false;
 			var ok = new Button ("Ok", is_default: true);
-			ok.Clicked += (s,e) => { accepted = true; Application.RequestStop (); };
+			ok.Clicked += (s, e) => { accepted = true; Application.RequestStop (); };
 			var cancel = new Button ("Cancel");
 			cancel.Clicked += (s,e) => { Application.RequestStop (); };
 			var d = new Dialog (ok, cancel) { Title = prompt };
@@ -319,30 +319,29 @@ namespace UICatalog.Scenarios {
 		{
 			var _scrollBar = new ScrollBarView (tableView, true);
 
-			_scrollBar.ChangedPosition += (s,e) => {
+			_scrollBar.ChangedPosition += (s, e) => {
 				tableView.RowOffset = _scrollBar.Position;
 				if (tableView.RowOffset != _scrollBar.Position) {
 					_scrollBar.Position = tableView.RowOffset;
 				}
 				tableView.SetNeedsDisplay ();
 			};
-			/*
-			_scrollBar.OtherScrollBarView.ChangedPosition += (s,e) => {
-				_listView.LeftItem = _scrollBar.OtherScrollBarView.Position;
-				if (_listView.LeftItem != _scrollBar.OtherScrollBarView.Position) {
-					_scrollBar.OtherScrollBarView.Position = _listView.LeftItem;
-				}
-				_listView.SetNeedsDisplay ();
-			};*/
 
-			tableView.DrawContent += (s,e) => {
-				_scrollBar.Size = tableView.Table?.Rows?.Count ?? 0;
-				_scrollBar.Position = tableView.RowOffset;
-				//	_scrollBar.OtherScrollBarView.Size = _listView.Maxlength - 1;
-				//	_scrollBar.OtherScrollBarView.Position = _listView.LeftItem;
-				_scrollBar.Refresh ();
+			_scrollBar.OtherScrollBarView.ChangedPosition += (s, e) => {
+				tableView.ColumnOffset = _scrollBar.OtherScrollBarView.Position;
+				if (tableView.ColumnOffset != _scrollBar.OtherScrollBarView.Position) {
+					_scrollBar.OtherScrollBarView.Position = tableView.ColumnOffset;
+				}
+				tableView.SetNeedsDisplay ();
 			};
 
+			tableView.DrawContent += (s, e) => {
+				_scrollBar.Size = tableView.Table?.Rows?.Count ?? 0;
+				_scrollBar.Position = tableView.RowOffset;
+				_scrollBar.OtherScrollBarView.Size = tableView.Table != null ? tableView.Bounds.Width + 1 : 0;
+				_scrollBar.OtherScrollBarView.Position = tableView.ColumnOffset;
+				_scrollBar.Refresh ();
+			};
 		}
 
 		private void TableViewKeyPress (object sender, KeyEventEventArgs e)
@@ -760,7 +759,7 @@ namespace UICatalog.Scenarios {
 			bool okPressed = false;
 
 			var ok = new Button ("Ok", is_default: true);
-			ok.Clicked += (s,e) => { okPressed = true; Application.RequestStop (); };
+			ok.Clicked += (s, e) => { okPressed = true; Application.RequestStop (); };
 			var cancel = new Button ("Cancel");
 			cancel.Clicked += (s,e) => { Application.RequestStop (); };
 			var d = new Dialog (ok, cancel) { Title = title };

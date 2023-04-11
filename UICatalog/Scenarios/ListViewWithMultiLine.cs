@@ -106,7 +106,8 @@ namespace UICatalog.Scenarios {
 			_listView.DrawContent += (s, e) => {
 				if (_listView.Source == null)
 					return;
-				scrollBar.Size = GetSize (_listView.Source.Count, _listView.ItemHeight, _listView.ShowColumnHeaders ? -1 : scrollBar.OtherScrollBarView.ShowScrollIndicator ? 1 : 0);
+				//scrollBar.Size = GetSize (_listView.Source.Count, _listView.ItemHeight, _listView.ShowColumnHeaders ? -1 : scrollBar.OtherScrollBarView.ShowScrollIndicator ? 1 : 0);
+				scrollBar.Size = GetSize (_listView.Source.Count, _listView.ItemHeight);
 				//if (scrollBar.OtherScrollBarView.ShowScrollIndicator && _listView.SelectedItem > _listView.TopItem + _listView.VisibleItems - 1) {
 				//	_listView.TopItem++;
 				//}
@@ -116,12 +117,13 @@ namespace UICatalog.Scenarios {
 					_listView.TopItem++;
 				}
 				scrollBar.Position = GetPosition (_listView.TopItem, lastVertPos, scrollBar.Size, lastTop, _listView.ItemHeight);
-				scrollBar.OtherScrollBarView.Size = GetSize (_listView.Maxlength, 1, scrollBar.ShowScrollIndicator ? 1 : 0);
-				//scrollBar.OtherScrollBarView.Size = GetSize (_listView.Maxlength);
+				//scrollBar.OtherScrollBarView.Size = GetSize (_listView.Maxlength, 1, scrollBar.ShowScrollIndicator ? 1 : 0);
+				scrollBar.OtherScrollBarView.Size = GetSize (_listView.Maxlength);
 				//scrollBar.OtherScrollBarView.Size = _listView.Maxlength;
 				scrollBar.OtherScrollBarView.Position = GetPosition (_listView.LeftItem, lastHoriPos, scrollBar.OtherScrollBarView.Size, lastLeft);
 				scrollBar.Refresh ();
 			};
+			_listView.ScrollBarType = ScrollBarView.ScrollBarType.Both;
 
 			_listView.Source = new ListWrapper (_scenarios);
 
