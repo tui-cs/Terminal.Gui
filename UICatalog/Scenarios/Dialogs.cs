@@ -1,8 +1,6 @@
 ﻿using NStack;
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using Terminal.Gui;
 
 namespace UICatalog.Scenarios {
@@ -10,16 +8,17 @@ namespace UICatalog.Scenarios {
 	[ScenarioCategory ("Dialogs")]
 	public class Dialogs : Scenario {
 		static int CODE_POINT = '你'; // We know this is a wide char
+
+
 		public override void Setup ()
 		{
 			var frame = new FrameView ("Dialog Options") {
 				X = Pos.Center (),
-				Y = 0,
-				Width = Dim.Percent (75)
+				Y = 1,
+				Width = Dim.Percent (75),
 			};
-			Win.Add (frame);
 
-			var label = new Label ("width:") {
+			var label = new Label ("Width:") {
 				X = 0,
 				Y = 0,
 				Width = 15,
@@ -27,6 +26,7 @@ namespace UICatalog.Scenarios {
 				TextAlignment = Terminal.Gui.TextAlignment.Right,
 			};
 			frame.Add (label);
+
 			var widthEdit = new TextField ("0") {
 				X = Pos.Right (label) + 1,
 				Y = Pos.Top (label),
@@ -35,7 +35,7 @@ namespace UICatalog.Scenarios {
 			};
 			frame.Add (widthEdit);
 
-			label = new Label ("height:") {
+			label = new Label ("Height:") {
 				X = 0,
 				Y = Pos.Bottom (label),
 				Width = Dim.Width (label),
@@ -43,6 +43,7 @@ namespace UICatalog.Scenarios {
 				TextAlignment = Terminal.Gui.TextAlignment.Right,
 			};
 			frame.Add (label);
+
 			var heightEdit = new TextField ("0") {
 				X = Pos.Right (label) + 1,
 				Y = Pos.Top (label),
@@ -68,6 +69,7 @@ namespace UICatalog.Scenarios {
 				TextAlignment = Terminal.Gui.TextAlignment.Right,
 			};
 			frame.Add (label);
+
 			var titleEdit = new TextField ("Title") {
 				X = Pos.Right (label) + 1,
 				Y = Pos.Top (label),
@@ -78,12 +80,13 @@ namespace UICatalog.Scenarios {
 
 			label = new Label ("Num Buttons:") {
 				X = 0,
-				Y = Pos.Bottom (titleEdit),
+				Y = Pos.Bottom (label),  // BUGBUG: if this is Pos.Bottom (titleEdit) the initial LayoutSubviews does not work correctly?!?!
 				Width = Dim.Width (label),
 				Height = 1,
 				TextAlignment = Terminal.Gui.TextAlignment.Right,
 			};
 			frame.Add (label);
+
 			var numButtonsEdit = new TextField ("3") {
 				X = Pos.Right (label) + 1,
 				Y = Pos.Top (label),
@@ -99,26 +102,35 @@ namespace UICatalog.Scenarios {
 			};
 			frame.Add (glyphsNotWords);
 
-
 			label = new Label ("Button Style:") {
 				X = 0,
 				Y = Pos.Bottom (glyphsNotWords),
 				TextAlignment = Terminal.Gui.TextAlignment.Right
 			};
 			frame.Add (label);
+
 			var styleRadioGroup = new RadioGroup (new ustring [] { "Center", "Justify", "Left", "Right" }) {
 				X = Pos.Right (label) + 1,
 				Y = Pos.Top (label),
 			};
 			frame.Add (styleRadioGroup);
 
+
+			frame.ForceValidatePosDim = true;
 			void Top_Loaded (object sender, EventArgs args)
 			{
-				frame.Height = Dim.Height (widthEdit) + Dim.Height (heightEdit) + Dim.Height (titleEdit)
-					+ Dim.Height (numButtonsEdit) + Dim.Height (styleRadioGroup) + Dim.Height (glyphsNotWords) + 2;
+				frame.Height =
+					widthEdit.Frame.Height +
+					heightEdit.Frame.Height +
+					titleEdit.Frame.Height +
+					numButtonsEdit.Frame.Height +
+					glyphsNotWords.Frame.Height +
+					styleRadioGroup.Frame.Height;
 				Application.Top.Loaded -= Top_Loaded;
 			}
 			Application.Top.Loaded += Top_Loaded;
+
+			Win.Add (frame);
 
 			label = new Label ("Button Pressed:") {
 				X = Pos.Center (),
@@ -127,6 +139,7 @@ namespace UICatalog.Scenarios {
 				TextAlignment = Terminal.Gui.TextAlignment.Right,
 			};
 			Win.Add (label);
+
 			var buttonPressedLabel = new Label (" ") {
 				X = Pos.Center (),
 				Y = Pos.Bottom (frame) + 5,
@@ -144,7 +157,7 @@ namespace UICatalog.Scenarios {
 				Y = Pos.Bottom (frame) + 2,
 				IsDefault = true,
 			};
-			showDialogButton.Clicked += (s,e) => {
+			showDialogButton.Clicked += (s, e) => {
 				try {
 					Dialog dialog = null;
 
@@ -168,7 +181,7 @@ namespace UICatalog.Scenarios {
 							button = new Button (NumberToWords.Convert (buttonId),
 							       is_default: buttonId == 0);
 						}
-						button.Clicked += (s,e) => {
+						button.Clicked += (s, e) => {
 							clicked = buttonId;
 							Application.RequestStop ();
 						};
@@ -184,16 +197,20 @@ namespace UICatalog.Scenarios {
 
 					// This tests dynamically adding buttons; ensuring the dialog resizes if needed and 
 					// the buttons are laid out correctly
-					dialog = new Dialog (titleEdit.Text, width, height,
-						buttons.ToArray ()) {
+					dialog = new Dialog (buttons.ToArray ()) {
+						Title = titleEdit.Text,
 						ButtonAlignment = (Dialog.ButtonAlignments)styleRadioGroup.SelectedItem
 					};
+					if (height != 0 || width != 0) {
+						dialog.Height = height;
+						dialog.Width = width;
+					}
 
 					var add = new Button ("Add a button") {
 						X = Pos.Center (),
 						Y = Pos.Center ()
 					};
-					add.Clicked += (s,e) => {
+					add.Clicked += (s, e) => {
 						var buttonId = buttons.Count;
 						Button button;
 						if (glyphsNotWords.Checked == true) {
@@ -203,7 +220,7 @@ namespace UICatalog.Scenarios {
 							button = new Button (NumberToWords.Convert (buttonId),
 								is_default: buttonId == 0);
 						}
-						button.Clicked += (s,e) => {
+						button.Clicked += (s, e) => {
 							clicked = buttonId;
 							Application.RequestStop ();
 
@@ -220,13 +237,13 @@ namespace UICatalog.Scenarios {
 						X = Pos.Center (),
 						Y = Pos.Center () + 1
 					};
-					addChar.Clicked += (s,e) => {
+					addChar.Clicked += (s, e) => {
 						foreach (var button in buttons) {
 							button.Text += Char.ConvertFromUtf32 (CODE_POINT);
 						}
 						dialog.LayoutSubviews ();
 					};
-					dialog.Closed += (s,e) => {
+					dialog.Closed += (s, e) => {
 						buttonPressedLabel.Text = $"{clicked}";
 					};
 					dialog.Add (addChar);

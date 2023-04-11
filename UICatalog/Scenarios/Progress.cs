@@ -35,7 +35,7 @@ namespace UICatalog.Scenarios {
 				} 
 			}
 
-			internal ProgressDemo (ustring title) : base (title)
+			internal ProgressDemo (string title) : base (title)
 			{
 				ColorScheme = Colors.Dialog;
 
@@ -109,10 +109,11 @@ namespace UICatalog.Scenarios {
 				};
 				Add (_startedLabel);
 
+				// Explictly cause layout so the setting of Height below works
 				LayoutSubviews ();
 
 				// Set height to height of controls + spacing + frame
-				Height = 2 + _verticalSpace + Dim.Height (startButton) + _verticalSpace + Dim.Height (ActivityProgressBar) + _verticalSpace + Dim.Height (PulseProgressBar) + _verticalSpace;
+				Height = 2 + _verticalSpace + startButton.Frame.Height + _verticalSpace + ActivityProgressBar.Frame.Height + _verticalSpace + PulseProgressBar.Frame.Height + _verticalSpace;
 			}
 
 			internal void Start ()

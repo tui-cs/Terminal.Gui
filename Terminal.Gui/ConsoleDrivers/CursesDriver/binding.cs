@@ -328,9 +328,10 @@ namespace Unix.Terminal {
 		static public int set_escdelay (int size) => methods.set_escdelay (size);
 	}
 
-#pragma warning disable RCS1102 // Make class static.
+#pragma warning disable RCS1102 // Make class static.'
 	internal class Delegates {
 #pragma warning restore RCS1102 // Make class static.
+#pragma warning disable CS8981 // The type name only contains lower-cased ascii characters. Such names may become reserved for the language.
 		public delegate IntPtr initscr ();
 		public delegate int endwin ();
 		public delegate bool isendwin ();
@@ -555,4 +556,6 @@ namespace Unix.Terminal {
 		}
 	}
 #pragma warning restore CS1591 // Missing XML comment for publicly visible type or member
+#pragma warning restore CS8981 // The type name only contains lower-cased ascii characters. Such names may become reserved for the language.
+
 }

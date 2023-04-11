@@ -10,8 +10,7 @@ using Terminal.Gui;
 using System.IO;
 using System.Reflection;
 using System.Threading;
-using Terminal.Gui.Configuration;
-using static Terminal.Gui.Configuration.ConfigurationManager;
+using static Terminal.Gui.ConfigurationManager;
 using System.Text.Json.Serialization;
 
 #nullable enable
@@ -70,7 +69,6 @@ namespace UICatalog {
 
 			_scenarios = Scenario.GetScenarios ();
 			_categories = Scenario.GetAllCategories ();
-			_nameColumnWidth = _scenarios.OrderByDescending (s => s.GetName ().Length).FirstOrDefault ().GetName ().Length;
 
 			if (args.Length > 0 && args.Contains ("-usc")) {
 				_useSystemConsole = true;
@@ -83,7 +81,7 @@ namespace UICatalog {
 			// run it and exit when done.
 			if (args.Length > 0) {
 				var item = _scenarios.FindIndex (s => s.GetName ().Equals (args [0], StringComparison.OrdinalIgnoreCase));
-				_selectedScenario = (Scenario)Activator.CreateInstance (_scenarios [item].GetType ());
+				_selectedScenario = (Scenario)Activator.CreateInstance (_scenarios [item].GetType ())!;
 				Application.UseSystemConsole = _useSystemConsole;
 				Application.Init ();
 				_selectedScenario.Theme = _cachedTheme;
@@ -115,7 +113,7 @@ namespace UICatalog {
 			Scenario scenario;
 			while ((scenario = RunUICatalogTopLevel ()) != null) {
 				VerifyObjectsWereDisposed ();
-				ConfigurationManager.Themes.Theme = _cachedTheme;
+				ConfigurationManager.Themes!.Theme = _cachedTheme!;
 				ConfigurationManager.Apply ();
 				scenario.Theme = _cachedTheme;
 				scenario.TopLevelColorScheme = _topLevelColorScheme;
@@ -151,7 +149,7 @@ namespace UICatalog {
 			// Setup a file system watcher for `./.tui/`
 			_currentDirWatcher.NotifyFilter = NotifyFilters.LastWrite;
 			var f = new FileInfo (Assembly.GetExecutingAssembly ().Location);
-			var tuiDir = Path.Combine (f.Directory.FullName, ".tui");
+			var tuiDir = Path.Combine (f.Directory!.FullName, ".tui");
 
 			if (!Directory.Exists (tuiDir)) {
 				Directory.CreateDirectory (tuiDir);
@@ -206,9 +204,9 @@ namespace UICatalog {
 			Application.Init ();
 
 			if (_cachedTheme is null) {
-				_cachedTheme = ConfigurationManager.Themes.Theme;
+				_cachedTheme = ConfigurationManager.Themes?.Theme;
 			} else {
-				ConfigurationManager.Themes.Theme = _cachedTheme;
+				ConfigurationManager.Themes!.Theme = _cachedTheme;
 				ConfigurationManager.Apply ();
 			}
 
@@ -217,40 +215,40 @@ namespace UICatalog {
 			Application.Run<UICatalogTopLevel> ();
 			Application.Shutdown ();
 
-			return _selectedScenario;
+			return _selectedScenario!;
 		}
 
-		static List<Scenario> _scenarios;
-		static List<string> _categories;
-		static int _nameColumnWidth;
+		static List<Scenario>? _scenarios;
+		static List<string>? _categories;
+
 		// When a scenario is run, the main app is killed. These items
 		// are therefore cached so that when the scenario exits the
 		// main app UI can be restored to previous state
 		static int _cachedScenarioIndex = 0;
 		static int _cachedCategoryIndex = 0;
-		static string? _cachedTheme;
-		
-		static StringBuilder _aboutMessage;
+		static string? _cachedTheme = string.Empty;
+
+		static StringBuilder? _aboutMessage = null;
 
 		// If set, holds the scenario the user selected
-		static Scenario _selectedScenario = null;
+		static Scenario? _selectedScenario = null;
 
 		static bool _useSystemConsole = false;
 		static ConsoleDriver.DiagnosticFlags _diagnosticFlags;
-		static bool _enableConsoleScrolling = false;
+		//static bool _enableConsoleScrolling = false;
 		static bool _isFirstRunning = true;
-		static string _topLevelColorScheme;
+		static string _topLevelColorScheme = string.Empty;
 
-		static MenuItem [] _themeMenuItems;
-		static MenuBarItem _themeMenuBarItem;
+		static MenuItem []? _themeMenuItems;
+		static MenuBarItem? _themeMenuBarItem;
 
 		/// <summary>
 		/// This is the main UI Catalog app view. It is run fresh when the app loads (if a Scenario has not been passed on 
 		/// the command line) and each time a Scenario ends.
 		/// </summary>
 		public class UICatalogTopLevel : Toplevel {
-			public MenuItem miIsMouseDisabled;
-			public MenuItem miEnableConsoleScrolling;
+			public MenuItem? miIsMouseDisabled;
+			public MenuItem? miEnableConsoleScrolling;
 
 			public TileView ContentPane;
 			public ListView CategoryListView;
@@ -276,7 +274,7 @@ namespace UICatalog {
 						new MenuItem ("_gui.cs API Overview", "", () => OpenUrl ("https://gui-cs.github.io/Terminal.Gui/articles/overview.html"), null, null, Key.F1),
 						new MenuItem ("gui.cs _README", "", () => OpenUrl ("https://github.com/gui-cs/Terminal.Gui"), null, null, Key.F2),
 						new MenuItem ("_About...",
-							"About UI Catalog", () =>  MessageBox.Query ("About UI Catalog", _aboutMessage.ToString(), 0, null, false, "_Ok"), null, null, Key.CtrlMask | Key.A),
+							"About UI Catalog", () =>  MessageBox.Query ("About UI Catalog", _aboutMessage!.ToString(), 0, false, "_Ok"), null, null, Key.CtrlMask | Key.A),
 					}),
 				});
 
@@ -302,7 +300,7 @@ namespace UICatalog {
 					}),
 					new StatusItem(Key.F10, "~F10~ Status Bar", () => {
 						StatusBar.Visible = !StatusBar.Visible;
-						ContentPane.Height = Dim.Fill(StatusBar.Visible ? 1 : 0);
+						ContentPane!.Height = Dim.Fill(StatusBar.Visible ? 1 : 0);
 						LayoutSubviews();
 						SetSubViewNeedsDisplay();
 					}),
@@ -311,6 +309,7 @@ namespace UICatalog {
 				};
 
 				ContentPane = new TileView () {
+					Id = "ContentPane",
 					X = 0,
 					Y = 1, // for menu
 					Width = Dim.Fill (),
@@ -318,7 +317,7 @@ namespace UICatalog {
 					CanFocus = true,
 					Shortcut = Key.CtrlMask | Key.C,
 				};
-				ContentPane.Border.BorderStyle = BorderStyle.Single;
+				ContentPane.LineStyle = LineStyle.Single;
 				ContentPane.SetSplitterPos (0, 25);
 				ContentPane.ShortcutAction = () => ContentPane.SetFocus ();
 
@@ -330,8 +329,8 @@ namespace UICatalog {
 					AllowsMarking = false,
 					CanFocus = true,
 				};
-				CategoryListView.OpenSelectedItem += (s,a) => {
-					ScenarioListView.SetFocus ();
+				CategoryListView.OpenSelectedItem += (s, a) => {
+					ScenarioListView!.SetFocus ();
 				};
 				CategoryListView.SelectedItemChanged += CategoryListView_SelectedChanged;
 
@@ -369,13 +368,13 @@ namespace UICatalog {
 
 				ConfigurationManager.Applied += ConfigAppliedHandler;
 			}
-      
-			void LoadedHandler (object sender, EventArgs args)
+
+			void LoadedHandler (object? sender, EventArgs? args)
 			{
 				ConfigChanged ();
 
-				miIsMouseDisabled.Checked = Application.IsMouseDisabled;
-				miEnableConsoleScrolling.Checked = Application.EnableConsoleScrolling;
+				miIsMouseDisabled!.Checked = Application.IsMouseDisabled;
+				miEnableConsoleScrolling!.Checked = Application.EnableConsoleScrolling;
 				DriverName.Title = $"Driver: {Driver.GetType ().Name}";
 				OS.Title = $"OS: {Microsoft.DotNet.PlatformAbstractions.RuntimeEnvironment.OperatingSystem} {Microsoft.DotNet.PlatformAbstractions.RuntimeEnvironment.OperatingSystemVersion}";
 
@@ -390,7 +389,7 @@ namespace UICatalog {
 				StatusBar.VisibleChanged += (s, e) => {
 					UICatalogApp.ShowStatusBar = StatusBar.Visible;
 
-					var height = (StatusBar.Visible ? 1 : 0);// + (MenuBar.Visible ? 1 : 0);
+					var height = (StatusBar.Visible ? 1 : 0);
 					ContentPane.Height = Dim.Fill (height);
 					LayoutSubviews ();
 					SetSubViewNeedsDisplay ();
@@ -399,13 +398,13 @@ namespace UICatalog {
 				Loaded -= LoadedHandler;
 			}
 
-			private void UnloadedHandler (object sender, EventArgs args)
+			private void UnloadedHandler (object? sender, EventArgs? args)
 			{
 				ConfigurationManager.Applied -= ConfigAppliedHandler;
 				Unloaded -= UnloadedHandler;
 			}
-      
-			void ConfigAppliedHandler (object sender, ConfigurationManagerEventArgs a)
+
+			void ConfigAppliedHandler (object? sender, ConfigurationManagerEventArgs? a)
 			{
 				ConfigChanged ();
 			}
@@ -414,14 +413,16 @@ namespace UICatalog {
 			/// Launches the selected scenario, setting the global _selectedScenario
 			/// </summary>
 			/// <param name="e"></param>
-			void ScenarioListView_OpenSelectedItem (object sender, EventArgs e)
+			void ScenarioListView_OpenSelectedItem (object? sender, EventArgs? e)
 			{
 				if (_selectedScenario is null) {
 					// Save selected item state
 					_cachedCategoryIndex = CategoryListView.SelectedItem;
 					_cachedScenarioIndex = ScenarioListView.SelectedItem;
 					// Create new instance of scenario (even though Scenarios contains instances)
-					_selectedScenario = (Scenario)Activator.CreateInstance (ScenarioListView.Source.ToList () [ScenarioListView.SelectedItem].GetType ());
+					var sourceList = ScenarioListView.Source.ToList ();
+
+					_selectedScenario = (Scenario)Activator.CreateInstance (ScenarioListView.Source.ToList () [ScenarioListView.SelectedItem]!.GetType ())!;
 
 					// Tell the main app to stop
 					Application.RequestStop ();
@@ -430,12 +431,13 @@ namespace UICatalog {
 
 			List<MenuItem []> CreateDiagnosticMenuItems ()
 			{
-				List<MenuItem []> menuItems = new List<MenuItem []> ();
-				menuItems.Add (CreateDiagnosticFlagsMenuItems ());
-				menuItems.Add (new MenuItem [] { null });
-				menuItems.Add (CreateEnableConsoleScrollingMenuItems ());
-				menuItems.Add (CreateDisabledEnabledMouseItems ());
-				menuItems.Add (CreateKeybindingsMenuItems ());
+				List<MenuItem []> menuItems = new List<MenuItem []> {
+					CreateDiagnosticFlagsMenuItems (),
+					new MenuItem [] { },
+					CreateEnableConsoleScrollingMenuItems (),
+					CreateDisabledEnabledMouseItems (),
+					CreateKeybindingsMenuItems ()
+				};
 				return menuItems;
 			}
 
@@ -445,10 +447,10 @@ namespace UICatalog {
 				miIsMouseDisabled = new MenuItem {
 					Title = "_Disable Mouse"
 				};
-				miIsMouseDisabled.Shortcut = Key.CtrlMask | Key.AltMask | (Key)miIsMouseDisabled.Title.ToString ().Substring (1, 1) [0];
+				miIsMouseDisabled.Shortcut = Key.CtrlMask | Key.AltMask | (Key)miIsMouseDisabled!.Title!.ToString ()!.Substring (1, 1) [0];
 				miIsMouseDisabled.CheckType |= MenuItemCheckStyle.Checked;
 				miIsMouseDisabled.Action += () => {
-					miIsMouseDisabled.Checked = Application.IsMouseDisabled = (bool)!miIsMouseDisabled.Checked;
+					miIsMouseDisabled.Checked = Application.IsMouseDisabled = (bool)!miIsMouseDisabled.Checked!;
 				};
 				menuItems.Add (miIsMouseDisabled);
 
@@ -467,7 +469,7 @@ namespace UICatalog {
 					Application.Run (dlg);
 				};
 
-				menuItems.Add (null);
+				menuItems.Add (null!);
 				menuItems.Add (item);
 
 				return menuItems.ToArray ();
@@ -478,11 +480,11 @@ namespace UICatalog {
 				List<MenuItem> menuItems = new List<MenuItem> ();
 				miEnableConsoleScrolling = new MenuItem ();
 				miEnableConsoleScrolling.Title = "_Enable Console Scrolling";
-				miEnableConsoleScrolling.Shortcut = Key.CtrlMask | Key.AltMask | (Key)miEnableConsoleScrolling.Title.ToString ().Substring (1, 1) [0];
+				miEnableConsoleScrolling.Shortcut = Key.CtrlMask | Key.AltMask | (Key)miEnableConsoleScrolling.Title.ToString ()!.Substring (1, 1) [0];
 				miEnableConsoleScrolling.CheckType |= MenuItemCheckStyle.Checked;
 				miEnableConsoleScrolling.Action += () => {
 					miEnableConsoleScrolling.Checked = !miEnableConsoleScrolling.Checked;
-					Application.EnableConsoleScrolling = (bool)miEnableConsoleScrolling.Checked;
+					Application.EnableConsoleScrolling = (bool)miEnableConsoleScrolling.Checked!;
 				};
 				menuItems.Add (miEnableConsoleScrolling);
 
@@ -553,10 +555,10 @@ namespace UICatalog {
 
 				Enum GetDiagnosticsEnumValue (ustring title)
 				{
-					return title.ToString () switch {
+					return title!.ToString () switch {
 						FRAME_RULER => ConsoleDriver.DiagnosticFlags.FrameRuler,
 						FRAME_PADDING => ConsoleDriver.DiagnosticFlags.FramePadding,
-						_ => null,
+						_ => null!,
 					};
 				}
 
@@ -584,10 +586,10 @@ namespace UICatalog {
 				}
 			}
 
-			public MenuItem [] CreateThemeMenuItems ()
+			public MenuItem []? CreateThemeMenuItems ()
 			{
 				List<MenuItem> menuItems = new List<MenuItem> ();
-				foreach (var theme in ConfigurationManager.Themes) {
+				foreach (var theme in ConfigurationManager.Themes!) {
 					var item = new MenuItem {
 						Title = theme.Key,
 						Shortcut = Key.AltMask + theme.Key [0]
@@ -620,7 +622,7 @@ namespace UICatalog {
 					};
 					schemeMenuItems.Add (item);
 				}
-				menuItems.Add (null);
+				menuItems.Add (null!);
 				var mbi = new MenuBarItem ("_Color Scheme for Application.Top", schemeMenuItems.ToArray ());
 				menuItems.Add (mbi);
 
@@ -634,32 +636,33 @@ namespace UICatalog {
 				}
 
 				_themeMenuItems = ((UICatalogTopLevel)Application.Top).CreateThemeMenuItems ();
-				_themeMenuBarItem.Children = _themeMenuItems;
+				_themeMenuBarItem!.Children = _themeMenuItems;
 
-				var checkedThemeMenu = _themeMenuItems.Where (m => (bool)m.Checked).FirstOrDefault ();
+				var checkedThemeMenu = _themeMenuItems?.Where (m => m?.Checked ?? false).FirstOrDefault ();
 				if (checkedThemeMenu != null) {
 					checkedThemeMenu.Checked = false;
 				}
-				checkedThemeMenu = _themeMenuItems.Where (m => m != null && m.Title == ConfigurationManager.Themes.Theme).FirstOrDefault ();
+				checkedThemeMenu = _themeMenuItems?.Where (m => m != null && m.Title == ConfigurationManager.Themes?.Theme).FirstOrDefault ();
 				if (checkedThemeMenu != null) {
-					ConfigurationManager.Themes.Theme = checkedThemeMenu.Title.ToString ();
+					ConfigurationManager.Themes!.Theme = checkedThemeMenu.Title.ToString ()!;
 					checkedThemeMenu.Checked = true;
 				}
-				var schemeMenuItems = ((MenuBarItem)_themeMenuItems.Where (i => i is MenuBarItem).FirstOrDefault ()).Children;
+
+				var schemeMenuItems = ((MenuBarItem)_themeMenuItems?.Where (i => i is MenuBarItem)!.FirstOrDefault ()!)!.Children;
 				foreach (var schemeMenuItem in schemeMenuItems) {
 					schemeMenuItem.Checked = (string)schemeMenuItem.Data == _topLevelColorScheme;
 				}
 
 				ColorScheme = Colors.ColorSchemes [_topLevelColorScheme];
 
-				ContentPane.Border.BorderStyle = FrameView.DefaultBorderStyle;
+				ContentPane.LineStyle = FrameView.DefaultBorderStyle;
 
 				MenuBar.Menus [0].Children [0].Shortcut = Application.QuitKey;
 				StatusBar.Items [0].Shortcut = Application.QuitKey;
 				StatusBar.Items [0].Title = $"~{Application.QuitKey} to quit";
 
-				miIsMouseDisabled.Checked = Application.IsMouseDisabled;
-				miEnableConsoleScrolling.Checked = Application.EnableConsoleScrolling;
+				miIsMouseDisabled!.Checked = Application.IsMouseDisabled;
+				miEnableConsoleScrolling!.Checked = Application.EnableConsoleScrolling;
 
 				var height = (UICatalogApp.ShowStatusBar ? 1 : 0);// + (MenuBar.Visible ? 1 : 0);
 				ContentPane.Height = Dim.Fill (height);
@@ -669,9 +672,9 @@ namespace UICatalog {
 				Application.Top.SetNeedsDisplay ();
 			}
 
-			void KeyDownHandler (object sender, KeyEventEventArgs a)
+			void KeyDownHandler (object? sender, KeyEventEventArgs? a)
 			{
-				if (a.KeyEvent.IsCapslock) {
+				if (a!.KeyEvent.IsCapslock) {
 					Capslock.Title = "Caps: On";
 					StatusBar.SetNeedsDisplay ();
 				} else {
@@ -679,7 +682,7 @@ namespace UICatalog {
 					StatusBar.SetNeedsDisplay ();
 				}
 
-				if (a.KeyEvent.IsNumlock) {
+				if (a!.KeyEvent.IsNumlock) {
 					Numlock.Title = "Num: On";
 					StatusBar.SetNeedsDisplay ();
 				} else {
@@ -687,7 +690,7 @@ namespace UICatalog {
 					StatusBar.SetNeedsDisplay ();
 				}
 
-				if (a.KeyEvent.IsScrolllock) {
+				if (a!.KeyEvent.IsScrolllock) {
 					Scrolllock.Title = "Scroll: On";
 					StatusBar.SetNeedsDisplay ();
 				} else {
@@ -696,16 +699,16 @@ namespace UICatalog {
 				}
 			}
 
-			void CategoryListView_SelectedChanged (object sender, ListViewItemEventArgs e)
+			void CategoryListView_SelectedChanged (object? sender, ListViewItemEventArgs? e)
 			{
-				var item = _categories [e.Item];
+				var item = _categories! [e!.Item];
 				List<Scenario> newlist;
 				if (e.Item == 0) {
 					// First category is "All"
-					newlist = _scenarios;
+					newlist = _scenarios!;
 
 				} else {
-					newlist = _scenarios.Where (s => s.GetCategories ().Contains (item)).ToList ();
+					newlist = _scenarios!.Where (s => s.GetCategories ().Contains (item)).ToList ();
 				}
 				ScenarioListView.SetSource (newlist.ToList ());
 			}

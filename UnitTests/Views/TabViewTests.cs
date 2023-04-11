@@ -8,7 +8,7 @@ using Xunit;
 using System.Globalization;
 using Xunit.Abstractions;
 
-namespace Terminal.Gui.ViewTests {
+namespace Terminal.Gui.ViewsTests {
 
 	public class TabViewTests {
 		readonly ITestOutputHelper output;

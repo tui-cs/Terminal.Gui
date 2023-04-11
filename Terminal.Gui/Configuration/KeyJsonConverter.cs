@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
-namespace Terminal.Gui.Configuration {
+namespace Terminal.Gui {
 	/// <summary>
 	/// Json converter for the <see cref="Key"/> class.
 	/// </summary>

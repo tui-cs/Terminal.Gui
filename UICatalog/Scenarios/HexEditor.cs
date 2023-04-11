@@ -124,7 +124,7 @@ namespace UICatalog.Scenarios {
 
 		private void Open ()
 		{
-			var d = new OpenDialog ("Open", "Open a file") { AllowsMultipleSelection = false };
+			var d = new OpenDialog ("Open") { AllowsMultipleSelection = false };
 			Application.Run (d);
 
 			if (!d.Canceled) {

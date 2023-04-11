@@ -6,7 +6,7 @@ using System.Text.RegularExpressions;
 using Xunit;
 using Xunit.Abstractions;
 
-namespace Terminal.Gui.ViewTests {
+namespace Terminal.Gui.ViewsTests {
 	public class TextViewTests {
 		private static TextView _textView;
 		readonly ITestOutputHelper output;
@@ -214,7 +214,7 @@ namespace Terminal.Gui.ViewTests {
 				_textView.ProcessKey (new KeyEvent (Key.CursorLeft | Key.CtrlMask, new KeyModifiers ()));
 				switch (iteration) {
 				case 0:
-					Assert.Equal (25, _textView.CursorPosition.X);
+					Assert.Equal (31, _textView.CursorPosition.X);
 					Assert.Equal (0, _textView.CursorPosition.Y);
 					Assert.Equal (0, _textView.SelectionStartColumn);
 					Assert.Equal (0, _textView.SelectionStartRow);
@@ -222,7 +222,7 @@ namespace Terminal.Gui.ViewTests {
 					Assert.Equal ("", _textView.SelectedText);
 					break;
 				case 1:
-					Assert.Equal (20, _textView.CursorPosition.X);
+					Assert.Equal (25, _textView.CursorPosition.X);
 					Assert.Equal (0, _textView.CursorPosition.Y);
 					Assert.Equal (0, _textView.SelectionStartColumn);
 					Assert.Equal (0, _textView.SelectionStartRow);
@@ -230,7 +230,7 @@ namespace Terminal.Gui.ViewTests {
 					Assert.Equal ("", _textView.SelectedText);
 					break;
 				case 2:
-					Assert.Equal (12, _textView.CursorPosition.X);
+					Assert.Equal (20, _textView.CursorPosition.X);
 					Assert.Equal (0, _textView.CursorPosition.Y);
 					Assert.Equal (0, _textView.SelectionStartColumn);
 					Assert.Equal (0, _textView.SelectionStartRow);
@@ -238,7 +238,7 @@ namespace Terminal.Gui.ViewTests {
 					Assert.Equal ("", _textView.SelectedText);
 					break;
 				case 3:
-					Assert.Equal (7, _textView.CursorPosition.X);
+					Assert.Equal (12, _textView.CursorPosition.X);
 					Assert.Equal (0, _textView.CursorPosition.Y);
 					Assert.Equal (0, _textView.SelectionStartColumn);
 					Assert.Equal (0, _textView.SelectionStartRow);
@@ -246,7 +246,7 @@ namespace Terminal.Gui.ViewTests {
 					Assert.Equal ("", _textView.SelectedText);
 					break;
 				case 4:
-					Assert.Equal (4, _textView.CursorPosition.X);
+					Assert.Equal (7, _textView.CursorPosition.X);
 					Assert.Equal (0, _textView.CursorPosition.Y);
 					Assert.Equal (0, _textView.SelectionStartColumn);
 					Assert.Equal (0, _textView.SelectionStartRow);
@@ -254,6 +254,14 @@ namespace Terminal.Gui.ViewTests {
 					Assert.Equal ("", _textView.SelectedText);
 					break;
 				case 5:
+					Assert.Equal (4, _textView.CursorPosition.X);
+					Assert.Equal (0, _textView.CursorPosition.Y);
+					Assert.Equal (0, _textView.SelectionStartColumn);
+					Assert.Equal (0, _textView.SelectionStartRow);
+					Assert.Equal (0, _textView.SelectedLength);
+					Assert.Equal ("", _textView.SelectedText);
+					break;
+				case 6:
 					Assert.Equal (0, _textView.CursorPosition.X);
 					Assert.Equal (0, _textView.CursorPosition.Y);
 					Assert.Equal (0, _textView.SelectionStartColumn);
@@ -344,6 +352,14 @@ namespace Terminal.Gui.ViewTests {
 				_textView.ProcessKey (new KeyEvent (Key.CursorLeft | Key.CtrlMask | Key.ShiftMask, new KeyModifiers ()));
 				switch (iteration) {
 				case 0:
+					Assert.Equal (31, _textView.CursorPosition.X);
+					Assert.Equal (0, _textView.CursorPosition.Y);
+					Assert.Equal (32, _textView.SelectionStartColumn);
+					Assert.Equal (0, _textView.SelectionStartRow);
+					Assert.Equal (1, _textView.SelectedLength);
+					Assert.Equal (".", _textView.SelectedText);
+					break;
+				case 1:
 					Assert.Equal (25, _textView.CursorPosition.X);
 					Assert.Equal (0, _textView.CursorPosition.Y);
 					Assert.Equal (32, _textView.SelectionStartColumn);
@@ -351,7 +367,7 @@ namespace Terminal.Gui.ViewTests {
 					Assert.Equal (7, _textView.SelectedLength);
 					Assert.Equal ("fields.", _textView.SelectedText);
 					break;
-				case 1:
+				case 2:
 					Assert.Equal (20, _textView.CursorPosition.X);
 					Assert.Equal (0, _textView.CursorPosition.Y);
 					Assert.Equal (32, _textView.SelectionStartColumn);
@@ -359,7 +375,7 @@ namespace Terminal.Gui.ViewTests {
 					Assert.Equal (12, _textView.SelectedLength);
 					Assert.Equal ("text fields.", _textView.SelectedText);
 					break;
-				case 2:
+				case 3:
 					Assert.Equal (12, _textView.CursorPosition.X);
 					Assert.Equal (0, _textView.CursorPosition.Y);
 					Assert.Equal (32, _textView.SelectionStartColumn);
@@ -367,7 +383,7 @@ namespace Terminal.Gui.ViewTests {
 					Assert.Equal (20, _textView.SelectedLength);
 					Assert.Equal ("between text fields.", _textView.SelectedText);
 					break;
-				case 3:
+				case 4:
 					Assert.Equal (7, _textView.CursorPosition.X);
 					Assert.Equal (0, _textView.CursorPosition.Y);
 					Assert.Equal (32, _textView.SelectionStartColumn);
@@ -375,7 +391,7 @@ namespace Terminal.Gui.ViewTests {
 					Assert.Equal (25, _textView.SelectedLength);
 					Assert.Equal ("jump between text fields.", _textView.SelectedText);
 					break;
-				case 4:
+				case 5:
 					Assert.Equal (4, _textView.CursorPosition.X);
 					Assert.Equal (0, _textView.CursorPosition.Y);
 					Assert.Equal (32, _textView.SelectionStartColumn);
@@ -383,7 +399,7 @@ namespace Terminal.Gui.ViewTests {
 					Assert.Equal (28, _textView.SelectedLength);
 					Assert.Equal ("to jump between text fields.", _textView.SelectedText);
 					break;
-				case 5:
+				case 6:
 					Assert.Equal (0, _textView.CursorPosition.X);
 					Assert.Equal (0, _textView.CursorPosition.Y);
 					Assert.Equal (32, _textView.SelectionStartColumn);
@@ -718,6 +734,14 @@ namespace Terminal.Gui.ViewTests {
 				_textView.ProcessKey (new KeyEvent (Key.CursorLeft | Key.CtrlMask | Key.ShiftMask, new KeyModifiers ()));
 				switch (iteration) {
 				case 0:
+					Assert.Equal (23, _textView.CursorPosition.X);
+					Assert.Equal (1, _textView.CursorPosition.Y);
+					Assert.Equal (24, _textView.SelectionStartColumn);
+					Assert.Equal (1, _textView.SelectionStartRow);
+					Assert.Equal (1, _textView.SelectedLength);
+					Assert.Equal (".", _textView.SelectedText);
+					break;
+				case 1:
 					Assert.Equal (19, _textView.CursorPosition.X);
 					Assert.Equal (1, _textView.CursorPosition.Y);
 					Assert.Equal (24, _textView.SelectionStartColumn);
@@ -725,7 +749,7 @@ namespace Terminal.Gui.ViewTests {
 					Assert.Equal (5, _textView.SelectedLength);
 					Assert.Equal ("line.", _textView.SelectedText);
 					break;
-				case 1:
+				case 2:
 					Assert.Equal (12, _textView.CursorPosition.X);
 					Assert.Equal (1, _textView.CursorPosition.Y);
 					Assert.Equal (24, _textView.SelectionStartColumn);
@@ -733,7 +757,7 @@ namespace Terminal.Gui.ViewTests {
 					Assert.Equal (12, _textView.SelectedLength);
 					Assert.Equal ("second line.", _textView.SelectedText);
 					break;
-				case 2:
+				case 3:
 					Assert.Equal (8, _textView.CursorPosition.X);
 					Assert.Equal (1, _textView.CursorPosition.Y);
 					Assert.Equal (24, _textView.SelectionStartColumn);
@@ -741,7 +765,7 @@ namespace Terminal.Gui.ViewTests {
 					Assert.Equal (16, _textView.SelectedLength);
 					Assert.Equal ("the second line.", _textView.SelectedText);
 					break;
-				case 3:
+				case 4:
 					Assert.Equal (5, _textView.CursorPosition.X);
 					Assert.Equal (1, _textView.CursorPosition.Y);
 					Assert.Equal (24, _textView.SelectionStartColumn);
@@ -749,7 +773,7 @@ namespace Terminal.Gui.ViewTests {
 					Assert.Equal (19, _textView.SelectedLength);
 					Assert.Equal ("is the second line.", _textView.SelectedText);
 					break;
-				case 4:
+				case 5:
 					Assert.Equal (0, _textView.CursorPosition.X);
 					Assert.Equal (1, _textView.CursorPosition.Y);
 					Assert.Equal (24, _textView.SelectionStartColumn);
@@ -757,7 +781,7 @@ namespace Terminal.Gui.ViewTests {
 					Assert.Equal (24, _textView.SelectedLength);
 					Assert.Equal ("This is the second line.", _textView.SelectedText);
 					break;
-				case 5:
+				case 6:
 					Assert.Equal (23, _textView.CursorPosition.X);
 					Assert.Equal (0, _textView.CursorPosition.Y);
 					Assert.Equal (24, _textView.SelectionStartColumn);
@@ -765,7 +789,15 @@ namespace Terminal.Gui.ViewTests {
 					Assert.Equal (24 + Environment.NewLine.Length, _textView.SelectedLength);
 					Assert.Equal ($"{Environment.NewLine}This is the second line.", _textView.SelectedText);
 					break;
-				case 6:
+				case 7:
+					Assert.Equal (22, _textView.CursorPosition.X);
+					Assert.Equal (0, _textView.CursorPosition.Y);
+					Assert.Equal (24, _textView.SelectionStartColumn);
+					Assert.Equal (1, _textView.SelectionStartRow);
+					Assert.Equal (25 + Environment.NewLine.Length, _textView.SelectedLength);
+					Assert.Equal ($".{Environment.NewLine}This is the second line.", _textView.SelectedText);
+					break;
+				case 8:
 					Assert.Equal (18, _textView.CursorPosition.X);
 					Assert.Equal (0, _textView.CursorPosition.Y);
 					Assert.Equal (24, _textView.SelectionStartColumn);
@@ -773,7 +805,7 @@ namespace Terminal.Gui.ViewTests {
 					Assert.Equal (29 + Environment.NewLine.Length, _textView.SelectedLength);
 					Assert.Equal ($"line.{Environment.NewLine}This is the second line.", _textView.SelectedText);
 					break;
-				case 7:
+				case 9:
 					Assert.Equal (12, _textView.CursorPosition.X);
 					Assert.Equal (0, _textView.CursorPosition.Y);
 					Assert.Equal (24, _textView.SelectionStartColumn);
@@ -781,7 +813,7 @@ namespace Terminal.Gui.ViewTests {
 					Assert.Equal (35 + Environment.NewLine.Length, _textView.SelectedLength);
 					Assert.Equal ($"first line.{Environment.NewLine}This is the second line.", _textView.SelectedText);
 					break;
-				case 8:
+				case 10:
 					Assert.Equal (8, _textView.CursorPosition.X);
 					Assert.Equal (0, _textView.CursorPosition.Y);
 					Assert.Equal (24, _textView.SelectionStartColumn);
@@ -789,7 +821,7 @@ namespace Terminal.Gui.ViewTests {
 					Assert.Equal (39 + Environment.NewLine.Length, _textView.SelectedLength);
 					Assert.Equal ($"the first line.{Environment.NewLine}This is the second line.", _textView.SelectedText);
 					break;
-				case 9:
+				case 11:
 					Assert.Equal (5, _textView.CursorPosition.X);
 					Assert.Equal (0, _textView.CursorPosition.Y);
 					Assert.Equal (24, _textView.SelectionStartColumn);
@@ -797,7 +829,7 @@ namespace Terminal.Gui.ViewTests {
 					Assert.Equal (42 + Environment.NewLine.Length, _textView.SelectedLength);
 					Assert.Equal ($"is the first line.{Environment.NewLine}This is the second line.", _textView.SelectedText);
 					break;
-				case 10:
+				case 12:
 					Assert.Equal (0, _textView.CursorPosition.X);
 					Assert.Equal (0, _textView.CursorPosition.Y);
 					Assert.Equal (24, _textView.SelectionStartColumn);
@@ -1071,26 +1103,31 @@ namespace Terminal.Gui.ViewTests {
 				_textView.ProcessKey (new KeyEvent (Key.Backspace | Key.CtrlMask, new KeyModifiers ()));
 				switch (iteration) {
 				case 0:
+					Assert.Equal (22, _textView.CursorPosition.X);
+					Assert.Equal (0, _textView.CursorPosition.Y);
+					Assert.Equal ("This is the first line", _textView.Text);
+					break;
+				case 1:
 					Assert.Equal (18, _textView.CursorPosition.X);
 					Assert.Equal (0, _textView.CursorPosition.Y);
 					Assert.Equal ("This is the first ", _textView.Text);
 					break;
-				case 1:
+				case 2:
 					Assert.Equal (12, _textView.CursorPosition.X);
 					Assert.Equal (0, _textView.CursorPosition.Y);
 					Assert.Equal ("This is the ", _textView.Text);
 					break;
-				case 2:
+				case 3:
 					Assert.Equal (8, _textView.CursorPosition.X);
 					Assert.Equal (0, _textView.CursorPosition.Y);
 					Assert.Equal ("This is ", _textView.Text);
 					break;
-				case 3:
+				case 4:
 					Assert.Equal (5, _textView.CursorPosition.X);
 					Assert.Equal (0, _textView.CursorPosition.Y);
 					Assert.Equal ("This ", _textView.Text);
 					break;
-				case 4:
+				case 5:
 					Assert.Equal (0, _textView.CursorPosition.X);
 					Assert.Equal (0, _textView.CursorPosition.Y);
 					Assert.Equal ("", _textView.Text);
@@ -1197,60 +1234,71 @@ namespace Terminal.Gui.ViewTests {
 				_textView.ProcessKey (new KeyEvent (Key.Backspace | Key.CtrlMask, new KeyModifiers ()));
 				switch (iteration) {
 				case 0:
+					Assert.Equal (23, _textView.CursorPosition.X);
+					Assert.Equal (1, _textView.CursorPosition.Y);
+					Assert.Equal ("This is the first line." + Environment.NewLine
+						+ "This is the second line", _textView.Text);
+					break;
+				case 1:
 					Assert.Equal (19, _textView.CursorPosition.X);
 					Assert.Equal (1, _textView.CursorPosition.Y);
 					Assert.Equal ("This is the first line." + Environment.NewLine
 						+ "This is the second ", _textView.Text);
 					break;
-				case 1:
+				case 2:
 					Assert.Equal (12, _textView.CursorPosition.X);
 					Assert.Equal (1, _textView.CursorPosition.Y);
 					Assert.Equal ("This is the first line." + Environment.NewLine
 						+ "This is the ", _textView.Text);
 					break;
-				case 2:
+				case 3:
 					Assert.Equal (8, _textView.CursorPosition.X);
 					Assert.Equal (1, _textView.CursorPosition.Y);
 					Assert.Equal ("This is the first line." + Environment.NewLine
 						+ "This is ", _textView.Text);
 					break;
-				case 3:
+				case 4:
 					Assert.Equal (5, _textView.CursorPosition.X);
 					Assert.Equal (1, _textView.CursorPosition.Y);
 					Assert.Equal ("This is the first line." + Environment.NewLine
 						+ "This ", _textView.Text);
 					break;
-				case 4:
+				case 5:
 					Assert.Equal (0, _textView.CursorPosition.X);
 					Assert.Equal (1, _textView.CursorPosition.Y);
 					Assert.Equal ("This is the first line." + Environment.NewLine, _textView.Text);
 					break;
-				case 5:
+				case 6:
 					Assert.Equal (23, _textView.CursorPosition.X);
 					Assert.Equal (0, _textView.CursorPosition.Y);
 					Assert.Equal ("This is the first line.", _textView.Text);
 					break;
-				case 6:
+				case 7:
+					Assert.Equal (22, _textView.CursorPosition.X);
+					Assert.Equal (0, _textView.CursorPosition.Y);
+					Assert.Equal ("This is the first line", _textView.Text);
+					break;
+				case 8:
 					Assert.Equal (18, _textView.CursorPosition.X);
 					Assert.Equal (0, _textView.CursorPosition.Y);
 					Assert.Equal ("This is the first ", _textView.Text);
 					break;
-				case 7:
+				case 9:
 					Assert.Equal (12, _textView.CursorPosition.X);
 					Assert.Equal (0, _textView.CursorPosition.Y);
 					Assert.Equal ("This is the ", _textView.Text);
 					break;
-				case 8:
+				case 10:
 					Assert.Equal (8, _textView.CursorPosition.X);
 					Assert.Equal (0, _textView.CursorPosition.Y);
 					Assert.Equal ("This is ", _textView.Text);
 					break;
-				case 9:
+				case 11:
 					Assert.Equal (5, _textView.CursorPosition.X);
 					Assert.Equal (0, _textView.CursorPosition.Y);
 					Assert.Equal ("This ", _textView.Text);
 					break;
-				case 10:
+				case 12:
 					Assert.Equal (0, _textView.CursorPosition.X);
 					Assert.Equal (0, _textView.CursorPosition.Y);
 					Assert.Equal ("", _textView.Text);
@@ -2028,6 +2076,7 @@ namespace Terminal.Gui.ViewTests {
 
 			Application.Top.Add (tv);
 
+			tv.LayoutSubviews ();
 			tv.Redraw (tv.Bounds);
 
 			TestHelpers.AssertDriverContentsWithFrameAre (@"
@@ -2110,7 +2159,7 @@ a
 			tv.WordWrap = true;
 
 			Application.Top.Add (tv);
-
+			Application.Top.LayoutSubviews ();
 			tv.Redraw (tv.Bounds);
 			TestHelpers.AssertDriverContentsWithFrameAre (@"
 This is  
@@ -2125,6 +2174,7 @@ line.
 			tv.ReadOnly = true;
 			tv.CursorPosition = new Point (6, 2);
 			Assert.Equal (new Point (5, 2), tv.CursorPosition);
+			Application.Top.LayoutSubviews ();
 			tv.Redraw (tv.Bounds);
 			TestHelpers.AssertDriverContentsWithFrameAre (@"
 This is  
@@ -2547,12 +2597,12 @@ line.
 			Assert.Equal ($"This is the first line.{Environment.NewLine}This is the second line.{Environment.NewLine}This is the third line.F", tv.Text);
 			Assert.Equal (new Point (24, 2), tv.CursorPosition);
 			Assert.Single (tv.Autocomplete.Suggestions);
-			Assert.Equal ("first", tv.Autocomplete.Suggestions[0].Replacement);
+			Assert.Equal ("first", tv.Autocomplete.Suggestions [0].Replacement);
 			Assert.True (tv.ProcessKey (new KeyEvent (Key.Enter, new KeyModifiers ())));
 			Assert.Equal ($"This is the first line.{Environment.NewLine}This is the second line.{Environment.NewLine}This is the third line.first", tv.Text);
 			Assert.Equal (new Point (28, 2), tv.CursorPosition);
 			Assert.Single (tv.Autocomplete.Suggestions);
-			Assert.Equal ("first", tv.Autocomplete.Suggestions[0].Replacement);
+			Assert.Equal ("first", tv.Autocomplete.Suggestions [0].Replacement);
 			g.AllSuggestions = new List<string> ();
 			tv.Autocomplete.ClearSuggestions ();
 			Assert.Empty (g.AllSuggestions);
@@ -2830,6 +2880,18 @@ line.
 			Assert.Equal (6, tv.SelectedLength);
 			Assert.Equal ("third ", tv.SelectedText);
 			Assert.True (tv.Selecting);
+			Assert.True (tv.ProcessKey (new KeyEvent ((Key)((int)'F' + Key.AltMask), new KeyModifiers ())));
+			Assert.Equal ($"{Environment.NewLine}This is the second line.{Environment.NewLine}This is the third line.first", tv.Text);
+			Assert.Equal (new Point (22, 2), tv.CursorPosition);
+			Assert.Equal (0, tv.SelectedLength);
+			Assert.Equal ("", tv.SelectedText);
+			Assert.False (tv.Selecting);
+			Assert.True (tv.ProcessKey (new KeyEvent ((Key)((int)'F' + Key.AltMask), new KeyModifiers ())));
+			Assert.Equal ($"{Environment.NewLine}This is the second line.{Environment.NewLine}This is the third line.first", tv.Text);
+			Assert.Equal (new Point (23, 2), tv.CursorPosition);
+			Assert.Equal (0, tv.SelectedLength);
+			Assert.Equal ("", tv.SelectedText);
+			Assert.False (tv.Selecting);
 			Assert.True (tv.ProcessKey (new KeyEvent ((Key)((int)'F' + Key.AltMask), new KeyModifiers ())));
 			Assert.Equal ($"{Environment.NewLine}This is the second line.{Environment.NewLine}This is the third line.first", tv.Text);
 			Assert.Equal (new Point (28, 2), tv.CursorPosition);
@@ -4936,6 +4998,12 @@ line.
 			Assert.Equal (new Point (12, 1), tv.CursorPosition);
 
 			Assert.True (tv.ProcessKey (new KeyEvent (Key.Backspace | Key.CtrlMask, new KeyModifiers ())));
+			Assert.Equal ($"First line.{Environment.NewLine}Second line", tv.Text);
+			Assert.Equal ("", tv.SelectedText);
+			Assert.Equal (2, tv.Lines);
+			Assert.Equal (new Point (11, 1), tv.CursorPosition);
+
+			Assert.True (tv.ProcessKey (new KeyEvent (Key.Backspace | Key.CtrlMask, new KeyModifiers ())));
 			Assert.Equal ($"First line.{Environment.NewLine}Second ", tv.Text);
 			Assert.Equal ("", tv.SelectedText);
 			Assert.Equal (2, tv.Lines);
@@ -4952,6 +5020,12 @@ line.
 			Assert.Equal ("", tv.SelectedText);
 			Assert.Equal (1, tv.Lines);
 			Assert.Equal (new Point (11, 0), tv.CursorPosition);
+
+			Assert.True (tv.ProcessKey (new KeyEvent (Key.Backspace | Key.CtrlMask, new KeyModifiers ())));
+			Assert.Equal ("First line", tv.Text);
+			Assert.Equal ("", tv.SelectedText);
+			Assert.Equal (1, tv.Lines);
+			Assert.Equal (new Point (10, 0), tv.CursorPosition);
 
 			Assert.True (tv.ProcessKey (new KeyEvent (Key.Backspace | Key.CtrlMask, new KeyModifiers ())));
 			Assert.Equal ("First ", tv.Text);
@@ -4972,6 +5046,11 @@ line.
 			Assert.Equal (new Point (6, 0), tv.CursorPosition);
 
 			Assert.True (tv.ProcessKey (new KeyEvent (Key.Z | Key.CtrlMask, new KeyModifiers ())));
+			Assert.Equal ("First line", tv.Text);
+			Assert.Equal (1, tv.Lines);
+			Assert.Equal (new Point (10, 0), tv.CursorPosition);
+
+			Assert.True (tv.ProcessKey (new KeyEvent (Key.Z | Key.CtrlMask, new KeyModifiers ())));
 			Assert.Equal ("First line.", tv.Text);
 			Assert.Equal (1, tv.Lines);
 			Assert.Equal (new Point (11, 0), tv.CursorPosition);
@@ -4985,6 +5064,11 @@ line.
 			Assert.Equal ($"First line.{Environment.NewLine}Second ", tv.Text);
 			Assert.Equal (2, tv.Lines);
 			Assert.Equal (new Point (7, 1), tv.CursorPosition);
+
+			Assert.True (tv.ProcessKey (new KeyEvent (Key.Z | Key.CtrlMask, new KeyModifiers ())));
+			Assert.Equal ($"First line.{Environment.NewLine}Second line", tv.Text);
+			Assert.Equal (2, tv.Lines);
+			Assert.Equal (new Point (11, 1), tv.CursorPosition);
 
 			Assert.True (tv.ProcessKey (new KeyEvent (Key.Z | Key.CtrlMask, new KeyModifiers ())));
 			Assert.Equal ($"First line.{Environment.NewLine}Second line.", tv.Text);
@@ -4993,6 +5077,11 @@ line.
 
 			// Redo
 			Assert.True (tv.ProcessKey (new KeyEvent (Key.R | Key.CtrlMask, new KeyModifiers ())));
+			Assert.Equal ($"First line.{Environment.NewLine}Second line", tv.Text);
+			Assert.Equal (2, tv.Lines);
+			Assert.Equal (new Point (11, 1), tv.CursorPosition);
+
+			Assert.True (tv.ProcessKey (new KeyEvent (Key.R | Key.CtrlMask, new KeyModifiers ())));
 			Assert.Equal ($"First line.{Environment.NewLine}Second ", tv.Text);
 			Assert.Equal (2, tv.Lines);
 			Assert.Equal (new Point (7, 1), tv.CursorPosition);
@@ -5006,6 +5095,11 @@ line.
 			Assert.Equal ("First line.", tv.Text);
 			Assert.Equal (1, tv.Lines);
 			Assert.Equal (new Point (11, 0), tv.CursorPosition);
+
+			Assert.True (tv.ProcessKey (new KeyEvent (Key.R | Key.CtrlMask, new KeyModifiers ())));
+			Assert.Equal ("First line", tv.Text);
+			Assert.Equal (1, tv.Lines);
+			Assert.Equal (new Point (10, 0), tv.CursorPosition);
 
 			Assert.True (tv.ProcessKey (new KeyEvent (Key.R | Key.CtrlMask, new KeyModifiers ())));
 			Assert.Equal ("First ", tv.Text);
@@ -6806,6 +6900,8 @@ This is the second line.
 				Width = 50,
 				Height = 10,
 			};
+			tv.BeginInit (); tv.EndInit ();
+
 			tv.ContentsChanged += (s, e) => {
 				eventcount++;
 			};
@@ -6828,6 +6924,17 @@ This is the second line.
 			var exception = Record.Exception (() => tv.ReplaceAllText (textToFind, false, false, textToReplace));
 			Assert.Null (exception);
 			Assert.Equal (textToReplace, tv.Text);
+		}
+
+		[Fact]
+		public void WordBackward_WordForward_Limits_Return_Null ()
+		{
+			var model = new TextModel ();
+			model.LoadString ("Test");
+			var newPos = model.WordBackward (0, 0);
+			Assert.Null (newPos);
+			newPos = model.WordForward (4, 0);
+			Assert.Null (newPos);
 		}
 	}
 }

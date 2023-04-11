@@ -221,12 +221,15 @@ namespace UICatalog.Scenarios {
 
 			tvInput.SetFocus ();
 
-			Win.LayoutComplete += (s, e) => {
+			void Win_LayoutComplete (object sender, LayoutEventArgs obj)
+			{
 				inputHorizontalRuler.Text = outputHorizontalRuler.Text = ruler.Repeat ((int)Math.Ceiling ((double)(inputHorizontalRuler.Bounds.Width) / (double)ruler.Length)) [0..(inputHorizontalRuler.Bounds.Width)];
 				inputVerticalRuler.Height = tvInput.Frame.Height + 1;
 				inputVerticalRuler.Text = ruler.Repeat ((int)Math.Ceiling ((double)(inputVerticalRuler.Bounds.Height) / (double)ruler.Length)) [0..(inputVerticalRuler.Bounds.Height)];
 				outputVerticalRuler.Text = ruler.Repeat ((int)Math.Ceiling ((double)(outputVerticalRuler.Bounds.Height) / (double)ruler.Length)) [0..(outputVerticalRuler.Bounds.Height)];
-			};
+			}
+
+			Win.LayoutComplete += Win_LayoutComplete;
 		}
 
 		private void AddKeyboardStrokes (KeyEventEventArgs e)

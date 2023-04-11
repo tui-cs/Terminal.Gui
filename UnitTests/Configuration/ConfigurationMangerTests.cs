@@ -5,9 +5,10 @@ using System.Linq;
 using System.Reflection;
 using System.Reflection.Metadata;
 using System.Text.Json;
-using Terminal.Gui.Configuration;
+using Terminal.Gui;
 using Xunit;
-using static Terminal.Gui.Configuration.ConfigurationManager;
+using static Terminal.Gui.ConfigurationManager;
+using Attribute = Terminal.Gui.Attribute;
 
 namespace Terminal.Gui.ConfigurationTests {
 	public class ConfigurationManagerTests {

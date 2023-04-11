@@ -1,5 +1,5 @@
 //
-// System.Drawing.Rectangle.cs
+// Derived from System.Drawing.Rectangle.cs
 //
 // Author:
 //   Mike Kestner (mkestner@speakeasy.net)
@@ -9,7 +9,6 @@
 //
 
 using System;
-
 namespace Terminal.Gui
 {
 	/// <summary>
@@ -80,12 +79,12 @@ namespace Terminal.Gui
 		}
 
 		/// <summary>
-		///	Inflate Shared Method
+		///	Produces a new Rect by inflating an existing Rect by the specified coordinate values.
 		/// </summary>
 		///
 		/// <remarks>
-		///	Produces a new Rectangle by inflating an existing 
-		///	Rectangle by the specified coordinate values.
+		///	Produces a new Rect by inflating an existing Rect by the specified coordinate values.
+		///     The rectangle is enlarged in both directions along an axis. 
 		/// </remarks>
 
 		public static Rect Inflate (Rect rect, int x, int y)
@@ -96,32 +95,33 @@ namespace Terminal.Gui
 		}
 
 		/// <summary>
-		///	Inflate Method
+		///	Inflates an existing Rect by the specified coordinate values.
 		/// </summary>
 		///
 		/// <remarks>
-		///	Inflates the Rectangle by a specified width and height.
+		///	This method enlarges this rectangle, not a copy of it. The rectangle is enlarged in both directions along an axis. 
 		/// </remarks>
 
 		public void Inflate (int width, int height)
 		{
-			Inflate (new Size (width, height));
+			// Set dims first so we don't lose the original values on exception
+			Width += width * 2;
+			Height += height * 2;
+
+			X -= width;
+			Y -= height;
 		}
 
 		/// <summary>
-		///	Inflate Method
+		///	Inflates an existing Rect by the specified Sizwe.
 		/// </summary>
 		///
 		/// <remarks>
-		///	Inflates the Rectangle by a specified Size.
+		///	This method enlarges this rectangle, not a copy of it. The rectangle is enlarged in both directions along an axis. 
 		/// </remarks>
-
 		public void Inflate (Size size)
 		{
-			X -= size.Width;
-			Y -= size.Height;
-			Width += size.Width * 2;
-			Height += size.Height * 2;
+			Inflate (size.Width, size.Height);
 		}
 
 		/// <summary>
@@ -492,6 +492,5 @@ namespace Terminal.Gui
 			return String.Format ("{{X={0},Y={1},Width={2},Height={3}}}",
 						 X, Y, Width, Height);
 		}
-
 	}
 }

@@ -2,7 +2,7 @@
 
 #nullable enable
 
-namespace Terminal.Gui.Configuration {
+namespace Terminal.Gui {
 	/// <summary>
 	/// Event arguments for the <see cref="ConfigurationManager"/> events.
 	/// </summary>

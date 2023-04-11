@@ -27,6 +27,7 @@
     <PackageReference Include="Microsoft.DotNet.PlatformAbstractions" Version="3.1.6" />
     <PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies" Version="1.0.3" PrivateAssets="all" />
     <PackageReference Include="NStack.Core" Version="1.0.7" />
+    <PackageReference Include="System.IO.Abstractions" Version="19.2.4" />
     <PackageReference Include="System.Text.Json" Version="7.0.1" />
     <PackageReference Include="System.Management" Version="7.0.0" />
     <InternalsVisibleTo Include="UnitTests" />
@@ -61,8 +62,8 @@
     </EmbeddedResource>
   </ItemGroup>
   <PropertyGroup>
-    <TargetFrameworks>net472;netstandard2.0;net6.0</TargetFrameworks>
-    <LangVersion>9</LangVersion>
+    <TargetFrameworks>net7.0</TargetFrameworks>
+    <LangVersion>9.0</LangVersion>
     <RootNamespace>Terminal.Gui</RootNamespace>
     <AssemblyName>Terminal.Gui</AssemblyName>
     <DocumentationFile>bin\Release\Terminal.Gui.xml</DocumentationFile>

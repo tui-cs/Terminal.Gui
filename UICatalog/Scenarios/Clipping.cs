@@ -32,7 +32,8 @@ namespace UICatalog.Scenarios {
 			//scrollView.ShowVerticalScrollIndicator = true;
 			//scrollView.ShowHorizontalScrollIndicator = true;
 
-			var embedded1 = new Window ("1") {
+			var embedded1 = new Window () {
+				Title = "1",
 				X = 3,
 				Y = 3,
 				Width = Dim.Fill (3),
@@ -41,7 +42,8 @@ namespace UICatalog.Scenarios {
 				Id = "1"
 			};
 
-			var embedded2 = new Window ("2") {
+			var embedded2 = new Window () {
+				Title = "1",
 				X = 3,
 				Y = 3,
 				Width = Dim.Fill (3),
@@ -51,7 +53,8 @@ namespace UICatalog.Scenarios {
 			};
 			embedded1.Add (embedded2);
 
-			var embedded3 = new Window ("3") {
+			var embedded3 = new Window () {
+				Title = "3",
 				X = 3,
 				Y = 3,
 				Width = Dim.Fill (3),

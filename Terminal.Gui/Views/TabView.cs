@@ -482,8 +482,6 @@ namespace Terminal.Gui {
 
 			public override void Redraw (Rect bounds)
 			{
-				base.Redraw (bounds);
-
 				var tabLocations = host.CalculateViewport (bounds).ToArray ();
 				var width = bounds.Width;
 				Driver.SetAttribute (GetNormalColor ());

@@ -72,7 +72,7 @@ namespace UICatalog.Scenarios {
 
 			void Top_Loaded (object sender, EventArgs args)
 			{
-				frame.Height = Dim.Height (widthEdit) + Dim.Height (heightEdit) + Dim.Height (titleEdit) + 2;
+				frame.Height = widthEdit.Frame.Height + heightEdit.Frame.Height + titleEdit.Frame.Height + 2;
 				Application.Top.Loaded -= Top_Loaded;
 			}
 			Application.Top.Loaded += Top_Loaded;
@@ -111,7 +111,8 @@ namespace UICatalog.Scenarios {
 
 					actionLabel.Text = ustring.Empty;
 
-					var wizard = new Wizard (titleEdit.Text) {
+					var wizard = new Wizard () {
+						Title = titleEdit.Text,
 						Width = width,
 						Height = height
 					};

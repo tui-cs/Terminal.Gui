@@ -103,21 +103,21 @@ namespace UICatalog.Scenarios {
 
 		public override void Setup ()
 		{
-			Win.X = 3;
-			Win.Y = 3;
-			Win.Width = Dim.Fill (3);
-			Win.Height = Dim.Fill (3);
-			var label = new Label ("ScrollView (new Rect (2, 2, 50, 20)) with a 200, 100 ContentSize...") {
+			// Offset Win to stress clipping
+			Win.X = 1;
+			Win.Y = 1;
+			Win.Width = Dim.Fill (1);
+			Win.Height = Dim.Fill (1);
+			var label = new Label () {
 				X = 0,
-				Y = 0,
-				ColorScheme = Colors.Dialog
+				Y = 0
 			};
 			Win.Add (label);
 
-			// FIXED: ScrollView only supports Absolute Positioning (#72)
 			var scrollView = new ScrollView {
+				Id = "scrollView",
 				X = 2,
-				Y = 2,
+				Y = Pos.Bottom (label) + 1,
 				Width = 50,
 				Height = 20,
 				ColorScheme = Colors.TopLevel,
@@ -126,13 +126,14 @@ namespace UICatalog.Scenarios {
 				ShowVerticalScrollIndicator = true,
 				ShowHorizontalScrollIndicator = true,
 			};
+			label.Text = $"{scrollView}\nContentSize: {scrollView.ContentSize}\nContentOffset: {scrollView.ContentOffset}";
 
 			const string rule = "0123456789";
 
 			var horizontalRuler = new Label () {
 				X = 0,
 				Y = 0,
-				Width = Dim.Fill (),  // FIXED: I don't think this should be needed; DimFill() should respect container's frame. X does.
+				Width = Dim.Fill (),
 				Height = 2,
 				ColorScheme = Colors.Error,
 				AutoSize = false
@@ -164,7 +165,7 @@ namespace UICatalog.Scenarios {
 				X = 3,
 				Y = 3,
 			};
-			pressMeButton.Clicked += (s,e) => MessageBox.Query (20, 7, "MessageBox", "Neat?", "Yes", "No");
+			pressMeButton.Clicked += (s, e) => MessageBox.Query (20, 7, "MessageBox", "Neat?", "Yes", "No");
 			scrollView.Add (pressMeButton);
 
 			var aLongButton = new Button ("A very long button. Should be wide enough to demo clipping!") {
@@ -172,7 +173,7 @@ namespace UICatalog.Scenarios {
 				Y = 4,
 				Width = Dim.Fill (3),
 			};
-			aLongButton.Clicked += (s,e) => MessageBox.Query (20, 7, "MessageBox", "Neat?", "Yes", "No");
+			aLongButton.Clicked += (s, e) => MessageBox.Query (20, 7, "MessageBox", "Neat?", "Yes", "No");
 			scrollView.Add (aLongButton);
 
 			scrollView.Add (new TextField ("This is a test of...") {
@@ -202,8 +203,8 @@ namespace UICatalog.Scenarios {
 			};
 			// TODO: Use Pos.Width instead of (Right-Left) when implemented (#502)
 			anchorButton.X = Pos.AnchorEnd () - (Pos.Right (anchorButton) - Pos.Left (anchorButton));
-			anchorButton.Clicked += (s,e) => {
-				// Ths demonstrates how to have a dynamically sized button
+			anchorButton.Clicked += (s, e) => {
+				// This demonstrates how to have a dynamically sized button
 				// Each time the button is clicked the button's text gets longer
 				// The call to Win.LayoutSubviews causes the Computed layout to
 				// get updated. 
@@ -216,25 +217,25 @@ namespace UICatalog.Scenarios {
 
 			var hCheckBox = new CheckBox ("Horizontal Scrollbar", scrollView.ShowHorizontalScrollIndicator) {
 				X = Pos.X (scrollView),
-				Y = Pos.Bottom (scrollView) + 1,
+				Y = Pos.Bottom (scrollView),
 			};
 			Win.Add (hCheckBox);
 
 			var vCheckBox = new CheckBox ("Vertical Scrollbar", scrollView.ShowVerticalScrollIndicator) {
 				X = Pos.Right (hCheckBox) + 3,
-				Y = Pos.Bottom (scrollView) + 1,
+				Y = Pos.Bottom (scrollView),
 			};
 			Win.Add (vCheckBox);
 
 			var t = "Auto Hide Scrollbars";
 			var ahCheckBox = new CheckBox (t, scrollView.AutoHideScrollBars) {
-				X = Pos.Left (scrollView) + (scrollView.Bounds.Width / 2) - (t.Length / 2),
-				Y = Pos.Bottom (scrollView) + 3,
+				X = Pos.Left (scrollView),
+				Y = Pos.Bottom (hCheckBox),
 			};
 			var k = "Keep Content Always In Viewport";
 			var keepCheckBox = new CheckBox (k, scrollView.AutoHideScrollBars) {
-				X = Pos.Left (scrollView) + (scrollView.Bounds.Width / 2) - (k.Length / 2),
-				Y = Pos.Bottom (scrollView) + 4,
+				X = Pos.Left (scrollView),
+				Y = Pos.Bottom (ahCheckBox),
 			};
 			hCheckBox.Toggled += (s, e) => {
 				if (ahCheckBox.Checked == false) {
@@ -259,30 +260,30 @@ namespace UICatalog.Scenarios {
 			};
 			Win.Add (ahCheckBox);
 
-			keepCheckBox.Toggled += (s,e) => scrollView.KeepContentAlwaysInViewport = (bool)keepCheckBox.Checked;
+			keepCheckBox.Toggled += (s, e) => scrollView.KeepContentAlwaysInViewport = (bool)keepCheckBox.Checked;
 			Win.Add (keepCheckBox);
 
-			var scrollView2 = new ScrollView (new Rect (55, 2, 20, 8)) {
-				ContentSize = new Size (20, 50),
-				//ContentOffset = new Point (0, 0),
-				ShowVerticalScrollIndicator = true,
-				ShowHorizontalScrollIndicator = true
-			};
-			var filler = new Filler (new Rect (0, 0, 60, 40));
-			scrollView2.Add (filler);
-			scrollView2.DrawContent += (s,e) => {
-				scrollView2.ContentSize = filler.GetContentSize ();
-			};
-			Win.Add (scrollView2);
+			//var scrollView2 = new ScrollView (new Rect (55, 2, 20, 8)) {
+			//	ContentSize = new Size (20, 50),
+			//	//ContentOffset = new Point (0, 0),
+			//	ShowVerticalScrollIndicator = true,
+			//	ShowHorizontalScrollIndicator = true
+			//};
+			//var filler = new Filler (new Rect (0, 0, 60, 40));
+			//scrollView2.Add (filler);
+			//scrollView2.DrawContent += (s,e) => {
+			//	scrollView2.ContentSize = filler.GetContentSize ();
+			//};
+			//Win.Add (scrollView2);
 
-			// This is just to debug the visuals of the scrollview when small
-			var scrollView3 = new ScrollView (new Rect (55, 15, 3, 3)) {
-				ContentSize = new Size (100, 100),
-				ShowVerticalScrollIndicator = true,
-				ShowHorizontalScrollIndicator = true
-			};
-			scrollView3.Add (new Box10x (0, 0));
-			Win.Add (scrollView3);
+			//// This is just to debug the visuals of the scrollview when small
+			//var scrollView3 = new ScrollView (new Rect (55, 15, 3, 3)) {
+			//	ContentSize = new Size (100, 100),
+			//	ShowVerticalScrollIndicator = true,
+			//	ShowHorizontalScrollIndicator = true
+			//};
+			//scrollView3.Add (new Box10x (0, 0));
+			//Win.Add (scrollView3);
 
 			int count = 0;
 			var mousePos = new Label ("Mouse: ") {

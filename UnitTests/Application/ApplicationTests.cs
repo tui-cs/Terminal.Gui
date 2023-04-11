@@ -93,7 +93,8 @@ namespace Terminal.Gui.ApplicationTests {
 			Application.Shutdown ();
 
 #if DEBUG_IDISPOSABLE
-			Assert.Single (Responder.Instances);
+			// 4 for Application.Top and it's 3 Frames
+			Assert.Equal (4, Responder.Instances.Count);
 			Assert.True (Responder.Instances [0].WasDisposed);
 #endif
 		}
@@ -290,7 +291,7 @@ namespace Terminal.Gui.ApplicationTests {
 		[Fact]
 		public void Run_T_After_InitNullDriver_with_TestTopLevel_Throws ()
 		{
-			Application.ForceFakeConsole = true;
+			Application._forceFakeConsole = true;
 
 			Application.Init (null, null);
 			Assert.Equal (typeof (FakeDriver), Application.Driver.GetType ());
@@ -333,7 +334,7 @@ namespace Terminal.Gui.ApplicationTests {
 		[Fact]
 		public void Run_T_NoInit_DoesNotThrow ()
 		{
-			Application.ForceFakeConsole = true;
+			Application._forceFakeConsole = true;
 
 			Application.Iteration = () => {
 				Application.RequestStop ();
@@ -460,6 +461,18 @@ namespace Terminal.Gui.ApplicationTests {
 		}
 		#endregion
 
+		[Fact, AutoInitShutdown]
+		public void Begin_Sets_Application_Top_To_Console_Size()
+		{
+			Assert.Equal (new Rect (0, 0, 80, 25), Application.Top.Frame);
+
+			((FakeDriver)Application.Driver).SetBufferSize (5, 5);
+			Application.Begin (Application.Top);
+			Assert.Equal (new Rect (0, 0, 80, 25), Application.Top.Frame);
+			((FakeDriver)Application.Driver).SetBufferSize (5, 5);
+			Assert.Equal (new Rect (0, 0, 5, 5), Application.Top.Frame);
+		}
+
 		[Fact]
 		[AutoInitShutdown]
 		public void SetCurrentAsTop_Run_A_Not_Modal_Toplevel_Make_It_The_Current_Application_Top ()
@@ -545,7 +558,7 @@ namespace Terminal.Gui.ApplicationTests {
 			Assert.Equal (Application.Top, rs.Toplevel);
 			Assert.Null (Application.MouseGrabView);  // public
 			Assert.Null (Application.WantContinuousButtonPressedView); // public
-			Assert.False (Application.DebugDrawBounds);
+			Assert.False (Application._debugDrawBounds);
 			Assert.False (Application.ShowChild (Application.Top));
 		}
 
@@ -759,10 +772,10 @@ namespace Terminal.Gui.ApplicationTests {
 		public void EnsuresTopOnFront_CanFocus_True_By_Keyboard_And_Mouse ()
 		{
 			var top = Application.Top;
-			var win = new Window ("win") { X = 0, Y = 0, Width = 20, Height = 10 };
+			var win = new Window () { Title = "win", X = 0, Y = 0, Width = 20, Height = 10 };
 			var tf = new TextField () { Width = 10 };
 			win.Add (tf);
-			var win2 = new Window ("win2") { X = 22, Y = 0, Width = 20, Height = 10 };
+			var win2 = new Window () { Title = "win2", X = 22, Y = 0, Width = 20, Height = 10 };
 			var tf2 = new TextField () { Width = 10 };
 			win2.Add (tf2);
 			top.Add (win, win2);
@@ -804,10 +817,10 @@ namespace Terminal.Gui.ApplicationTests {
 		public void EnsuresTopOnFront_CanFocus_False_By_Keyboard_And_Mouse ()
 		{
 			var top = Application.Top;
-			var win = new Window ("win") { X = 0, Y = 0, Width = 20, Height = 10 };
+			var win = new Window () { Title = "win", X = 0, Y = 0, Width = 20, Height = 10 };
 			var tf = new TextField () { Width = 10 };
 			win.Add (tf);
-			var win2 = new Window ("win2") { X = 22, Y = 0, Width = 20, Height = 10 };
+			var win2 = new Window () { Title = "win2", X = 22, Y = 0, Width = 20, Height = 10 };
 			var tf2 = new TextField () { Width = 10 };
 			win2.Add (tf2);
 			top.Add (win, win2);

@@ -1,5 +1,5 @@
 ﻿using Xunit;
-using Terminal.Gui.Configuration;
+using Terminal.Gui;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -7,7 +7,8 @@ using System.Text;
 using System.Threading.Tasks;
 using System.IO;
 using System.Text.Json;
-using static Terminal.Gui.Configuration.ConfigurationManager;
+using static Terminal.Gui.ConfigurationManager;
+using Attribute = Terminal.Gui.Attribute;
 
 namespace Terminal.Gui.ConfigurationTests {
 	public class ThemeTests {
@@ -54,20 +55,19 @@ namespace Terminal.Gui.ConfigurationTests {
 		public void TestApply ()
 		{
 			ConfigurationManager.Reset ();
-
+			
 			var theme = new ThemeScope ();
 			Assert.NotEmpty (theme);
-
+			
 			Themes.Add ("testTheme", theme);
 
-			Assert.True (Dialog.DefaultBorder.Effect3D);
-			Assert.Equal (typeof (Border), theme ["Dialog.DefaultBorder"].PropertyInfo.PropertyType);
-			theme ["Dialog.DefaultBorder"].PropertyValue = new Border () { Effect3D = false }; // default is true
+			Assert.Equal (LineStyle.Single, FrameView.DefaultBorderStyle);
+			theme ["FrameView.DefaultBorderStyle"].PropertyValue = LineStyle.Double; // default is Single
 
 			Themes.Theme = "testTheme";
 			Themes! [ThemeManager.SelectedTheme]!.Apply ();
 
-			Assert.False (Dialog.DefaultBorder.Effect3D);
+			Assert.Equal (LineStyle.Double, FrameView.DefaultBorderStyle);
 		}
 
 		[Fact]

@@ -99,7 +99,8 @@ namespace UICatalog.Scenarios {
 				};
 
 				border.MouseClick += This_MouseClick;
-				border.Subviews [0].MouseClick += This_MouseClick;
+				// BUGBUG: v2 This uses internal knowledge of FrameView an breaks in v2 where FrameView does not have a ContentView
+				//border.Subviews [0].MouseClick += This_MouseClick;
 				fill.MouseClick += This_MouseClick;
 				title.MouseClick += This_MouseClick;
 

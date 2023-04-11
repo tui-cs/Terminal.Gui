@@ -16,7 +16,7 @@ namespace UICatalog.Scenarios {
 		public override void Init ()
 		{
 			Application.Init ();
-			Application.Top.Add (new DynamicMenuBarSample ($"{Application.QuitKey} to Quit - Scenario: {GetName ()}"));
+			Application.Top.Add (new DynamicMenuBarSample () { Title = $"{Application.QuitKey} to Quit - Scenario: {GetName ()}" });
 		}
 
 		public class DynamicMenuItemList {
@@ -74,7 +74,7 @@ namespace UICatalog.Scenarios {
 
 			public DynamicMenuItemModel DataContext { get; set; }
 
-			public DynamicMenuBarSample (ustring title) : base (title)
+			public DynamicMenuBarSample () : base ()
 			{
 				DataContext = new DynamicMenuItemModel ();
 
@@ -881,7 +881,7 @@ namespace UICatalog.Scenarios {
 					_txtTitle.Text = ustring.Empty;
 					Application.RequestStop ();
 				};
-				var _dialog = new Dialog ("Please enter the menu details.", _btnOk, _btnCancel);
+				var _dialog = new Dialog (_btnOk, _btnCancel) { Title = "Enter the menu details." };
 
 				Width = Dim.Fill ();
 				Height = Dim.Fill () - 1;

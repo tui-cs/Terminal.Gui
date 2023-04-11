@@ -2,7 +2,7 @@
 using Xunit;
 using Xunit.Abstractions;
 
-namespace Terminal.Gui.ViewTests {
+namespace Terminal.Gui.ViewsTests {
 	public class ButtonTests {
 		readonly ITestOutputHelper output;
 
@@ -190,7 +190,12 @@ namespace Terminal.Gui.ViewTests {
 		[Fact]
 		public void Setting_Empty_Text_Sets_HoKey_To_KeyNull ()
 		{
+			var super = new View ();
 			var btn = new Button ("Test");
+			super.Add (btn);
+			super.BeginInit ();
+			super.EndInit ();
+
 			Assert.Equal ("Test", btn.Text);
 			Assert.Equal (Key.T, btn.HotKey);
 
@@ -210,7 +215,7 @@ namespace Terminal.Gui.ViewTests {
 				X = Pos.Center (),
 				Y = Pos.Center ()
 			};
-			var win = new Window ("Test Demo 你") {
+			var win = new Window () {
 				Width = Dim.Fill (),
 				Height = Dim.Fill ()
 			};
@@ -228,7 +233,7 @@ namespace Terminal.Gui.ViewTests {
 			Assert.Equal (new Rect (0, 0, 16, 1), btn.Bounds);
 
 			var expected = @"
-┌ Test Demo 你 ──────────────┐
+┌────────────────────────────┐
 │                            │
 │      [ Say Hello 你 ]      │
 │                            │
@@ -250,7 +255,6 @@ namespace Terminal.Gui.ViewTests {
 			var win = new Window () {
 				Width = Dim.Fill (),
 				Height = Dim.Fill (),
-				Title = "Test Demo 你"
 			};
 			win.Add (btn);
 			Application.Top.Add (win);
@@ -266,7 +270,7 @@ namespace Terminal.Gui.ViewTests {
 			Assert.Equal (new Rect (0, 0, 16, 1), btn.Bounds);
 
 			var expected = @"
-┌ Test Demo 你 ──────────────┐
+┌────────────────────────────┐
 │                            │
 │      [ Say Hello 你 ]      │
 │                            │
@@ -289,7 +293,6 @@ namespace Terminal.Gui.ViewTests {
 			var win = new Window () {
 				Width = Dim.Fill (),
 				Height = Dim.Fill (),
-				Title = "Test Demo 你"
 			};
 			win.Add (btn);
 			Application.Top.Add (win);
@@ -303,7 +306,7 @@ namespace Terminal.Gui.ViewTests {
 			Application.Begin (Application.Top);
 			((FakeDriver)Application.Driver).SetBufferSize (30, 5);
 			var expected = @"
-┌ Test Demo 你 ──────────────┐
+┌────────────────────────────┐
 │                            │
 │      [ Say Hello 你 ]      │
 │                            │
@@ -325,7 +328,6 @@ namespace Terminal.Gui.ViewTests {
 			var win = new Window () {
 				Width = Dim.Fill (),
 				Height = Dim.Fill (),
-				Title = "Test Demo 你"
 			};
 			win.Add (btn);
 			Application.Top.Add (win);
@@ -335,7 +337,7 @@ namespace Terminal.Gui.ViewTests {
 			Application.Begin (Application.Top);
 			((FakeDriver)Application.Driver).SetBufferSize (30, 5);
 			var expected = @"
-┌ Test Demo 你 ──────────────┐
+┌────────────────────────────┐
 │                            │
 │      [ Say Hello 你 ]      │
 │                            │
@@ -349,7 +351,7 @@ namespace Terminal.Gui.ViewTests {
 			Assert.True (btn.AutoSize);
 			Application.Refresh ();
 			expected = @"
-┌ Test Demo 你 ──────────────┐
+┌────────────────────────────┐
 │                            │
 │  [ Say Hello 你 changed ]  │
 │                            │
@@ -372,7 +374,6 @@ namespace Terminal.Gui.ViewTests {
 			var win = new Window () {
 				Width = Dim.Fill (),
 				Height = Dim.Fill (),
-				Title = "Test Demo 你"
 			};
 			win.Add (btn);
 			Application.Top.Add (win);
@@ -382,7 +383,7 @@ namespace Terminal.Gui.ViewTests {
 			Application.Begin (Application.Top);
 			((FakeDriver)Application.Driver).SetBufferSize (30, 5);
 			var expected = @"
-┌ Test Demo 你 ──────────────┐
+┌────────────────────────────┐
 │                            │
 │            [ Say Hello 你 ]│
 │                            │
@@ -396,7 +397,7 @@ namespace Terminal.Gui.ViewTests {
 			Assert.True (btn.AutoSize);
 			Application.Refresh ();
 			expected = @"
-┌ Test Demo 你 ──────────────┐
+┌────────────────────────────┐
 │                            │
 │    [ Say Hello 你 changed ]│
 │                            │
@@ -478,7 +479,7 @@ namespace Terminal.Gui.ViewTests {
 			};
 			tabView.AddTab (new TabView.Tab ("Find", tab), true);
 
-			var win = new Window ("Find") {
+			var win = new Window () {
 				Width = Dim.Fill (),
 				Height = Dim.Fill ()
 			};
@@ -507,7 +508,7 @@ namespace Terminal.Gui.ViewTests {
 			Assert.Equal (new Rect (0, 3, 12, 1), ckbMatchCase.Frame);
 			Assert.Equal (new Rect (0, 4, 18, 1), ckbMatchWholeWord.Frame);
 			var expected = @"
-┌ Find ──────────────────────────────────────────────┐
+┌────────────────────────────────────────────────────┐
 │┌────┐                                              │
 ││Find│                                              │
 ││    └─────────────────────────────────────────────┐│
