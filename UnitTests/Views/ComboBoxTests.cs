@@ -1324,7 +1324,7 @@ One  ▼  First  ▼
 		[Fact, AutoInitShutdown]
 		public void HideDropdownListOnClick_True_Hide_DropDown_List_If_Click_Is_Handled_By_Another_MouseGrabView ()
 		{
-			var win = new Window ("Window") { Width = 20, Height = 10 };
+			var win = new Window () { Width = 20, Height = 10 };
 			var cb = new ComboBox (new List<string> { "One", "Two", "Three" }) {
 				Width = 6,
 				Height = 4,
@@ -1364,7 +1364,7 @@ One  ▼  First  ▼
 			Assert.Equal ("One", cb.Text);
 			Application.Top.Redraw (Application.Top.Bounds);
 			TestHelpers.AssertDriverContentsWithFrameAre (@"
-┌ Window ──────────┐
+┌──────────────────┐
 │One  ▼            │
 │One               │
 │Two               │
@@ -1389,7 +1389,7 @@ One  ▼  First  ▼
 			Assert.Equal (win, Application.MouseGrabView);
 			Application.Top.Redraw (Application.Top.Bounds);
 			TestHelpers.AssertDriverContentsWithFrameAre (@"
-┌ Window ──────────┐
+┌──────────────────┐
 │One  ▼            │
 │                  │
 │                  │
@@ -1429,7 +1429,7 @@ One  ▼  First  ▼
 		[Fact, AutoInitShutdown]
 		public void ComboBox_Alone_In_A_Dialog ()
 		{
-			var dialog = new Dialog ("Dialog", 20, 8);
+			var dialog = new Dialog () { Width = 20, Height = 8 };
 			var cb = new ComboBox (new List<string> { "One", "Two", "Three" });
 			dialog.Add (cb);
 			var rs = Application.Begin (dialog);
@@ -1439,7 +1439,7 @@ One  ▼  First  ▼
 			Assert.Equal (new Rect (0, 0, 18, 1), cb.Subviews [0].Frame);
 			Assert.Equal (new Rect (0, 1, 18, 5), cb.Subviews [1].Frame);
 			TestHelpers.AssertDriverContentsWithFrameAre (@"
-                              ┌ Dialog ──────────┐
+                              ┌──────────────────┐
                               │                  │
                               │One               │
                               │Two               │
@@ -1451,7 +1451,7 @@ One  ▼  First  ▼
 			Assert.True (cb.ProcessKey (new KeyEvent (Key.CursorDown, new KeyModifiers ())));
 			Application.Top.Redraw (Application.Top.Bounds);
 			TestHelpers.AssertDriverContentsWithFrameAre (@"
-                              ┌ Dialog ──────────┐
+                              ┌──────────────────┐
                               │One               │
                               │One               │
                               │Two               │
@@ -1463,7 +1463,7 @@ One  ▼  First  ▼
 			Assert.True (cb.ProcessKey (new KeyEvent (Key.CursorDown, new KeyModifiers ())));
 			Application.Top.Redraw (Application.Top.Bounds);
 			TestHelpers.AssertDriverContentsWithFrameAre (@"
-                              ┌ Dialog ──────────┐
+                              ┌──────────────────┐
                               │Two               │
                               │One               │
                               │Two               │
@@ -1475,7 +1475,7 @@ One  ▼  First  ▼
 			Assert.True (cb.ProcessKey (new KeyEvent (Key.CursorDown, new KeyModifiers ())));
 			Application.Top.Redraw (Application.Top.Bounds);
 			TestHelpers.AssertDriverContentsWithFrameAre (@"
-                              ┌ Dialog ──────────┐
+                              ┌──────────────────┐
                               │Three             │
                               │One               │
                               │Two               │
@@ -1488,7 +1488,7 @@ One  ▼  First  ▼
 			Application.Top.Redraw (Application.Top.Bounds);
 			Assert.Equal ("Three", cb.Text);
 			TestHelpers.AssertDriverContentsWithFrameAre (@"
-                              ┌ Dialog ──────────┐
+                              ┌──────────────────┐
                               │Three             │
                               │One               │
                               │Two               │
@@ -1503,7 +1503,7 @@ One  ▼  First  ▼
 			Application.Top.Redraw (Application.Top.Bounds);
 			Assert.Equal ("", cb.Text);
 			TestHelpers.AssertDriverContentsWithFrameAre (@"
-                              ┌ Dialog ──────────┐
+                              ┌──────────────────┐
                               │T                 │
                               │Two               │
                               │Three             │

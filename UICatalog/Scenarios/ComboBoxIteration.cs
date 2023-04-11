@@ -109,13 +109,11 @@ namespace UICatalog.Scenarios {
 				Y = Pos.Bottom (btnThree) + 11,
 			};
 			btnComboBoxInDialog.Clicked += (s, e) => {
-				var dialog = new Dialog ("Dialog", 20, 8);
+				var dialog = new Dialog () { Width = 20, Height = 8, Title = "Dialog" };
 				var cb = new ComboBox (new List<string> { "One", "Two", "Three" }) {
 					HideDropdownListOnClick = false
 				};
-				cb.OpenSelectedItem += (s, e) => {
-					Application.RequestStop ();
-				};
+				cb.OpenSelectedItem += (s, e) => Application.RequestStop ();
 				dialog.Add (cb);
 
 				Application.Run (dialog);
@@ -133,10 +131,11 @@ namespace UICatalog.Scenarios {
 			};
 			Win.Add (btnCustomDialog);
 
-			var win = new Window ("ComboBox Inside Window") {
+			var win = new Window () {
 				Y = Pos.Bottom (ckbReadOnlyComboBox) + 4,
 				Width = 40,
-				Height = 3
+				Height = 3,
+				Title = "ComboBox Inside Window"
 			};
 			var comboBox3 = new ComboBox (
 				new List<string> { "X", "Y", "Width", "Height", "Left", "Top", "Right", "Bottom", "Point", "Size", "Pos", "Dim" }) {
@@ -162,7 +161,7 @@ namespace UICatalog.Scenarios {
 				};
 				int BtnComboBox_Width ()
 				{
-					return btnComboBox == null ? 0 : btnComboBox.Bounds.Width;
+					return btnComboBox == null ? 0 : btnComboBox.Frame.Width;
 				}
 				var tfComboBox = new TextField () {
 					Width = Dim.Fill (1) - Dim.Function (BtnComboBox_Width)
@@ -181,7 +180,7 @@ namespace UICatalog.Scenarios {
 				};
 				int BtnComboBox2_Width ()
 				{
-					return btnComboBox2 == null ? 0 : btnComboBox2.Bounds.Width;
+					return btnComboBox2 == null ? 0 : btnComboBox2.Frame.Width;
 				}
 				var tfComboBox2 = new TextField () {
 					Y = Pos.Bottom (comboBox) + 1,
