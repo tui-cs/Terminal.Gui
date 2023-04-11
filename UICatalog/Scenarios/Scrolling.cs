@@ -117,7 +117,7 @@ namespace UICatalog.Scenarios {
 			var scrollView = new ScrollView {
 				Id = "scrollView",
 				X = 2,
-				Y = Pos.Bottom(label) + 1,
+				Y = Pos.Bottom (label) + 1,
 				Width = 50,
 				Height = 20,
 				ColorScheme = Colors.TopLevel,
@@ -128,19 +128,19 @@ namespace UICatalog.Scenarios {
 			};
 			label.Text = $"{scrollView}\nContentSize: {scrollView.ContentSize}\nContentOffset: {scrollView.ContentOffset}";
 
-			//const string rule = "0123456789";
+			const string rule = "0123456789";
 
 			var horizontalRuler = new Label () {
 				X = 0,
 				Y = 0,
-				Width = Dim.Fill (),  // FIXED: I don't think this should be needed; DimFill() should respect container's frame. X does.
+				Width = Dim.Fill (),
 				Height = 2,
 				ColorScheme = Colors.Error,
 				AutoSize = false
 			};
 			scrollView.Add (horizontalRuler);
 
-			//const string vrule = "0\n1\n2\n3\n4\n5\n6\n7\n8\n9\n";
+			const string vrule = "0\n1\n2\n3\n4\n5\n6\n7\n8\n9\n";
 
 			var verticalRuler = new Label () {
 				X = 0,
@@ -154,10 +154,9 @@ namespace UICatalog.Scenarios {
 
 			void Top_Loaded (object sender, EventArgs args)
 			{
-				// BUGBUG: v2 - this broke somehow - fix later
-				//horizontalRuler.Text = rule.Repeat ((int)Math.Ceiling ((double)(horizontalRuler.Bounds.Width) / (double)rule.Length)) [0..(horizontalRuler.Bounds.Width)] +
-				//	"\n" + "|         ".Repeat ((int)Math.Ceiling ((double)(horizontalRuler.Bounds.Width) / (double)rule.Length)) [0..(horizontalRuler.Bounds.Width)];
-				//verticalRuler.Text = vrule.Repeat ((int)Math.Ceiling ((double)(verticalRuler.Bounds.Height * 2) / (double)rule.Length)) [0..(verticalRuler.Bounds.Height * 2)];
+				horizontalRuler.Text = rule.Repeat ((int)Math.Ceiling ((double)(horizontalRuler.Bounds.Width) / (double)rule.Length)) [0..(horizontalRuler.Bounds.Width)] +
+					"\n" + "|         ".Repeat ((int)Math.Ceiling ((double)(horizontalRuler.Bounds.Width) / (double)rule.Length)) [0..(horizontalRuler.Bounds.Width)];
+				verticalRuler.Text = vrule.Repeat ((int)Math.Ceiling ((double)(verticalRuler.Bounds.Height * 2) / (double)rule.Length)) [0..(verticalRuler.Bounds.Height * 2)];
 				Application.Top.Loaded -= Top_Loaded;
 			}
 			Application.Top.Loaded += Top_Loaded;
@@ -166,7 +165,7 @@ namespace UICatalog.Scenarios {
 				X = 3,
 				Y = 3,
 			};
-			pressMeButton.Clicked += (s,e) => MessageBox.Query (20, 7, "MessageBox", "Neat?", "Yes", "No");
+			pressMeButton.Clicked += (s, e) => MessageBox.Query (20, 7, "MessageBox", "Neat?", "Yes", "No");
 			scrollView.Add (pressMeButton);
 
 			var aLongButton = new Button ("A very long button. Should be wide enough to demo clipping!") {
@@ -174,7 +173,7 @@ namespace UICatalog.Scenarios {
 				Y = 4,
 				Width = Dim.Fill (3),
 			};
-			aLongButton.Clicked += (s,e) => MessageBox.Query (20, 7, "MessageBox", "Neat?", "Yes", "No");
+			aLongButton.Clicked += (s, e) => MessageBox.Query (20, 7, "MessageBox", "Neat?", "Yes", "No");
 			scrollView.Add (aLongButton);
 
 			scrollView.Add (new TextField ("This is a test of...") {
@@ -204,8 +203,8 @@ namespace UICatalog.Scenarios {
 			};
 			// TODO: Use Pos.Width instead of (Right-Left) when implemented (#502)
 			anchorButton.X = Pos.AnchorEnd () - (Pos.Right (anchorButton) - Pos.Left (anchorButton));
-			anchorButton.Clicked += (s,e) => {
-				// Ths demonstrates how to have a dynamically sized button
+			anchorButton.Clicked += (s, e) => {
+				// This demonstrates how to have a dynamically sized button
 				// Each time the button is clicked the button's text gets longer
 				// The call to Win.LayoutSubviews causes the Computed layout to
 				// get updated. 
@@ -261,7 +260,7 @@ namespace UICatalog.Scenarios {
 			};
 			Win.Add (ahCheckBox);
 
-			keepCheckBox.Toggled += (s,e) => scrollView.KeepContentAlwaysInViewport = (bool)keepCheckBox.Checked;
+			keepCheckBox.Toggled += (s, e) => scrollView.KeepContentAlwaysInViewport = (bool)keepCheckBox.Checked;
 			Win.Add (keepCheckBox);
 
 			//var scrollView2 = new ScrollView (new Rect (55, 2, 20, 8)) {

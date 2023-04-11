@@ -39,23 +39,20 @@ namespace UICatalog.Scenarios {
 			// Scenario Window's.
 			Win.Title = this.GetName ();
 
-			// Forground ColorPicker.
+			// Foreground ColorPicker.
 			foregroundColorPicker = new ColorPicker ("Foreground Color");
-			foregroundColorPicker.X = 0;
-			foregroundColorPicker.Y = 0;
 			foregroundColorPicker.ColorChanged += ForegroundColor_ColorChanged;
 			Win.Add (foregroundColorPicker);
 
-			foregroundColorLabel = new Label ();
-			foregroundColorLabel.X = Pos.Left(foregroundColorPicker);
-			foregroundColorLabel.Y = Pos.Bottom (foregroundColorPicker) + 1;
+			foregroundColorLabel = new Label {
+				X = Pos.Left (foregroundColorPicker),
+				Y = Pos.Bottom (foregroundColorPicker) + 1
+			};
 			Win.Add (foregroundColorLabel);
 
 			// Background ColorPicker.
-			backgroundColorPicker = new ColorPicker ();
-			backgroundColorPicker.Text = "Background Color";
+			backgroundColorPicker = new ColorPicker ("Background Color");
 			backgroundColorPicker.X = Pos.AnchorEnd () - (Pos.Right (backgroundColorPicker) - Pos.Left (backgroundColorPicker));
-			backgroundColorPicker.Y = 0;
 			backgroundColorPicker.ColorChanged += BackgroundColor_ColorChanged;
 			Win.Add (backgroundColorPicker);
 

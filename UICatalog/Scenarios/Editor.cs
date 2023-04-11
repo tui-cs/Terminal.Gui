@@ -1,12 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
-using Terminal.Gui;
 using System.Linq;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Globalization;
-using Terminal.Gui.Configuration;
+using Terminal.Gui;
 
 namespace UICatalog.Scenarios {
 	[ScenarioMetadata (Name: "Editor", Description: "A Text Editor using the TextView control.")]
@@ -40,7 +39,8 @@ namespace UICatalog.Scenarios {
 			ConfigurationManager.Themes.Theme = Theme;
 			ConfigurationManager.Apply ();
 			
-			Win = new Window (_fileName ?? "Untitled") {
+			Win = new Window () {
+				Title = _fileName ?? "Untitled",
 				X = 0,
 				Y = 1,
 				Width = Dim.Fill (),
@@ -368,8 +368,11 @@ namespace UICatalog.Scenarios {
 			if (!CanCloseFile ()) {
 				return;
 			}
-			var aTypes = new List<string> () { ".txt;.bin;.xml;.json", ".txt", ".bin", ".xml", ".json", ".*" };
-			var d = new OpenDialog ("Open", "Choose the path where to open the file.", aTypes) { AllowsMultipleSelection = false };
+			var aTypes = new List<IAllowedType> () {
+				new AllowedType("Text",".txt;.bin;.xml;.json", ".txt", ".bin", ".xml", ".json"),
+				new AllowedTypeAny()
+			};
+			var d = new OpenDialog ("Open", aTypes) { AllowsMultipleSelection = false };
 			Application.Run (d);
 
 			if (!d.Canceled && d.FilePaths.Count > 0) {
@@ -391,22 +394,26 @@ namespace UICatalog.Scenarios {
 
 		private bool SaveAs ()
 		{
-			var aTypes = new List<string> () { ".txt", ".bin", ".xml", ".*" };
-			var sd = new SaveDialog ("Save file", "Choose the path where to save the file.", aTypes);
-			sd.FilePath = System.IO.Path.Combine (sd.FilePath.ToString (), Win.Title.ToString ());
+			var aTypes = new List<IAllowedType> () {
+				new AllowedType("Text Files", ".txt", ".bin", ".xml"),
+				new AllowedTypeAny()
+			};
+			var sd = new SaveDialog ("Save file", aTypes);
+
+			sd.Path = System.IO.Path.Combine (sd.FileName.ToString (), Win.Title.ToString ());
 			Application.Run (sd);
 
 			if (!sd.Canceled) {
-				if (System.IO.File.Exists (sd.FilePath.ToString ())) {
+				if (System.IO.File.Exists (sd.Path.ToString ())) {
 					if (MessageBox.Query ("Save File",
 						"File already exists. Overwrite any way?", "No", "Ok") == 1) {
-						return SaveFile (sd.FileName.ToString (), sd.FilePath.ToString ());
+						return SaveFile (sd.FileName.ToString (), sd.Path.ToString ());
 					} else {
 						_saved = false;
 						return _saved;
 					}
 				} else {
-					return SaveFile (sd.FileName.ToString (), sd.FilePath.ToString ());
+					return SaveFile (sd.FileName.ToString (), sd.Path.ToString ());
 				}
 			} else {
 				_saved = false;
@@ -730,12 +737,12 @@ namespace UICatalog.Scenarios {
 				return;
 			}
 
-			_winDialog = new Window (isFind ? "Find" : "Replace") {
+			_winDialog = new Window () {
+				Title = isFind ? "Find" : "Replace",
 				X = Win.Bounds.Width / 2 - 30,
 				Y = Win.Bounds.Height / 2 - 10,
 				ColorScheme = Colors.TopLevel
 			};
-			_winDialog.Border.Effect3D = true;
 
 			_tabView = new TabView () {
 				X = 0,

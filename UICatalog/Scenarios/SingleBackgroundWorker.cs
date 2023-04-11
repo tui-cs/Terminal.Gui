@@ -79,7 +79,7 @@ namespace UICatalog.Scenarios {
 				log.Add ($"Worker is started at {startStaging}.{startStaging:fff}");
 				listLog.SetNeedsDisplay ();
 
-				var md = new Dialog ($"Running Worker started at {startStaging}.{startStaging:fff}", cancel);
+				var md = new Dialog (cancel) { Title = $"Running Worker started at {startStaging}.{startStaging:fff}" };
 				md.Add (new Label ("Wait for worker to finish...") {
 					X = Pos.Center (),
 					Y = Pos.Center ()

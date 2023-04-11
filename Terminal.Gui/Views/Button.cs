@@ -163,13 +163,38 @@ namespace Terminal.Gui {
 			}
 		}
 
+		/// <summary>
+		/// 
+		/// </summary>
+		public bool NoDecorations {get;set;}
+
+		/// <summary>
+		/// 
+		/// </summary>
+		public bool NoPadding {get;set;}
+
 		/// <inheritdoc/>
 		protected override void UpdateTextFormatterText ()
 		{
+			if(NoDecorations)
+			{
+				TextFormatter.Text = Text;
+			}
+			else
 			if (IsDefault)
 				TextFormatter.Text = ustring.Make (_leftBracket) + ustring.Make (_leftDefault) + " " + Text + " " + ustring.Make (_rightDefault) + ustring.Make (_rightBracket);
 			else
-				TextFormatter.Text = ustring.Make (_leftBracket) + " " + Text + " " + ustring.Make (_rightBracket);
+			{
+				if(NoPadding)
+				{
+					TextFormatter.Text = ustring.Make (_leftBracket) + Text + ustring.Make (_rightBracket);
+				}
+				else
+				{
+					TextFormatter.Text = ustring.Make (_leftBracket) + " " + Text + " " + ustring.Make (_rightBracket);
+				}
+			}
+				
 		}
 
 		///<inheritdoc/>

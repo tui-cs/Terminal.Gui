@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using Terminal.Gui;
 using Xunit;
-using Terminal.Gui.Graphs;
 using Point = Terminal.Gui.Point;
 using Attribute = Terminal.Gui.Attribute;
 using System.Text;
@@ -11,8 +10,7 @@ using System.Text.RegularExpressions;
 using Xunit.Abstractions;
 using Rune = System.Rune;
 
-namespace Terminal.Gui.ViewTests {
-// BUGBUG: v2 see https://github.com/gui-cs/Terminal.Gui/issues/2463
+namespace Terminal.Gui.ViewsTests {
 
 	#region Helper Classes
 	class FakeHAxis : HorizontalAxis {

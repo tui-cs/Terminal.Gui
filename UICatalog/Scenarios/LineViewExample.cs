@@ -73,7 +73,7 @@ namespace UICatalog.Scenarios {
 			Win.Add (new Label ("Vertical Line") { Y = 9,X=11 });
 
 			// creates a horizontal line
-			var verticalLine = new LineView (Terminal.Gui.Graphs.Orientation.Vertical) {
+			var verticalLine = new LineView (Orientation.Vertical) {
 				X = 25,
 			};
 
@@ -83,7 +83,7 @@ namespace UICatalog.Scenarios {
 			Win.Add (new Label ("Vertical Arrow") { Y = 11, X = 28 });
 
 			// creates a horizontal line
-			var verticalArrow = new LineView (Terminal.Gui.Graphs.Orientation.Vertical) {
+			var verticalArrow = new LineView (Orientation.Vertical) {
 				X = 27,
 				StartingAnchor = Application.Driver.TopTee,
 				EndingAnchor = 'V'

@@ -21,13 +21,13 @@ namespace UICatalog.Scenarios {
 			Application.Init ();
 
 			var menu = new MenuBar (new MenuBarItem [] {
-				new MenuBarItem ("Margin", new MenuItem [] {
-					new MenuItem ("With margin", "", WithMargin),
-					new MenuItem ("Without margin", "", WithoutMargin)
+				new MenuBarItem ("Padding", new MenuItem [] {
+					new MenuItem ("With Padding", "", () => _win.Padding.Thickness = new Thickness (1)),
+					new MenuItem ("Without Padding", "", () =>_win.Padding.Thickness = new Thickness (0))
 				}),
-				new MenuBarItem ("Draw Margin Frame", new MenuItem [] {
-					new MenuItem ("With draw", "", WithDrawMargin),
-					new MenuItem ("Without draw", "", WithoutDrawMargin)
+				new MenuBarItem ("BorderStyle", new MenuItem [] {
+					new MenuItem ("Single", "", () => _win.BorderStyle = LineStyle.Single),
+					new MenuItem ("None", "", () => _win.BorderStyle = LineStyle.None)
 				}),
 				new MenuBarItem ("Runes length", new MenuItem [] {
 					new MenuItem ("Wide", "", WideRunes),
@@ -158,34 +158,6 @@ namespace UICatalog.Scenarios {
 			_win.Title = "デモエムポンズ";
 			_lastRunesUsed = "Wide";
 			Application.Refresh ();
-		}
-
-		private void WithoutDrawMargin ()
-		{
-			_win.Border.BorderStyle = BorderStyle.None;
-			_win.Border.DrawMarginFrame = false;
-		}
-
-		private void WithDrawMargin ()
-		{
-			_win.Border.DrawMarginFrame = true;
-			_win.Border.BorderStyle = BorderStyle.Single;
-		}
-
-		private void WithoutMargin ()
-		{
-			_win.X = 0;
-			_win.Y = 0;
-			_win.Width = Dim.Fill ();
-			_win.Height = Dim.Fill ();
-		}
-
-		private void WithMargin ()
-		{
-			_win.X = 5;
-			_win.Y = 5;
-			_win.Width = Dim.Fill (22);
-			_win.Height = Dim.Fill (5);
 		}
 
 		public override void Run ()

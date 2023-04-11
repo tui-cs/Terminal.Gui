@@ -9,10 +9,10 @@ namespace ReactiveExample {
 	public class LoginView : Window, IViewFor<LoginViewModel> {
 		readonly CompositeDisposable _disposable = new CompositeDisposable();
 		
-		public LoginView (LoginViewModel viewModel) : base("Reactive Extensions Example") {
+		public LoginView (LoginViewModel viewModel) : base() {
+			Title = "Reactive Extensions Example";
 			ViewModel = viewModel;
-			var title = TitleLabel ();
-			var usernameLengthLabel = UsernameLengthLabel (title);
+			var usernameLengthLabel = UsernameLengthLabel (TitleLabel ());
 			var usernameInput = UsernameInput (usernameLengthLabel);
 			var passwordLengthLabel = PasswordLengthLabel (usernameInput);
 			var passwordInput = PasswordInput (passwordLengthLabel);

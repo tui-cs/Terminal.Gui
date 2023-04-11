@@ -1,10 +1,7 @@
 ﻿using NStack;
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using Terminal.Gui;
-using Terminal.Gui.Configuration;
 
 namespace UICatalog.Scenarios {
 	[ScenarioMetadata (Name: "Dialogs", Description: "Demonstrates how to the Dialog class")]
@@ -200,10 +197,14 @@ namespace UICatalog.Scenarios {
 
 					// This tests dynamically adding buttons; ensuring the dialog resizes if needed and 
 					// the buttons are laid out correctly
-					dialog = new Dialog (titleEdit.Text, width, height,
-						buttons.ToArray ()) {
+					dialog = new Dialog (buttons.ToArray ()) {
+						Title = titleEdit.Text,
 						ButtonAlignment = (Dialog.ButtonAlignments)styleRadioGroup.SelectedItem
 					};
+					if (height != 0 || width != 0) {
+						dialog.Height = height;
+						dialog.Width = width;
+					}
 
 					var add = new Button ("Add a button") {
 						X = Pos.Center (),

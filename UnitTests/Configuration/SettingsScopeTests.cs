@@ -1,11 +1,11 @@
 ﻿using Xunit;
-using Terminal.Gui.Configuration;
+using Terminal.Gui;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using static Terminal.Gui.Configuration.ConfigurationManager;
+using static Terminal.Gui.ConfigurationManager;
 
 namespace Terminal.Gui.ConfigurationTests {
 	public class SettingsScopeTests {

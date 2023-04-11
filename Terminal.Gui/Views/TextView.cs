@@ -9,7 +9,6 @@ using System.Text;
 using System.Threading;
 using NStack;
 using Terminal.Gui.Resources;
-using static Terminal.Gui.Graphs.PathAnnotation;
 using Rune = System.Rune;
 
 namespace Terminal.Gui {
@@ -512,6 +511,240 @@ namespace Terminal.Gui {
 		{
 			toFind.startPointToFind = toFind.currentPointToFind = point;
 			toFind.found = false;
+		}
+
+		Rune RuneAt (int col, int row)
+		{
+			var line = GetLine (row);
+			if (line.Count > 0) {
+				return line [col > line.Count - 1 ? line.Count - 1 : col];
+			} else {
+				return 0;
+			}
+		}
+
+		bool MoveNext (ref int col, ref int row, out Rune rune)
+		{
+			var line = GetLine (row);
+			if (col + 1 < line.Count) {
+				col++;
+				rune = line [col];
+				if (col + 1 == line.Count && !Rune.IsLetterOrDigit (rune)
+					&& !Rune.IsWhiteSpace (line [col - 1])) {
+					col++;
+				}
+				return true;
+			} else if (col + 1 == line.Count) {
+				col++;
+			}
+			while (row + 1 < Count) {
+				col = 0;
+				row++;
+				line = GetLine (row);
+				if (line.Count > 0) {
+					rune = line [0];
+					return true;
+				}
+			}
+			rune = 0;
+			return false;
+		}
+
+		bool MovePrev (ref int col, ref int row, out Rune rune)
+		{
+			var line = GetLine (row);
+
+			if (col > 0) {
+				col--;
+				rune = line [col];
+				return true;
+			}
+			if (row == 0) {
+				rune = 0;
+				return false;
+			}
+			while (row > 0) {
+				row--;
+				line = GetLine (row);
+				col = line.Count - 1;
+				if (col >= 0) {
+					rune = line [col];
+					return true;
+				}
+			}
+			rune = 0;
+			return false;
+		}
+
+		enum RuneType {
+			IsSymbol,
+			IsWhiteSpace,
+			IsLetterOrDigit,
+			IsPunctuation,
+			IsUnknow
+		}
+
+		RuneType GetRuneType (Rune rune)
+		{
+			if (Rune.IsSymbol (rune)) {
+				return RuneType.IsSymbol;
+			} else if (Rune.IsWhiteSpace (rune)) {
+				return RuneType.IsWhiteSpace;
+			} else if (Rune.IsLetterOrDigit (rune)) {
+				return RuneType.IsLetterOrDigit;
+			} else if (Rune.IsPunctuation (rune)) {
+				return RuneType.IsPunctuation;
+			}
+			return RuneType.IsUnknow;
+		}
+
+		bool IsSameRuneType (Rune newRune, RuneType runeType)
+		{
+			var rt = GetRuneType (newRune);
+			return rt == runeType;
+		}
+
+		public (int col, int row)? WordForward (int fromCol, int fromRow)
+		{
+			if (fromRow == lines.Count - 1 && fromCol == GetLine (lines.Count - 1).Count)
+				return null;
+
+			var col = fromCol;
+			var row = fromRow;
+			try {
+				var rune = RuneAt (col, row);
+				var runeType = GetRuneType (rune);
+				int lastValidCol = IsSameRuneType (rune, runeType) && (Rune.IsLetterOrDigit (rune) || Rune.IsPunctuation (rune) || Rune.IsSymbol (rune)) ? col : -1;
+
+				void ProcMoveNext (ref int nCol, ref int nRow, Rune nRune)
+				{
+					if (Rune.IsWhiteSpace (nRune)) {
+						while (MoveNext (ref nCol, ref nRow, out nRune)) {
+							if (Rune.IsLetterOrDigit (nRune) || Rune.IsPunctuation (nRune) || Rune.IsSymbol (nRune)) {
+								lastValidCol = nCol;
+								return;
+							}
+						}
+						if (nRow != fromRow && (Rune.IsLetterOrDigit (nRune) || Rune.IsPunctuation (nRune) || Rune.IsSymbol (nRune))) {
+							if (lastValidCol > -1) {
+								nCol = lastValidCol;
+							}
+							return;
+						}
+						while (MoveNext (ref nCol, ref nRow, out nRune)) {
+							if (!Rune.IsLetterOrDigit (nRune) && !Rune.IsPunctuation (nRune) && !Rune.IsSymbol (nRune))
+								break;
+							if (nRow != fromRow) {
+								break;
+							}
+							lastValidCol = IsSameRuneType (nRune, runeType) && Rune.IsLetterOrDigit (nRune) || Rune.IsPunctuation (nRune) || Rune.IsSymbol (nRune) ? nCol : lastValidCol;
+						}
+						if (lastValidCol > -1) {
+							nCol = lastValidCol;
+							nRow = fromRow;
+						}
+					} else {
+						if (!MoveNext (ref nCol, ref nRow, out nRune)) {
+							return;
+						}
+						if (!IsSameRuneType (nRune, runeType) && !Rune.IsWhiteSpace (nRune)) {
+							return;
+						}
+						var line = GetLine (nRow);
+						if (nCol == line.Count && nRow == fromRow && (Rune.IsLetterOrDigit (line [0]) || Rune.IsPunctuation (line [0]) || Rune.IsSymbol (line [0]))) {
+							return;
+						}
+						lastValidCol = IsSameRuneType (nRune, runeType) && Rune.IsLetterOrDigit (nRune) || Rune.IsPunctuation (nRune) || Rune.IsSymbol (nRune) ? nCol : lastValidCol;
+						if (fromRow != nRow) {
+							nCol = 0;
+							return;
+						}
+						ProcMoveNext (ref nCol, ref nRow, nRune);
+					}
+				}
+
+				ProcMoveNext (ref col, ref row, rune);
+
+				if (fromCol != col || fromRow != row)
+					return (col, row);
+				return null;
+			} catch (Exception) {
+				return null;
+			}
+		}
+
+		public (int col, int row)? WordBackward (int fromCol, int fromRow)
+		{
+			if (fromRow == 0 && fromCol == 0)
+				return null;
+
+			var col = Math.Max (fromCol - 1, 0);
+			var row = fromRow;
+			try {
+				var rune = RuneAt (col, row);
+				var runeType = GetRuneType (rune);
+				int lastValidCol = IsSameRuneType (rune, runeType) && (Rune.IsLetterOrDigit (rune) || Rune.IsPunctuation (rune) || Rune.IsSymbol (rune)) ? col : -1;
+
+				void ProcMovePrev (ref int nCol, ref int nRow, Rune nRune)
+				{
+					if (Rune.IsWhiteSpace (nRune)) {
+						while (MovePrev (ref nCol, ref nRow, out nRune)) {
+							if (Rune.IsLetterOrDigit (nRune) || Rune.IsPunctuation (nRune) || Rune.IsSymbol (nRune)) {
+								lastValidCol = nCol;
+								if (runeType == RuneType.IsWhiteSpace || runeType == RuneType.IsUnknow) {
+									runeType = GetRuneType (nRune);
+								}
+								break;
+							}
+						}
+						if (nRow != fromRow && (Rune.IsLetterOrDigit (nRune) || Rune.IsPunctuation (nRune) || Rune.IsSymbol (nRune))) {
+							if (lastValidCol > -1) {
+								nCol = lastValidCol;
+							}
+							return;
+						}
+						while (MovePrev (ref nCol, ref nRow, out nRune)) {
+							if (!Rune.IsLetterOrDigit (nRune) && !Rune.IsPunctuation (nRune) && !Rune.IsSymbol (nRune))
+								break;
+							if (nRow != fromRow) {
+								break;
+							}
+							lastValidCol = IsSameRuneType (nRune, runeType) && Rune.IsLetterOrDigit (nRune) || Rune.IsPunctuation (nRune) || Rune.IsSymbol (nRune) ? nCol : lastValidCol;
+						}
+						if (lastValidCol > -1) {
+							nCol = lastValidCol;
+							nRow = fromRow;
+						}
+					} else {
+						if (!MovePrev (ref nCol, ref nRow, out nRune)) {
+							return;
+						}
+
+						var line = GetLine (nRow);
+						if (nCol == 0 && nRow == fromRow && (Rune.IsLetterOrDigit (line [0]) || Rune.IsPunctuation (line [0]) || Rune.IsSymbol (line [0]))) {
+							return;
+						}
+						lastValidCol = IsSameRuneType (nRune, runeType) && Rune.IsLetterOrDigit (nRune) || Rune.IsPunctuation (nRune) || Rune.IsSymbol (nRune) ? nCol : lastValidCol;
+						if (lastValidCol > -1 && Rune.IsWhiteSpace (nRune)) {
+							nCol = lastValidCol;
+							return;
+						}
+						if (fromRow != nRow) {
+							nCol = line.Count;
+							return;
+						}
+						ProcMovePrev (ref nCol, ref nRow, nRune);
+					}
+				}
+
+				ProcMovePrev (ref col, ref row, rune);
+
+				if (fromCol != col || fromRow != row)
+					return (col, row);
+				return null;
+			} catch (Exception) {
+				return null;
+			}
 		}
 	}
 
@@ -2443,8 +2676,8 @@ namespace Terminal.Gui {
 		{
 			var currentLine = this.GetCurrentLine ();
 			var cursorPosition = Math.Min (this.CurrentColumn, currentLine.Count);
-			Autocomplete.GenerateSuggestions(
-				new AutocompleteContext(currentLine,cursorPosition)
+			Autocomplete.GenerateSuggestions (
+				new AutocompleteContext (currentLine, cursorPosition)
 				);
 		}
 
@@ -3213,7 +3446,7 @@ namespace Terminal.Gui {
 
 				return;
 			}
-			var newPos = WordBackward (currentColumn, currentRow);
+			var newPos = model.WordBackward (currentColumn, currentRow);
 			if (newPos.HasValue && currentRow == newPos.Value.row) {
 				var restCount = currentColumn - newPos.Value.col;
 				currentLine.RemoveRange (newPos.Value.col, restCount);
@@ -3265,7 +3498,7 @@ namespace Terminal.Gui {
 
 				return;
 			}
-			var newPos = WordForward (currentColumn, currentRow);
+			var newPos = model.WordForward (currentColumn, currentRow);
 			var restCount = 0;
 			if (newPos.HasValue && currentRow == newPos.Value.row) {
 				restCount = newPos.Value.col - currentColumn;
@@ -3293,7 +3526,7 @@ namespace Terminal.Gui {
 
 		void MoveWordForward ()
 		{
-			var newPos = WordForward (currentColumn, currentRow);
+			var newPos = model.WordForward (currentColumn, currentRow);
 			if (newPos.HasValue) {
 				currentColumn = newPos.Value.col;
 				currentRow = newPos.Value.row;
@@ -3304,7 +3537,7 @@ namespace Terminal.Gui {
 
 		void MoveWordBackward ()
 		{
-			var newPos = WordBackward (currentColumn, currentRow);
+			var newPos = model.WordBackward (currentColumn, currentRow);
 			if (newPos.HasValue) {
 				currentColumn = newPos.Value.col;
 				currentRow = newPos.Value.row;
@@ -4029,16 +4262,6 @@ namespace Terminal.Gui {
 			}
 		}
 
-		Rune RuneAt (int col, int row)
-		{
-			var line = model.GetLine (row);
-			if (line.Count > 0) {
-				return line [col > line.Count - 1 ? line.Count - 1 : col];
-			} else {
-				return 0;
-			}
-		}
-
 		/// <summary>
 		/// Will scroll the <see cref="TextView"/> to the last line and position the cursor there.
 		/// </summary>
@@ -4062,181 +4285,6 @@ namespace Terminal.Gui {
 			leftColumn = 0;
 			TrackColumn ();
 			PositionCursor ();
-		}
-
-		bool MoveNext (ref int col, ref int row, out Rune rune)
-		{
-			var line = model.GetLine (row);
-			if (col + 1 < line.Count) {
-				col++;
-				rune = line [col];
-				if (col + 1 == line.Count && !Rune.IsLetterOrDigit (rune)
-					&& !Rune.IsWhiteSpace (line [col - 1])) {
-					col++;
-				}
-				return true;
-			} else if (col + 1 == line.Count) {
-				col++;
-			}
-			while (row + 1 < model.Count) {
-				col = 0;
-				row++;
-				line = model.GetLine (row);
-				if (line.Count > 0) {
-					rune = line [0];
-					return true;
-				}
-			}
-			rune = 0;
-			return false;
-		}
-
-		bool MovePrev (ref int col, ref int row, out Rune rune)
-		{
-			var line = model.GetLine (row);
-
-			if (col > 0) {
-				col--;
-				rune = line [col];
-				return true;
-			}
-			if (row == 0) {
-				rune = 0;
-				return false;
-			}
-			while (row > 0) {
-				row--;
-				line = model.GetLine (row);
-				col = line.Count - 1;
-				if (col >= 0) {
-					rune = line [col];
-					return true;
-				}
-			}
-			rune = 0;
-			return false;
-		}
-
-		(int col, int row)? WordForward (int fromCol, int fromRow)
-		{
-			var col = fromCol;
-			var row = fromRow;
-			try {
-				var rune = RuneAt (col, row);
-
-				void ProcMoveNext (ref int nCol, ref int nRow, Rune nRune)
-				{
-					if (Rune.IsSymbol (nRune) || Rune.IsWhiteSpace (nRune)) {
-						while (MoveNext (ref nCol, ref nRow, out nRune)) {
-							if (Rune.IsLetterOrDigit (nRune) || Rune.IsPunctuation (nRune))
-								return;
-						}
-						if (nRow != fromRow && (Rune.IsLetterOrDigit (nRune) || Rune.IsPunctuation (nRune))) {
-							return;
-						}
-						while (MoveNext (ref nCol, ref nRow, out nRune)) {
-							if (!Rune.IsLetterOrDigit (nRune) && !Rune.IsPunctuation (nRune))
-								break;
-						}
-					} else {
-						if (!MoveNext (ref nCol, ref nRow, out nRune)) {
-							return;
-						}
-
-						var line = model.GetLine (fromRow);
-						if ((nRow != fromRow && fromCol < line.Count)
-							|| (nRow == fromRow && nCol == line.Count - 1)) {
-							nCol = line.Count;
-							nRow = fromRow;
-							return;
-						} else if (nRow != fromRow && fromCol == line.Count) {
-							line = model.GetLine (nRow);
-							if (Rune.IsLetterOrDigit (line [nCol]) || Rune.IsPunctuation (line [nCol])) {
-								return;
-							}
-						}
-						ProcMoveNext (ref nCol, ref nRow, nRune);
-					}
-				}
-
-				ProcMoveNext (ref col, ref row, rune);
-
-				if (fromCol != col || fromRow != row)
-					return (col, row);
-				return null;
-			} catch (Exception) {
-				return null;
-			}
-		}
-
-		(int col, int row)? WordBackward (int fromCol, int fromRow)
-		{
-			if (fromRow == 0 && fromCol == 0)
-				return null;
-
-			var col = Math.Max (fromCol - 1, 0);
-			var row = fromRow;
-			try {
-				var rune = RuneAt (col, row);
-				int lastValidCol = Rune.IsLetterOrDigit (rune) || Rune.IsPunctuation (rune) ? col : -1;
-
-				void ProcMovePrev (ref int nCol, ref int nRow, Rune nRune)
-				{
-					if (Rune.IsSymbol (nRune) || Rune.IsWhiteSpace (nRune)) {
-						while (MovePrev (ref nCol, ref nRow, out nRune)) {
-							if (Rune.IsLetterOrDigit (nRune) || Rune.IsPunctuation (nRune)) {
-								lastValidCol = nCol;
-								break;
-							}
-						}
-						if (nRow != fromRow && (Rune.IsLetterOrDigit (nRune) || Rune.IsPunctuation (nRune))) {
-							if (lastValidCol > -1) {
-								nCol = lastValidCol;
-							}
-							return;
-						}
-						while (MovePrev (ref nCol, ref nRow, out nRune)) {
-							if (!Rune.IsLetterOrDigit (nRune) && !Rune.IsPunctuation (nRune))
-								break;
-							if (nRow != fromRow) {
-								break;
-							}
-							lastValidCol = nCol;
-						}
-						if (lastValidCol > -1) {
-							nCol = lastValidCol;
-							nRow = fromRow;
-						}
-					} else {
-						if (!MovePrev (ref nCol, ref nRow, out nRune)) {
-							return;
-						}
-
-						var line = model.GetLine (nRow);
-						if (nCol == 0 && nRow == fromRow && (Rune.IsLetterOrDigit (line [0]) || Rune.IsPunctuation (line [0]))) {
-							return;
-						}
-						lastValidCol = Rune.IsLetterOrDigit (nRune) || Rune.IsPunctuation (nRune) ? nCol : lastValidCol;
-						if (lastValidCol > -1 && (Rune.IsSymbol (nRune) || Rune.IsWhiteSpace (nRune))) {
-							nCol = lastValidCol;
-							return;
-						}
-						if (fromRow != nRow) {
-							nCol = line.Count;
-							return;
-						}
-						ProcMovePrev (ref nCol, ref nRow, nRune);
-					}
-				}
-
-				ProcMovePrev (ref col, ref row, rune);
-
-				if (fromCol != col || fromRow != row)
-					return (col, row);
-				return null;
-			} catch (Exception) {
-				return null;
-			}
 		}
 
 		bool isButtonShift;
@@ -4362,7 +4410,7 @@ namespace Terminal.Gui {
 				if (currentColumn == line.Count || (currentColumn > 0 && (line [currentColumn - 1] != ' '
 					|| line [currentColumn] == ' '))) {
 
-					newPos = WordBackward (currentColumn, currentRow);
+					newPos = model.WordBackward (currentColumn, currentRow);
 					if (newPos.HasValue) {
 						currentColumn = currentRow == newPos.Value.row ? newPos.Value.col : 0;
 					}
@@ -4370,7 +4418,7 @@ namespace Terminal.Gui {
 				if (!selecting) {
 					StartSelecting ();
 				}
-				newPos = WordForward (currentColumn, currentRow);
+				newPos = model.WordForward (currentColumn, currentRow);
 				if (newPos != null && newPos.HasValue) {
 					currentColumn = currentRow == newPos.Value.row ? newPos.Value.col : line.Count;
 				}

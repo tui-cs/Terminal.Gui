@@ -736,12 +736,21 @@ namespace Terminal.Gui {
 		/// </summary>
 		public void EnsureSelectedItemVisible ()
 		{
-			SuperView?.LayoutSubviews ();
-			if (selected < top) {
-				top = Math.Max (selected, 0);
-			} else if (Frame.Height > 0 && selected >= top + Frame.Height) {
-				top = Math.Max (selected - Frame.Height + 1, 0);
+			if (SuperView?.IsInitialized == true) {
+				if (selected < top) {
+					top = Math.Max (selected, 0);
+				} else if (Frame.Height > 0 && selected >= top + Frame.Height) {
+					top = Math.Max (selected - Frame.Height + 1, 0);
+				}
+				LayoutStarted -= ListView_LayoutStarted;
+			} else {
+				LayoutStarted += ListView_LayoutStarted;
 			}
+		}
+
+		private void ListView_LayoutStarted (object sender, LayoutEventArgs e)
+		{
+			EnsureSelectedItemVisible ();
 		}
 
 		///<inheritdoc/>

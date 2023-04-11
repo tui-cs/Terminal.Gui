@@ -8,8 +8,9 @@ using Xunit;
 using System.Globalization;
 using Xunit.Abstractions;
 using System.Reflection;
+using Terminal.Gui.ViewTests;
 
-namespace Terminal.Gui.ViewTests {
+namespace Terminal.Gui.ViewsTests {
 
 	public class TableViewTests {
 		readonly ITestOutputHelper output;
@@ -267,7 +268,8 @@ namespace Terminal.Gui.ViewTests {
 			// ensure that TableView has the input focus
 			Application.Top.Add (tableView);
 			Application.Begin (Application.Top);
-			
+
+
 			Application.Top.FocusFirst ();
 			Assert.True (tableView.HasFocus);
 
@@ -453,7 +455,7 @@ namespace Terminal.Gui.ViewTests {
 			Assert.Equal (new Point (8, 3), selected [5]);
 		}
 
-		[Fact]
+		[Fact, AutoInitShutdown]
 		public void TableView_ExpandLastColumn_True ()
 		{
 			var tv = SetUpMiniTable ();
@@ -476,7 +478,7 @@ namespace Terminal.Gui.ViewTests {
 		}
 
 
-		[Fact]
+		[Fact, AutoInitShutdown]
 		public void TableView_ExpandLastColumn_False ()
 		{
 			var tv = SetUpMiniTable ();
@@ -498,7 +500,7 @@ namespace Terminal.Gui.ViewTests {
 			Application.Shutdown ();
 		}
 
-		[Fact]
+		[Fact, AutoInitShutdown]
 		public void TableView_ExpandLastColumn_False_ExactBounds ()
 		{
 			var tv = SetUpMiniTable ();
@@ -560,7 +562,7 @@ namespace Terminal.Gui.ViewTests {
 			Assert.Equal ("R0C0", activatedValue);
 		}
 
-		[Fact]
+		[Fact, AutoInitShutdown]
 		public void TableViewMultiSelect_CannotFallOffLeft ()
 		{
 			var tv = SetUpMiniTable ();
@@ -583,7 +585,7 @@ namespace Terminal.Gui.ViewTests {
 
 			Application.Shutdown ();
 		}
-		[Fact]
+		[Fact, AutoInitShutdown]
 		public void TableViewMultiSelect_CannotFallOffRight ()
 		{
 			var tv = SetUpMiniTable ();
@@ -606,7 +608,7 @@ namespace Terminal.Gui.ViewTests {
 
 			Application.Shutdown ();
 		}
-		[Fact]
+		[Fact, AutoInitShutdown]
 		public void TableViewMultiSelect_CannotFallOffBottom ()
 		{
 			var tv = SetUpMiniTable ();
@@ -631,7 +633,7 @@ namespace Terminal.Gui.ViewTests {
 			Application.Shutdown ();
 		}
 
-		[Fact]
+		[Fact, AutoInitShutdown]
 		public void TableViewMultiSelect_CannotFallOffTop ()
 		{
 			var tv = SetUpMiniTable ();
@@ -728,7 +730,7 @@ namespace Terminal.Gui.ViewTests {
 			Assert.Contains (new Point (0, 2), selected);
 		}
 
-		[Theory]
+		[Theory, AutoInitShutdown]
 		[InlineData (false)]
 		[InlineData (true)]
 		public void TableView_ColorTests_FocusedOrNot (bool focused)
@@ -772,7 +774,7 @@ namespace Terminal.Gui.ViewTests {
 			Application.Shutdown ();
 		}
 
-		[Theory]
+		[Theory, AutoInitShutdown]
 		[InlineData (false)]
 		[InlineData (true)]
 		public void TableView_ColorTests_InvertSelectedCellFirstCharacter (bool focused)
@@ -821,7 +823,7 @@ namespace Terminal.Gui.ViewTests {
 		}
 
 
-		[Theory]
+		[Theory, AutoInitShutdown]
 		[InlineData (false)]
 		[InlineData (true)]
 		public void TableView_ColorsTest_RowColorGetter (bool focused)
@@ -912,7 +914,7 @@ namespace Terminal.Gui.ViewTests {
 			Application.Shutdown ();
 		}
 
-		[Theory]
+		[Theory, AutoInitShutdown]
 		[InlineData (false)]
 		[InlineData (true)]
 		public void TableView_ColorsTest_ColorGetter (bool focused)
@@ -1023,7 +1025,6 @@ namespace Terminal.Gui.ViewTests {
 			tv.Style.GetOrCreateColumnStyle (colB).MaxWidth = 1;
 			tv.Style.GetOrCreateColumnStyle (colB).MaxWidth = 1;
 
-			GraphViewTests.InitFakeDriver ();
 			tv.ColorScheme = Colors.Base;
 			return tv;
 		}
@@ -1055,10 +1056,9 @@ namespace Terminal.Gui.ViewTests {
 			Assert.Equal (1, tableView.RowOffset);
 		}
 
-		[Fact]
+		[Fact, AutoInitShutdown]
 		public void ScrollRight_SmoothScrolling ()
 		{
-			GraphViewTests.InitFakeDriver ();
 
 			var tableView = new TableView ();
 			tableView.BeginInit (); tableView.EndInit ();
@@ -1123,11 +1123,9 @@ namespace Terminal.Gui.ViewTests {
 			Application.Shutdown ();
 		}
 
-		[Fact]
+		[Fact, AutoInitShutdown]
 		public void ScrollRight_WithoutSmoothScrolling ()
 		{
-			GraphViewTests.InitFakeDriver ();
-
 			var tableView = new TableView ();
 			tableView.BeginInit (); tableView.EndInit ();
 			tableView.ColorScheme = Colors.TopLevel;
@@ -1193,7 +1191,7 @@ namespace Terminal.Gui.ViewTests {
 		{
 			var tableView = new TableView ();
 			tableView.BeginInit (); tableView.EndInit ();
-			
+
 			tableView.ColorScheme = Colors.TopLevel;
 
 			// 3 columns are visible
@@ -1746,14 +1744,15 @@ namespace Terminal.Gui.ViewTests {
 			tableView.EnsureSelectedCellIsVisible ();
 			Assert.Equal (smooth ? 1 : 3, tableView.ColumnOffset);
 		}
-		[Fact]
+		
+		[Fact, AutoInitShutdown]
 		public void LongColumnTest ()
 		{
-			GraphViewTests.InitFakeDriver ();
-
 			var tableView = new TableView ();
-			tableView.BeginInit (); tableView.EndInit ();
-			
+
+			Application.Top.Add(tableView);
+			Application.Begin(Application.Top);
+
 			tableView.ColorScheme = Colors.TopLevel;
 
 			// 25 characters can be printed into table
@@ -1791,16 +1790,16 @@ namespace Terminal.Gui.ViewTests {
 			var style = tableView.Style.GetOrCreateColumnStyle (dt.Columns [2]);
 
 			// one way the API user can fix this for long columns
-			// is to specify a max width for the column
+			// is to specify a MinAcceptableWidth for the column
 			style.MaxWidth = 10;
 
 			tableView.LayoutSubviews ();
 			tableView.Redraw (tableView.Bounds);
 			expected =
 				@"
-│A│B│Very Long          │
+│A│B│Very Long Column   │
 ├─┼─┼───────────────────┤
-│1│2│aaaaaaaaaa         │
+│1│2│aaaaaaaaaaaaaaaaaaa│
 │1│2│aaa                │
 ";
 			TestHelpers.AssertDriverContentsAre (expected, output);
@@ -1854,8 +1853,9 @@ namespace Terminal.Gui.ViewTests {
 
 			// Now test making the width too small for the MinAcceptableWidth
 			// the Column won't fit so should not be rendered
-			Application.Shutdown ();
-			GraphViewTests.InitFakeDriver ();
+			var driver = ((FakeDriver)Application.Driver);
+			driver.UpdateOffScreen();
+			
 
 			tableView.Bounds = new Rect (0, 0, 9, 5);
 			tableView.LayoutSubviews ();
@@ -1889,11 +1889,9 @@ namespace Terminal.Gui.ViewTests {
 		}
 
 
-		[Fact]
+		[Fact, AutoInitShutdown]
 		public void ScrollIndicators ()
 		{
-			GraphViewTests.InitFakeDriver ();
-
 			var tableView = new TableView ();
 			tableView.BeginInit (); tableView.EndInit ();
 
@@ -1967,6 +1965,74 @@ namespace Terminal.Gui.ViewTests {
 
 			// Shutdown must be called to safely clean up Application if Init has been called
 			Application.Shutdown ();
+		}
+
+		[Fact, AutoInitShutdown]
+		public void CellEventsBackgroundFill ()
+		{
+			var tv = new TableView () {
+				Width = 20,
+				Height = 4
+			};
+
+			var dt = new DataTable ();
+			dt.Columns.Add ("C1");
+			dt.Columns.Add ("C2");
+			dt.Columns.Add ("C3");
+
+			dt.Rows.Add ("Hello", DBNull.Value, "f");
+
+			tv.Table = dt;
+			tv.NullSymbol = string.Empty;
+
+			Application.Top.Add (tv);
+			Application.Begin (Application.Top);
+
+			tv.Redraw (tv.Bounds);
+
+			var expected =
+				@"
+┌─────┬──┬─────────┐
+│C1   │C2│C3       │
+├─────┼──┼─────────┤
+│Hello│  │f        │
+";
+
+			TestHelpers.AssertDriverContentsAre (expected, output);
+
+			var color = new Attribute (Color.Magenta, Color.BrightBlue);
+
+			var scheme = new ColorScheme {
+				Normal = color,
+				HotFocus = color,
+				Focus = color,
+				Disabled = color,
+				HotNormal = color,
+			};
+
+			// Now the thing we really want to test is the styles!
+			// All cells in the column have a column style that says
+			// the cell is pink!
+			foreach (DataColumn col in dt.Columns) {
+				var style = tv.Style.GetOrCreateColumnStyle (col);
+				style.ColorGetter = (e) => {
+					return scheme;
+				};
+
+			}
+
+
+			tv.Redraw (tv.Bounds);
+			expected =
+							@"
+00000000000000000000
+00000000000000000000
+00000000000000000000
+01111101101111111110
+";
+			TestHelpers.AssertDriverColorsAre (expected, new Attribute [] { tv.ColorScheme.Normal, color });
+
+
 		}
 
 		/// <summary>

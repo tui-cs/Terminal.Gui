@@ -354,7 +354,7 @@ namespace Terminal.Gui {
 			return true;
 		}
 
-		bool MoveEnd ()
+		new bool MoveEnd ()
 		{
 			CursorPosition = fieldLen;
 			return true;

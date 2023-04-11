@@ -5,7 +5,6 @@ using System.Linq;
 using System.Reflection;
 using System.Text;
 using Terminal.Gui;
-using Terminal.Gui.Configuration;
 
 namespace UICatalog.Scenarios {
 	/// <summary>
@@ -55,7 +54,7 @@ namespace UICatalog.Scenarios {
 
 			Application.Top.LayoutComplete += (s, a) => {
 				horizontalRuler.Text = rule.Repeat ((int)Math.Ceiling ((double)(horizontalRuler.Bounds.Width) / (double)rule.Length)) [0..(horizontalRuler.Bounds.Width)];
-				verticalRuler.Text = vrule.Repeat ((int)Math.Ceiling ((double)(verticalRuler.Bounds.Height * 2) / (double)rule.Length)) [0..(verticalRuler.Bounds.Height*2)];
+				verticalRuler.Text = vrule.Repeat ((int)Math.Ceiling ((double)(verticalRuler.Bounds.Height * 2) / (double)rule.Length)) [0..(verticalRuler.Bounds.Height * 2)];
 			};
 
 			Application.Top.Add (verticalRuler);
@@ -67,7 +66,7 @@ namespace UICatalog.Scenarios {
 			};
 			Application.Top.Add (atButton);
 
-			// Throw in a literal absolute - Should funciton identically to above
+			// Throw in a literal absolute - Should function identically to above
 			var absoluteButton = new Button ("X = 30, Y = 1") {
 				X = 30,
 				Y = 1
@@ -82,7 +81,7 @@ namespace UICatalog.Scenarios {
 				Width = Dim.Fill (margin),
 				Height = 7
 			};
-			subWin.Title = $"{subWin.GetType().Name} {{X={subWin.X},Y={subWin.Y},Width={subWin.Width},Height={subWin.Height}}}";
+			subWin.Title = $"{subWin.GetType ().Name} {{X={subWin.X},Y={subWin.Y},Width={subWin.Width},Height={subWin.Height}}}";
 			Application.Top.Add (subWin);
 
 			int i = 1;
@@ -96,7 +95,7 @@ namespace UICatalog.Scenarios {
 			subWin.Add (labelList.ToArray ());
 
 			var frameView = new FrameView () {
-				X = 2, 
+				X = 2,
 				Y = Pos.Bottom (subWin),
 				Width = 30,
 				Height = 7
@@ -113,9 +112,9 @@ namespace UICatalog.Scenarios {
 			Application.Top.Add (frameView);
 
 			frameView = new FrameView () {
-				X = Pos.Right(frameView),
+				X = Pos.Right (frameView),
 				Y = Pos.Top (frameView),
-				Width = Dim.Fill(),
+				Width = Dim.Fill (),
 				Height = 7,
 			};
 			frameView.Title = $"{frameView.GetType ().Name} {{X={frameView.X},Y={frameView.Y},Width={frameView.Width},Height={frameView.Height}}}";
@@ -169,7 +168,7 @@ namespace UICatalog.Scenarios {
 			// This demonstrates nonsense: it the same as using Pos.AnchorEnd (100/2=50 + 100/2=50 = 100 - 50)
 			// The `- Pos.Percent(5)` is there so at least something is visible
 			oddballButton = new Button ("Center + Center - Percent(50)") {
-				X = Pos.Center () + Pos.Center () - Pos.Percent(50),
+				X = Pos.Center () + Pos.Center () - Pos.Percent (50),
 				Y = Pos.Bottom (oddballButton)
 			};
 			Application.Top.Add (oddballButton);
@@ -200,7 +199,7 @@ namespace UICatalog.Scenarios {
 
 			// This demonstrates combining Percents)
 			oddballButton = new Button ("Percent(40) + Percent(10)") {
-				X = Pos.Percent (40) + Pos.Percent(10),
+				X = Pos.Percent (40) + Pos.Percent (10),
 				Y = Pos.Bottom (oddballButton)
 			};
 			Application.Top.Add (oddballButton);
@@ -210,8 +209,8 @@ namespace UICatalog.Scenarios {
 				Y = Pos.AnchorEnd () - 1,
 			};
 			anchorButton.X = Pos.AnchorEnd () - (Pos.Right (anchorButton) - Pos.Left (anchorButton));
-			anchorButton.Clicked += (s,e) => {
-				// Ths demonstrates how to have a dynamically sized button
+			anchorButton.Clicked += (s, e) => {
+				// This demonstrates how to have a dynamically sized button
 				// Each time the button is clicked the button's text gets longer
 				// The call to Application.Top.LayoutSubviews causes the Computed layout to
 				// get updated. 
@@ -246,8 +245,8 @@ namespace UICatalog.Scenarios {
 			var leftButton = new Button ("Left") {
 				Y = Pos.AnchorEnd () - 1 // Pos.Combine
 			};
-			leftButton.Clicked += (s,e) => {
-				// Ths demonstrates how to have a dynamically sized button
+			leftButton.Clicked += (s, e) => {
+				// This demonstrates how to have a dynamically sized button
 				// Each time the button is clicked the button's text gets longer
 				// The call to Application.Top.LayoutSubviews causes the Computed layout to
 				// get updated. 
@@ -261,8 +260,8 @@ namespace UICatalog.Scenarios {
 				X = Pos.Center (),
 				Y = Pos.AnchorEnd (1)  // Pos.AnchorEnd(1)
 			};
-			centerButton.Clicked += (s,e) => {
-				// Ths demonstrates how to have a dynamically sized button
+			centerButton.Clicked += (s, e) => {
+				// This demonstrates how to have a dynamically sized button
 				// Each time the button is clicked the button's text gets longer
 				// The call to Application.Top.LayoutSubviews causes the Computed layout to
 				// get updated. 
@@ -274,8 +273,8 @@ namespace UICatalog.Scenarios {
 			var rightButton = new Button ("Right") {
 				Y = Pos.Y (centerButton)
 			};
-			rightButton.Clicked += (s,e) => {
-				// Ths demonstrates how to have a dynamically sized button
+			rightButton.Clicked += (s, e) => {
+				// This demonstrates how to have a dynamically sized button
 				// Each time the button is clicked the button's text gets longer
 				// The call to Application.Top.LayoutSubviews causes the Computed layout to
 				// get updated. 
@@ -290,33 +289,6 @@ namespace UICatalog.Scenarios {
 			Application.Top.Add (leftButton);
 			Application.Top.Add (centerButton);
 			Application.Top.Add (rightButton);
-		}
-
-		public override void Run ()
-		{
-			base.Run ();
-		}
-
-		private void Quit ()
-		{
-			Application.RequestStop ();
-		}
-	}
-
-	internal static class StringExtensions {
-		public static string Repeat (this string instr, int n)
-		{
-			if (n <= 0) {
-				return null;
-			}
-
-			if (string.IsNullOrEmpty (instr) || n == 1) {
-				return instr;
-			}
-
-			return new StringBuilder (instr.Length * n)
-				.Insert (0, instr, n)
-				.ToString ();
 		}
 	}
 }

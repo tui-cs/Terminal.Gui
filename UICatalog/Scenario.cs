@@ -3,7 +3,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Terminal.Gui;
-using Terminal.Gui.Configuration;
 
 namespace UICatalog {
 	/// <summary>
@@ -79,7 +78,8 @@ namespace UICatalog {
 			ConfigurationManager.Themes.Theme = Theme;
 			ConfigurationManager.Apply ();
 
-			Win = new Window ($"{Application.QuitKey} to Quit - Scenario: {GetName ()}") {
+			Win = new Window () {
+				Title = $"{Application.QuitKey} to Quit - Scenario: {GetName ()}",
 				X = 0,
 				Y = 0,
 				Width = Dim.Fill (),

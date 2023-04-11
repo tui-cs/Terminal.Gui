@@ -7,7 +7,6 @@ using System.Linq;
 using System.Reflection;
 using System.Text;
 using Terminal.Gui;
-using Terminal.Gui.Configuration;
 
 namespace UICatalog.Scenarios {
 	[ScenarioMetadata (Name: "All Views Tester", Description: "Provides a test UI for all classes derived from View.")]
@@ -92,7 +91,14 @@ namespace UICatalog.Scenarios {
 				_settingsPane.SetFocus ();
 			};
 			_classListView.SelectedItemChanged += (s,args) => {
-				ClearClass (_curView);
+				// Remove existing class, if any
+				if (_curView != null) {
+					_curView.LayoutComplete -= LayoutCompleteHandler;
+					_hostPane.Remove (_curView);
+					_curView.Dispose ();
+					_curView = null;
+					_hostPane.Clear ();
+				}
 				_curView = CreateClass (_viewClasses.Values.ToArray () [_classListView.SelectedItem]);
 			};
 			_leftPane.Add (_classListView);
@@ -348,19 +354,10 @@ namespace UICatalog.Scenarios {
 			 .Where (myType => myType.IsClass && !myType.IsAbstract && myType.IsPublic && myType.IsSubclassOf (typeof (View)))) {
 				types.Add (type);
 			}
+			types.Add (typeof (View));
 			return types;
 		}
-
-		void ClearClass (View view)
-		{
-			// Remove existing class, if any
-			if (view != null) {
-				view.LayoutComplete -= LayoutCompleteHandler;
-				_hostPane.Remove (view);
-				view.Dispose ();
-				_hostPane.Clear ();
-			}
-		}
+		
 
 		View CreateClass (Type type)
 		{

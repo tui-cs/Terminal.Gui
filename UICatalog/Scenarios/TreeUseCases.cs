@@ -1,9 +1,6 @@
-using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using Terminal.Gui;
-using Terminal.Gui.Trees;
 
 namespace UICatalog.Scenarios {
 	[ScenarioMetadata (Name: "Tree View", Description: "Simple tree view examples.")]

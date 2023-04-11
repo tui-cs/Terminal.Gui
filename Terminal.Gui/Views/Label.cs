@@ -58,6 +58,10 @@ namespace Terminal.Gui {
 		{
 			Height = 1;
 			AutoSize = autosize;
+			//HotKeySpecifier = new Rune ('_');
+			//if (HotKey != Key.Null) {
+			//	AddKeyBinding (Key.Space | HotKey, Command.Accept);
+			//}
 		}
 
 		/// <summary>

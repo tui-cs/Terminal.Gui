@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Linq;
 using Terminal.Gui;
-using Terminal.Gui.Graphs;
 
 using Color = Terminal.Gui.Color;
 

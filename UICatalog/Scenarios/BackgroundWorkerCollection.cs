@@ -99,12 +99,12 @@ namespace UICatalog.Scenarios {
 					Title = "WorkerApp",
 					CheckType = MenuItemCheckStyle.Checked
 				};
-				var top = Application.MdiChildes?.Find ((x) => x.Data.ToString () == "WorkerApp");
+				var top = Application.MdiChildren?.Find ((x) => x.Data.ToString () == "WorkerApp");
 				if (top != null) {
 					item.Checked = top.Visible;
 				}
 				item.Action += () => {
-					var top = Application.MdiChildes.Find ((x) => x.Data.ToString () == "WorkerApp");
+					var top = Application.MdiChildren.Find ((x) => x.Data.ToString () == "WorkerApp");
 					item.Checked = top.Visible = (bool)!item.Checked;
 					if (top.Visible) {
 						top.ShowChild ();
@@ -121,7 +121,7 @@ namespace UICatalog.Scenarios {
 			{
 				var index = 1;
 				List<MenuItem> menuItems = new List<MenuItem> ();
-				var sortedChildes = Application.MdiChildes;
+				var sortedChildes = Application.MdiChildren;
 				sortedChildes.Sort (new ToplevelComparer ());
 				foreach (var top in sortedChildes) {
 					if (top.Data.ToString () == "WorkerApp" && !top.Visible) {
@@ -345,14 +345,14 @@ namespace UICatalog.Scenarios {
 				};
 
 				LayoutStarted += (s,e) => {
-					var btnsWidth = start.Bounds.Width + close.Bounds.Width + 2 - 1;
+					var btnsWidth = start.Frame.Width + close.Frame.Width + 2 - 1;
 					var shiftLeft = Math.Max ((Bounds.Width - btnsWidth) / 2 - 2, 0);
 
-					shiftLeft += close.Bounds.Width + 1;
+					shiftLeft += close.Frame.Width + 1;
 					close.X = Pos.AnchorEnd (shiftLeft);
 					close.Y = Pos.AnchorEnd (1);
 
-					shiftLeft += start.Bounds.Width + 1;
+					shiftLeft += start.Frame.Width + 1;
 					start.X = Pos.AnchorEnd (shiftLeft);
 					start.Y = Pos.AnchorEnd (1);
 				};

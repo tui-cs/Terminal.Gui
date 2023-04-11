@@ -1,8 +1,9 @@
-﻿using NStack;
+﻿using Microsoft.VisualStudio.TestPlatform.Utilities;
+using NStack;
 using Xunit;
 using Xunit.Abstractions;
 
-namespace Terminal.Gui.ViewTests {
+namespace Terminal.Gui.ViewsTests {
 	public class ScrollViewTests {
 		readonly ITestOutputHelper output;
 
@@ -391,37 +392,37 @@ namespace Terminal.Gui.ViewTests {
 		//	Application.Begin (Application.Top);
 
 		//	TestHelpers.AssertDriverContentsWithFrameAre (@"
-  // █████████▲
-  // ██████But┬
-  // █████████┴
-  // ┌────────░
-  // │     But░
-  // └────────░
-  // ┌────────░
-  // │     But░
-  // └────────▼
-  // ◄├┤░░░░░► ", output);
+		// █████████▲
+		// ██████But┬
+		// █████████┴
+		// ┌────────░
+		// │     But░
+		// └────────░
+		// ┌────────░
+		// │     But░
+		// └────────▼
+		// ◄├┤░░░░░► ", output);
 
 		//	sv.ContentOffset = new Point (5, 5);
 		//	sv.LayoutSubviews ();
 		//	Application.Refresh ();
 		//	TestHelpers.AssertDriverContentsWithFrameAre (@"
-  // ─────────▲
-  // ─────────┬
-  //  Button 2│
-  // ─────────┴
-  // ─────────░
-  //  Button 3░
-  // ─────────░
-  // ─────────░
-  //  Button 4▼
-  // ◄├─┤░░░░► ", output);
+		// ─────────▲
+		// ─────────┬
+		//  Button 2│
+		// ─────────┴
+		// ─────────░
+		//  Button 3░
+		// ─────────░
+		// ─────────░
+		//  Button 4▼
+		// ◄├─┤░░░░► ", output);
 		//}
 
 		//private class CustomButton : FrameView {
 		//	private Label labelFill;
 		//	private Label labelText;
-			
+
 		//	public CustomButton (string fill, ustring text, int width, int height) : base ()
 		//	{
 		//		Width = width;
@@ -439,7 +440,7 @@ namespace Terminal.Gui.ViewTests {
 		//			}
 		//			labelFill.Text = fillText.ToString ();
 		//		};
-	
+
 		//		labelText = new Label (text) { X = Pos.Center (), Y = Pos.Center () };
 		//		Add (labelFill, labelText);
 		//		CanFocus = true;
@@ -523,7 +524,7 @@ namespace Terminal.Gui.ViewTests {
 00000000000000000000000
 00000000000000000000000", attributes);
 
-			sv.Add (new Window ("1") { X = 3, Y = 3, Width = 20, Height = 20 });
+			sv.Add (new Window { X = 3, Y = 3, Width = 20, Height = 20 });
 
 			Application.Refresh ();
 			TestHelpers.AssertDriverContentsWithFrameAre (@"
@@ -533,7 +534,7 @@ namespace Terminal.Gui.ViewTests {
             ▲          
             ┬          
             ┴          
-      ┌┤1├──░          
+      ┌─────░          
       │     ░          
       │     ░          
       │     ░          
@@ -599,6 +600,331 @@ namespace Terminal.Gui.ViewTests {
 00000000000000000000000
 00000000000000000000000
 00000000000000000000000", attributes);
+		}
+
+		[Fact, AutoInitShutdown]
+		public void DrawTextFormatter_Respects_The_Clip_Bounds ()
+		{
+			var rule = "0123456789";
+			var size = new Size (40, 40);
+			var view = new View (new Rect (Point.Empty, size));
+			view.Add (new Label (rule.Repeat (size.Width / rule.Length)) { AutoSize = false, Width = Dim.Fill () });
+			view.Add (new Label (rule.Repeat (size.Height / rule.Length), TextDirection.TopBottom_LeftRight) { Height = Dim.Fill (), AutoSize = false });
+			view.Add (new Button (1, 1, "Press me!"));
+			var scrollView = new ScrollView (new Rect (1, 1, 15, 10)) {
+				ContentSize = size,
+				ShowHorizontalScrollIndicator = true,
+				ShowVerticalScrollIndicator = true
+			};
+			scrollView.Add (view);
+			var win = new Window (new Rect (1, 1, 20, 14));
+			win.Add (scrollView);
+			Application.Top.Add (win);
+			Application.Begin (Application.Top);
+
+			var expected = @"
+ ┌──────────────────┐
+ │                  │
+ │ 01234567890123▲  │
+ │ 1[ Press me! ]┬  │
+ │ 2             │  │
+ │ 3             ┴  │
+ │ 4             ░  │
+ │ 5             ░  │
+ │ 6             ░  │
+ │ 7             ░  │
+ │ 8             ▼  │
+ │ ◄├───┤░░░░░░░►   │
+ │                  │
+ └──────────────────┘
+"
+			;
+
+			var pos = TestHelpers.AssertDriverContentsWithFrameAre (expected, output);
+			Assert.Equal (new Rect (1, 1, 21, 14), pos);
+
+			Assert.True (scrollView.ProcessKey (new KeyEvent (Key.CursorRight, new KeyModifiers ())));
+			Application.Top.Redraw (Application.Top.Bounds);
+
+			expected = @"
+ ┌──────────────────┐
+ │                  │
+ │ 12345678901234▲  │
+ │ [ Press me! ] ┬  │
+ │               │  │
+ │               ┴  │
+ │               ░  │
+ │               ░  │
+ │               ░  │
+ │               ░  │
+ │               ▼  │
+ │ ◄├───┤░░░░░░░►   │
+ │                  │
+ └──────────────────┘
+"
+			;
+
+			pos = TestHelpers.AssertDriverContentsWithFrameAre (expected, output);
+			Assert.Equal (new Rect (1, 1, 21, 14), pos);
+
+			Assert.True (scrollView.ProcessKey (new KeyEvent (Key.CursorRight, new KeyModifiers ())));
+			Application.Top.Redraw (Application.Top.Bounds);
+
+			expected = @"
+ ┌──────────────────┐
+ │                  │
+ │ 23456789012345▲  │
+ │  Press me! ]  ┬  │
+ │               │  │
+ │               ┴  │
+ │               ░  │
+ │               ░  │
+ │               ░  │
+ │               ░  │
+ │               ▼  │
+ │ ◄├────┤░░░░░░►   │
+ │                  │
+ └──────────────────┘
+"
+			;
+
+			pos = TestHelpers.AssertDriverContentsWithFrameAre (expected, output);
+			Assert.Equal (new Rect (1, 1, 21, 14), pos);
+
+			Assert.True (scrollView.ProcessKey (new KeyEvent (Key.CursorRight, new KeyModifiers ())));
+			Application.Top.Redraw (Application.Top.Bounds);
+
+			expected = @"
+ ┌──────────────────┐
+ │                  │
+ │ 34567890123456▲  │
+ │ Press me! ]   ┬  │
+ │               │  │
+ │               ┴  │
+ │               ░  │
+ │               ░  │
+ │               ░  │
+ │               ░  │
+ │               ▼  │
+ │ ◄├────┤░░░░░░►   │
+ │                  │
+ └──────────────────┘
+"
+			;
+
+			pos = TestHelpers.AssertDriverContentsWithFrameAre (expected, output);
+			Assert.Equal (new Rect (1, 1, 21, 14), pos);
+
+			Assert.True (scrollView.ProcessKey (new KeyEvent (Key.CursorRight, new KeyModifiers ())));
+			Application.Top.Redraw (Application.Top.Bounds);
+
+			expected = @"
+ ┌──────────────────┐
+ │                  │
+ │ 45678901234567▲  │
+ │ ress me! ]    ┬  │
+ │               │  │
+ │               ┴  │
+ │               ░  │
+ │               ░  │
+ │               ░  │
+ │               ░  │
+ │               ▼  │
+ │ ◄░├───┤░░░░░░►   │
+ │                  │
+ └──────────────────┘
+"
+			;
+
+			pos = TestHelpers.AssertDriverContentsWithFrameAre (expected, output);
+			Assert.Equal (new Rect (1, 1, 21, 14), pos);
+
+			Assert.True (scrollView.ProcessKey (new KeyEvent (Key.CursorRight, new KeyModifiers ())));
+			Application.Top.Redraw (Application.Top.Bounds);
+
+			expected = @"
+ ┌──────────────────┐
+ │                  │
+ │ 56789012345678▲  │
+ │ ess me! ]     ┬  │
+ │               │  │
+ │               ┴  │
+ │               ░  │
+ │               ░  │
+ │               ░  │
+ │               ░  │
+ │               ▼  │
+ │ ◄░├────┤░░░░░►   │
+ │                  │
+ └──────────────────┘
+"
+			;
+
+			pos = TestHelpers.AssertDriverContentsWithFrameAre (expected, output);
+			Assert.Equal (new Rect (1, 1, 21, 14), pos);
+
+			Assert.True (scrollView.ProcessKey (new KeyEvent (Key.CursorRight, new KeyModifiers ())));
+			Application.Top.Redraw (Application.Top.Bounds);
+
+			expected = @"
+ ┌──────────────────┐
+ │                  │
+ │ 67890123456789▲  │
+ │ ss me! ]      ┬  │
+ │               │  │
+ │               ┴  │
+ │               ░  │
+ │               ░  │
+ │               ░  │
+ │               ░  │
+ │               ▼  │
+ │ ◄░├────┤░░░░░►   │
+ │                  │
+ └──────────────────┘
+"
+			;
+
+			pos = TestHelpers.AssertDriverContentsWithFrameAre (expected, output);
+			Assert.Equal (new Rect (1, 1, 21, 14), pos);
+
+			Assert.True (scrollView.ProcessKey (new KeyEvent (Key.CursorRight, new KeyModifiers ())));
+			Application.Top.Redraw (Application.Top.Bounds);
+
+			expected = @"
+ ┌──────────────────┐
+ │                  │
+ │ 78901234567890▲  │
+ │ s me! ]       ┬  │
+ │               │  │
+ │               ┴  │
+ │               ░  │
+ │               ░  │
+ │               ░  │
+ │               ░  │
+ │               ▼  │
+ │ ◄░░├───┤░░░░░►   │
+ │                  │
+ └──────────────────┘
+";
+
+			pos = TestHelpers.AssertDriverContentsWithFrameAre (expected, output);
+			Assert.Equal (new Rect (1, 1, 21, 14), pos);
+
+			Assert.True (scrollView.ProcessKey (new KeyEvent (Key.CtrlMask | Key.End, new KeyModifiers ())));
+			Application.Top.Redraw (Application.Top.Bounds);
+
+			expected = @"
+ ┌──────────────────┐
+ │                  │
+ │ 67890123456789▲  │
+ │               ┬  │
+ │               │  │
+ │               ┴  │
+ │               ░  │
+ │               ░  │
+ │               ░  │
+ │               ░  │
+ │               ▼  │
+ │ ◄░░░░░░░├───┤►   │
+ │                  │
+ └──────────────────┘
+";
+
+			pos = TestHelpers.AssertDriverContentsWithFrameAre (expected, output);
+			Assert.Equal (new Rect (1, 1, 21, 14), pos);
+
+			Assert.True (scrollView.ProcessKey (new KeyEvent (Key.CtrlMask | Key.Home, new KeyModifiers ())));
+			Assert.True (scrollView.ProcessKey (new KeyEvent (Key.CursorDown, new KeyModifiers ())));
+			Application.Top.Redraw (Application.Top.Bounds);
+
+			expected = @"
+ ┌──────────────────┐
+ │                  │
+ │ 1[ Press me! ]▲  │
+ │ 2             ┬  │
+ │ 3             │  │
+ │ 4             ┴  │
+ │ 5             ░  │
+ │ 6             ░  │
+ │ 7             ░  │
+ │ 8             ░  │
+ │ 9             ▼  │
+ │ ◄├───┤░░░░░░░►   │
+ │                  │
+ └──────────────────┘
+";
+
+			pos = TestHelpers.AssertDriverContentsWithFrameAre (expected, output);
+			Assert.Equal (new Rect (1, 1, 21, 14), pos);
+
+			Assert.True (scrollView.ProcessKey (new KeyEvent (Key.CursorDown, new KeyModifiers ())));
+			Application.Top.Redraw (Application.Top.Bounds);
+
+			expected = @"
+ ┌──────────────────┐
+ │                  │
+ │ 2             ▲  │
+ │ 3             ┬  │
+ │ 4             │  │
+ │ 5             ┴  │
+ │ 6             ░  │
+ │ 7             ░  │
+ │ 8             ░  │
+ │ 9             ░  │
+ │ 0             ▼  │
+ │ ◄├───┤░░░░░░░►   │
+ │                  │
+ └──────────────────┘
+";
+
+			pos = TestHelpers.AssertDriverContentsWithFrameAre (expected, output);
+			Assert.Equal (new Rect (1, 1, 21, 14), pos);
+
+			Assert.True (scrollView.ProcessKey (new KeyEvent (Key.CursorDown, new KeyModifiers ())));
+			Application.Top.Redraw (Application.Top.Bounds);
+
+			expected = @"
+ ┌──────────────────┐
+ │                  │
+ │ 3             ▲  │
+ │ 4             ┬  │
+ │ 5             │  │
+ │ 6             ┴  │
+ │ 7             ░  │
+ │ 8             ░  │
+ │ 9             ░  │
+ │ 0             ░  │
+ │ 1             ▼  │
+ │ ◄├───┤░░░░░░░►   │
+ │                  │
+ └──────────────────┘
+";
+
+			pos = TestHelpers.AssertDriverContentsWithFrameAre (expected, output);
+			Assert.Equal (new Rect (1, 1, 21, 14), pos);
+
+			Assert.True (scrollView.ProcessKey (new KeyEvent (Key.End, new KeyModifiers ())));
+			Application.Top.Redraw (Application.Top.Bounds);
+
+			expected = @"
+ ┌──────────────────┐
+ │                  │
+ │ 1             ▲  │
+ │ 2             ░  │
+ │ 3             ░  │
+ │ 4             ░  │
+ │ 5             ░  │
+ │ 6             ░  │
+ │ 7             ┬  │
+ │ 8             ┴  │
+ │ 9             ▼  │
+ │ ◄├───┤░░░░░░░►   │
+ │                  │
+ └──────────────────┘
+";
+
+			pos = TestHelpers.AssertDriverContentsWithFrameAre (expected, output);
+			Assert.Equal (new Rect (1, 1, 21, 14), pos);
 		}
 	}
 }

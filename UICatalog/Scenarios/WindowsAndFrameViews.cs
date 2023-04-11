@@ -25,14 +25,17 @@ namespace UICatalog.Scenarios {
 			Application.Top.Remove (Win);
 			Win?.Dispose ();
 
-			Win = new Window ($"{listWin.Count} - Scenario: {GetName ()}", padding) {
+			Win = new Window () {
+				Title = $"{listWin.Count} - Scenario: {GetName ()}",
 				X = Pos.Center (),
 				Y = 1,
 				Width = Dim.Fill (15),
-				Height = 10
+				Height = 10,
+				ColorScheme = Colors.Dialog
 			};
+			Win.Padding.Thickness = new Thickness (padding);
+			Win.Margin.Thickness = new Thickness (margin);
 
-			Win.ColorScheme = Colors.Dialog;
 			var paddingButton = new Button ($"Padding of container is {padding}") {
 				X = Pos.Center (),
 				Y = 0,
@@ -57,14 +60,17 @@ namespace UICatalog.Scenarios {
 			//		TextField
 			//	sub FrameView with
 			// 
-			for (var i = 0; i < 3; i++) {
+			for (var pad = 0; pad < 3; pad++) {
 				Window win = null;
-				win = new Window ($"{listWin.Count} - Window Loop - padding = {i}", i) {
+				win = new Window () {
+					Title = $"{listWin.Count} - Window Loop - padding = {pad}",
 					X = margin,
 					Y = Pos.Bottom (listWin.Last ()) + (margin),
 					Width = Dim.Fill (margin),
-					Height = contentHeight + (i * 2) + 2,
+					Height = contentHeight + (pad * 2) + 2,
 				};
+				win.Padding.Thickness = new Thickness (pad);
+				
 				win.ColorScheme = Colors.Dialog;
 				var pressMeButton = new Button ("Press me! (Y = 0)") {
 					X = Pos.Center (),
@@ -74,7 +80,8 @@ namespace UICatalog.Scenarios {
 				pressMeButton.Clicked += (s,e) =>
 					MessageBox.ErrorQuery (win.Title.ToString (), "Neat?", "Yes", "No");
 				win.Add (pressMeButton);
-				var subWin = new Window ("Sub Window") {
+				var subWin = new Window () {
+					Title = "Sub Window",
 					X = Pos.Percent (0),
 					Y = 1,
 					Width = Dim.Percent (50),
@@ -131,7 +138,8 @@ namespace UICatalog.Scenarios {
 				ColorScheme = Colors.Error,
 				//Clicked = () => MessageBox.ErrorQuery (frame.Title.ToString (), "Neat?", "Yes", "No")
 			});
-			var subWinofFV = new Window ("this is a Sub-Window") {
+			var subWinofFV = new Window () {
+				Title = "This is a Sub-Window",
 				X = Pos.Percent (0),
 				Y = 1,
 				Width = Dim.Percent (50),

@@ -36,35 +36,9 @@
   "Themes": [
     {
       "Default": {
-        "Dialog.DefaultBorder": {
-          "BorderStyle": "Single",
-          "DrawMarginFrame": true,
-          "BorderThickness": {
-            "Left": 0,
-            "Top": 0,
-            "Right": 0,
-            "Bottom": 0
-          },
-          "BorderBrush": "Black",
-          "Background": "Black",
-          "Padding": {
-            "Left": 0,
-            "Top": 0,
-            "Right": 0,
-            "Bottom": 0
-          },
-          "Effect3D": true,
-          "Effect3DOffset": {
-            "X": 1,
-            "Y": 1
-          },
-          "Effect3DBrush": {
-            "Foreground": "Gray",
-            "Background": "DarkGray"
-          }
-        },
         "Dialog.DefaultButtonAlignment": "Center",
         "FrameView.DefaultBorderStyle": "Single",
+        "Window.DefaultBorderStyle": "Single",
         "ColorSchemes": [
           {
             "TopLevel": {

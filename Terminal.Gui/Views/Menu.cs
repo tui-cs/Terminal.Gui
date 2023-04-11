@@ -1374,12 +1374,12 @@ namespace Terminal.Gui {
 				}
 
 				// This positions the submenu horizontally aligned with the first character of the
-				// menu it belongs to's text
+				// text belonging to the menu 
 				for (int i = 0; i < index; i++)
 					pos += Menus [i].TitleLength + (Menus [i].Help.ConsoleWidth > 0 ? Menus [i].Help.ConsoleWidth + 2 : 0) + leftPadding + rightPadding;
 				var superView = SuperView == null ? Application.Top : SuperView;
 				Point locationOffset;
-				if (superView.Border != null && superView.Border.BorderStyle != BorderStyle.None) {
+				if (superView.BorderStyle != LineStyle.None) {
 					locationOffset = new Point (superView.Frame.X + 1, superView.Frame.Y + 1);
 				} else {
 					locationOffset = new Point (superView.Frame.X, superView.Frame.Y);

@@ -34,13 +34,13 @@ namespace Terminal.Gui {
 		/// been entered yet and the <see cref="View"/> does not yet have
 		/// input focus.
 		/// </summary>
-		public ustring Caption {get;set;}
+		public ustring Caption { get; set; }
 
 		/// <summary>
 		/// Gets or sets the foreground <see cref="Color"/> to use when 
 		/// rendering <see cref="Caption"/>.
 		/// </summary>
-		public Color CaptionColor {get;set;} = Color.DarkGray;
+		public Color CaptionColor { get; set; } = Color.DarkGray;
 
 		/// <summary>
 		/// Tracks whether the text field should be considered "used", that is, that the user has moved in the entry, so new input should be appended at the cursor position, rather than clearing the entry
@@ -481,8 +481,8 @@ namespace Terminal.Gui {
 
 			PositionCursor ();
 
-			RenderCaption();
-			
+			RenderCaption ();
+
 			if (SelectedLength > 0)
 				return;
 
@@ -498,7 +498,7 @@ namespace Terminal.Gui {
 
 		private void RenderCaption ()
 		{
-			
+
 			if (HasFocus || Caption == null || Caption.Length == 0
 				|| Text?.Length > 0) {
 				return;
@@ -516,13 +516,14 @@ namespace Terminal.Gui {
 
 			Driver.AddStr (render);
 		}
+
 		private void GenerateSuggestions ()
 		{
 			var currentLine = Text.ToRuneList ();
 			var cursorPosition = Math.Min (this.CursorPosition, currentLine.Count);
 
-			Autocomplete.GenerateSuggestions(
-				new AutocompleteContext(currentLine,cursorPosition)
+			Autocomplete.GenerateSuggestions (
+				new AutocompleteContext (currentLine, cursorPosition)
 				);
 		}
 
@@ -674,16 +675,24 @@ namespace Terminal.Gui {
 			SetNeedsDisplay ();
 		}
 
+		TextModel GetModel ()
+		{
+			var model = new TextModel ();
+			model.LoadString (Text);
+			return model;
+		}
+
 		/// <summary>
 		/// Deletes word backwards.
 		/// </summary>
 		public virtual void KillWordBackwards ()
 		{
 			ClearAllSelection ();
-			int bw = WordBackward (point);
-			if (bw != -1) {
-				SetText (text.GetRange (0, bw).Concat (text.GetRange (point, text.Count - point)));
-				point = bw;
+			var newPos = GetModel ().WordBackward (point, 0);
+			if (newPos == null) return;
+			if (newPos.Value.col != -1) {
+				SetText (text.GetRange (0, newPos.Value.col).Concat (text.GetRange (point, text.Count - point)));
+				point = newPos.Value.col;
 			}
 			Adjust ();
 		}
@@ -694,9 +703,10 @@ namespace Terminal.Gui {
 		public virtual void KillWordForwards ()
 		{
 			ClearAllSelection ();
-			int fw = WordForward (point);
-			if (fw != -1) {
-				SetText (text.GetRange (0, point).Concat (text.GetRange (fw, text.Count - fw)));
+			var newPos = GetModel ().WordForward (point, 0);
+			if (newPos == null) return;
+			if (newPos.Value.col != -1) {
+				SetText (text.GetRange (0, point).Concat (text.GetRange (newPos.Value.col, text.Count - newPos.Value.col)));
 			}
 			Adjust ();
 		}
@@ -704,18 +714,20 @@ namespace Terminal.Gui {
 		void MoveWordRight ()
 		{
 			ClearAllSelection ();
-			int fw = WordForward (point);
-			if (fw != -1)
-				point = fw;
+			var newPos = GetModel ().WordForward (point, 0);
+			if (newPos == null) return;
+			if (newPos.Value.col != -1)
+				point = newPos.Value.col;
 			Adjust ();
 		}
 
 		void MoveWordLeft ()
 		{
 			ClearAllSelection ();
-			int bw = WordBackward (point);
-			if (bw != -1)
-				point = bw;
+			var newPos = GetModel ().WordBackward (point, 0);
+			if (newPos == null) return;
+			if (newPos.Value.col != -1)
+				point = newPos.Value.col;
 			Adjust ();
 		}
 
@@ -786,7 +798,10 @@ namespace Terminal.Gui {
 			Adjust ();
 		}
 
-		void MoveEnd ()
+		/// <summary>
+		/// Moves cursor to the end of the typed text.
+		/// </summary>
+		public void MoveEnd ()
 		{
 			ClearAllSelection ();
 			point = text.Count;
@@ -806,10 +821,11 @@ namespace Terminal.Gui {
 		{
 			if (point < text.Count) {
 				int x = start > -1 && start > point ? start : point;
-				int sfw = WordForward (x);
-				if (sfw != -1)
-					point = sfw;
-				PrepareSelection (x, sfw - x);
+				var newPos = GetModel ().WordForward (x, 0);
+				if (newPos == null) return;
+				if (newPos.Value.col != -1)
+					point = newPos.Value.col;
+				PrepareSelection (x, newPos.Value.col - x);
 			}
 		}
 
@@ -818,10 +834,11 @@ namespace Terminal.Gui {
 			if (point > 0) {
 				int x = Math.Min (start > -1 && start > point ? start : point, text.Count);
 				if (x > 0) {
-					int sbw = WordBackward (x);
-					if (sbw != -1)
-						point = sbw;
-					PrepareSelection (x, sbw - x);
+					var newPos = GetModel ().WordBackward (x, 0);
+					if (newPos == null) return;
+					if (newPos.Value.col != -1)
+						point = newPos.Value.col;
+					PrepareSelection (x, newPos.Value.col - x);
 				}
 			}
 		}
@@ -917,88 +934,6 @@ namespace Terminal.Gui {
 				Text = ustring.Make (newText);
 				Adjust ();
 			}
-		}
-
-		int WordForward (int p)
-		{
-			if (p >= text.Count)
-				return -1;
-
-			int i = p + 1;
-			if (i == text.Count)
-				return text.Count;
-
-			var ti = text [i];
-			if (Rune.IsLetterOrDigit (ti) && Rune.IsWhiteSpace (text [p]))
-				return i;
-
-			if (Rune.IsPunctuation (ti) || Rune.IsSymbol (ti) || Rune.IsWhiteSpace (ti)) {
-				for (; i < text.Count; i++) {
-					if (Rune.IsLetterOrDigit (text [i]))
-						return i;
-				}
-			} else {
-				for (; i < text.Count; i++) {
-					if (!Rune.IsLetterOrDigit (text [i]))
-						break;
-				}
-				for (; i < text.Count; i++) {
-					if (Rune.IsLetterOrDigit (text [i]) ||
-						(Rune.IsPunctuation (text [i]) && Rune.IsWhiteSpace (text [i - 1])))
-						break;
-				}
-			}
-
-			if (i != p)
-				return Math.Min (i, text.Count);
-
-			return -1;
-		}
-
-		int WordBackward (int p)
-		{
-			if (p == 0)
-				return -1;
-
-			int i = p - 1;
-			if (i == 0)
-				return 0;
-
-			var ti = text [i];
-			var lastValidCol = -1;
-			if (Rune.IsPunctuation (ti) || Rune.IsSymbol (ti) || Rune.IsWhiteSpace (ti)) {
-				for (; i >= 0; i--) {
-					if (Rune.IsLetterOrDigit (text [i])) {
-						lastValidCol = i;
-						break;
-					}
-					if (i - 1 > 0 && !Rune.IsWhiteSpace (text [i]) && Rune.IsWhiteSpace (text [i - 1])) {
-						return i;
-					}
-				}
-				for (; i >= 0; i--) {
-					if (!Rune.IsLetterOrDigit (text [i]))
-						break;
-					lastValidCol = i;
-				}
-				if (lastValidCol > -1) {
-					return lastValidCol;
-				}
-			} else {
-				for (; i >= 0; i--) {
-					if (!Rune.IsLetterOrDigit (text [i]))
-						break;
-					lastValidCol = i;
-				}
-				if (lastValidCol > -1) {
-					return lastValidCol;
-				}
-			}
-
-			if (i != p)
-				return Math.Max (i, 0);
-
-			return -1;
 		}
 
 		void ShowContextMenu ()
@@ -1123,18 +1058,19 @@ namespace Terminal.Gui {
 				if (x == text.Count || (x > 0 && (char)text [x - 1] != ' ')
 					|| (x > 0 && (char)text [x] == ' ')) {
 
-					sbw = WordBackward (x);
+					var newPosBw = GetModel ().WordBackward (x, 0);
+					sbw = newPosBw.Value.col;
 				}
 				if (sbw != -1) {
 					x = sbw;
 					PositionCursor (x);
 				}
-				int sfw = WordForward (x);
+				var newPosFw = GetModel ().WordForward (x, 0);
 				ClearAllSelection ();
-				if (sfw != -1 && sbw != -1) {
-					point = sfw;
+				if (newPosFw.Value.col != -1 && sbw != -1) {
+					point = newPosFw.Value.col;
 				}
-				PrepareSelection (sbw, sfw - sbw);
+				PrepareSelection (sbw, newPosFw.Value.col - sbw);
 			} else if (ev.Flags == MouseFlags.Button1TripleClicked) {
 				EnsureHasFocus ();
 				PositionCursor (0);
@@ -1354,6 +1290,26 @@ namespace Terminal.Gui {
 		public void ClearHistoryChanges ()
 		{
 			historyText.Clear (Text);
+		}
+
+		/// <summary>
+		/// Returns <see langword="true"/> if the current cursor position is
+		/// at the end of the <see cref="Text"/>. This includes when it is empty.
+		/// </summary>
+		/// <returns></returns>
+		internal bool CursorIsAtEnd ()
+		{
+			return CursorPosition == Text.Length;
+		}
+
+		/// <summary>
+		/// Returns <see langword="true"/> if the current cursor position is
+		/// at the start of the <see cref="TextField"/>.
+		/// </summary>
+		/// <returns></returns>
+		internal bool CursorIsAtStart ()
+		{
+			return CursorPosition <= 0;
 		}
 	}
 	/// <summary>
