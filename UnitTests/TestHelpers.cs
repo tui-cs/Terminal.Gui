@@ -2,16 +2,14 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 using Xunit.Abstractions;
 using Xunit;
 using Terminal.Gui;
-using Rune = System.Rune;
-using Attribute = Terminal.Gui.Attribute;
 using System.Text.RegularExpressions;
 using System.Reflection;
 using System.Diagnostics;
-using Terminal.Gui.Configuration;
+using Rune = System.Rune;
+using Attribute = Terminal.Gui.Attribute;
 
 
 // This class enables test functions annotated with the [AutoInitShutdown] attribute to 
@@ -86,7 +84,7 @@ public class AutoInitShutdownAttribute : Xunit.Sdk.BeforeAfterTestAttribute {
 
 class TestHelpers {
 #pragma warning disable xUnit1013 // Public method should be marked as test
-	public static void AssertDriverContentsAre (string expectedLook, ITestOutputHelper output)
+	public static void AssertDriverContentsAre (string expectedLook, ITestOutputHelper output, bool ignoreLeadingWhitespace = false)
 	{
 #pragma warning restore xUnit1013 // Public method should be marked as test
 
@@ -116,10 +114,17 @@ class TestHelpers {
 
 			// ignore trailing whitespace on each line
 			var trailingWhitespace = new Regex (@"\s+$", RegexOptions.Multiline);
+			var leadingWhitespace = new Regex(@"^\s+",RegexOptions.Multiline);
 
 			// get rid of trailing whitespace on each line (and leading/trailing whitespace of start/end of full string)
 			expectedLook = trailingWhitespace.Replace (expectedLook, "").Trim ();
 			actualLook = trailingWhitespace.Replace (actualLook, "").Trim ();
+
+			if(ignoreLeadingWhitespace)
+			{
+				expectedLook = leadingWhitespace.Replace (expectedLook, "").Trim ();
+				actualLook = leadingWhitespace.Replace (actualLook, "").Trim ();
+			}
 
 			// standardize line endings for the comparison
 			expectedLook = expectedLook.Replace ("\r\n", "\n");

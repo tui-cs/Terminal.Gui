@@ -5,7 +5,7 @@ using System.Reflection;
 using Xunit;
 using Xunit.Abstractions;
 
-namespace Terminal.Gui.ViewTests {
+namespace Terminal.Gui.ViewsTests {
 	public class ScrollBarViewTests {
 		readonly ITestOutputHelper output;
 
@@ -19,9 +19,6 @@ namespace Terminal.Gui.ViewTests {
 		{
 			var width = 40;
 			var height = 3;
-			((FakeDriver)Application.Driver).SetBufferSize (width, height);
-			// BUGBUG: Application.Top only gets resized to Console size if it is set to computed?!?
-			Application.Top.LayoutStyle = LayoutStyle.Computed;
 
 			var super = new Window () { Id = "super", Width = Dim.Fill (), Height = Dim.Fill () };
 			Application.Top.Add (super);
@@ -35,6 +32,7 @@ namespace Terminal.Gui.ViewTests {
 			};
 			super.Add (sbv);
 			Application.Begin (Application.Top);
+			((FakeDriver)Application.Driver).SetBufferSize (width, height);
 
 			var expected = @"
 ┌──────────────────────────────────────┐
@@ -49,9 +47,6 @@ namespace Terminal.Gui.ViewTests {
 		{
 			var width = 3;
 			var height = 40;
-			((FakeDriver)Application.Driver).SetBufferSize (width, height);
-			// BUGBUG: Application.Top only gets resized to Console size if it is set to computed?!?
-			Application.Top.LayoutStyle = LayoutStyle.Computed;
 
 			var super = new Window () { Id = "super", Width = Dim.Fill (), Height = Dim.Fill () };
 			Application.Top.Add (super);
@@ -67,6 +62,7 @@ namespace Terminal.Gui.ViewTests {
 
 			super.Add (sbv);
 			Application.Begin (Application.Top);
+			((FakeDriver)Application.Driver).SetBufferSize (width, height);
 
 			var expected = @"
 ┌─┐
@@ -118,9 +114,6 @@ namespace Terminal.Gui.ViewTests {
 		{
 			var width = 3;
 			var height = 40;
-			((FakeDriver)Application.Driver).SetBufferSize (width, height);
-			// BUGBUG: Application.Top only gets resized to Console size if it is set to computed?!?
-			Application.Top.LayoutStyle = LayoutStyle.Computed;
 
 			var super = new Window () { Id = "super", Width = Dim.Fill (), Height = Dim.Fill () };
 			Application.Top.Add (super);
@@ -146,6 +139,7 @@ namespace Terminal.Gui.ViewTests {
 			super.Add (vert);
 
 			Application.Begin (Application.Top);
+			((FakeDriver)Application.Driver).SetBufferSize (width, height);
 
 			var expected = @"
 ┌─┐
@@ -969,7 +963,6 @@ namespace Terminal.Gui.ViewTests {
 			Assert.False (sbv.OtherScrollBarView.CanScroll (10, out max, sbv.OtherScrollBarView.IsVertical));
 			Assert.Equal (0, max);
 
-			// BUGBUG: v2 - bounds etc... are not valid until after BeginInit
 			Application.Begin (top);
 
 			// They aren't visible so they aren't drawn.
@@ -1007,7 +1000,7 @@ namespace Terminal.Gui.ViewTests {
 				Height = Dim.Fill (),
 				Text = "This is the help text for the Second Step.\n\nPress the button to see a message box.\n\nEnter name too."
 			};
-			var win = new Window ("Test") {
+			var win = new Window () {
 				Width = Dim.Fill (),
 				Height = Dim.Fill ()
 			};
@@ -1047,7 +1040,7 @@ namespace Terminal.Gui.ViewTests {
 				}
 			};
 
-			textView.DrawContent += (s, e) => {
+			textView.LayoutComplete += (s, e) => {
 				scrollBar.Size = textView.Lines;
 				scrollBar.Position = textView.TopRow;
 				if (scrollBar.OtherScrollBarView != null) {
@@ -1071,7 +1064,7 @@ namespace Terminal.Gui.ViewTests {
 			Assert.Equal (0, scrollBar.Position);
 			Assert.Equal (0, scrollBar.OtherScrollBarView.Position);
 			var expected = @"
-┌┤Test├─────────────────────────────────────┐
+┌───────────────────────────────────────────┐
 │This is the help text for the Second Step. │
 │                                           │
 │Press the button to see a message box.     │
@@ -1108,7 +1101,7 @@ namespace Terminal.Gui.ViewTests {
 			Assert.Equal (0, scrollBar.Position);
 			Assert.Equal (0, scrollBar.OtherScrollBarView.Position);
 			expected = @"
-┌┤Test├──────────────────┐
+┌────────────────────────┐
 │This is the help text   │
 │for the Second Step.    │
 │                        │
@@ -1144,7 +1137,7 @@ namespace Terminal.Gui.ViewTests {
 			Assert.Equal (0, scrollBar.Position);
 			Assert.Equal (0, scrollBar.OtherScrollBarView.Position);
 			expected = @"
-┌┤Test├──┐
+┌────────┐
 │This   ▲│
 │is the ┬│
 │help   ││
@@ -1336,6 +1329,68 @@ This is a test
 			Assert.Equal (5, sbv.Size);
 			Assert.False (sbv.ShowScrollIndicator);
 			Assert.False (sbv.Visible);
+		}
+
+
+		[Fact, AutoInitShutdown]
+		public void ClearOnVisibleFalse_Gets_Sets ()
+		{
+
+			var text = "This is a test\nThis is a test\nThis is a test\nThis is a test\nThis is a test\nThis is a test";
+			var label = new Label (text);
+			Application.Top.Add (label);
+
+			var sbv = new ScrollBarView (label, true, false) {
+				Size = 100,
+				ClearOnVisibleFalse = false
+			};
+			Application.Begin (Application.Top);
+
+			Assert.True (sbv.Visible);
+			TestHelpers.AssertDriverContentsWithFrameAre (@"
+This is a tes▲
+This is a tes┬
+This is a tes┴
+This is a tes░
+This is a tes░
+This is a tes▼
+", output);
+
+			sbv.Visible = false;
+			Assert.False (sbv.Visible);
+			Application.Top.Redraw (Application.Top.Bounds);
+			TestHelpers.AssertDriverContentsWithFrameAre (@"
+This is a test
+This is a test
+This is a test
+This is a test
+This is a test
+This is a test
+", output);
+
+			sbv.Visible = true;
+			Assert.True (sbv.Visible);
+			Application.Top.Redraw (Application.Top.Bounds);
+			TestHelpers.AssertDriverContentsWithFrameAre (@"
+This is a tes▲
+This is a tes┬
+This is a tes┴
+This is a tes░
+This is a tes░
+This is a tes▼
+", output);
+
+			sbv.ClearOnVisibleFalse = true;
+			sbv.Visible = false;
+			Assert.False (sbv.Visible);
+			TestHelpers.AssertDriverContentsWithFrameAre (@"
+This is a tes
+This is a tes
+This is a tes
+This is a tes
+This is a tes
+This is a tes
+", output);
 		}
 
 		[Fact]

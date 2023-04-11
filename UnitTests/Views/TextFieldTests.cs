@@ -6,7 +6,7 @@ using System.Reflection;
 using Xunit;
 using Xunit.Abstractions;
 
-namespace Terminal.Gui.ViewTests {
+namespace Terminal.Gui.ViewsTests {
 	public class TextFieldTests {
 		readonly ITestOutputHelper output;
 
@@ -181,36 +181,42 @@ namespace Terminal.Gui.ViewTests {
 				_textField.ProcessKey (new KeyEvent (Key.CursorLeft | Key.CtrlMask, new KeyModifiers ()));
 				switch (iteration) {
 				case 0:
-					Assert.Equal (25, _textField.CursorPosition);
+					Assert.Equal (31, _textField.CursorPosition);
 					Assert.Equal (-1, _textField.SelectedStart);
 					Assert.Equal (0, _textField.SelectedLength);
 					Assert.Null (_textField.SelectedText);
 					break;
 				case 1:
-					Assert.Equal (20, _textField.CursorPosition);
+					Assert.Equal (25, _textField.CursorPosition);
 					Assert.Equal (-1, _textField.SelectedStart);
 					Assert.Equal (0, _textField.SelectedLength);
 					Assert.Null (_textField.SelectedText);
 					break;
 				case 2:
-					Assert.Equal (12, _textField.CursorPosition);
+					Assert.Equal (20, _textField.CursorPosition);
 					Assert.Equal (-1, _textField.SelectedStart);
 					Assert.Equal (0, _textField.SelectedLength);
 					Assert.Null (_textField.SelectedText);
 					break;
 				case 3:
-					Assert.Equal (7, _textField.CursorPosition);
+					Assert.Equal (12, _textField.CursorPosition);
 					Assert.Equal (-1, _textField.SelectedStart);
 					Assert.Equal (0, _textField.SelectedLength);
 					Assert.Null (_textField.SelectedText);
 					break;
 				case 4:
-					Assert.Equal (4, _textField.CursorPosition);
+					Assert.Equal (7, _textField.CursorPosition);
 					Assert.Equal (-1, _textField.SelectedStart);
 					Assert.Equal (0, _textField.SelectedLength);
 					Assert.Null (_textField.SelectedText);
 					break;
 				case 5:
+					Assert.Equal (4, _textField.CursorPosition);
+					Assert.Equal (-1, _textField.SelectedStart);
+					Assert.Equal (0, _textField.SelectedLength);
+					Assert.Null (_textField.SelectedText);
+					break;
+				case 6:
 					Assert.Equal (0, _textField.CursorPosition);
 					Assert.Equal (-1, _textField.SelectedStart);
 					Assert.Equal (0, _textField.SelectedLength);
@@ -285,36 +291,42 @@ namespace Terminal.Gui.ViewTests {
 				_textField.ProcessKey (new KeyEvent (Key.CursorLeft | Key.CtrlMask | Key.ShiftMask, new KeyModifiers ()));
 				switch (iteration) {
 				case 0:
+					Assert.Equal (31, _textField.CursorPosition);
+					Assert.Equal (32, _textField.SelectedStart);
+					Assert.Equal (1, _textField.SelectedLength);
+					Assert.Equal (".", _textField.SelectedText);
+					break;
+				case 1:
 					Assert.Equal (25, _textField.CursorPosition);
 					Assert.Equal (32, _textField.SelectedStart);
 					Assert.Equal (7, _textField.SelectedLength);
 					Assert.Equal ("fields.", _textField.SelectedText);
 					break;
-				case 1:
+				case 2:
 					Assert.Equal (20, _textField.CursorPosition);
 					Assert.Equal (32, _textField.SelectedStart);
 					Assert.Equal (12, _textField.SelectedLength);
 					Assert.Equal ("text fields.", _textField.SelectedText);
 					break;
-				case 2:
+				case 3:
 					Assert.Equal (12, _textField.CursorPosition);
 					Assert.Equal (32, _textField.SelectedStart);
 					Assert.Equal (20, _textField.SelectedLength);
 					Assert.Equal ("between text fields.", _textField.SelectedText);
 					break;
-				case 3:
+				case 4:
 					Assert.Equal (7, _textField.CursorPosition);
 					Assert.Equal (32, _textField.SelectedStart);
 					Assert.Equal (25, _textField.SelectedLength);
 					Assert.Equal ("jump between text fields.", _textField.SelectedText);
 					break;
-				case 4:
+				case 5:
 					Assert.Equal (4, _textField.CursorPosition);
 					Assert.Equal (32, _textField.SelectedStart);
 					Assert.Equal (28, _textField.SelectedLength);
 					Assert.Equal ("to jump between text fields.", _textField.SelectedText);
 					break;
-				case 5:
+				case 6:
 					Assert.Equal (0, _textField.CursorPosition);
 					Assert.Equal (32, _textField.SelectedStart);
 					Assert.Equal (32, _textField.SelectedLength);
@@ -1101,9 +1113,9 @@ namespace Terminal.Gui.ViewTests {
 			Assert.Equal ("to jump between text fields.", tf.Text.ToString ());
 			tf.CursorPosition = tf.Text.Length;
 			Assert.True (tf.ProcessKey (new KeyEvent (Key.Backspace | Key.CtrlMask, new KeyModifiers ())));
-			Assert.Equal ("to jump between text ", tf.Text.ToString ());
+			Assert.Equal ("to jump between text fields", tf.Text.ToString ());
 			Assert.True (tf.ProcessKey (new KeyEvent (Key.T | Key.CtrlMask, new KeyModifiers ())));
-			Assert.Equal ("to jump between text ", tf.SelectedText);
+			Assert.Equal ("to jump between text fields", tf.SelectedText);
 			Assert.True (tf.ProcessKey (new KeyEvent (Key.D | Key.CtrlMask | Key.ShiftMask, new KeyModifiers ())));
 			Assert.Equal ("", tf.Text.ToString ());
 		}
@@ -1441,93 +1453,92 @@ Les Miśerables", output);
 			TestHelpers.AssertDriverContentsWithFrameAre (@"
 ắ", output);
 		}
-	
+
 		[Fact, AutoInitShutdown]
 		public void CaptionedTextField_RendersCaption_WhenNotFocused ()
 		{
-			var tf = GetTextFieldsInView();
+			var tf = GetTextFieldsInView ();
 
-			tf.Redraw(tf.Bounds);
-			TestHelpers.AssertDriverContentsAre("",output);
+			tf.Redraw (tf.Bounds);
+			TestHelpers.AssertDriverContentsAre ("", output);
 
 			// Caption has no effect when focused
-			tf.Caption  = "Enter txt";
-			Assert.True(tf.HasFocus);
-			tf.Redraw(tf.Bounds);
-			TestHelpers.AssertDriverContentsAre("",output);
+			tf.Caption = "Enter txt";
+			Assert.True (tf.HasFocus);
+			tf.Redraw (tf.Bounds);
+			TestHelpers.AssertDriverContentsAre ("", output);
 
-			Application.Driver.SendKeys('\t',ConsoleKey.Tab,false,false,false);
+			Application.Driver.SendKeys ('\t', ConsoleKey.Tab, false, false, false);
 
-			Assert.False(tf.HasFocus);
-			tf.Redraw(tf.Bounds);
-			TestHelpers.AssertDriverContentsAre("Enter txt",output);		
+			Assert.False (tf.HasFocus);
+			tf.Redraw (tf.Bounds);
+			TestHelpers.AssertDriverContentsAre ("Enter txt", output);
 		}
 
 		[Theory, AutoInitShutdown]
-		[InlineData("blah")]
-		[InlineData(" ")]
+		[InlineData ("blah")]
+		[InlineData (" ")]
 		public void CaptionedTextField_DoNotRenderCaption_WhenTextPresent (string content)
 		{
-			var tf = GetTextFieldsInView();
+			var tf = GetTextFieldsInView ();
 
-			tf.Redraw(tf.Bounds);
-			TestHelpers.AssertDriverContentsAre("",output);
+			tf.Redraw (tf.Bounds);
+			TestHelpers.AssertDriverContentsAre ("", output);
 
-			tf.Caption  = "Enter txt";
-			Application.Driver.SendKeys('\t',ConsoleKey.Tab,false,false,false);
+			tf.Caption = "Enter txt";
+			Application.Driver.SendKeys ('\t', ConsoleKey.Tab, false, false, false);
 
 			// Caption should appear when not focused and no text
-			Assert.False(tf.HasFocus);
-			tf.Redraw(tf.Bounds);
-			TestHelpers.AssertDriverContentsAre("Enter txt",output);
+			Assert.False (tf.HasFocus);
+			tf.Redraw (tf.Bounds);
+			TestHelpers.AssertDriverContentsAre ("Enter txt", output);
 
 			// but disapear when text is added
 			tf.Text = content;
-			tf.Redraw(tf.Bounds);
-			TestHelpers.AssertDriverContentsAre(content,output);
+			tf.Redraw (tf.Bounds);
+			TestHelpers.AssertDriverContentsAre (content, output);
 		}
-
 
 		[Fact, AutoInitShutdown]
 		public void CaptionedTextField_DoesNotOverspillBounds_Unicode ()
 		{
 			var caption = "Mise" + Char.ConvertFromUtf32 (Int32.Parse ("0301", NumberStyles.HexNumber)) + "rables";
 
-			Assert.Equal(11,caption.Length);
-			Assert.Equal(10,caption.Sum(c => Rune.ColumnWidth(c)));
+			Assert.Equal (11, caption.Length);
+			Assert.Equal (10, caption.Sum (c => Rune.ColumnWidth (c)));
 
-			var tf = GetTextFieldsInView();
-			
-			tf.Caption  = caption;
-			Application.Driver.SendKeys('\t',ConsoleKey.Tab,false,false,false);
-			Assert.False(tf.HasFocus);
+			var tf = GetTextFieldsInView ();
 
-			tf.Redraw(tf.Bounds);
-			TestHelpers.AssertDriverContentsAre("Misérables",output);
+			tf.Caption = caption;
+			Application.Driver.SendKeys ('\t', ConsoleKey.Tab, false, false, false);
+			Assert.False (tf.HasFocus);
+
+			tf.Redraw (tf.Bounds);
+			TestHelpers.AssertDriverContentsAre ("Misérables", output);
 		}
 
 		[Theory, AutoInitShutdown]
-		[InlineData("0123456789","0123456789")]
-		[InlineData("01234567890","0123456789")]
+		[InlineData ("0123456789", "0123456789")]
+		[InlineData ("01234567890", "0123456789")]
 		public void CaptionedTextField_DoesNotOverspillBounds (string caption, string expectedRender)
 		{
-			var tf = GetTextFieldsInView();
+			var tf = GetTextFieldsInView ();
 			// Caption has no effect when focused
-			tf.Caption  = caption;
-			Application.Driver.SendKeys('\t',ConsoleKey.Tab,false,false,false);
-			Assert.False(tf.HasFocus);
+			tf.Caption = caption;
+			Application.Driver.SendKeys ('\t', ConsoleKey.Tab, false, false, false);
+			Assert.False (tf.HasFocus);
 
-			tf.Redraw(tf.Bounds);
-			TestHelpers.AssertDriverContentsAre(expectedRender,output);
+			tf.Redraw (tf.Bounds);
+			TestHelpers.AssertDriverContentsAre (expectedRender, output);
 		}
 
 
 		private TextField GetTextFieldsInView ()
 		{
-            var tf = new TextField{
+			var tf = new TextField {
 				Width = 10
 			};
-            var tf2 = new TextField{
+			var tf2 = new TextField {
 				Y = 1,
 				Width = 10
 			};
@@ -1537,11 +1548,11 @@ Les Miśerables", output);
 			top.Add (tf2);
 
 			Application.Begin (top);
-			
-			Assert.Same(tf,top.Focused);
+
+			Assert.Same (tf, top.Focused);
 
 			return tf;
-    	}
+		}
 
 		[Fact]
 		public void OnEnter_Does_Not_Throw_If_Not_IsInitialized_SetCursorVisibility ()
@@ -1552,6 +1563,33 @@ Les Miśerables", output);
 
 			var exception = Record.Exception (tf.SetFocus);
 			Assert.Null (exception);
+		}
+
+		[Fact]
+		public void WordBackward_WordForward_Mixed ()
+		{
+			var tf = new TextField ("Test with0. and!.?;-@+") { Width = 30 };
+			tf.ProcessKey (new KeyEvent (Key.CtrlMask | Key.CursorLeft, new KeyModifiers () { Ctrl = true }));
+			Assert.Equal (15, tf.CursorPosition);
+			tf.ProcessKey (new KeyEvent (Key.CtrlMask | Key.CursorLeft, new KeyModifiers () { Ctrl = true }));
+			Assert.Equal (12, tf.CursorPosition);
+			tf.ProcessKey (new KeyEvent (Key.CtrlMask | Key.CursorLeft, new KeyModifiers () { Ctrl = true }));
+			Assert.Equal (10, tf.CursorPosition);
+			tf.ProcessKey (new KeyEvent (Key.CtrlMask | Key.CursorLeft, new KeyModifiers () { Ctrl = true }));
+			Assert.Equal (5, tf.CursorPosition);
+			tf.ProcessKey (new KeyEvent (Key.CtrlMask | Key.CursorLeft, new KeyModifiers () { Ctrl = true }));
+			Assert.Equal (0, tf.CursorPosition);
+
+			tf.ProcessKey (new KeyEvent (Key.CtrlMask | Key.CursorRight, new KeyModifiers () { Ctrl = true }));
+			Assert.Equal (5, tf.CursorPosition);
+			tf.ProcessKey (new KeyEvent (Key.CtrlMask | Key.CursorRight, new KeyModifiers () { Ctrl = true }));
+			Assert.Equal (10, tf.CursorPosition);
+			tf.ProcessKey (new KeyEvent (Key.CtrlMask | Key.CursorRight, new KeyModifiers () { Ctrl = true }));
+			Assert.Equal (12, tf.CursorPosition);
+			tf.ProcessKey (new KeyEvent (Key.CtrlMask | Key.CursorRight, new KeyModifiers () { Ctrl = true }));
+			Assert.Equal (15, tf.CursorPosition);
+			tf.ProcessKey (new KeyEvent (Key.CtrlMask | Key.CursorRight, new KeyModifiers () { Ctrl = true }));
+			Assert.Equal (22, tf.CursorPosition);
 		}
 	}
 }

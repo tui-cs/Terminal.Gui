@@ -2,7 +2,7 @@
 using System.Linq;
 using System.Text.Json.Serialization;
 using NStack;
-using static Terminal.Gui.Configuration.ConfigurationManager;
+using static Terminal.Gui.ConfigurationManager;
 
 namespace Terminal.Gui {
 	/// <summary>
@@ -16,20 +16,18 @@ namespace Terminal.Gui {
 		/// <param name="frame">Frame.</param>
 		/// <param name="title">Title.</param>
 		/// <param name="views">Views.</param>
-		/// <param name="border">The <see cref="Border"/>.</param>
-		public FrameView (Rect frame, ustring title = null, View [] views = null, Border border = null) : base (frame)
+		public FrameView (Rect frame, ustring title = null, View [] views = null) : base (frame)
 		{
-			SetInitialProperties (frame, title, views, border);
+			SetInitialProperties (frame, title, views);
 		}
 
 		/// <summary>
 		/// Initializes a new instance of the <see cref="Gui.FrameView"/> class using <see cref="LayoutStyle.Computed"/> layout.
 		/// </summary>
 		/// <param name="title">Title.</param>
-		/// <param name="border">The <see cref="Border"/>.</param>
-		public FrameView (ustring title, Border border = null)
+		public FrameView (ustring title)
 		{
-			SetInitialProperties (Rect.Empty, title, null, border);
+			SetInitialProperties (Rect.Empty, title, null);
 		}
 
 		/// <summary>
@@ -40,31 +38,19 @@ namespace Terminal.Gui {
 		}
 
 		/// <summary>
-		/// The default <see cref="BorderStyle"/> for <see cref="FrameView"/>. The default is <see cref="BorderStyle.Single"/>.
+		/// The default <see cref="LineStyle"/> for <see cref="FrameView"/>'s border. The default is <see cref="LineStyle.Single"/>.
 		/// </summary>
 		/// <remarks>
-		/// This property can be set in a Theme to change the default <see cref="BorderStyle"/> for all <see cref="FrameView"/>s. 
+		/// This property can be set in a Theme to change the default <see cref="LineStyle"/> for all <see cref="FrameView"/>s. 
 		/// </remarks>
 		[SerializableConfigurationProperty (Scope = typeof (ThemeScope)), JsonConverter (typeof (JsonStringEnumConverter))]
-		public static BorderStyle DefaultBorderStyle { get; set; } = BorderStyle.Single;
+		public static LineStyle DefaultBorderStyle { get; set; } = LineStyle.Single;
 
-		void SetInitialProperties (Rect frame, ustring title, View [] views = null, Border border = null)
+		void SetInitialProperties (Rect frame, ustring title, View [] views = null)
 		{
 			this.Title = title;
-			if (border == null) {
-				Border = new Border () {
-					BorderStyle = DefaultBorderStyle,
-					//DrawMarginFrame = true
-					//Title = title
-				};
-			} else {
-				Border = border;
-				//if (ustring.IsNullOrEmpty (border.Title)) {
-				//	border.Title = title;
-				//}
-			}
 			BorderFrame.Thickness = new Thickness (1);
-			BorderFrame.BorderStyle = Border.BorderStyle;
+			BorderFrame.BorderStyle = DefaultBorderStyle;
 			//BorderFrame.ColorScheme = ColorScheme;
 			BorderFrame.Data = "BorderFrame";
 		}

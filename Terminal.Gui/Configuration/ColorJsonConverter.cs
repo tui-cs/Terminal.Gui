@@ -3,7 +3,7 @@ using System.Text.Json.Serialization;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 
-namespace Terminal.Gui.Configuration {
+namespace Terminal.Gui {
 	/// <summary>
 	/// Json converter for the <see cref="Color"/> class.
 	/// </summary>

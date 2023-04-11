@@ -1,13 +1,9 @@
-﻿using NStack;
-using System;
-using System.Diagnostics.Metrics;
+﻿using System;
 using System.IO;
 using System.Linq;
 using System.Reflection;
-using System.Text.Json.Serialization;
 using Terminal.Gui;
-using Terminal.Gui.Configuration;
-using static Terminal.Gui.Configuration.ConfigurationManager;
+using static Terminal.Gui.ConfigurationManager;
 using Attribute = Terminal.Gui.Attribute;
 
 namespace UICatalog.Scenarios {
@@ -49,8 +45,8 @@ namespace UICatalog.Scenarios {
 			_tileView = new TileView (0) {
 				Width = Dim.Fill (),
 				Height = Dim.Fill (1),
-				Orientation = Terminal.Gui.Graphs.Orientation.Vertical,
-				Border = new Border () { BorderStyle = BorderStyle.Single }
+				Orientation = Orientation.Vertical,
+				LineStyle = LineStyle.Single
 			};
 
 			Application.Top.Add (_tileView);

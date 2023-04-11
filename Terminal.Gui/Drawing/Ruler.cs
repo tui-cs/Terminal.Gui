@@ -4,8 +4,6 @@ using System.Collections.Generic;
 using System.Data;
 using System.Text;
 using System.Text.Json.Serialization;
-using Terminal.Gui.Configuration;
-using Terminal.Gui.Graphs;
 
 namespace Terminal.Gui {
 	/// <summary>
@@ -23,17 +21,17 @@ namespace Terminal.Gui {
 		public Orientation Orientation { get; set; }
 
 		/// <summary>
-		/// Gets or sets the lenght of the ruler. The default is 0.
+		/// Gets or sets the length of the ruler. The default is 0.
 		/// </summary>
 		public int Length { get; set; }
 
 		/// <summary>
-		/// Gets or sets the foreground and backgrond color to use.
+		/// Gets or sets the foreground and background color to use.
 		/// </summary>
 		public Attribute Attribute { get; set; }
 
-		string _hTemplate { get; set; } = "|123456789";
-		string _vTemplate { get; set; } = "-123456789";
+		string _hTemplate { get; } = "|123456789";
+		string _vTemplate { get; } = "-123456789";
 
 
 		/// <summary>
@@ -64,23 +62,6 @@ namespace Terminal.Gui {
 					Application.Driver.AddRune (vrule [r - location.Y]);
 				}
 			}
-		}
-	}
-
-	internal static class StringExtensions {
-		public static string Repeat (this string instr, int n)
-		{
-			if (n <= 0) {
-				return null;
-			}
-
-			if (string.IsNullOrEmpty (instr) || n == 1) {
-				return instr;
-			}
-
-			return new StringBuilder (instr.Length * n)
-				.Insert (0, instr, n)
-				.ToString ();
 		}
 	}
 }

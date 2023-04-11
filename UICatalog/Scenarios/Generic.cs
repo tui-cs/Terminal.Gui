@@ -1,9 +1,4 @@
-using NStack;
-using System;
-using System.Reflection.Emit;
 using Terminal.Gui;
-using Terminal.Gui.Configuration;
-using Label = Terminal.Gui.Label;
 
 namespace UICatalog.Scenarios {
 	[ScenarioMetadata (Name: "Generic", Description: "Generic sample - A template for creating new Scenarios")]

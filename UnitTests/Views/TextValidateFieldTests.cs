@@ -5,7 +5,7 @@ using Terminal.Gui.TextValidateProviders;
 
 using Xunit;
 
-namespace Terminal.Gui.ViewTests {
+namespace Terminal.Gui.ViewsTests {
 
 	public class TextValidateField_NET_Provider_Tests {
 

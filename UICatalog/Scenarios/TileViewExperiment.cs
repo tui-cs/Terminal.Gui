@@ -1,6 +1,5 @@
 ﻿using System;
 using Terminal.Gui;
-using Terminal.Gui.Graphs;
 using System.Linq;
 
 namespace UICatalog.Scenarios {
@@ -36,7 +35,7 @@ namespace UICatalog.Scenarios {
 					     //IgnoreBorderPropertyOnRedraw = true
 
 			};
-			frame1.Border.BorderStyle = BorderStyle.Double;
+			frame1.BorderStyle = LineStyle.Double;
 
 			//var frame2 = new FrameView () {
 			//	Title = "frame2",
@@ -63,14 +62,9 @@ namespace UICatalog.Scenarios {
 				Width = 30, //Dim.Percent (30) - 5,
 				Height = 10, //Dim.Percent (50) - 5,
 				ColorScheme = Colors.ColorSchemes ["Dialog"],
-				Border = new Border () {
-					BorderStyle = BorderStyle.Single,
-					BorderThickness = new Thickness (1), 
-					DrawMarginFrame = true,
-					PaddingThickness = new Thickness(1),
-					ForgroundColor = Color.BrightMagenta,
-				}
+				BorderStyle = LineStyle.Single,
 			};
+			view1.Padding.Thickness = new Thickness (1);
 
 			frame1.Add (view1);
 
@@ -83,8 +77,7 @@ namespace UICatalog.Scenarios {
 				Y = 0,
 				Width = Dim.Percent (30),
 				Height = Dim.Percent (70),
-				ColorScheme = Colors.ColorSchemes ["Error"],
-				Border = new Border () { BorderStyle = BorderStyle.Single }
+				ColorScheme = Colors.ColorSchemes ["Error"]
 			};
 
 			frame1.Add (view2);

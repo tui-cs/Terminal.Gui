@@ -5,7 +5,6 @@ using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 using Terminal.Gui;
-using Terminal.Gui.Trees;
 
 namespace UICatalog.Scenarios {
 

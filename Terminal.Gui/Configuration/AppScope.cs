@@ -5,11 +5,11 @@ using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
 using System.Text.Json.Serialization;
-using static Terminal.Gui.Configuration.ConfigurationManager;
+using static Terminal.Gui.ConfigurationManager;
 
 #nullable enable
 
-namespace Terminal.Gui.Configuration {
+namespace Terminal.Gui {
 
 	public static partial class ConfigurationManager {
 		/// <summary>

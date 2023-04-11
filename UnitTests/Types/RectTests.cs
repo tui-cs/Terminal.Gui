@@ -148,5 +148,89 @@ namespace Terminal.Gui.TypeTests {
 			Assert.Equal (xCount, rect.Width);
 			Assert.Equal (yxCount, rect.Height * rect.Width);
 		}
+
+
+		[Theory]
+		// Empty
+		[InlineData (
+			0, 0, 0, 0,
+			0, 0,
+			0, 0, 0, 0)]
+		[InlineData (
+			0, 0, 0, 0,
+			1, 0,
+			-1, 0, 2, 0)]
+		[InlineData (
+			0, 0, 0, 0,
+			0, 1,
+			0, -1, 0, 2)]
+		[InlineData (
+			0, 0, 0, 0,
+			1, 1,
+			-1, -1, 2, 2)]
+		[InlineData (
+			0, 0, 0, 0,
+			-1, -1,        // Throws
+			0, 0, 0, 0)]
+		// Zero location, Size of 1
+		[InlineData (
+			0, 0, 1, 1,
+			0, 0,
+			0, 0, 1, 1)]
+		[InlineData (
+			0, 0, 1, 1,
+			1, 0,
+			-1, 0, 3, 1)]
+		[InlineData (
+			0, 0, 1, 1,
+			0, 1,
+			0, -1, 1, 3)]
+		[InlineData (
+			0, 0, 1, 1,
+			1, 1,
+			-1, -1, 3, 3)]
+		// Positive location, Size of 1
+		[InlineData (
+			1, 1, 1, 1,
+			0, 0,
+			1, 1, 1, 1)]
+		[InlineData (
+			1, 1, 1, 1,
+			1, 0,
+			0, 1, 3, 1)]
+		[InlineData (
+			1, 1, 1, 1,
+			0, 1,
+			1, 0, 1, 3)]
+		[InlineData (
+			1, 1, 1, 1,
+			1, 1,
+			0, 0, 3, 3)]
+		public void Inflate (int x, int y, int width, int height, int inflateWidth, int inflateHeight, int expectedX, int exptectedY, int expectedWidth, int expectedHeight)
+		{
+			var rect = new Rect (x, y, width, height);
+
+			if (rect.Width + inflateWidth < 0 || rect.Height + inflateHeight < 0) {
+				Assert.Throws<ArgumentException> (() => rect.Inflate (inflateWidth, inflateHeight));
+			} else {
+				rect.Inflate (inflateWidth, inflateHeight);
+			}
+			Assert.Equal (expectedWidth, rect.Width);
+			Assert.Equal (expectedHeight, rect.Height);
+			Assert.Equal (expectedX, rect.X);
+			Assert.Equal (exptectedY, rect.Y);
+
+			// Use the other overload (Size)
+			rect = new Rect (x, y, width, height);
+			if (rect.Width + inflateWidth < 0 || rect.Height + inflateHeight < 0) {
+				Assert.Throws<ArgumentException> (() => rect.Inflate (new Size (inflateWidth, inflateHeight)));
+			} else {
+				rect.Inflate (new Size (inflateWidth, inflateHeight));
+			}
+			Assert.Equal (expectedWidth, rect.Width);
+			Assert.Equal (expectedHeight, rect.Height);
+			Assert.Equal (expectedX, rect.X);
+			Assert.Equal (exptectedY, rect.Y);
+		}
 	}
 }

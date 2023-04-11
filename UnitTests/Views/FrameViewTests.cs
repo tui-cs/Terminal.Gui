@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 using Xunit;
 using Xunit.Abstractions;
 
-namespace Terminal.Gui.ViewTests {
+namespace Terminal.Gui.ViewsTests {
 	public class FrameViewTests {
 		readonly ITestOutputHelper output;
 
@@ -22,19 +22,19 @@ namespace Terminal.Gui.ViewTests {
 			var fv = new FrameView ();
 			Assert.Equal (string.Empty, fv.Title);
 			Assert.Equal (string.Empty, fv.Text);
-			Assert.NotNull (fv.Border);
+			Assert.Equal (LineStyle.Single, fv.BorderStyle);
 
 			fv = new FrameView ("Test");
 			Assert.Equal ("Test", fv.Title);
 			Assert.Equal (string.Empty, fv.Text);
-			Assert.NotNull (fv.Border);
+			Assert.Equal (LineStyle.Single, fv.BorderStyle);
 
 			fv = new FrameView (new Rect (1, 2, 10, 20), "Test");
 			Assert.Equal ("Test", fv.Title);
 			Assert.Equal (string.Empty, fv.Text);
-			Assert.NotNull (fv.Border);
 			fv.BeginInit ();
 			fv.EndInit ();
+			Assert.Equal (LineStyle.Single, fv.BorderStyle);
 			Assert.Equal (new Rect (1, 2, 10, 20), fv.Frame);
 		}
 
@@ -45,7 +45,6 @@ namespace Terminal.Gui.ViewTests {
 			var fv = new FrameView ();
 			Assert.Equal (string.Empty, fv.Title);
 			Assert.Equal (string.Empty, fv.Text);
-			Assert.NotNull (fv.Border);
 			Application.Top.Add (fv);
 			Application.Begin (Application.Top);
 			Assert.Equal (new Rect (0, 0, 0, 0), fv.Frame);

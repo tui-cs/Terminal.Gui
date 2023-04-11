@@ -111,7 +111,8 @@ namespace UICatalog.Scenarios {
 
 					actionLabel.Text = ustring.Empty;
 
-					var wizard = new Wizard (titleEdit.Text) {
+					var wizard = new Wizard () {
+						Title = titleEdit.Text,
 						Width = width,
 						Height = height
 					};

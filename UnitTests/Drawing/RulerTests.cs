@@ -3,7 +3,6 @@ using NStack;
 using System;
 using System.Collections.Generic;
 using System.Xml.Linq;
-using Terminal.Gui.Graphs;
 using Xunit;
 using Xunit.Abstractions;
 //using GraphViewTests = Terminal.Gui.Views.GraphViewTests;

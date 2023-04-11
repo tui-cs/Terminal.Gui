@@ -376,5 +376,33 @@ namespace Terminal.Gui.TextTests {
 
 			Assert.Equal (-1, current = n.GetNextMatchingItem (current, "x", true));
 		}
+
+		[Fact]
+		public void IsCompatibleKey_Does_Not_Allow_Alt_And_Ctrl_Keys ()
+		{
+			// test all Keys
+			foreach (Key key in Enum.GetValues (typeof (Key))) {
+				var ke = new KeyEvent (key, new KeyModifiers () {
+					Alt = key == Key.AltMask,
+					Ctrl = key == Key.CtrlMask,
+					Shift = key == Key.ShiftMask
+				});
+				if (key == Key.AltMask || key == Key.CtrlMask) {
+					Assert.False (CollectionNavigator.IsCompatibleKey (ke));
+				} else {
+					Assert.True (CollectionNavigator.IsCompatibleKey (ke));
+				}
+			}
+
+			// test Capslock, Numlock and Scrolllock
+			Assert.True (CollectionNavigator.IsCompatibleKey (new KeyEvent (Key.Null, new KeyModifiers () {
+				Alt = false,
+				Ctrl = false,
+				Shift = false,
+				Capslock = true,
+				Numlock = true,
+				Scrolllock = true,
+			})));
+		}
 	}
 }
