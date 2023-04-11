@@ -1192,14 +1192,13 @@ namespace Terminal.Gui {
 				//Application.Top.SetNeedsDisplay ();
 				//_listView.SetNeedsDisplay ();
 				//Application.Top.Redraw (Application.Top.Bounds);
-				//var savedClip = Driver.Clip;
-				//Driver.Clip = _listView.Frame;
+				var savedClip = Driver.Clip;
+				Driver.Clip = _listView.Frame;
 				_listView.Redraw (_listView.Bounds);
 				//Driver.UpdateScreen ();
 				//_search.PositionCursor ();
-				//Driver.Clip = savedClip;
+				Driver.Clip = savedClip;
 			}
-
 		}
 
 		private void Application_RootMouseEvent (MouseEvent me)
