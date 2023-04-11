@@ -395,11 +395,6 @@ namespace Terminal.Gui {
 					}
 				}
 
-				savedHeight = Bounds.Height;
-				if (hideDropdownListOnClick) {
-					Height = 1;
-				}
-
 				SetNeedsLayout ();
 				SetNeedsDisplay ();
 			};
