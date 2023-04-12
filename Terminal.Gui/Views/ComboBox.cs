@@ -621,6 +621,9 @@ namespace Terminal.Gui {
 		{
 			//if (_selectedItem != _lastSelectedItem || _text != _savedText) {
 			SelectedItemChanged?.Invoke (this, new ListViewItemEventArgs (SelectedItem, _search.Text));
+			if (!IsInitialized) {
+				_lastSelectedItem = _selectedItem;
+			}
 			return true;
 			//}
 
