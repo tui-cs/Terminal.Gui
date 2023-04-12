@@ -86,7 +86,8 @@ namespace UICatalog.Scenarios {
 				Y = Pos.Top (btnThree),
 				Height = Dim.Fill (2),
 				Width = Dim.Percent (40),
-				HideDropdownListOnClick = true
+				HideDropdownListOnClick = true,
+				SelectedItem = 0
 			};
 			comboBox2.OpenSelectedItem += (object sender, ListViewItemEventArgs e) => {
 				lbComboBox2.Text = e.Value.ToString ();
