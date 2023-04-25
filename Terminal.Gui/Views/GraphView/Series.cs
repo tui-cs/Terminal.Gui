@@ -19,7 +19,6 @@ namespace Terminal.Gui {
 		void DrawSeries (GraphView graph, Rect drawBounds, RectangleF graphBounds);
 	}
 
-
 	/// <summary>
 	/// Series composed of any number of discrete data points 
 	/// </summary>
@@ -56,7 +55,6 @@ namespace Terminal.Gui {
 
 	}
 
-
 	/// <summary>
 	/// Collection of <see cref="BarSeries"/> in which bars are clustered by category
 	/// </summary>
@@ -91,7 +89,6 @@ namespace Terminal.Gui {
 			if (colors != null && colors.Length != numberOfBarsPerCategory) {
 				throw new ArgumentException ("Number of colors must match the number of bars", nameof (numberOfBarsPerCategory));
 			}
-
 
 			for (int i = 0; i < numberOfBarsPerCategory; i++) {
 				subSeries [i] = new BarSeries ();

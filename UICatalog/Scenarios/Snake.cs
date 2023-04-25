@@ -25,7 +25,6 @@ namespace UICatalog.Scenarios {
 				Height = state.Height
 			};
 
-
 			Win.Add (snakeView);
 
 			Stopwatch sw = new Stopwatch ();
@@ -88,10 +87,10 @@ namespace UICatalog.Scenarios {
 
 				var canvas = new LineCanvas ();
 
-				canvas.AddLine (new Point (0, 0), State.Width - 1, Orientation.Horizontal, LineStyle.Double);
-				canvas.AddLine (new Point (0, 0), State.Height - 1, Orientation.Vertical, LineStyle.Double);
-				canvas.AddLine (new Point (0, State.Height - 1), State.Width - 1, Orientation.Horizontal, LineStyle.Double);
-				canvas.AddLine (new Point (State.Width - 1, 0), State.Height - 1, Orientation.Vertical, LineStyle.Double);
+				canvas.AddLine (new Point (0, 0), State.Width, Orientation.Horizontal, LineStyle.Double);
+				canvas.AddLine (new Point (0, 0), State.Height, Orientation.Vertical, LineStyle.Double);
+				canvas.AddLine (new Point (0, State.Height - 1), State.Width, Orientation.Horizontal, LineStyle.Double);
+				canvas.AddLine (new Point (State.Width - 1, 0), State.Height, Orientation.Vertical, LineStyle.Double);
 
 				for (int i = 1; i < State.Snake.Count; i++) {
 
@@ -100,8 +99,8 @@ namespace UICatalog.Scenarios {
 
 					var orientation = pt1.X == pt2.X ? Orientation.Vertical : Orientation.Horizontal;
 					var length = orientation == Orientation.Horizontal
-						? pt1.X > pt2.X ? 1 : -1
-						: pt1.Y > pt2.Y ? 1 : -1;
+						? pt1.X > pt2.X ? 2 : -2
+						: pt1.Y > pt2.Y ? 2 : -2;
 
 					canvas.AddLine (
 						pt2,
@@ -111,10 +110,9 @@ namespace UICatalog.Scenarios {
 
 				}
 
-				foreach(var p in canvas.GenerateImage (bounds)) {
+				foreach(var p in canvas.GetMap (bounds)) {
 					AddRune (p.Key.X, p.Key.Y, p.Value);
 				}
-
 
 				Driver.SetAttribute (red);
 				AddRune (State.Apple.X, State.Apple.Y, 'A');

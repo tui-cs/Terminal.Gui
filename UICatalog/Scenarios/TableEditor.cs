@@ -16,6 +16,7 @@ namespace UICatalog.Scenarios {
 	[ScenarioCategory ("Top Level Windows")]
 	public class TableEditor : Scenario {
 		TableView tableView;
+		private MenuItem miShowHeaders;
 		private MenuItem miAlwaysShowHeaders;
 		private MenuItem miHeaderOverline;
 		private MenuItem miHeaderMidline;
@@ -24,9 +25,11 @@ namespace UICatalog.Scenarios {
 		private MenuItem miCellLines;
 		private MenuItem miFullRowSelect;
 		private MenuItem miExpandLastColumn;
+		private MenuItem miAlwaysUseNormalColorForVerticalCellLines;
 		private MenuItem miSmoothScrolling;
 		private MenuItem miAlternatingColors;
 		private MenuItem miCursor;
+		private MenuItem miBottomline;
 
 		ColorScheme redColorScheme;
 		ColorScheme redColorSchemeAlt;
@@ -55,14 +58,17 @@ namespace UICatalog.Scenarios {
 					new MenuItem ("_Quit", "", () => Quit()),
 				}),
 				new MenuBarItem ("_View", new MenuItem [] {
-					miAlwaysShowHeaders = new MenuItem ("_AlwaysShowHeaders", "", () => ToggleAlwaysShowHeader()){Checked = tableView.Style.AlwaysShowHeaders, CheckType = MenuItemCheckStyle.Checked },
+					miShowHeaders = new MenuItem ("_ShowHeaders", "", () => ToggleShowHeaders()){Checked = tableView.Style.ShowHeaders, CheckType = MenuItemCheckStyle.Checked },
+					miAlwaysShowHeaders = new MenuItem ("_AlwaysShowHeaders", "", () => ToggleAlwaysShowHeaders()){Checked = tableView.Style.AlwaysShowHeaders, CheckType = MenuItemCheckStyle.Checked },
 					miHeaderOverline = new MenuItem ("_HeaderOverLine", "", () => ToggleOverline()){Checked = tableView.Style.ShowHorizontalHeaderOverline, CheckType = MenuItemCheckStyle.Checked },
 					miHeaderMidline = new MenuItem ("_HeaderMidLine", "", () => ToggleHeaderMidline()){Checked = tableView.Style.ShowVerticalHeaderLines, CheckType = MenuItemCheckStyle.Checked },
 					miHeaderUnderline = new MenuItem ("_HeaderUnderLine", "", () => ToggleUnderline()){Checked = tableView.Style.ShowHorizontalHeaderUnderline, CheckType = MenuItemCheckStyle.Checked },
+					miBottomline = new MenuItem ("_BottomLine", "", () => ToggleBottomline()){Checked = tableView.Style.ShowHorizontalBottomline, CheckType = MenuItemCheckStyle.Checked },
 					miShowHorizontalScrollIndicators = new MenuItem ("_HorizontalScrollIndicators", "", () => ToggleHorizontalScrollIndicators()){Checked = tableView.Style.ShowHorizontalScrollIndicators, CheckType = MenuItemCheckStyle.Checked },
 					miFullRowSelect =new MenuItem ("_FullRowSelect", "", () => ToggleFullRowSelect()){Checked = tableView.FullRowSelect, CheckType = MenuItemCheckStyle.Checked },
 					miCellLines =new MenuItem ("_CellLines", "", () => ToggleCellLines()){Checked = tableView.Style.ShowVerticalCellLines, CheckType = MenuItemCheckStyle.Checked },
 					miExpandLastColumn = new MenuItem ("_ExpandLastColumn", "", () => ToggleExpandLastColumn()){Checked = tableView.Style.ExpandLastColumn, CheckType = MenuItemCheckStyle.Checked },
+					miAlwaysUseNormalColorForVerticalCellLines = new MenuItem ("_AlwaysUseNormalColorForVerticalCellLines", "", () => ToggleAlwaysUseNormalColorForVerticalCellLines()){Checked = tableView.Style.AlwaysUseNormalColorForVerticalCellLines, CheckType = MenuItemCheckStyle.Checked },
 					miSmoothScrolling = new MenuItem ("_SmoothHorizontalScrolling", "", () => ToggleSmoothScrolling()){Checked = tableView.Style.SmoothHorizontalScrolling, CheckType = MenuItemCheckStyle.Checked },
 					new MenuItem ("_AllLines", "", () => ToggleAllCellLines()),
 					new MenuItem ("_NoLines", "", () => ToggleNoCellLines()),
@@ -78,7 +84,6 @@ namespace UICatalog.Scenarios {
 					new MenuItem ("_Set All MinAcceptableWidth=1", "",SetMinAcceptableWidthToOne),
 				}),
 			});
-
 
 			Application.Top.Add (menu);
 
@@ -364,7 +369,6 @@ namespace UICatalog.Scenarios {
 				e.Handled = true;
 			}
 
-
 		}
 
 		private void ClearColumnStyles ()
@@ -373,7 +377,14 @@ namespace UICatalog.Scenarios {
 			tableView.Update ();
 		}
 
-		private void ToggleAlwaysShowHeader ()
+		private void ToggleShowHeaders ()
+		{
+			miShowHeaders.Checked = !miShowHeaders.Checked;
+			tableView.Style.ShowHeaders = (bool)miShowHeaders.Checked;
+			tableView.Update ();
+		}
+
+		private void ToggleAlwaysShowHeaders ()
 		{
 			miAlwaysShowHeaders.Checked = !miAlwaysShowHeaders.Checked;
 			tableView.Style.AlwaysShowHeaders = (bool)miAlwaysShowHeaders.Checked;
@@ -398,6 +409,12 @@ namespace UICatalog.Scenarios {
 			tableView.Style.ShowHorizontalHeaderUnderline = (bool)miHeaderUnderline.Checked;
 			tableView.Update ();
 		}
+		private void ToggleBottomline()
+		{
+			miBottomline.Checked = !miBottomline.Checked;
+			tableView.Style.ShowHorizontalBottomline = (bool)miBottomline.Checked;
+			tableView.Update ();
+		}
 		private void ToggleHorizontalScrollIndicators ()
 		{
 			miShowHorizontalScrollIndicators.Checked = !miShowHorizontalScrollIndicators.Checked;
@@ -418,6 +435,14 @@ namespace UICatalog.Scenarios {
 
 			tableView.Update ();
 
+		}
+
+		private void ToggleAlwaysUseNormalColorForVerticalCellLines()
+		{
+			miAlwaysUseNormalColorForVerticalCellLines.Checked = !miAlwaysUseNormalColorForVerticalCellLines.Checked;
+			tableView.Style.AlwaysUseNormalColorForVerticalCellLines = (bool)miAlwaysUseNormalColorForVerticalCellLines.Checked;
+
+			tableView.Update ();
 		}
 		private void ToggleSmoothScrolling ()
 		{

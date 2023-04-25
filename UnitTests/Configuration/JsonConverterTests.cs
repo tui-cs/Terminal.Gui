@@ -40,7 +40,6 @@ namespace Terminal.Gui.ConfigurationTests {
 			Assert.Equal (expectedColor, actualColor);
 		}
 
-
 		[Theory]
 		[InlineData (Color.Black, "Black")]
 		[InlineData (Color.Blue, "Blue")]

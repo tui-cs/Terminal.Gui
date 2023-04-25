@@ -21,7 +21,7 @@ namespace Terminal.Gui {
 	///     call <see cref="Application.Run(Toplevel, Func{Exception, bool})"/>.
 	///   </para>
 	/// </remarks>
-	public class Toplevel : View {
+	public partial class Toplevel : View {
 		/// <summary>
 		/// Gets or sets whether the <see cref="MainLoop"/> for this <see cref="Toplevel"/> is running or not. 
 		/// </summary>
@@ -31,18 +31,18 @@ namespace Terminal.Gui {
 		public bool Running { get; set; }
 
 		/// <summary>
-		/// Invoked when the Toplevel <see cref="Application.RunState"/> has begun to be loaded.
+		/// Invoked when the <see cref="Toplevel"/> <see cref="Application.RunState"/> has begun to be loaded.
 		/// A Loaded event handler is a good place to finalize initialization before calling 
 		/// <see cref="Application.RunLoop(Application.RunState, bool)"/>.
 		/// </summary>
 		public event EventHandler Loaded;
 
 		/// <summary>
-		/// Invoked when the Toplevel <see cref="MainLoop"/> has started it's first iteration.
+		/// Invoked when the <see cref="Toplevel"/> <see cref="MainLoop"/> has started it's first iteration.
 		/// Subscribe to this event to perform tasks when the <see cref="Toplevel"/> has been laid out and focus has been set.
 		/// changes. 
 		/// <para>A Ready event handler is a good place to finalize initialization after calling 
-		/// <see cref="Application.Run(Func{Exception, bool})"/> on this Toplevel.</para>
+		/// <see cref="Application.Run(Func{Exception, bool})"/> on this <see cref="Toplevel"/>.</para>
 		/// </summary>
 		public event EventHandler Ready;
 
@@ -98,11 +98,11 @@ namespace Terminal.Gui {
 		/// <summary>
 		/// Invoked when the terminal has been resized. The new <see cref="Size"/> of the terminal is provided.
 		/// </summary>
-		public event EventHandler<SizeChangedEventArgs> Resized;
+		public event EventHandler<SizeChangedEventArgs> TerminalResized;
 
-		internal virtual void OnResized (SizeChangedEventArgs size)
+		internal virtual void OnTerminalResized (SizeChangedEventArgs size)
 		{
-			Resized?.Invoke (this, size);
+			TerminalResized?.Invoke (this, size);
 		}
 
 		internal virtual void OnChildUnloaded (Toplevel top)
@@ -133,7 +133,7 @@ namespace Terminal.Gui {
 
 		internal virtual void OnChildClosed (Toplevel top)
 		{
-			if (IsMdiContainer) {
+			if (IsOverlappedContainer) {
 				SetSubViewNeedsDisplay ();
 			}
 			ChildClosed?.Invoke (this, new ToplevelEventArgs (top));
@@ -187,7 +187,7 @@ namespace Terminal.Gui {
 		/// <summary>
 		/// Initializes a new instance of the <see cref="Toplevel"/> class with the specified <see cref="LayoutStyle.Absolute"/> layout.
 		/// </summary>
-		/// <param name="frame">A superview-relative rectangle specifying the location and size for the new Toplevel</param>
+		/// <param name="frame">A Superview-relative rectangle specifying the location and size for the new Toplevel</param>
 		public Toplevel (Rect frame) : base (frame)
 		{
 			SetInitialProperties ();
@@ -252,14 +252,14 @@ namespace Terminal.Gui {
 
 		private void Application_UnGrabbingMouse (object sender, GrabMouseEventArgs e)
 		{
-			if (Application.MouseGrabView == this && dragPosition.HasValue) {
+			if (Application.MouseGrabView == this && _dragPosition.HasValue) {
 				e.Cancel = true;
 			}
 		}
 
 		private void Application_GrabbingMouse (object sender, GrabMouseEventArgs e)
 		{
-			if (Application.MouseGrabView == this && dragPosition.HasValue) {
+			if (Application.MouseGrabView == this && _dragPosition.HasValue) {
 				e.Cancel = true;
 			}
 		}
@@ -363,20 +363,6 @@ namespace Terminal.Gui {
 		public virtual StatusBar StatusBar { get; set; }
 
 		/// <summary>
-		/// Gets or sets if this Toplevel is a Mdi container.
-		/// </summary>
-		public bool IsMdiContainer { get; set; }
-
-		/// <summary>
-		/// Gets or sets if this Toplevel is a Mdi child.
-		/// </summary>
-		public bool IsMdiChild {
-			get {
-				return Application.MdiTop != null && Application.MdiTop != this && !Modal;
-			}
-		}
-
-		/// <summary>
 		/// <see langword="true"/> if was already loaded by the <see cref="Application.Begin(Toplevel)"/>
 		/// <see langword="false"/>, otherwise.
 		/// </summary>
@@ -443,31 +429,31 @@ namespace Terminal.Gui {
 
 		private void MovePreviousViewOrTop ()
 		{
-			if (Application.MdiTop == null) {
+			if (Application.OverlappedTop == null) {
 				var top = Modal ? this : Application.Top;
 				top.FocusPrev ();
 				if (top.Focused == null) {
 					top.FocusPrev ();
 				}
 				top.SetNeedsDisplay ();
-				Application.EnsuresTopOnFront ();
+				Application.BringOverlappedTopToFront ();
 			} else {
-				MovePrevious ();
+				Application.OverlappedMovePrevious ();
 			}
 		}
 
 		private void MoveNextViewOrTop ()
 		{
-			if (Application.MdiTop == null) {
+			if (Application.OverlappedTop == null) {
 				var top = Modal ? this : Application.Top;
 				top.FocusNext ();
 				if (top.Focused == null) {
 					top.FocusNext ();
 				}
 				top.SetNeedsDisplay ();
-				Application.EnsuresTopOnFront ();
+				Application.BringOverlappedTopToFront ();
 			} else {
-				MoveNext ();
+				Application.OverlappedMoveNext ();
 			}
 		}
 
@@ -499,8 +485,8 @@ namespace Terminal.Gui {
 
 		private void QuitToplevel ()
 		{
-			if (Application.MdiTop != null) {
-				Application.MdiTop.RequestStop ();
+			if (Application.OverlappedTop != null) {
+				Application.OverlappedTop.RequestStop ();
 			} else {
 				Application.RequestStop ();
 			}
@@ -584,7 +570,7 @@ namespace Terminal.Gui {
 		///<inheritdoc/>
 		public override void Remove (View view)
 		{
-			if (this is Toplevel toplevel && toplevel.MenuBar != null) {
+			if (this is Toplevel Toplevel && Toplevel.MenuBar != null) {
 				RemoveMenuStatusBar (view);
 			}
 			base.Remove (view);
@@ -649,7 +635,7 @@ namespace Terminal.Gui {
 			}
 
 			// BUGBUG: v2 hack for now
-			var mfLength = top.BorderFrame.Thickness.Top > 0 ? 2 : 1;
+			var mfLength = top.Border?.Thickness.Top > 0 ? 2 : 1;
 			if (top.Frame.Width <= maxWidth) {
 				nx = Math.Max (targetX, 0);
 				nx = nx + top.Frame.Width > maxWidth ? Math.Max (maxWidth - top.Frame.Width, 0) : nx;
@@ -728,7 +714,7 @@ namespace Terminal.Gui {
 				out int nx, out int ny, out _, out StatusBar sb);
 			bool layoutSubviews = false;
 			if ((superView != top || top?.SuperView != null || (top != Application.Top && top.Modal)
-				|| (top?.SuperView == null && top.IsMdiChild))
+				|| (top?.SuperView == null && top.IsOverlapped))
 				&& (top.Frame.X + top.Frame.Width > Driver.Cols || ny > top.Frame.Y) && top.LayoutStyle == LayoutStyle.Computed) {
 
 				if ((top.X == null || top.X is Pos.PosAbsolute) && top.Frame.X != nx) {
@@ -765,17 +751,19 @@ namespace Terminal.Gui {
 			}
 
 			if (!_needsDisplay.IsEmpty || _childNeedsDisplay || LayoutNeeded) {
-				Driver.SetAttribute (Enabled ? Colors.Base.Normal : Colors.Base.Disabled);
+				Driver.SetAttribute (GetNormalColor ());
+				Clear (ViewToScreen (bounds));
 				LayoutSubviews ();
 				PositionToplevels ();
 
-				if (this == Application.MdiTop) {
-					foreach (var top in Application.MdiChildren.AsEnumerable ().Reverse ()) {
+				if (this == Application.OverlappedTop) {
+					foreach (var top in Application.OverlappedChildren.AsEnumerable ().Reverse ()) {
 						if (top.Frame.IntersectsWith (bounds)) {
 							if (top != this && !top.IsCurrentTop && !OutsideTopFrame (top) && top.Visible) {
 								top.SetNeedsLayout ();
 								top.SetNeedsDisplay (top.Bounds);
 								top.Redraw (top.Bounds);
+								top.OnRenderLineCanvas ();
 							}
 						}
 					}
@@ -787,8 +775,14 @@ namespace Terminal.Gui {
 						view.SetNeedsDisplay (view.Bounds);
 					}
 				}
+				base.Redraw (Bounds);
+
+				// This is causing the menus drawn incorrectly if UseSubMenusSingleFrame is true
+				//if (this.MenuBar != null && this.MenuBar.IsMenuOpen && this.MenuBar.openMenu != null) {
+				//	// TODO: Hack until we can get compositing working right.
+				//	this.MenuBar.openMenu.Redraw (this.MenuBar.openMenu.Bounds);
+				//}
 			}
-			base.Redraw (Bounds);
 		}
 
 		bool OutsideTopFrame (Toplevel top)
@@ -799,8 +793,8 @@ namespace Terminal.Gui {
 			return false;
 		}
 
-		internal static Point? dragPosition;
-		Point start;
+		internal static Point? _dragPosition;
+		Point _startGrabPoint;
 
 		///<inheritdoc/>
 		public override bool MouseEvent (MouseEvent mouseEvent)
@@ -812,20 +806,20 @@ namespace Terminal.Gui {
 			//System.Diagnostics.Debug.WriteLine ($"dragPosition before: {dragPosition.HasValue}");
 
 			int nx, ny;
-			if (!dragPosition.HasValue && (mouseEvent.Flags == MouseFlags.Button1Pressed
+			if (!_dragPosition.HasValue && (mouseEvent.Flags == MouseFlags.Button1Pressed
 				|| mouseEvent.Flags == MouseFlags.Button2Pressed
 				|| mouseEvent.Flags == MouseFlags.Button3Pressed)) {
 
 				SetFocus ();
-				Application.EnsuresTopOnFront ();
+				Application.BringOverlappedTopToFront ();
 
 				// Only start grabbing if the user clicks on the title bar.
 				if (mouseEvent.Y == 0 && mouseEvent.Flags == MouseFlags.Button1Pressed) {
-					start = new Point (mouseEvent.X, mouseEvent.Y);
-					dragPosition = new Point ();
+					_startGrabPoint = new Point (mouseEvent.X, mouseEvent.Y);
+					_dragPosition = new Point ();
 					nx = mouseEvent.X - mouseEvent.OfX;
 					ny = mouseEvent.Y - mouseEvent.OfY;
-					dragPosition = new Point (nx, ny);
+					_dragPosition = new Point (nx, ny);
 					Application.GrabMouse (this);
 				}
 
@@ -833,7 +827,7 @@ namespace Terminal.Gui {
 				return true;
 			} else if (mouseEvent.Flags == (MouseFlags.Button1Pressed | MouseFlags.ReportMousePosition) ||
 				mouseEvent.Flags == MouseFlags.Button3Pressed) {
-				if (dragPosition.HasValue) {
+				if (_dragPosition.HasValue) {
 					if (SuperView == null) {
 						// Redraw the entire app window using just our Frame. Since we are 
 						// Application.Top, and our Frame always == our Bounds (Location is always (0,0))
@@ -844,11 +838,11 @@ namespace Terminal.Gui {
 					} else {
 						SuperView.SetNeedsDisplay ();
 					}
-					GetLocationThatFits (this, mouseEvent.X + (SuperView == null ? mouseEvent.OfX - start.X : Frame.X - start.X),
-						mouseEvent.Y + (SuperView == null ? mouseEvent.OfY - start.Y : Frame.Y - start.Y),
+					GetLocationThatFits (this, mouseEvent.X + (SuperView == null ? mouseEvent.OfX - _startGrabPoint.X : Frame.X - _startGrabPoint.X),
+						mouseEvent.Y + (SuperView == null ? mouseEvent.OfY - _startGrabPoint.Y : Frame.Y - _startGrabPoint.Y),
 						out nx, out ny, out _, out _);
 
-					dragPosition = new Point (nx, ny);
+					_dragPosition = new Point (nx, ny);
 					X = nx;
 					Y = ny;
 					//System.Diagnostics.Debug.WriteLine ($"Drag: nx:{nx},ny:{ny}");
@@ -858,8 +852,8 @@ namespace Terminal.Gui {
 				}
 			}
 
-			if (mouseEvent.Flags.HasFlag (MouseFlags.Button1Released) && dragPosition.HasValue) {
-				dragPosition = null;
+			if (mouseEvent.Flags.HasFlag (MouseFlags.Button1Released) && _dragPosition.HasValue) {
+				_dragPosition = null;
 				Application.UngrabMouse ();
 			}
 
@@ -869,42 +863,17 @@ namespace Terminal.Gui {
 		}
 
 		/// <summary>
-		/// Invoked by <see cref="Application.Begin"/> as part of  <see cref="Application.Run(Toplevel, Func{Exception, bool})"/> 
-		/// after the views have been laid out, and before the views are drawn for the first time.
-		/// </summary>
-		public virtual void WillPresent ()
-		{
-			FocusFirst ();
-		}
-
-		/// <summary>
-		/// Move to the next Mdi child from the <see cref="Application.MdiTop"/>.
-		/// </summary>
-		public virtual void MoveNext ()
-		{
-			Application.MoveNext ();
-		}
-
-		/// <summary>
-		/// Move to the previous Mdi child from the <see cref="Application.MdiTop"/>.
-		/// </summary>
-		public virtual void MovePrevious ()
-		{
-			Application.MovePrevious ();
-		}
-
-		/// <summary>
 		/// Stops and closes this <see cref="Toplevel"/>. If this Toplevel is the top-most Toplevel, 
 		/// <see cref="Application.RequestStop(Toplevel)"/> will be called, causing the application to exit.
 		/// </summary>
 		public virtual void RequestStop ()
 		{
-			if (IsMdiContainer && Running
+			if (IsOverlappedContainer && Running
 				&& (Application.Current == this
 				|| Application.Current?.Modal == false
 				|| Application.Current?.Modal == true && Application.Current?.Running == false)) {
 
-				foreach (var child in Application.MdiChildren) {
+				foreach (var child in Application.OverlappedChildren) {
 					var ev = new ToplevelClosingEventArgs (this);
 					if (child.OnClosing (ev)) {
 						return;
@@ -914,13 +883,13 @@ namespace Terminal.Gui {
 				}
 				Running = false;
 				Application.RequestStop (this);
-			} else if (IsMdiContainer && Running && Application.Current?.Modal == true && Application.Current?.Running == true) {
+			} else if (IsOverlappedContainer && Running && Application.Current?.Modal == true && Application.Current?.Running == true) {
 				var ev = new ToplevelClosingEventArgs (Application.Current);
 				if (OnClosing (ev)) {
 					return;
 				}
 				Application.RequestStop (Application.Current);
-			} else if (!IsMdiContainer && Running && (!Modal || (Modal && Application.Current != this))) {
+			} else if (!IsOverlappedContainer && Running && (!Modal || (Modal && Application.Current != this))) {
 				var ev = new ToplevelClosingEventArgs (this);
 				if (OnClosing (ev)) {
 					return;
@@ -936,7 +905,7 @@ namespace Terminal.Gui {
 		/// Stops and closes the <see cref="Toplevel"/> specified by <paramref name="top"/>. If <paramref name="top"/> is the top-most Toplevel, 
 		/// <see cref="Application.RequestStop(Toplevel)"/> will be called, causing the application to exit.
 		/// </summary>
-		/// <param name="top">The toplevel to request stop.</param>
+		/// <param name="top">The Toplevel to request stop.</param>
 		public virtual void RequestStop (Toplevel top)
 		{
 			top.RequestStop ();
@@ -945,7 +914,7 @@ namespace Terminal.Gui {
 		///<inheritdoc/>
 		public override void PositionCursor ()
 		{
-			if (!IsMdiContainer) {
+			if (!IsOverlappedContainer) {
 				base.PositionCursor ();
 				if (Focused == null) {
 					EnsureFocus ();
@@ -957,7 +926,7 @@ namespace Terminal.Gui {
 			}
 
 			if (Focused == null) {
-				foreach (var top in Application.MdiChildren) {
+				foreach (var top in Application.OverlappedChildren) {
 					if (top != this && top.Visible) {
 						top.SetFocus ();
 						return;
@@ -968,44 +937,6 @@ namespace Terminal.Gui {
 			if (Focused == null) {
 				Driver.SetCursorVisibility (CursorVisibility.Invisible);
 			}
-		}
-
-		/// <summary>
-		/// Gets the current visible Toplevel Mdi child that matches the arguments pattern.
-		/// </summary>
-		/// <param name="type">The type.</param>
-		/// <param name="exclude">The strings to exclude.</param>
-		/// <returns>The matched view.</returns>
-		public View GetTopMdiChild (Type type = null, string [] exclude = null)
-		{
-			if (Application.MdiTop == null) {
-				return null;
-			}
-
-			foreach (var top in Application.MdiChildren) {
-				if (type != null && top.GetType () == type
-					&& exclude?.Contains (top.Data.ToString ()) == false) {
-					return top;
-				} else if ((type != null && top.GetType () != type)
-					|| (exclude?.Contains (top.Data.ToString ()) == true)) {
-					continue;
-				}
-				return top;
-			}
-			return null;
-		}
-
-		/// <summary>
-		/// Shows the Mdi child indicated by <paramref name="top"/>, setting it as <see cref="Application.Current"/>.
-		/// </summary>
-		/// <param name="top">The Toplevel.</param>
-		/// <returns><c>true</c> if the toplevel can be shown or <c>false</c> if not.</returns>
-		public virtual bool ShowChild (Toplevel top = null)
-		{
-			if (Application.MdiTop != null) {
-				return Application.ShowChild (top == null ? this : top);
-			}
-			return false;
 		}
 
 		///<inheritdoc/>
@@ -1023,7 +954,7 @@ namespace Terminal.Gui {
 		///<inheritdoc/>
 		protected override void Dispose (bool disposing)
 		{
-			dragPosition = null;
+			_dragPosition = null;
 			base.Dispose (disposing);
 		}
 	}
@@ -1070,7 +1001,7 @@ namespace Terminal.Gui {
 
 	/// <summary>
 	/// Implements the <see cref="IComparer{T}"/> to sort the <see cref="Toplevel"/> 
-	/// from the <see cref="Application.MdiChildren"/> if needed.
+	/// from the <see cref="Application.OverlappedChildren"/> if needed.
 	/// </summary>
 	public sealed class ToplevelComparer : IComparer<Toplevel> {
 		/// <summary>Compares two objects and returns a value indicating whether one is less than, equal to, or greater than the other.</summary>

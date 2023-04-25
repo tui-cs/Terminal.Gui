@@ -25,8 +25,8 @@ namespace Terminal.Gui.ViewsTests {
 			Assert.False (top.Modal);
 			Assert.Null (top.MenuBar);
 			Assert.Null (top.StatusBar);
-			Assert.False (top.IsMdiContainer);
-			Assert.False (top.IsMdiChild);
+			Assert.False (top.IsOverlappedContainer);
+			Assert.False (top.IsOverlapped);
 		}
 
 		[Fact]
@@ -325,14 +325,14 @@ namespace Terminal.Gui.ViewsTests {
 			top.PositionToplevels ();
 			Assert.Equal (new Rect (0, 1, 60, 15), win.Frame);
 
-			Assert.Null (Toplevel.dragPosition);
+			Assert.Null (Toplevel._dragPosition);
 			win.MouseEvent (new MouseEvent () { X = 6, Y = 0, Flags = MouseFlags.Button1Pressed });
-			Assert.Equal (new Point (6, 0), Toplevel.dragPosition);
+			Assert.Equal (new Point (6, 0), Toplevel._dragPosition);
 			win.MouseEvent (new MouseEvent () { X = 6, Y = 0, Flags = MouseFlags.Button1Released });
-			Assert.Null (Toplevel.dragPosition);
+			Assert.Null (Toplevel._dragPosition);
 			win.CanFocus = false;
 			win.MouseEvent (new MouseEvent () { X = 6, Y = 0, Flags = MouseFlags.Button1Pressed });
-			Assert.Null (Toplevel.dragPosition);
+			Assert.Null (Toplevel._dragPosition);
 		}
 
 		[Fact]
@@ -443,13 +443,13 @@ namespace Terminal.Gui.ViewsTests {
 
 		[Fact]
 		[AutoInitShutdown]
-		public void KeyBindings_Command_With_MdiTop ()
+		public void KeyBindings_Command_With_OverlappedTop ()
 		{
 			var top = Application.Top;
-			Assert.Null (Application.MdiTop);
-			top.IsMdiContainer = true;
+			Assert.Null (Application.OverlappedTop);
+			top.IsOverlappedContainer = true;
 			Application.Begin (top);
-			Assert.Equal (Application.Top, Application.MdiTop);
+			Assert.Equal (Application.Top, Application.OverlappedTop);
 
 			var isRunning = true;
 
@@ -475,109 +475,109 @@ namespace Terminal.Gui.ViewsTests {
 			Assert.Null (top.Focused);
 			Assert.Equal (top, Application.Current);
 			Assert.True (top.IsCurrentTop);
-			Assert.Equal (top, Application.MdiTop);
+			Assert.Equal (top, Application.OverlappedTop);
 			Application.Begin (win1);
 			Assert.Equal (new Rect (0, 0, 40, 25), win1.Frame);
 			Assert.NotEqual (top, Application.Current);
 			Assert.False (top.IsCurrentTop);
 			Assert.Equal (win1, Application.Current);
 			Assert.True (win1.IsCurrentTop);
-			Assert.True (win1.IsMdiChild);
+			Assert.True (win1.IsOverlapped);
 			Assert.Null (top.Focused);
 			Assert.Null (top.MostFocused);
 			Assert.Equal (tf1W1, win1.MostFocused);
-			Assert.True (win1.IsMdiChild);
-			Assert.Single (Application.MdiChildren);
+			Assert.True (win1.IsOverlapped);
+			Assert.Single (Application.OverlappedChildren);
 			Application.Begin (win2);
 			Assert.Equal (new Rect (0, 0, 40, 25), win2.Frame);
 			Assert.NotEqual (top, Application.Current);
 			Assert.False (top.IsCurrentTop);
 			Assert.Equal (win2, Application.Current);
 			Assert.True (win2.IsCurrentTop);
-			Assert.True (win2.IsMdiChild);
+			Assert.True (win2.IsOverlapped);
 			Assert.Null (top.Focused);
 			Assert.Null (top.MostFocused);
 			Assert.Equal (tf1W2, win2.MostFocused);
-			Assert.Equal (2, Application.MdiChildren.Count);
+			Assert.Equal (2, Application.OverlappedChildren.Count);
 
-			Application.ShowChild (win1);
+			Application.MoveToOverlappedChild (win1);
 			Assert.Equal (win1, Application.Current);
-			Assert.Equal (win1, Application.MdiChildren [0]);
+			Assert.Equal (win1, Application.OverlappedChildren [0]);
 			win1.Running = true;
-			Assert.True (Application.MdiChildren [0].ProcessKey (new KeyEvent (Application.QuitKey, new KeyModifiers ())));
+			Assert.True (Application.OverlappedChildren [0].ProcessKey (new KeyEvent (Application.QuitKey, new KeyModifiers ())));
 			Assert.False (isRunning);
 			Assert.False (win1.Running);
-			Assert.Equal (win1, Application.MdiChildren [0]);
-			Assert.True (Application.MdiChildren [0].ProcessKey (new KeyEvent (Key.Z | Key.CtrlMask, new KeyModifiers ())));
-			Assert.False (Application.MdiChildren [0].ProcessKey (new KeyEvent (Key.F5, new KeyModifiers ())));
+			Assert.Equal (win1, Application.OverlappedChildren [0]);
+			Assert.True (Application.OverlappedChildren [0].ProcessKey (new KeyEvent (Key.Z | Key.CtrlMask, new KeyModifiers ())));
+			Assert.False (Application.OverlappedChildren [0].ProcessKey (new KeyEvent (Key.F5, new KeyModifiers ())));
 
-			Assert.True (Application.MdiChildren [0].ProcessKey (new KeyEvent (Key.Tab, new KeyModifiers ())));
+			Assert.True (Application.OverlappedChildren [0].ProcessKey (new KeyEvent (Key.Tab, new KeyModifiers ())));
 			Assert.True (win1.IsCurrentTop);
 			Assert.Equal (tvW1, win1.MostFocused);
-			Assert.True (Application.MdiChildren [0].ProcessKey (new KeyEvent (Key.Tab, new KeyModifiers ())));
+			Assert.True (Application.OverlappedChildren [0].ProcessKey (new KeyEvent (Key.Tab, new KeyModifiers ())));
 			Assert.Equal ($"\tFirst line Win1{Environment.NewLine}Second line Win1", tvW1.Text);
-			Assert.True (Application.MdiChildren [0].ProcessKey (new KeyEvent (Key.BackTab | Key.ShiftMask, new KeyModifiers ())));
+			Assert.True (Application.OverlappedChildren [0].ProcessKey (new KeyEvent (Key.BackTab | Key.ShiftMask, new KeyModifiers ())));
 			Assert.Equal ($"First line Win1{Environment.NewLine}Second line Win1", tvW1.Text);
-			Assert.True (Application.MdiChildren [0].ProcessKey (new KeyEvent (Key.Tab | Key.CtrlMask, new KeyModifiers ())));
-			Assert.Equal (win1, Application.MdiChildren [0]);
+			Assert.True (Application.OverlappedChildren [0].ProcessKey (new KeyEvent (Key.Tab | Key.CtrlMask, new KeyModifiers ())));
+			Assert.Equal (win1, Application.OverlappedChildren [0]);
 			Assert.Equal (tf2W1, win1.MostFocused);
-			Assert.True (Application.MdiChildren [0].ProcessKey (new KeyEvent (Key.Tab, new KeyModifiers ())));
-			Assert.Equal (win1, Application.MdiChildren [0]);
+			Assert.True (Application.OverlappedChildren [0].ProcessKey (new KeyEvent (Key.Tab, new KeyModifiers ())));
+			Assert.Equal (win1, Application.OverlappedChildren [0]);
 			Assert.Equal (tf1W1, win1.MostFocused);
-			Assert.True (Application.MdiChildren [0].ProcessKey (new KeyEvent (Key.CursorRight, new KeyModifiers ())));
-			Assert.Equal (win1, Application.MdiChildren [0]);
+			Assert.True (Application.OverlappedChildren [0].ProcessKey (new KeyEvent (Key.CursorRight, new KeyModifiers ())));
+			Assert.Equal (win1, Application.OverlappedChildren [0]);
 			Assert.Equal (tf1W1, win1.MostFocused);
-			Assert.True (Application.MdiChildren [0].ProcessKey (new KeyEvent (Key.CursorDown, new KeyModifiers ())));
-			Assert.Equal (win1, Application.MdiChildren [0]);
+			Assert.True (Application.OverlappedChildren [0].ProcessKey (new KeyEvent (Key.CursorDown, new KeyModifiers ())));
+			Assert.Equal (win1, Application.OverlappedChildren [0]);
 			Assert.Equal (tvW1, win1.MostFocused);
-			Assert.True (Application.MdiChildren [0].ProcessKey (new KeyEvent (Key.I | Key.CtrlMask, new KeyModifiers ())));
-			Assert.Equal (win1, Application.MdiChildren [0]);
+			Assert.True (Application.OverlappedChildren [0].ProcessKey (new KeyEvent (Key.I | Key.CtrlMask, new KeyModifiers ())));
+			Assert.Equal (win1, Application.OverlappedChildren [0]);
 			Assert.Equal (tf2W1, win1.MostFocused);
-			Assert.True (Application.MdiChildren [0].ProcessKey (new KeyEvent (Key.BackTab | Key.ShiftMask, new KeyModifiers ())));
-			Assert.Equal (win1, Application.MdiChildren [0]);
+			Assert.True (Application.OverlappedChildren [0].ProcessKey (new KeyEvent (Key.BackTab | Key.ShiftMask, new KeyModifiers ())));
+			Assert.Equal (win1, Application.OverlappedChildren [0]);
 			Assert.Equal (tvW1, win1.MostFocused);
-			Assert.True (Application.MdiChildren [0].ProcessKey (new KeyEvent (Key.CursorLeft, new KeyModifiers ())));
-			Assert.Equal (win1, Application.MdiChildren [0]);
+			Assert.True (Application.OverlappedChildren [0].ProcessKey (new KeyEvent (Key.CursorLeft, new KeyModifiers ())));
+			Assert.Equal (win1, Application.OverlappedChildren [0]);
 			Assert.Equal (tf1W1, win1.MostFocused);
-			Assert.True (Application.MdiChildren [0].ProcessKey (new KeyEvent (Key.CursorUp, new KeyModifiers ())));
-			Assert.Equal (win1, Application.MdiChildren [0]);
+			Assert.True (Application.OverlappedChildren [0].ProcessKey (new KeyEvent (Key.CursorUp, new KeyModifiers ())));
+			Assert.Equal (win1, Application.OverlappedChildren [0]);
 			Assert.Equal (tf2W1, win1.MostFocused);
-			Assert.True (Application.MdiChildren [0].ProcessKey (new KeyEvent (Key.Tab, new KeyModifiers ())));
-			Assert.Equal (win1, Application.MdiChildren [0]);
+			Assert.True (Application.OverlappedChildren [0].ProcessKey (new KeyEvent (Key.Tab, new KeyModifiers ())));
+			Assert.Equal (win1, Application.OverlappedChildren [0]);
 			Assert.Equal (tf1W1, win1.MostFocused);
-			Assert.True (Application.MdiChildren [0].ProcessKey (new KeyEvent (Key.Tab | Key.CtrlMask, new KeyModifiers ())));
-			Assert.Equal (win2, Application.MdiChildren [0]);
+			Assert.True (Application.OverlappedChildren [0].ProcessKey (new KeyEvent (Key.Tab | Key.CtrlMask, new KeyModifiers ())));
+			Assert.Equal (win2, Application.OverlappedChildren [0]);
 			Assert.Equal (tf1W2, win2.MostFocused);
 			tf2W2.SetFocus ();
 			Assert.True (tf2W2.HasFocus);
-			Assert.True (Application.MdiChildren [0].ProcessKey (new KeyEvent (Key.Tab | Key.CtrlMask | Key.ShiftMask, new KeyModifiers ())));
-			Assert.Equal (win1, Application.MdiChildren [0]);
+			Assert.True (Application.OverlappedChildren [0].ProcessKey (new KeyEvent (Key.Tab | Key.CtrlMask | Key.ShiftMask, new KeyModifiers ())));
+			Assert.Equal (win1, Application.OverlappedChildren [0]);
 			Assert.Equal (tf1W1, win1.MostFocused);
-			Assert.True (Application.MdiChildren [0].ProcessKey (new KeyEvent (Application.AlternateForwardKey, new KeyModifiers ())));
-			Assert.Equal (win2, Application.MdiChildren [0]);
+			Assert.True (Application.OverlappedChildren [0].ProcessKey (new KeyEvent (Application.AlternateForwardKey, new KeyModifiers ())));
+			Assert.Equal (win2, Application.OverlappedChildren [0]);
 			Assert.Equal (tf2W2, win2.MostFocused);
-			Assert.True (Application.MdiChildren [0].ProcessKey (new KeyEvent (Application.AlternateBackwardKey, new KeyModifiers ())));
-			Assert.Equal (win1, Application.MdiChildren [0]);
+			Assert.True (Application.OverlappedChildren [0].ProcessKey (new KeyEvent (Application.AlternateBackwardKey, new KeyModifiers ())));
+			Assert.Equal (win1, Application.OverlappedChildren [0]);
 			Assert.Equal (tf1W1, win1.MostFocused);
-			Assert.True (Application.MdiChildren [0].ProcessKey (new KeyEvent (Key.CursorDown, new KeyModifiers ())));
-			Assert.Equal (win1, Application.MdiChildren [0]);
+			Assert.True (Application.OverlappedChildren [0].ProcessKey (new KeyEvent (Key.CursorDown, new KeyModifiers ())));
+			Assert.Equal (win1, Application.OverlappedChildren [0]);
 			Assert.Equal (tvW1, win1.MostFocused);
-			Assert.True (Application.MdiChildren [0].ProcessKey (new KeyEvent (Key.B | Key.CtrlMask, new KeyModifiers ())));
-			Assert.Equal (win1, Application.MdiChildren [0]);
+			Assert.True (Application.OverlappedChildren [0].ProcessKey (new KeyEvent (Key.B | Key.CtrlMask, new KeyModifiers ())));
+			Assert.Equal (win1, Application.OverlappedChildren [0]);
 			Assert.Equal (tf1W1, win1.MostFocused);
-			Assert.True (Application.MdiChildren [0].ProcessKey (new KeyEvent (Key.CursorDown, new KeyModifiers ())));
-			Assert.Equal (win1, Application.MdiChildren [0]);
+			Assert.True (Application.OverlappedChildren [0].ProcessKey (new KeyEvent (Key.CursorDown, new KeyModifiers ())));
+			Assert.Equal (win1, Application.OverlappedChildren [0]);
 			Assert.Equal (tvW1, win1.MostFocused);
 			Assert.Equal (new Point (0, 0), tvW1.CursorPosition);
-			Assert.True (Application.MdiChildren [0].ProcessKey (new KeyEvent (Key.End | Key.CtrlMask, new KeyModifiers ())));
-			Assert.Equal (win1, Application.MdiChildren [0]);
+			Assert.True (Application.OverlappedChildren [0].ProcessKey (new KeyEvent (Key.End | Key.CtrlMask, new KeyModifiers ())));
+			Assert.Equal (win1, Application.OverlappedChildren [0]);
 			Assert.Equal (tvW1, win1.MostFocused);
 			Assert.Equal (new Point (16, 1), tvW1.CursorPosition);
-			Assert.True (Application.MdiChildren [0].ProcessKey (new KeyEvent (Key.F | Key.CtrlMask, new KeyModifiers ())));
-			Assert.Equal (win1, Application.MdiChildren [0]);
+			Assert.True (Application.OverlappedChildren [0].ProcessKey (new KeyEvent (Key.F | Key.CtrlMask, new KeyModifiers ())));
+			Assert.Equal (win1, Application.OverlappedChildren [0]);
 			Assert.Equal (tf2W1, win1.MostFocused);
 
-			Assert.True (Application.MdiChildren [0].ProcessKey (new KeyEvent (Key.L | Key.CtrlMask, new KeyModifiers ())));
+			Assert.True (Application.OverlappedChildren [0].ProcessKey (new KeyEvent (Key.L | Key.CtrlMask, new KeyModifiers ())));
 		}
 
 		[Fact]
@@ -665,7 +665,6 @@ namespace Terminal.Gui.ViewsTests {
 			Assert.Equal (Key.PageUp | Key.CtrlMask, Application.AlternateBackwardKey);
 			Assert.Equal (Key.Q | Key.CtrlMask, Application.QuitKey);
 		}
-
 
 		[Fact, AutoInitShutdown]
 		public void Mouse_Drag_On_Top_With_Superview_Null ()
@@ -1033,6 +1032,7 @@ namespace Terminal.Gui.ViewsTests {
 			Assert.Equal (new Rect (0, 0, 10, 5), view._needsDisplay);
 		}
 
+		// BUGBUG: Broke this test with #2483 - @bdisp I need your help figuring out why
 		[Fact, AutoInitShutdown]
 		public void Toplevel_Inside_ScrollView_MouseGrabView ()
 		{
@@ -1369,6 +1369,7 @@ namespace Terminal.Gui.ViewsTests {
 			Application.End (rs);
 		}
 
+		// BUGBUG: Broke this test with #2483 - @bdisp I need your help figuring out why
 		[Fact, AutoInitShutdown]
 		public void Draw_A_Top_Subview_On_A_Dialog ()
 		{
@@ -1409,7 +1410,7 @@ namespace Terminal.Gui.ViewsTests {
 					Y = viewToScreen.Y + 1,
 					Width = 18,
 					Height = 5,
-					BorderStyle = LineStyle.Single 
+					BorderStyle = LineStyle.Single
 				};
 				Application.Current.DrawContentComplete += Current_DrawContentComplete;
 				top.Add (view);

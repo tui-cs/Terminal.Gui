@@ -17,7 +17,6 @@ namespace Terminal.Gui {
 		}
 	}
 
-
 	internal class FilepathSuggestionGenerator : ISuggestionGenerator {
 
 		FileDialogState state;
@@ -66,7 +65,6 @@ namespace Terminal.Gui {
 				.OrderBy (m => m.Length)
 				.ToArray ();
 
-
 			// nothing to suggest
 			if (validSuggestions.Length == 0 || validSuggestions [0].Length == term.Length) {
 				return Enumerable.Empty<Suggestion> ();
@@ -82,10 +80,8 @@ namespace Terminal.Gui {
 				return false;
 			}
 
-
 			return true;
 		}
-
 
 	}
 }

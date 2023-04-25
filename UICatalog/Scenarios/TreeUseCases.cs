@@ -75,7 +75,6 @@ namespace UICatalog.Scenarios {
 				currentTree.Dispose ();
 			}
 
-
 			var tree = new TreeView () {
 				X = 0,
 				Y = 0,
@@ -91,14 +90,12 @@ namespace UICatalog.Scenarios {
 		}
 
 
-
 		private abstract class GameObject {
 
 		}
 		private class Army : GameObject {
 			public string Designation { get; set; }
 			public List<Unit> Units { get; set; }
-
 
 			public override string ToString ()
 			{
@@ -132,7 +129,6 @@ namespace UICatalog.Scenarios {
 			}
 		}
 
-
 		private void LoadArmies (bool useDelegate)
 		{
 			var army1 = new Army () {
@@ -148,7 +144,6 @@ namespace UICatalog.Scenarios {
 				Win.Remove (currentTree);
 				currentTree.Dispose ();
 			}
-
 
 			var tree = new TreeView<GameObject> () {
 				X = 0,
@@ -181,7 +176,6 @@ namespace UICatalog.Scenarios {
 				Win.Remove (currentTree);
 				currentTree.Dispose ();
 			}
-
 
 			var tree = new TreeView () {
 				X = 0,

@@ -104,14 +104,12 @@ namespace Terminal.Gui {
 		/// </summary>
 		public static PointF Subtract (PointF pt, SizeF sz) => new PointF (pt.X - sz.Width, pt.Y - sz.Height);
 
-
 		/// <summary>
 		/// Compares two <see cref='Terminal.Gui.PointF'/> objects. The result specifies whether the values of the
 		/// <see cref='Terminal.Gui.PointF.X'/> and <see cref='Terminal.Gui.PointF.Y'/> properties of the two
 		/// <see cref='Terminal.Gui.PointF'/> objects are equal.
 		/// </summary>
 		public override bool Equals (object obj) => obj is PointF && Equals ((PointF)obj);
-
 
 		/// <summary>
 		/// Compares two <see cref='Terminal.Gui.PointF'/> objects. The result specifies whether the values of the

@@ -19,12 +19,15 @@ namespace Terminal.Gui {
 
 			IDirectoryInfo goTo = null;
 			FileSystemInfoStats restoreSelection = null;
+			string restorePath = null;
 
 			if (this.CanBack ()) {
 
 				var backTo = this.back.Pop ();
 				goTo = backTo.Directory;
 				restoreSelection = backTo.Selected;
+				restorePath = backTo.Path;
+
 			} else if (this.CanUp ()) {
 				goTo = this.dlg.State?.Directory.Parent;
 			}
@@ -35,7 +38,8 @@ namespace Terminal.Gui {
 			}
 
 			this.forward.Push (this.dlg.State);
-			this.dlg.PushState (goTo, false, true, false);
+			this.dlg.PushState (goTo, false, true, false, restorePath);
+
 
 			if (restoreSelection != null) {
 				this.dlg.RestoreSelection (restoreSelection.FileSystemInfo);
@@ -77,7 +81,6 @@ namespace Terminal.Gui {
 		{
 			return this.dlg.State?.Directory.Parent != null;
 		}
-
 
 		internal void Push (FileDialogState state, bool clearForward)
 		{

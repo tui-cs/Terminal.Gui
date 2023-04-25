@@ -3,7 +3,6 @@ using System.Data;
 
 namespace Terminal.Gui {
 
-
 	/// <summary>
 	///  Defines the event arguments for <see cref="TableView.CellActivated"/> event
 	/// </summary>
@@ -13,7 +12,6 @@ namespace Terminal.Gui {
 		/// </summary>
 		/// <value></value>
 		public DataTable Table { get; }
-
 
 		/// <summary>
 		/// The column index of the <see cref="Table"/> cell that is being activated

@@ -10,17 +10,17 @@ using System.Collections.ObjectModel;
 
 namespace Terminal.Gui {
 	/// <summary>
-	/// Public interface to create your own platform specific main loop driver.
+	/// Public interface to create a platform specific <see cref="MainLoop"/> driver.
 	/// </summary>
 	public interface IMainLoopDriver {
 		/// <summary>
-		/// Initializes the main loop driver, gets the calling main loop for the initialization.
+		/// Initializes the <see cref="MainLoop"/>, gets the calling main loop for the initialization.
 		/// </summary>
 		/// <param name="mainLoop">Main loop.</param>
 		void Setup (MainLoop mainLoop);
 
 		/// <summary>
-		/// Wakes up the mainloop that might be waiting on input, must be thread safe.
+		/// Wakes up the <see cref="MainLoop"/> that might be waiting on input, must be thread safe.
 		/// </summary>
 		void Wakeup ();
 
@@ -34,7 +34,7 @@ namespace Terminal.Gui {
 		/// <summary>
 		/// The iteration function.
 		/// </summary>
-		void MainIteration ();
+		void Iteration ();
 	}
 
 	/// <summary>
@@ -61,12 +61,12 @@ namespace Terminal.Gui {
 		}
 
 		internal SortedList<long, Timeout> timeouts = new SortedList<long, Timeout> ();
-		object timeoutsLockToken = new object ();
+		object _timeoutsLockToken = new object ();
 
 		/// <summary>
 		/// The idle handlers and lock that must be held while manipulating them
 		/// </summary>
-		object idleHandlersLock = new object ();
+		object _idleHandlersLock = new object ();
 		internal List<Func<bool>> idleHandlers = new List<Func<bool>> ();
 
 		/// <summary>
@@ -81,14 +81,14 @@ namespace Terminal.Gui {
 		/// </summary>
 		public ReadOnlyCollection<Func<bool>> IdleHandlers {
 			get {
-				lock (idleHandlersLock) {
+				lock (_idleHandlersLock) {
 					return new List<Func<bool>> (idleHandlers).AsReadOnly ();
 				}
 			}
 		}
 
 		/// <summary>
-		/// The current IMainLoopDriver in use.
+		/// The current <see cref="IMainLoopDriver"/> in use.
 		/// </summary>
 		/// <value>The driver.</value>
 		public IMainLoopDriver Driver { get; }
@@ -123,7 +123,8 @@ namespace Terminal.Gui {
 		}
 
 		/// <summary>
-		///   Adds specified idle handler function to mainloop processing. The handler function will be called once per iteration of the main loop after other events have been handled.
+		///   Adds specified idle handler function to <see cref="MainLoop"/> processing. 
+		///   The handler function will be called once per iteration of the main loop after other events have been handled.
 		/// </summary>
 		/// <remarks>
 		/// <para>
@@ -136,7 +137,7 @@ namespace Terminal.Gui {
 		/// <param name="idleHandler">Token that can be used to remove the idle handler with <see cref="RemoveIdle(Func{bool})"/> .</param>
 		public Func<bool> AddIdle (Func<bool> idleHandler)
 		{
-			lock (idleHandlersLock) {
+			lock (_idleHandlersLock) {
 				idleHandlers.Add (idleHandler);
 			}
 
@@ -152,13 +153,13 @@ namespace Terminal.Gui {
 		///  This method also returns <c>false</c> if the idle handler is not found.
 		public bool RemoveIdle (Func<bool> token)
 		{
-			lock (idleHandlersLock)
+			lock (_idleHandlersLock)
 				return idleHandlers.Remove (token);
 		}
 
 		void AddTimeout (TimeSpan time, Timeout timeout)
 		{
-			lock (timeoutsLockToken) {
+			lock (_timeoutsLockToken) {
 				var k = (DateTime.UtcNow + time).Ticks;
 				timeouts.Add (NudgeToUniqueKey (k), timeout);
 				TimeoutAdded?.Invoke (this, new TimeoutEventArgs(timeout, k));
@@ -166,7 +167,7 @@ namespace Terminal.Gui {
 		}
 
 		/// <summary>
-		///   Adds a timeout to the mainloop.
+		///   Adds a timeout to the <see cref="MainLoop"/>.
 		/// </summary>
 		/// <remarks>
 		///   When time specified passes, the callback will be invoked.
@@ -198,7 +199,7 @@ namespace Terminal.Gui {
 		/// This method also returns <c>false</c> if the timeout is not found.
 		public bool RemoveTimeout (object token)
 		{
-			lock (timeoutsLockToken) {
+			lock (_timeoutsLockToken) {
 				var idx = timeouts.IndexOfValue (token as Timeout);
 				if (idx == -1)
 					return false;
@@ -216,7 +217,7 @@ namespace Terminal.Gui {
 			// after we have taken the copy but before
 			// we have allocated a new list (which would
 			// result in lost timeouts or errors during enumeration)
-			lock (timeoutsLockToken) {
+			lock (_timeoutsLockToken) {
 				copy = timeouts;
 				timeouts = new SortedList<long, Timeout> ();
 			}
@@ -228,7 +229,7 @@ namespace Terminal.Gui {
 					if (timeout.Callback (this))
 						AddTimeout (timeout.Span, timeout);
 				} else {
-					lock (timeoutsLockToken) {
+					lock (_timeoutsLockToken) {
 						timeouts.Add (NudgeToUniqueKey (k), timeout);
 					}
 				}
@@ -243,7 +244,7 @@ namespace Terminal.Gui {
 		/// <returns></returns>
 		private long NudgeToUniqueKey (long k)
 		{
-			lock (timeoutsLockToken) {
+			lock (_timeoutsLockToken) {
 				while (timeouts.ContainsKey (k)) {
 					k++;
 				}
@@ -255,26 +256,26 @@ namespace Terminal.Gui {
 		void RunIdle ()
 		{
 			List<Func<bool>> iterate;
-			lock (idleHandlersLock) {
+			lock (_idleHandlersLock) {
 				iterate = idleHandlers;
 				idleHandlers = new List<Func<bool>> ();
 			}
 
 			foreach (var idle in iterate) {
 				if (idle ())
-					lock (idleHandlersLock)
+					lock (_idleHandlersLock)
 						idleHandlers.Add (idle);
 			}
 		}
 
-		bool running;
+		bool _running;
 
 		/// <summary>
 		///   Stops the mainloop.
 		/// </summary>
 		public void Stop ()
 		{
-			running = false;
+			_running = false;
 			Driver.Wakeup ();
 		}
 
@@ -295,20 +296,21 @@ namespace Terminal.Gui {
 		///   Runs one iteration of timers and file watches
 		/// </summary>
 		/// <remarks>
-		///   You use this to process all pending events (timers, idle handlers and file watches).
+		///   Use this to process all pending events (timers, idle handlers and file watches).
 		///
-		///   You can use it like this:
-		///     while (main.EvensPending ()) MainIteration ();
+		///   <code>
+		///     while (main.EvenstPending ()) RunIteration ();
+		///   </code>
 		/// </remarks>
-		public void MainIteration ()
+		public void RunIteration ()
 		{
 			if (timeouts.Count > 0)
 				RunTimers ();
 
-			Driver.MainIteration ();
+			Driver.Iteration ();
 
 			bool runIdle = false;
-			lock (idleHandlersLock) {
+			lock (_idleHandlersLock) {
 				runIdle = idleHandlers.Count > 0;
 			}
 			if (runIdle) {
@@ -317,17 +319,17 @@ namespace Terminal.Gui {
 		}
 
 		/// <summary>
-		///   Runs the mainloop.
+		///   Runs the <see cref="MainLoop"/>.
 		/// </summary>
 		public void Run ()
 		{
-			bool prev = running;
-			running = true;
-			while (running) {
+			bool prev = _running;
+			_running = true;
+			while (_running) {
 				EventsPending (true);
-				MainIteration ();
+				RunIteration ();
 			}
-			running = prev;
+			_running = prev;
 		}
 	}
 }

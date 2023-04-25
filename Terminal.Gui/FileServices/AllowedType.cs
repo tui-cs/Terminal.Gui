@@ -22,7 +22,6 @@ namespace Terminal.Gui {
 		bool IsAllowed (string path);
 	}
 
-
 	/// <summary>
 	/// <see cref="IAllowedType"/> that allows selection of any types (*.*).
 	/// </summary>
@@ -74,7 +73,6 @@ namespace Terminal.Gui {
 		/// </summary>
 		public string [] Extensions { get; set; }
 
-
 		/// <summary>
 		/// Returns <see cref="Description"/> plus all <see cref="Extensions"/> separated by semicolons.
 		/// </summary>
@@ -99,7 +97,6 @@ namespace Terminal.Gui {
 			if (string.IsNullOrEmpty (extension)) {
 				return false;
 			}
-
 
 			return this.Extensions.Any (e => e.Equals (extension));
 		}

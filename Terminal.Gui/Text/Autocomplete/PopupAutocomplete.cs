@@ -120,7 +120,6 @@ namespace Terminal.Gui {
 			}
 		}
 
-
 		/// <summary>
 		/// When more suggestions are available than can be rendered the user
 		/// can scroll down the dropdown list. This indicates how far down they
@@ -255,7 +254,6 @@ namespace Terminal.Gui {
 		public override void EnsureSelectedIdxIsValid ()
 		{
 			base.EnsureSelectedIdxIsValid ();
-
 
 			// if user moved selection up off top of current scroll window
 			if (SelectedIdx < ScrollOffset) {
@@ -410,7 +408,6 @@ namespace Terminal.Gui {
 		}
 
 
-
 		/// <summary>
 		/// Completes the autocomplete selection process. Called when user hits the <see cref="IAutocomplete.SelectionKey"/>.
 		/// </summary>
@@ -446,7 +443,6 @@ namespace Terminal.Gui {
 			InsertText (accepted.Replacement);
 			return true;
 		}
-
 
 		/// <summary>
 		/// Deletes the text backwards before insert the selected text in the <see cref="HostControl"/>.

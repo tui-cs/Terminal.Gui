@@ -1115,7 +1115,6 @@ namespace Terminal.Gui {
 		{
 		}
 
-
 		public override void SetAttribute (Attribute c)
 		{
 			base.SetAttribute (c);
@@ -1171,7 +1170,6 @@ namespace Terminal.Gui {
 				return MapKeyModifiers (keyInfo, Key.DeleteChar);
 			case ConsoleKey.Insert:
 				return MapKeyModifiers (keyInfo, Key.InsertChar);
-
 
 			case ConsoleKey.Oem1:
 			case ConsoleKey.Oem2:
@@ -1441,7 +1439,6 @@ namespace Terminal.Gui {
 			return visibility == CursorVisibility.Default;
 		}
 
-
 		/// <inheritdoc/>
 		public override bool SetCursorVisibility (CursorVisibility visibility)
 		{
@@ -1634,7 +1631,7 @@ namespace Terminal.Gui {
 			return ic > 0;
 		}
 
-		void IMainLoopDriver.MainIteration ()
+		void IMainLoopDriver.Iteration ()
 		{
 			while (inputResult.Count > 0) {
 				ProcessInput?.Invoke (inputResult.Dequeue ().Value);

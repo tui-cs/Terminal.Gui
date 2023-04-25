@@ -3,7 +3,6 @@ using System.Data;
 
 namespace Terminal.Gui {
 
-
 	/// <summary>
 	/// Defines the event arguments for <see cref="TableView.SelectedCellChanged"/> 
 	/// </summary>
@@ -14,13 +13,11 @@ namespace Terminal.Gui {
 		/// <value></value>
 		public DataTable Table { get; }
 
-
 		/// <summary>
 		/// The previous selected column index.  May be invalid e.g. when the selection has been changed as a result of replacing the existing Table with a smaller one
 		/// </summary>
 		/// <value></value>
 		public int OldCol { get; }
-
 
 		/// <summary>
 		/// The newly selected column index.
@@ -28,13 +25,11 @@ namespace Terminal.Gui {
 		/// <value></value>
 		public int NewCol { get; }
 
-
 		/// <summary>
 		/// The previous selected row index.  May be invalid e.g. when the selection has been changed as a result of deleting rows from the table
 		/// </summary>
 		/// <value></value>
 		public int OldRow { get; }
-
 
 		/// <summary>
 		/// The newly selected row index.

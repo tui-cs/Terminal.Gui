@@ -51,7 +51,6 @@ namespace Terminal.Gui {
 			}
 		}
 
-
 		/// <summary>
 		/// Fetch the children of this branch. This method populates <see cref="ChildBranches"/>.
 		/// </summary>
@@ -163,7 +162,6 @@ namespace Terminal.Gui {
 				// line is short so remaining width will be whatever comes after the line body
 				availableWidth -= lineBody.Length;
 			}
-
 
 			// default behaviour is for model to use the color scheme
 			// of the tree view

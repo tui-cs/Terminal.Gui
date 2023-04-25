@@ -15,7 +15,7 @@ namespace Terminal.Gui.ViewTests {
 		{
 			var view = new View ();
 			Assert.Equal (LineStyle.None, view.BorderStyle);
-			Assert.Equal (Thickness.Empty, view.BorderFrame.Thickness);
+			Assert.Equal (Thickness.Empty, view.Border.Thickness);
 		}
 
 		[Fact]
@@ -24,15 +24,15 @@ namespace Terminal.Gui.ViewTests {
 			var view = new View ();
 			view.BorderStyle = LineStyle.Single;
 			Assert.Equal (LineStyle.Single, view.BorderStyle);
-			Assert.Equal (new Thickness(1), view.BorderFrame.Thickness);
+			Assert.Equal (new Thickness(1), view.Border.Thickness);
 
 			view.BorderStyle = LineStyle.Double;
 			Assert.Equal (LineStyle.Double, view.BorderStyle);
-			Assert.Equal (new Thickness (1), view.BorderFrame.Thickness);
+			Assert.Equal (new Thickness (1), view.Border.Thickness);
 
 			view.BorderStyle = LineStyle.None;
 			Assert.Equal (LineStyle.None, view.BorderStyle);
-			Assert.Equal (Thickness.Empty, view.BorderFrame.Thickness);
+			Assert.Equal (Thickness.Empty, view.Border.Thickness);
 		}
 
 		//[Fact]

@@ -33,7 +33,6 @@ namespace Terminal.Gui {
 		string _hTemplate { get; } = "|123456789";
 		string _vTemplate { get; } = "-123456789";
 
-
 		/// <summary>
 		/// Draws the <see cref="Ruler"/>. 
 		/// </summary>

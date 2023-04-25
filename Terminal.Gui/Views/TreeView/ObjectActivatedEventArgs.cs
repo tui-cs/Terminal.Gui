@@ -17,7 +17,6 @@
 		/// <value></value>
 		public T ActivatedObject { get; }
 
-
 		/// <summary>
 		/// Creates a new instance documenting activation of the <paramref name="activated"/> object
 		/// </summary>

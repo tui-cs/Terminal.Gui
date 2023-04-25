@@ -53,13 +53,11 @@ namespace Terminal.Gui {
 		/// </summary>
 		public event EventHandler<TabChangedEventArgs> SelectedTabChanged;
 
-
 		/// <summary>
 		/// Event fired when a <see cref="TabView.Tab"/> is clicked.  Can be used to cancel navigation,
 		/// show context menu (e.g. on right click) etc.
 		/// </summary>
 		public event EventHandler<TabMouseEventArgs> TabClicked;
-
 
 		/// <summary>
 		/// The currently selected member of <see cref="Tabs"/> chosen by the user
@@ -104,7 +102,6 @@ namespace Terminal.Gui {
 		/// <value></value>
 		public TabStyle Style { get; set; } = new TabStyle ();
 
-
 		/// <summary>
 		/// Initializes a <see cref="TabView"/> class using <see cref="LayoutStyle.Computed"/> layout.
 		/// </summary>
@@ -124,7 +121,6 @@ namespace Terminal.Gui {
 			AddCommand (Command.Right, () => { SwitchTabBy (1); return true; });
 			AddCommand (Command.LeftHome, () => { SelectedTab = Tabs.FirstOrDefault (); return true; });
 			AddCommand (Command.RightEnd, () => { SelectedTab = Tabs.LastOrDefault (); return true; });
-
 
 			// Default keybindings for this view
 			AddKeyBinding (Key.CursorLeft, Command.Left);
@@ -176,10 +172,8 @@ namespace Terminal.Gui {
 				tabsBar.Y = Pos.Percent (0);
 			}
 
-
 			SetNeedsDisplay ();
 		}
-
 
 
 		///<inheritdoc/>
@@ -189,13 +183,13 @@ namespace Terminal.Gui {
 			Driver.SetAttribute (GetNormalColor ());
 
 			if (Style.ShowBorder) {
-
+				
 				// How much space do we need to leave at the bottom to show the tabs
 				int spaceAtBottom = Math.Max (0, GetTabHeight (false) - 1);
 				int startAtY = Math.Max (0, GetTabHeight (true) - 1);
 
-				DrawFrame (new Rect (0, startAtY, bounds.Width,
-				Math.Max (bounds.Height - spaceAtBottom - startAtY, 0)), 0, true);
+				Border.DrawFrame (new Rect (0, startAtY, bounds.Width,
+				Math.Max (bounds.Height - spaceAtBottom - startAtY, 0)), false);
 			}
 
 			if (Tabs.Any ()) {
@@ -247,7 +241,6 @@ namespace Terminal.Gui {
 			return base.ProcessKey (keyEvent);
 		}
 
-
 		/// <summary>
 		/// Changes the <see cref="SelectedTab"/> by the given <paramref name="amount"/>.  
 		/// Positive for right, negative for left.  If no tab is currently selected then
@@ -283,7 +276,6 @@ namespace Terminal.Gui {
 
 			EnsureSelectedTabIsVisible ();
 		}
-
 
 		/// <summary>
 		/// Updates <see cref="TabScrollOffset"/> to be a valid index of <see cref="Tabs"/>
@@ -332,7 +324,6 @@ namespace Terminal.Gui {
 			return Style.ShowTopLine ? 3 : 2;
 		}
 
-
 		/// <summary>
 		/// Returns which tabs to render at each x location
 		/// </summary>
@@ -376,7 +367,6 @@ namespace Terminal.Gui {
 			}
 		}
 
-
 		/// <summary>
 		/// Adds the given <paramref name="tab"/> to <see cref="Tabs"/>
 		/// </summary>
@@ -387,7 +377,6 @@ namespace Terminal.Gui {
 			if (tabs.Contains (tab)) {
 				return;
 			}
-
 
 			tabs.Add (tab);
 
@@ -401,7 +390,6 @@ namespace Terminal.Gui {
 
 			SetNeedsDisplay ();
 		}
-
 
 		/// <summary>
 		/// Removes the given <paramref name="tab"/> from <see cref="Tabs"/>.
@@ -495,7 +483,6 @@ namespace Terminal.Gui {
 				RenderUnderline (tabLocations, width);
 				Driver.SetAttribute (GetNormalColor ());
 
-
 			}
 
 			/// <summary>
@@ -519,7 +506,6 @@ namespace Terminal.Gui {
 				if (selected == null) {
 					return;
 				}
-
 
 				Move (selected.X - 1, y);
 				Driver.AddRune (host.Style.TabsOnBottom ? Driver.LLCorner : Driver.ULCorner);
@@ -556,7 +542,6 @@ namespace Terminal.Gui {
 				}
 
 
-
 				// clear any old text
 				Move (0, y);
 				Driver.AddStr (new string (' ', width));
@@ -585,7 +570,6 @@ namespace Terminal.Gui {
 						}
 					}
 
-
 					Driver.AddStr (toRender.TextToRender);
 					Driver.SetAttribute (GetNormalColor ());
 
@@ -613,7 +597,6 @@ namespace Terminal.Gui {
 						Driver.AddRune (Driver.HLine);
 					}
 
-
 				}
 				var selected = tabLocations.FirstOrDefault (t => t.IsSelected);
 
@@ -628,11 +611,9 @@ namespace Terminal.Gui {
 
 				Driver.AddStr (new string (' ', selected.Width));
 
-
 				Driver.AddRune (selected.X + selected.Width == width - 1 ?
 		     Driver.VLine :
 				(host.Style.TabsOnBottom ? Driver.ULCorner : Driver.LLCorner));
-
 
 				// draw scroll indicators
 
@@ -686,7 +667,6 @@ namespace Terminal.Gui {
 					}
 				}
 
-
 				if (!me.Flags.HasFlag (MouseFlags.Button1Clicked) &&
 				!me.Flags.HasFlag (MouseFlags.Button1DoubleClicked) &&
 				!me.Flags.HasFlag (MouseFlags.Button1TripleClicked))
@@ -695,7 +675,6 @@ namespace Terminal.Gui {
 				if (!HasFocus && CanFocus) {
 					SetFocus ();
 				}
-
 
 				if (me.Flags.HasFlag (MouseFlags.Button1Clicked) ||
 				me.Flags.HasFlag (MouseFlags.Button1DoubleClicked) ||
@@ -710,7 +689,6 @@ namespace Terminal.Gui {
 						SetNeedsDisplay ();
 						return true;
 					}
-
 
 					if (hit != null) {
 						host.SelectedTab = hit;
@@ -821,7 +799,6 @@ namespace Terminal.Gui {
 			///  bottommost line of the control</para>
 			/// </summary> 
 			public bool ShowTopLine { get; set; } = true;
-
 
 			/// <summary>
 			/// True to show a solid box around the edge of the control.  Defaults to true.

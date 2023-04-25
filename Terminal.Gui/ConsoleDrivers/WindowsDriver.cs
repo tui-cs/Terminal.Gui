@@ -577,7 +577,6 @@ namespace Terminal.Gui {
 		[DllImport ("kernel32.dll")]
 		static extern bool GetConsoleMode (IntPtr hConsoleHandle, out uint lpMode);
 
-
 		[DllImport ("kernel32.dll")]
 		static extern bool SetConsoleMode (IntPtr hConsoleHandle, uint dwMode);
 
@@ -1980,7 +1979,7 @@ namespace Terminal.Gui {
 			return ic > 0;
 		}
 
-		void IMainLoopDriver.MainIteration ()
+		void IMainLoopDriver.Iteration ()
 		{
 			while (resultQueue.Count > 0) {
 				var inputRecords = resultQueue.Dequeue ();

@@ -19,5 +19,10 @@ namespace Terminal.Gui {
 		/// The new Thickness.
 		/// </summary>
 		public Thickness Thickness { get; set; } = Thickness.Empty;
+
+		/// <summary>
+		/// The previous Thickness.
+		/// </summary>
+		public Thickness PreviousThickness { get; set; } = Thickness.Empty;
 	}
 }

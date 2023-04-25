@@ -24,7 +24,6 @@ namespace Terminal.Gui.TextTests {
 			var generator = (SingleWordSuggestionGenerator)tf.Autocomplete.SuggestionGenerator;
 			generator.AllSuggestions = new List<string> { "fish" };
 
-
 			tf.Redraw (tf.Bounds);
 			TestHelpers.AssertDriverContentsAre ("", output);
 
@@ -57,7 +56,6 @@ namespace Terminal.Gui.TextTests {
 			var generator = (SingleWordSuggestionGenerator)tf.Autocomplete.SuggestionGenerator;
 			generator.AllSuggestions = new List<string> { "FISH" };
 
-
 			tf.Redraw (tf.Bounds);
 			TestHelpers.AssertDriverContentsAre ("", output);
 			tf.ProcessKey (new KeyEvent (Key.m, new KeyModifiers ()));
@@ -76,7 +74,6 @@ namespace Terminal.Gui.TextTests {
 			TestHelpers.AssertDriverContentsAre ("my FISH", output);
 			Assert.Equal ("my FISH", tf.Text.ToString ());
 		}
-
 
 		[Fact, AutoInitShutdown]
 		public void TestAutoAppend_AfterCloseKey_NoAutocomplete ()
@@ -132,7 +129,6 @@ namespace Terminal.Gui.TextTests {
 			Assert.Equal ("fi", tf.Text.ToString ());
 		}
 
-
 		[Theory, AutoInitShutdown]
 		[InlineData ("ffffffffffffffffffffffffff", "ffffffffff")]
 		[InlineData ("f234567890", "f234567890")]
@@ -147,7 +143,6 @@ namespace Terminal.Gui.TextTests {
 			TestHelpers.AssertDriverContentsAre (expectRender, output);
 			Assert.Equal ("f", tf.Text.ToString ());
 		}
-
 
 		[Theory, AutoInitShutdown]
 		[InlineData (ConsoleKey.UpArrow)]
@@ -194,7 +189,6 @@ namespace Terminal.Gui.TextTests {
 			Assert.Equal ("fx", tf.Text.ToString ());
 		}
 
-
 		[Fact, AutoInitShutdown]
 		public void TestAutoAppend_NoRender_WhenCursorNotAtEnd ()
 		{
@@ -214,7 +208,6 @@ namespace Terminal.Gui.TextTests {
 			TestHelpers.AssertDriverContentsAre ("f", output);
 			Assert.Equal ("f ", tf.Text.ToString ());
 		}
-
 
 
 		private TextField GetTextFieldsInViewSuggesting (params string [] suggestions)

@@ -534,7 +534,7 @@ namespace Terminal.Gui {
 		}
 
 		/// <summary>
-		/// The application toplevel color scheme, for the default toplevel views.
+		/// The application Toplevel color scheme, for the default Toplevel views.
 		/// </summary>
 		/// <remarks>
 		/// <para>
@@ -544,7 +544,7 @@ namespace Terminal.Gui {
 		public static ColorScheme TopLevel { get => GetColorScheme (); set => SetColorScheme (value); }
 
 		/// <summary>
-		/// The base color scheme, for the default toplevel views.
+		/// The base color scheme, for the default Toplevel views.
 		/// </summary>
 		/// <remarks>
 		/// <para>
@@ -918,30 +918,6 @@ namespace Terminal.Gui {
 		}
 
 		/// <summary>
-		/// Draws the title for a Window-style view incorporating padding. 
-		/// </summary>
-		/// <param name="region">Screen relative region where the frame will be drawn.</param>
-		/// <param name="title">The title for the window. The title will only be drawn if <c>title</c> is not null or empty and paddingTop is greater than 0.</param>
-		/// <param name="paddingLeft">Number of columns to pad on the left (if 0 the border will not appear on the left).</param>
-		/// <param name="paddingTop">Number of rows to pad on the top (if 0 the border and title will not appear on the top).</param>
-		/// <param name="paddingRight">Number of columns to pad on the right (if 0 the border will not appear on the right).</param>
-		/// <param name="paddingBottom">Number of rows to pad on the bottom (if 0 the border will not appear on the bottom).</param>
-		/// <param name="textAlignment">Not yet implemented.</param>
-		/// <remarks></remarks>
-		public virtual void DrawWindowTitle (Rect region, ustring title, int paddingLeft, int paddingTop, int paddingRight, int paddingBottom, TextAlignment textAlignment = TextAlignment.Left)
-		{
-			var width = region.Width - (paddingLeft + 1) * 2;
-			if (!ustring.IsNullOrEmpty (title) && width > 2 && region.Y + paddingTop <= region.Y + paddingBottom) {
-				Move (region.X + 2 + paddingLeft, region.Y + paddingTop);
-				//AddRune (' ');
-				var str = title.Sum (r => Math.Max (Rune.ColumnWidth (r), 1)) >= width
-					? TextFormatter.Format (title, width - 2, false, false) [0] : title;
-				AddStr (str);
-				//AddRune (' ');
-			}
-		}
-
-		/// <summary>
 		/// Enables diagnostic functions
 		/// </summary>
 		[Flags]
@@ -951,13 +927,13 @@ namespace Terminal.Gui {
 			/// </summary>
 			Off = 0b_0000_0000,
 			/// <summary>
-			/// When enabled, <see cref="DrawWindowFrame(Rect, int, int, int, int, bool, bool, LineStyle)"/> will draw a 
+			/// When enabled, <see cref="Frame.OnDrawFrames"/> will draw a 
 			/// ruler in the frame for any side with a padding value greater than 0.
 			/// </summary>
 			FrameRuler = 0b_0000_0001,
 			/// <summary>
-			/// When Enabled, <see cref="DrawWindowFrame(Rect, int, int, int, int, bool, bool, LineStyle)"/> will use
-			/// 'L', 'R', 'T', and 'B' for padding instead of ' '.
+			/// When enabled, <see cref="Frame.OnDrawFrames"/> will draw a 
+			/// 'L', 'R', 'T', and 'B' when clearing <see cref="Thickness"/>'s instead of ' '.
 			/// </summary>
 			FramePadding = 0b_0000_0010,
 		}
@@ -966,200 +942,6 @@ namespace Terminal.Gui {
 		/// Set flags to enable/disable <see cref="ConsoleDriver"/> diagnostics.
 		/// </summary>
 		public static DiagnosticFlags Diagnostics { get; set; }
-
-		/// <summary>
-		/// Draws a frame for a window with padding and an optional visible border inside the padding. 
-		/// </summary>
-		/// <param name="region">Screen relative region where the frame will be drawn.</param>
-		/// <param name="paddingLeft">Number of columns to pad on the left (if 0 the border will not appear on the left).</param>
-		/// <param name="paddingTop">Number of rows to pad on the top (if 0 the border and title will not appear on the top).</param>
-		/// <param name="paddingRight">Number of columns to pad on the right (if 0 the border will not appear on the right).</param>
-		/// <param name="paddingBottom">Number of rows to pad on the bottom (if 0 the border will not appear on the bottom).</param>
-		/// <param name="border">If set to <c>true</c> and any padding dimension is > 0 the border will be drawn.</param>
-		/// <param name="fill">If set to <c>true</c> it will clear the content area (the area inside the padding) with the current color, otherwise the content area will be left untouched.</param>
-		/// <param name="lineStyle">The line style to be used.</param>
-		[ObsoleteAttribute ("This method is obsolete in v2. Use use LineCanvas or Frame instead.", false)]
-		public virtual void DrawWindowFrame (Rect region, int paddingLeft = 0, int paddingTop = 0, int paddingRight = 0,
-			int paddingBottom = 0, bool border = true, bool fill = false, LineStyle lineStyle = LineStyle.Single)
-		{
-			char clearChar = ' ';
-			char leftChar = clearChar;
-			char rightChar = clearChar;
-			char topChar = clearChar;
-			char bottomChar = clearChar;
-
-			if ((Diagnostics & DiagnosticFlags.FramePadding) == DiagnosticFlags.FramePadding) {
-				leftChar = 'L';
-				rightChar = 'R';
-				topChar = 'T';
-				bottomChar = 'B';
-				clearChar = 'C';
-			}
-
-			void AddRuneAt (int col, int row, Rune ch)
-			{
-				Move (col, row);
-				AddRune (ch);
-			}
-
-			// fwidth is count of hLine chars
-			int fwidth = (int)(region.Width - (paddingRight + paddingLeft));
-
-			// fheight is count of vLine chars
-			int fheight = (int)(region.Height - (paddingBottom + paddingTop));
-
-			// fleft is location of left frame line
-			int fleft = region.X + paddingLeft - 1;
-
-			// fright is location of right frame line
-			int fright = fleft + fwidth + 1;
-
-			// ftop is location of top frame line
-			int ftop = region.Y + paddingTop - 1;
-
-			// fbottom is location of bottom frame line
-			int fbottom = ftop + fheight + 1;
-
-			var borderStyle = lineStyle;
-
-			Rune hLine = default, vLine = default,
-				uRCorner = default, uLCorner = default, lLCorner = default, lRCorner = default;
-
-			if (border) {
-				switch (borderStyle) {
-				case LineStyle.None:
-					break;
-				case LineStyle.Single:
-					hLine = HLine;
-					vLine = VLine;
-					uRCorner = URCorner;
-					uLCorner = ULCorner;
-					lLCorner = LLCorner;
-					lRCorner = LRCorner;
-					break;
-				case LineStyle.Double:
-					hLine = HDLine;
-					vLine = VDLine;
-					uRCorner = URDCorner;
-					uLCorner = ULDCorner;
-					lLCorner = LLDCorner;
-					lRCorner = LRDCorner;
-					break;
-				case LineStyle.Rounded:
-					hLine = HRLine;
-					vLine = VRLine;
-					uRCorner = URRCorner;
-					uLCorner = ULRCorner;
-					lLCorner = LLRCorner;
-					lRCorner = LRRCorner;
-					break;
-				}
-			} else {
-				hLine = vLine = uRCorner = uLCorner = lLCorner = lRCorner = clearChar;
-			}
-
-			// Outside top
-			if (paddingTop > 1) {
-				for (int r = region.Y; r < ftop; r++) {
-					for (int c = region.X; c < region.X + region.Width; c++) {
-						AddRuneAt (c, r, topChar);
-					}
-				}
-			}
-
-			// Outside top-left
-			for (int c = region.X; c < fleft; c++) {
-				AddRuneAt (c, ftop, leftChar);
-			}
-
-			// Frame top-left corner
-			AddRuneAt (fleft, ftop, paddingTop >= 0 ? (paddingLeft >= 0 ? uLCorner : hLine) : leftChar);
-
-			// Frame top
-			for (int c = fleft + 1; c < fleft + 1 + fwidth; c++) {
-				AddRuneAt (c, ftop, paddingTop > 0 ? hLine : topChar);
-			}
-
-			// Frame top-right corner
-			if (fright > fleft) {
-				AddRuneAt (fright, ftop, paddingTop >= 0 ? (paddingRight >= 0 ? uRCorner : hLine) : rightChar);
-			}
-
-			// Outside top-right corner
-			for (int c = fright + 1; c < fright + paddingRight; c++) {
-				AddRuneAt (c, ftop, rightChar);
-			}
-
-			// Left, Fill, Right
-			if (fbottom > ftop) {
-				for (int r = ftop + 1; r < fbottom; r++) {
-					// Outside left
-					for (int c = region.X; c < fleft; c++) {
-						AddRuneAt (c, r, leftChar);
-					}
-
-					// Frame left
-					AddRuneAt (fleft, r, paddingLeft > 0 ? vLine : leftChar);
-
-					// Fill
-					if (fill) {
-						for (int x = fleft + 1; x < fright; x++) {
-							AddRuneAt (x, r, clearChar);
-						}
-					}
-
-					// Frame right
-					if (fright > fleft) {
-						var v = vLine;
-						if ((Diagnostics & DiagnosticFlags.FrameRuler) == DiagnosticFlags.FrameRuler) {
-							v = (char)(((int)'0') + ((r - ftop) % 10)); // vLine;
-						}
-						AddRuneAt (fright, r, paddingRight > 0 ? v : rightChar);
-					}
-
-					// Outside right
-					for (int c = fright + 1; c < fright + paddingRight; c++) {
-						AddRuneAt (c, r, rightChar);
-					}
-				}
-
-				// Outside Bottom
-				for (int c = region.X; c < region.X + region.Width; c++) {
-					AddRuneAt (c, fbottom, leftChar);
-				}
-
-				// Frame bottom-left
-				AddRuneAt (fleft, fbottom, paddingLeft > 0 ? lLCorner : leftChar);
-
-				if (fright > fleft) {
-					// Frame bottom
-					for (int c = fleft + 1; c < fright; c++) {
-						var h = hLine;
-						if ((Diagnostics & DiagnosticFlags.FrameRuler) == DiagnosticFlags.FrameRuler) {
-							h = (char)(((int)'0') + ((c - fleft) % 10)); // hLine;
-						}
-						AddRuneAt (c, fbottom, paddingBottom > 0 ? h : bottomChar);
-					}
-
-					// Frame bottom-right
-					AddRuneAt (fright, fbottom, paddingRight > 0 ? (paddingBottom > 0 ? lRCorner : hLine) : rightChar);
-				}
-
-				// Outside right
-				for (int c = fright + 1; c < fright + paddingRight; c++) {
-					AddRuneAt (c, fbottom, rightChar);
-				}
-			}
-
-			// Out bottom - ensure top is always drawn if we overlap
-			if (paddingBottom > 0) {
-				for (int r = fbottom + 1; r < fbottom + paddingBottom; r++) {
-					for (int c = region.X; c < region.X + region.Width; c++) {
-						AddRuneAt (c, r, bottomChar);
-					}
-				}
-			}
-		}
 
 		/// <summary>
 		/// Suspend the application, typically needs to save the state, suspend the app and upon return, reset the console driver.
@@ -1336,42 +1118,32 @@ namespace Terminal.Gui {
 		/// <summary>
 		/// Horizontal double line character.
 		/// </summary>
-		public Rune HDLine = '\u2550';
+		public Rune HDbLine = '\u2550';
 
 		/// <summary>
 		/// Vertical double line character.
 		/// </summary>
-		public Rune VDLine = '\u2551';
+		public Rune VDbLine = '\u2551';
 
 		/// <summary>
 		/// Upper left double corner
 		/// </summary>
-		public Rune ULDCorner = '\u2554';
+		public Rune ULDbCorner = '\u2554';
 
 		/// <summary>
 		/// Lower left double corner
 		/// </summary>
-		public Rune LLDCorner = '\u255a';
+		public Rune LLDbCorner = '\u255a';
 
 		/// <summary>
 		/// Upper right double corner
 		/// </summary>
-		public Rune URDCorner = '\u2557';
+		public Rune URDbCorner = '\u2557';
 
 		/// <summary>
 		/// Lower right double corner
 		/// </summary>
-		public Rune LRDCorner = '\u255d';
-
-		/// <summary>
-		/// Horizontal line character for rounded corners.
-		/// </summary>
-		public Rune HRLine = '\u2500';
-
-		/// <summary>
-		/// Vertical line character for rounded corners.
-		/// </summary>
-		public Rune VRLine = '\u2502';
+		public Rune LRDbCorner = '\u255d';
 
 		/// <summary>
 		/// Upper left rounded corner
@@ -1392,6 +1164,157 @@ namespace Terminal.Gui {
 		/// Lower right rounded corner
 		/// </summary>
 		public Rune LRRCorner = '\u256f';
+
+		/// <summary>
+		/// Horizontal double dashed line character.
+		/// </summary>
+		public Rune HDsLine = '\u254c';
+
+		/// <summary>
+		/// Vertical triple dashed line character.
+		/// </summary>
+		public Rune VDsLine = '\u2506';
+
+		/// <summary>
+		/// Horizontal triple dashed line character.
+		/// </summary>
+		public Rune HDtLine = '\u2504';
+
+		/// <summary>
+		/// Horizontal quadruple dashed line character.
+		/// </summary>
+		public Rune HD4Line = '\u2508';
+
+		/// <summary>
+		/// Vertical double dashed line character.
+		/// </summary>
+		public Rune VD2Line = '\u254e';
+
+		/// <summary>
+		/// Vertical quadruple dashed line character.
+		/// </summary>
+		public Rune VDtLine = '\u250a';
+
+		/// <summary>
+		/// Horizontal heavy line character.
+		/// </summary>
+		public Rune HThLine = '\u2501';
+
+		/// <summary>
+		/// Vertical heavy line character.
+		/// </summary>
+		public Rune VThLine = '\u2503';
+
+		/// <summary>
+		/// Upper left heavy corner
+		/// </summary>
+		public Rune ULThCorner = '\u250f';
+
+		/// <summary>
+		/// Lower left heavy corner
+		/// </summary>
+		public Rune LLThCorner = '\u2517';
+
+		/// <summary>
+		/// Upper right heavy corner
+		/// </summary>
+		public Rune URThCorner = '\u2513';
+
+		/// <summary>
+		/// Lower right heavy corner
+		/// </summary>
+		public Rune LRThCorner = '\u251b';
+
+		/// <summary>
+		/// Horizontal heavy double dashed line character.
+		/// </summary>
+		public Rune HThDsLine = '\u254d';
+
+		/// <summary>
+		/// Vertical heavy triple dashed line character.
+		/// </summary>
+		public Rune VThDsLine = '\u2507';
+
+		/// <summary>
+		/// Horizontal heavy triple dashed line character.
+		/// </summary>
+		public Rune HThDtLine = '\u2505';
+
+		/// <summary>
+		/// Horizontal heavy quadruple dashed line character.
+		/// </summary>
+		public Rune HThD4Line = '\u2509';
+
+		/// <summary>
+		/// Vertical heavy double dashed line character.
+		/// </summary>
+		public Rune VThD2Line = '\u254f';
+
+		/// <summary>
+		/// Vertical heavy quadruple dashed line character.
+		/// </summary>
+		public Rune VThDtLine = '\u250b';
+
+		/// <summary>
+		/// The left half line.
+		/// </summary>
+		public Rune HalfLeftLine = '\u2574';
+
+		/// <summary>
+		/// The up half line.
+		/// </summary>
+		public Rune HalfTopLine = '\u2575';
+
+		/// <summary>
+		/// The right half line.
+		/// </summary>
+		public Rune HalfRightLine = '\u2576';
+
+		/// <summary>
+		/// The down half line.
+		/// </summary>
+		public Rune HalfBottomLine = '\u2577';
+
+		/// <summary>
+		/// The heavy left half line.
+		/// </summary>
+		public Rune ThHalfLeftLine = '\u2578';
+
+		/// <summary>
+		/// The heavy up half line.
+		/// </summary>
+		public Rune ThHalfTopLine = '\u2579';
+
+		/// <summary>
+		/// The heavy right half line.
+		/// </summary>
+		public Rune ThHalfRightLine = '\u257a';
+
+		/// <summary>
+		/// The heavy light down half line.
+		/// </summary>
+		public Rune ThHalfBottomLine = '\u257b';
+
+		/// <summary>
+		/// The light left and heavy right line.
+		/// </summary>
+		public Rune ThRightSideLine = '\u257c';
+
+		/// <summary>
+		/// The light up and heavy down line.
+		/// </summary>
+		public Rune ThBottomSideLine = '\u257d';
+
+		/// <summary>
+		/// The heavy left and light right line.
+		/// </summary>
+		public Rune ThLeftSideLine = '\u257e';
+
+		/// <summary>
+		/// The heavy up and light down line.
+		/// </summary>
+		public Rune ThTopSideLine = '\u257f';
+
 		private Attribute currentAttribute;
 
 		/// <summary>
@@ -1436,6 +1359,11 @@ namespace Terminal.Gui {
 				return;
 			}
 
+		}
+
+		internal void SetAttribute (object attribute)
+		{
+			throw new NotImplementedException ();
 		}
 	}
 

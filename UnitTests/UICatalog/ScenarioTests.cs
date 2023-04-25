@@ -42,7 +42,6 @@ namespace UICatalog.Tests {
 			return FakeConsole.MockKeyPresses.Count;
 		}
 
-
 		/// <summary>
 		/// <para>
 		/// This runs through all Scenarios defined in UI Catalog, calling Init, Setup, and Run.
@@ -415,7 +414,6 @@ namespace UICatalog.Tests {
 			Assert.Equal (_viewClasses.Count, iterations);
 
 			Application.Shutdown ();
-
 
 			void DimPosChanged (View view)
 			{

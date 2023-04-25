@@ -18,12 +18,14 @@ namespace Terminal.Gui.ViewsTests {
 		[Fact]
 		public void Constuctors_Defaults ()
 		{
-			var menu = new Menu (new MenuBar (), 0, 0, new MenuBarItem ());
+			var menuBar = new MenuBar ();
+			var menu = new Menu (menuBar, 0, 0, new MenuBarItem (), null, menuBar.MenusBorderStyle);
 			Assert.Equal (Colors.Menu, menu.ColorScheme);
 			Assert.True (menu.CanFocus);
 			Assert.False (menu.WantContinuousButtonPressed);
+			Assert.Equal (LineStyle.Single, menuBar.MenusBorderStyle);
 
-			var menuBar = new MenuBar ();
+			menuBar = new MenuBar ();
 			Assert.Equal (0, menuBar.X);
 			Assert.Equal (0, menuBar.Y);
 			Assert.IsType<Dim.DimFill> (menuBar.Width);
@@ -136,9 +138,10 @@ namespace Terminal.Gui.ViewsTests {
 				if (cancelClosing) {
 					e.Cancel = true;
 					isMenuClosed = false;
-				} else 					isMenuClosed = true;
+				} else isMenuClosed = true;
 			};
 			Application.Top.Add (menu);
+			Application.Begin (Application.Top);
 
 			Assert.True (menu.ProcessHotKey (new KeyEvent (Key.F9, new KeyModifiers ())));
 			Assert.True (menu.IsMenuOpen);
@@ -318,18 +321,18 @@ Edit
 			Assert.Equal ("_Paste", miCurrent.Title);
 
 			for (int i = 2; i >= -1; i--) {
-				if (i == -1) 					Assert.False (mCurrent.MouseEvent (new MouseEvent () {
-						X = 10,
-						Y = i,
-						Flags = MouseFlags.ReportMousePosition,
-						View = menu
-					}));
-else 					Assert.True (mCurrent.MouseEvent (new MouseEvent () {
-						X = 10,
-						Y = i,
-						Flags = MouseFlags.ReportMousePosition,
-						View = mCurrent
-					}));
+				if (i == -1) Assert.False (mCurrent.MouseEvent (new MouseEvent () {
+					X = 10,
+					Y = i,
+					Flags = MouseFlags.ReportMousePosition,
+					View = menu
+				}));
+				else Assert.True (mCurrent.MouseEvent (new MouseEvent () {
+					X = 10,
+					Y = i,
+					Flags = MouseFlags.ReportMousePosition,
+					View = mCurrent
+				}));
 				Assert.True (menu.IsMenuOpen);
 				if (i == 2) {
 					Assert.Equal ("_Edit", miCurrent.Parent.Title);
@@ -477,7 +480,7 @@ else 					Assert.True (mCurrent.MouseEvent (new MouseEvent () {
 			Assert.False (menu.IsMenuOpen);
 			Assert.Equal ("Closed", GetCurrentMenuBarItemTitle ());
 			Assert.Equal ("None", GetCurrentMenuTitle ());
-			Application.MainLoop.MainIteration ();
+			Application.MainLoop.RunIteration ();
 			Assert.Equal ("New", miAction);
 
 			Assert.True (menu.ProcessHotKey (new KeyEvent (Key.F9, new KeyModifiers ())));
@@ -492,7 +495,7 @@ else 					Assert.True (mCurrent.MouseEvent (new MouseEvent () {
 			Assert.False (menu.IsMenuOpen);
 			Assert.Equal ("Closed", GetCurrentMenuBarItemTitle ());
 			Assert.Equal ("None", GetCurrentMenuTitle ());
-			Application.MainLoop.MainIteration ();
+			Application.MainLoop.RunIteration ();
 			Assert.Equal ("About", miAction);
 
 			Assert.True (menu.ProcessHotKey (new KeyEvent (Key.F9, new KeyModifiers ())));
@@ -564,9 +567,8 @@ else 					Assert.True (mCurrent.MouseEvent (new MouseEvent () {
 			Assert.False (menu.IsMenuOpen);
 			Assert.Equal ("Closed", GetCurrentMenuBarItemTitle ());
 			Assert.Equal ("None", GetCurrentMenuTitle ());
-			Application.MainLoop.MainIteration ();
+			Application.MainLoop.RunIteration ();
 			Assert.Equal ("Copy", miAction);
-
 
 			string GetCurrentMenuBarItemTitle ()
 			{
@@ -699,6 +701,7 @@ else 					Assert.True (mCurrent.MouseEvent (new MouseEvent () {
 			});
 			menu.UseKeysUpDownAsKeysLeftRight = true;
 			Application.Top.Add (menu);
+			Application.Begin (Application.Top);
 
 			Assert.Equal (Point.Empty, new Point (menu.Frame.X, menu.Frame.Y));
 			Assert.False (menu.UseSubMenusSingleFrame);
@@ -774,6 +777,7 @@ else 					Assert.True (mCurrent.MouseEvent (new MouseEvent () {
 			});
 
 			Application.Top.Add (menu);
+			Application.Begin (Application.Top);
 
 			Assert.Equal (Point.Empty, new Point (menu.Frame.X, menu.Frame.Y));
 			Assert.False (menu.UseSubMenusSingleFrame);
@@ -874,6 +878,7 @@ else 					Assert.True (mCurrent.MouseEvent (new MouseEvent () {
 			});
 
 			Application.Top.Add (menu);
+			Application.Begin (Application.Top);
 
 			Assert.Equal (Point.Empty, new Point (menu.Frame.X, menu.Frame.Y));
 			Assert.False (menu.UseSubMenusSingleFrame);
@@ -957,6 +962,7 @@ else 					Assert.True (mCurrent.MouseEvent (new MouseEvent () {
 			});
 
 			Application.Top.Add (menu);
+			Application.Begin (Application.Top);
 
 			Assert.Equal (Point.Empty, new Point (menu.Frame.X, menu.Frame.Y));
 			Assert.False (menu.UseSubMenusSingleFrame);
@@ -1060,6 +1066,7 @@ else 					Assert.True (mCurrent.MouseEvent (new MouseEvent () {
 			});
 
 			Application.Top.Add (menu);
+			Application.Begin (Application.Top);
 
 			Assert.False (newAction);
 			Assert.False (copyAction);
@@ -1076,7 +1083,7 @@ else 					Assert.True (mCurrent.MouseEvent (new MouseEvent () {
 			Assert.Equal (new Rect (1, 0, 11, 1), pos);
 
 			Assert.True (menu.ProcessKey (new (Key.N, null)));
-			Application.MainLoop.MainIteration ();
+			Application.MainLoop.RunIteration ();
 			Assert.True (newAction);
 
 			Assert.True (menu.ProcessHotKey (new (Key.AltMask, new KeyModifiers () { Alt = true })));
@@ -1091,7 +1098,7 @@ else 					Assert.True (mCurrent.MouseEvent (new MouseEvent () {
 
 			Assert.True (menu.ProcessKey (new (Key.CursorRight, null)));
 			Assert.True (menu.ProcessKey (new (Key.C, null)));
-			Application.MainLoop.MainIteration ();
+			Application.MainLoop.RunIteration ();
 			Assert.True (copyAction);
 		}
 
@@ -1115,7 +1122,7 @@ else 					Assert.True (mCurrent.MouseEvent (new MouseEvent () {
 			public string MenuBarText {
 				get {
 					string txt = string.Empty;
-					foreach (var m in Menus) 
+					foreach (var m in Menus)
 						txt += " " + m.Title.ToString () + " ";
 					return txt;
 				}
@@ -1191,12 +1198,13 @@ else 					Assert.True (mCurrent.MouseEvent (new MouseEvent () {
 			});
 
 			var items = new MenuBarItem [expectedMenu.Menus.Length];
-			for (var i = 0; i < expectedMenu.Menus.Length; i++) 				items [i] = new MenuBarItem (expectedMenu.Menus [i].Title, new MenuItem [] {
+			for (var i = 0; i < expectedMenu.Menus.Length; i++) items [i] = new MenuBarItem (expectedMenu.Menus [i].Title, new MenuItem [] {
 					new MenuItem (expectedMenu.Menus [i].Children [0].Title, "", null)
 				});
 			var menu = new MenuBar (items);
 
 			Application.Top.Add (menu);
+			Application.Begin (Application.Top);
 
 			Application.Top.Redraw (Application.Top.Bounds);
 			TestHelpers.AssertDriverContentsAre (expectedMenu.ClosedMenuText, output);
@@ -1236,6 +1244,7 @@ else 					Assert.True (mCurrent.MouseEvent (new MouseEvent () {
 			});
 
 			Application.Top.Add (menu);
+			Application.Begin (Application.Top);
 
 			Assert.False (newAction);
 			Assert.False (copyAction);
@@ -1246,7 +1255,7 @@ else 					Assert.True (mCurrent.MouseEvent (new MouseEvent () {
 			TestHelpers.AssertDriverContentsAre (expectedMenu.expectedSubMenuOpen (0), output);
 
 			Assert.True (Application.Top.Subviews [1].ProcessKey (new (Key.N, null)));
-			Application.MainLoop.MainIteration ();
+			Application.MainLoop.RunIteration ();
 			Assert.True (newAction);
 
 			Assert.True (menu.ProcessHotKey (new (Key.AltMask | Key.E, new KeyModifiers () { Alt = true })));
@@ -1255,7 +1264,7 @@ else 					Assert.True (mCurrent.MouseEvent (new MouseEvent () {
 			TestHelpers.AssertDriverContentsAre (expectedMenu.expectedSubMenuOpen (1), output);
 
 			Assert.True (Application.Top.Subviews [1].ProcessKey (new (Key.C, null)));
-			Application.MainLoop.MainIteration ();
+			Application.MainLoop.RunIteration ();
 			Assert.True (copyAction);
 		}
 
@@ -1283,6 +1292,7 @@ else 					Assert.True (mCurrent.MouseEvent (new MouseEvent () {
 			});
 
 			Application.Top.Add (menu);
+			Application.Begin (Application.Top);
 
 			// Open first
 			Assert.True (menu.ProcessHotKey (new (Key.F9, new KeyModifiers ())));
@@ -1359,6 +1369,7 @@ else 					Assert.True (mCurrent.MouseEvent (new MouseEvent () {
 			});
 
 			Application.Top.Add (menu);
+			Application.Begin (Application.Top);
 
 			Assert.True (menu.MouseEvent (new MouseEvent () { X = 1, Y = 0, Flags = MouseFlags.Button1Pressed, View = menu }));
 			Assert.True (menu.IsMenuOpen);
@@ -1452,7 +1463,6 @@ else 					Assert.True (mCurrent.MouseEvent (new MouseEvent () {
 			Application.Top.Redraw (Application.Top.Bounds);
 			TestHelpers.AssertDriverContentsAre (expectedMenu.expectedSubMenuOpen (0), output);
 
-
 			Assert.True (menu.MouseEvent (new MouseEvent () { X = 8, Y = 0, Flags = MouseFlags.Button1Pressed, View = menu }));
 			Assert.False (menu.IsMenuOpen);
 			Assert.True (tf.HasFocus);
@@ -1474,7 +1484,7 @@ else 					Assert.True (mCurrent.MouseEvent (new MouseEvent () {
 			});
 
 			var items = new MenuBarItem [expectedMenu.Menus.Length];
-			for (var i = 0; i < expectedMenu.Menus.Length; i++) 				items [i] = new MenuBarItem (expectedMenu.Menus [i].Title, expectedMenu.Menus [i].Children.Length > 0
+			for (var i = 0; i < expectedMenu.Menus.Length; i++) items [i] = new MenuBarItem (expectedMenu.Menus [i].Title, expectedMenu.Menus [i].Children.Length > 0
 					? new MenuItem [] {
 						new MenuItem (expectedMenu.Menus [i].Children [0].Title, "", null),
 					}
@@ -1747,7 +1757,7 @@ else 					Assert.True (mCurrent.MouseEvent (new MouseEvent () {
 			Assert.False (mi.Checked);
 			Assert.True (menu.ProcessHotKey (new KeyEvent (Key.F9, new KeyModifiers ())));
 			Assert.True (menu.openMenu.ProcessKey (new KeyEvent (Key.Enter, new KeyModifiers ())));
-			Application.MainLoop.MainIteration ();
+			Application.MainLoop.RunIteration ();
 			Assert.True (mi.Checked);
 			Assert.True (menu.MouseEvent (new MouseEvent () {
 				X = 0,
@@ -1761,13 +1771,13 @@ else 					Assert.True (mCurrent.MouseEvent (new MouseEvent () {
 				Flags = MouseFlags.Button1Clicked,
 				View = menu.openMenu
 			}));
-			Application.MainLoop.MainIteration ();
+			Application.MainLoop.RunIteration ();
 			Assert.False (mi.Checked);
 
 			mi.AllowNullChecked = true;
 			Assert.True (menu.ProcessHotKey (new KeyEvent (Key.F9, new KeyModifiers ())));
 			Assert.True (menu.openMenu.ProcessKey (new KeyEvent (Key.Enter, new KeyModifiers ())));
-			Application.MainLoop.MainIteration ();
+			Application.MainLoop.RunIteration ();
 			Assert.Null (mi.Checked);
 			Assert.True (menu.MouseEvent (new MouseEvent () {
 				X = 0,
@@ -1787,11 +1797,11 @@ else 					Assert.True (mCurrent.MouseEvent (new MouseEvent () {
 				Flags = MouseFlags.Button1Clicked,
 				View = menu.openMenu
 			}));
-			Application.MainLoop.MainIteration ();
+			Application.MainLoop.RunIteration ();
 			Assert.True (mi.Checked);
 			Assert.True (menu.ProcessHotKey (new KeyEvent (Key.F9, new KeyModifiers ())));
 			Assert.True (menu.openMenu.ProcessKey (new KeyEvent (Key.Enter, new KeyModifiers ())));
-			Application.MainLoop.MainIteration ();
+			Application.MainLoop.RunIteration ();
 			Assert.False (mi.Checked);
 			Assert.True (menu.MouseEvent (new MouseEvent () {
 				X = 0,
@@ -1805,7 +1815,7 @@ else 					Assert.True (mCurrent.MouseEvent (new MouseEvent () {
 				Flags = MouseFlags.Button1Clicked,
 				View = menu.openMenu
 			}));
-			Application.MainLoop.MainIteration ();
+			Application.MainLoop.RunIteration ();
 			Assert.Null (mi.Checked);
 
 			mi.AllowNullChecked = false;
@@ -1816,6 +1826,231 @@ else 					Assert.True (mCurrent.MouseEvent (new MouseEvent () {
 
 			mi.CheckType = MenuItemCheckStyle.Radio;
 			Assert.Throws<InvalidOperationException> (mi.ToggleChecked);
+		}
+
+		[Fact, AutoInitShutdown]
+		public void Menu_With_Separator ()
+		{
+			var menu = new MenuBar (new MenuBarItem [] {
+				new MenuBarItem("File",new MenuItem [] {
+					new MenuItem("_Open", "Open a file", () => { }, null, null, Key.CtrlMask | Key.O),
+					null,
+					new MenuItem("_Quit","",null)
+				})
+			});
+
+			Application.Top.Add (menu);
+			Application.Begin (Application.Top);
+
+			menu.OpenMenu ();
+			Application.Refresh ();
+			TestHelpers.AssertDriverContentsWithFrameAre (@"
+ File                         
+┌────────────────────────────┐
+│ Open   Open a file  Ctrl+O │
+├────────────────────────────┤
+│ Quit                       │
+└────────────────────────────┘", output);
+		}
+
+		[Fact, AutoInitShutdown]
+		public void Menu_With_Separator_Disabled_Border ()
+		{
+			var menu = new MenuBar (new MenuBarItem [] {
+				new MenuBarItem("File",new MenuItem [] {
+					new MenuItem("_Open", "Open a file", () => { }, null, null, Key.CtrlMask | Key.O),
+					null,
+					new MenuItem("_Quit","",null)
+				})
+			}) { MenusBorderStyle = LineStyle.None };
+
+			Application.Top.Add (menu);
+			Application.Begin (Application.Top);
+
+			menu.OpenMenu ();
+			Application.Refresh ();
+			TestHelpers.AssertDriverContentsWithFrameAre (@"
+ File                     
+ Open Open a file  Ctrl+O 
+──────────────────────────
+ Quit                     ", output);
+		}
+
+		[Fact, AutoInitShutdown]
+		public void DrawFrame_With_Positive_Positions_Disabled_Border ()
+		{
+			var menu = new MenuBar (new MenuBarItem [] {
+				new MenuBarItem (new MenuItem [] {
+					new MenuItem ("One", "", null),
+					new MenuItem ("Two", "", null)
+				})
+			}) { MenusBorderStyle = LineStyle.None };
+
+			Assert.Equal (Point.Empty, new Point (menu.Frame.X, menu.Frame.Y));
+
+			menu.OpenMenu ();
+			Application.Begin (Application.Top);
+
+			var expected = @"
+ One
+ Two
+";
+
+			_ = TestHelpers.AssertDriverContentsWithFrameAre (expected, output);
+		}
+
+		[Fact, AutoInitShutdown]
+		public void DrawFrame_With_Negative_Positions_Disabled_Border ()
+		{
+			var menu = new MenuBar (new MenuBarItem [] {
+				new MenuBarItem (new MenuItem [] {
+					new MenuItem ("One", "", null),
+					new MenuItem ("Two", "", null)
+				})
+			}) {
+				X = -2,
+				Y = -1,
+				MenusBorderStyle = LineStyle.None
+			};
+
+			Assert.Equal (new Point (-2, -1), new Point (menu.Frame.X, menu.Frame.Y));
+
+			menu.OpenMenu ();
+			Application.Begin (Application.Top);
+
+			var expected = @"
+ne
+wo
+";
+
+			_ = TestHelpers.AssertDriverContentsWithFrameAre (expected, output);
+
+			menu.CloseAllMenus ();
+			menu.Frame = new Rect (-2, -2, menu.Frame.Width, menu.Frame.Height);
+			menu.OpenMenu ();
+			Application.Refresh ();
+
+			expected = @"
+wo
+";
+
+			_ = TestHelpers.AssertDriverContentsWithFrameAre (expected, output);
+
+			menu.CloseAllMenus ();
+			menu.Frame = new Rect (0, 0, menu.Frame.Width, menu.Frame.Height);
+			((FakeDriver)Application.Driver).SetBufferSize (3, 2);
+			menu.OpenMenu ();
+			Application.Refresh ();
+
+			expected = @"
+ On
+ Tw
+";
+
+			_ = TestHelpers.AssertDriverContentsWithFrameAre (expected, output);
+
+			menu.CloseAllMenus ();
+			menu.Frame = new Rect (0, 0, menu.Frame.Width, menu.Frame.Height);
+			((FakeDriver)Application.Driver).SetBufferSize (3, 1);
+			menu.OpenMenu ();
+			Application.Refresh ();
+
+			expected = @"
+ Tw
+";
+
+			_ = TestHelpers.AssertDriverContentsWithFrameAre (expected, output);
+		}
+
+		[Fact, AutoInitShutdown]
+		public void UseSubMenusSingleFrame_False_Disabled_Border ()
+		{
+			var menu = new MenuBar (new MenuBarItem [] {
+				new MenuBarItem ("Numbers", new MenuItem [] {
+					new MenuItem ("One", "", null),
+					new MenuBarItem ("Two", new MenuItem [] {
+						new MenuItem ("Sub-Menu 1", "", null),
+						new MenuItem ("Sub-Menu 2", "", null)
+					}),
+					new MenuItem ("Three", "", null),
+				})
+			}) { MenusBorderStyle = LineStyle.None };
+			menu.UseKeysUpDownAsKeysLeftRight = true;
+			Application.Top.Add (menu);
+			Application.Begin (Application.Top);
+
+			Assert.Equal (Point.Empty, new Point (menu.Frame.X, menu.Frame.Y));
+			Assert.False (menu.UseSubMenusSingleFrame);
+
+			Assert.True (menu.ProcessHotKey (new KeyEvent (Key.F9, null)));
+			Application.Top.Redraw (Application.Top.Bounds);
+			var expected = @"
+ Numbers
+ One    
+ Two ►  
+ Three  
+";
+
+			_ = TestHelpers.AssertDriverContentsWithFrameAre (expected, output);
+
+			Assert.True (Application.Top.Subviews [1].ProcessKey (new KeyEvent (Key.CursorDown, null)));
+			Application.Top.Redraw (Application.Top.Bounds);
+			expected = @"
+ Numbers         
+ One             
+ Two ► Sub-Menu 1
+ Three Sub-Menu 2
+";
+
+			_ = TestHelpers.AssertDriverContentsWithFrameAre (expected, output);
+		}
+
+		[Fact, AutoInitShutdown]
+		public void UseSubMenusSingleFrame_True_Disabled_Border ()
+		{
+			var menu = new MenuBar (new MenuBarItem [] {
+				new MenuBarItem ("Numbers", new MenuItem [] {
+					new MenuItem ("One", "", null),
+					new MenuBarItem ("Two", new MenuItem [] {
+						new MenuItem ("Sub-Menu 1", "", null),
+						new MenuItem ("Sub-Menu 2", "", null)
+					}),
+					new MenuItem ("Three", "", null),
+				})
+			}) { MenusBorderStyle = LineStyle.None };
+
+			Application.Top.Add (menu);
+			Application.Begin (Application.Top);
+
+			Assert.Equal (Point.Empty, new Point (menu.Frame.X, menu.Frame.Y));
+			Assert.False (menu.UseSubMenusSingleFrame);
+			menu.UseSubMenusSingleFrame = true;
+			Assert.True (menu.UseSubMenusSingleFrame);
+
+
+			Assert.True (menu.ProcessHotKey (new KeyEvent (Key.F9, null)));
+			Application.Top.Redraw (Application.Top.Bounds);
+			var expected = @"
+ Numbers
+ One    
+ Two ►  
+ Three  
+";
+
+			_ = TestHelpers.AssertDriverContentsWithFrameAre (expected, output);
+
+			Assert.True (Application.Top.Subviews [1].ProcessKey (new KeyEvent (Key.CursorDown, null)));
+			Assert.True (Application.Top.Subviews [1].ProcessKey (new KeyEvent (Key.Enter, null)));
+			Application.Top.Redraw (Application.Top.Bounds);
+			expected = @"
+ Numbers   
+◄   Two    
+───────────
+ Sub-Menu 1
+ Sub-Menu 2
+";
+
+			_ = TestHelpers.AssertDriverContentsWithFrameAre (expected, output);
 		}
 	}
 }

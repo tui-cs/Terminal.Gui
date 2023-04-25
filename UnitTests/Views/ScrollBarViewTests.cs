@@ -1331,7 +1331,6 @@ This is a test
 			Assert.False (sbv.Visible);
 		}
 
-
 		[Fact, AutoInitShutdown]
 		public void ClearOnVisibleFalse_Gets_Sets ()
 		{

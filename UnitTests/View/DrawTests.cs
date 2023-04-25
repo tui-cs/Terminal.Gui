@@ -197,7 +197,6 @@ t     ", output);
 			TestHelpers.AssertDriverContentsWithFrameAre ("", output);
 		}
 
-
 		[Fact, AutoInitShutdown]
 		public void Draw_Negative_Bounds_Horizontal_With_New_Lines ()
 		{

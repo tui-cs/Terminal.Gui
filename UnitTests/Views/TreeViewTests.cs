@@ -211,7 +211,6 @@ namespace Terminal.Gui.ViewsTests {
 			Assert.Equal (10, tree.ScrollOffsetVertical);
 		}
 
-
 		/// <summary>
 		/// Tests <see cref="TreeView.GetScrollOffsetOf(object)"/> for objects that are as yet undiscovered by the tree
 		/// </summary>
@@ -432,7 +431,6 @@ namespace Terminal.Gui.ViewsTests {
 			Assert.Equal (2, tree.GetChildren (root).Count ());
 		}
 
-
 		[Fact]
 		public void MultiSelect_GetAllSelectedObjects ()
 		{
@@ -513,7 +511,6 @@ namespace Terminal.Gui.ViewsTests {
 
 			Application.Shutdown ();
 		}
-
 
 		[Fact]
 		public void GoTo_OnlyAppliesToExposedObjects ()
@@ -654,7 +651,6 @@ namespace Terminal.Gui.ViewsTests {
 			Application.Shutdown ();
 		}
 
-
 		[Fact]
 		public void ObjectActivationButton_RightClick ()
 		{
@@ -692,7 +688,6 @@ namespace Terminal.Gui.ViewsTests {
 		}
 
 
-
 		/// <summary>
 		/// Simulates behind the scenes changes to an object (which children it has) and how to sync that into the tree using <see cref="TreeView.RefreshObject(object, bool)"/>
 		/// </summary>
@@ -710,7 +705,6 @@ namespace Terminal.Gui.ViewsTests {
 
 			// Tree is not expanded so the root has no children yet
 			Assert.Empty (tree.GetChildren (root));
-
 
 			tree.Expand (root);
 
@@ -765,7 +759,6 @@ namespace Terminal.Gui.ViewsTests {
 
 			tv.Redraw (tv.Bounds);
 
-
 			TestHelpers.AssertDriverContentsAre (
 @"├+normal
 └─pink
@@ -815,7 +808,6 @@ namespace Terminal.Gui.ViewsTests {
 			tv.LayoutSubviews ();
 			tv.Redraw (tv.Bounds);
 
-
 			TestHelpers.AssertDriverContentsAre (
 @"├+normal
 └─pink
@@ -825,13 +817,11 @@ namespace Terminal.Gui.ViewsTests {
 			Assert.Null (tv.GetObjectRow (n1_2));
 			Assert.Equal (1, tv.GetObjectRow (n2));
 
-
 			// scroll down 1
 			tv.ScrollOffsetVertical = 1;
 
 			tv.LayoutSubviews ();
 			tv.Redraw (tv.Bounds);
-
 
 			TestHelpers.AssertDriverContentsAre (
 @"└─pink

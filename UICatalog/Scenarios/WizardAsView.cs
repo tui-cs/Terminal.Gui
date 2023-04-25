@@ -35,23 +35,23 @@ namespace UICatalog.Scenarios {
 			// behave like an non-modal View (vs. a modal/pop-up Window).
 			wizard.Modal = false;
 
-			wizard.MovingBack += (s,args) => {
+			wizard.MovingBack += (s, args) => {
 				//args.Cancel = true;
 				//actionLabel.Text = "Moving Back";
 			};
 
-			wizard.MovingNext += (s,args) => {
+			wizard.MovingNext += (s, args) => {
 				//args.Cancel = true;
 				//actionLabel.Text = "Moving Next";
 			};
 
-			wizard.Finished += (s,args) => {
+			wizard.Finished += (s, args) => {
 				//args.Cancel = true;
 				MessageBox.Query ("Setup Wizard", "Finished", "Ok");
 				Application.RequestStop ();
 			};
 
-			wizard.Cancelled += (s,args) => {
+			wizard.Cancelled += (s, args) => {
 				var btn = MessageBox.Query ("Setup Wizard", "Are you sure you want to cancel?", "Yes", "No");
 				args.Cancel = btn == 1;
 				if (btn == 0) {
@@ -60,13 +60,13 @@ namespace UICatalog.Scenarios {
 			};
 
 			// Add 1st step
-			var firstStep = new Wizard.WizardStep ("End User License Agreement");
+			var firstStep = new Wizard.WizardStep () { Title = "End User License Agreement" };
 			wizard.AddStep (firstStep);
 			firstStep.NextButtonText = "Accept!";
 			firstStep.HelpText = "This is the End User License Agreement.\n\n\n\n\n\nThis is a test of the emergency broadcast system. This is a test of the emergency broadcast system.\nThis is a test of the emergency broadcast system.\n\n\nThis is a test of the emergency broadcast system.\n\nThis is a test of the emergency broadcast system.\n\n\n\nThe end of the EULA.";
 
 			// Add 2nd step
-			var secondStep = new Wizard.WizardStep ("Second Step");
+			var secondStep = new Wizard.WizardStep () { Title = "Second Step" };
 			wizard.AddStep (secondStep);
 			secondStep.HelpText = "This is the help text for the Second Step.\n\nPress the button to change the Title.\n\nIf First Name is empty the step will prevent moving to the next step.";
 
@@ -76,7 +76,7 @@ namespace UICatalog.Scenarios {
 				X = Pos.Right (buttonLbl),
 				Y = Pos.Top (buttonLbl)
 			};
-			button.Clicked += (s,e) => {
+			button.Clicked += (s, e) => {
 				secondStep.Title = "2nd Step";
 				MessageBox.Query ("Wizard Scenario", "This Wizard Step's title was changed to '2nd Step'", "Ok");
 			};
@@ -89,7 +89,7 @@ namespace UICatalog.Scenarios {
 			secondStep.Add (lbl, lastNameField);
 
 			// Add last step
-			var lastStep = new Wizard.WizardStep ("The last step");
+			var lastStep = new Wizard.WizardStep () { Title = "The last step" };
 			wizard.AddStep (lastStep);
 			lastStep.HelpText = "The wizard is complete!\n\nPress the Finish button to continue.\n\nPressing Esc will cancel.";
 

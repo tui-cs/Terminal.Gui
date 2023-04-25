@@ -87,7 +87,7 @@ namespace Terminal.Gui {
 			return ic > 0;
 		}
 
-		void IMainLoopDriver.MainIteration ()
+		void IMainLoopDriver.Iteration ()
 		{
 			if (keyResult.HasValue) {
 				KeyPressed?.Invoke (keyResult.Value);

@@ -436,15 +436,16 @@ namespace Terminal.Gui {
 		internal int current;
 		internal View previousSubFocused;
 
-		internal static Rect MakeFrame (int x, int y, MenuItem [] items, Menu parent = null)
+		internal static Rect MakeFrame (int x, int y, MenuItem [] items, Menu parent = null, LineStyle border = LineStyle.Single)
 		{
 			if (items == null || items.Length == 0) {
 				return new Rect ();
 			}
 			int minX = x;
 			int minY = y;
-			int maxW = (items.Max (z => z?.Width) ?? 0) + 2; // This 2 is frame border?
-			int maxH = items.Length + 2; // This 2 is frame border?
+			var borderOffset = border != LineStyle.None ? 2 : 0; // This 2 is frame border?
+			int maxW = (items.Max (z => z?.Width) ?? 0) + borderOffset;
+			int maxH = items.Length + borderOffset;
 			if (parent != null && x + maxW > Driver.Cols) {
 				minX = Math.Max (parent.Frame.Right - parent.Frame.Width - maxW, 0);
 			}
@@ -454,8 +455,8 @@ namespace Terminal.Gui {
 			return new Rect (minX, minY, maxW, maxH);
 		}
 
-		public Menu (MenuBar host, int x, int y, MenuBarItem barItems, Menu parent = null)
-			: base (MakeFrame (x, y, barItems.Children, parent))
+		public Menu (MenuBar host, int x, int y, MenuBarItem barItems, Menu parent = null, LineStyle border = LineStyle.Single)
+			: base (MakeFrame (x, y, barItems.Children, parent, border))
 		{
 			this.barItems = barItems;
 			this.host = host;
@@ -476,6 +477,8 @@ namespace Terminal.Gui {
 				CanFocus = true;
 				WantMousePositionReports = host.WantMousePositionReports;
 			}
+
+			BorderStyle = host.MenusBorderStyle;
 
 			if (Application.Current != null) {
 				Application.Current.DrawContentComplete += Current_DrawContentComplete;
@@ -534,19 +537,16 @@ namespace Terminal.Gui {
 
 		public override void Redraw (Rect bounds)
 		{
-		}
-
-		// Draws the Menu, within the Frame
-		private void Current_DrawContentComplete (object sender, DrawEventArgs e)
-		{
 			if (barItems.Children == null) {
 				return;
 			}
-			var savedClip = Driver.Clip;
+			var savedClip = Application.Driver.Clip;
 			Application.Driver.Clip = Application.Top.Frame;
 
 			Driver.SetAttribute (GetNormalColor ());
-			DrawFrame (Bounds, padding: 0, fill: true);
+
+			OnDrawFrames ();
+			OnRenderLineCanvas ();
 
 			for (int i = Bounds.Y; i < barItems.Children.Length; i++) {
 				if (i < 0)
@@ -554,11 +554,12 @@ namespace Terminal.Gui {
 				var item = barItems.Children [i];
 				Driver.SetAttribute (item == null ? GetNormalColor ()
 					: i == current ? ColorScheme.Focus : GetNormalColor ());
-				if (item == null) {
-					Move (0, i + 1);
+				if (item == null && BorderStyle != LineStyle.None) {
+					Move (-1, i);
 					Driver.AddRune (Driver.LeftTee);
-				} else if (Frame.X + 1 < Driver.Cols)
-					Move (1, i + 1);
+				} else if (Frame.X < Driver.Cols) {
+					Move (0, i);
+				}
 
 				Driver.SetAttribute (DetermineColorSchemeFor (item, i));
 				for (int p = Bounds.X; p < Frame.Width - 2; p++) { // This - 2 is for the border
@@ -576,8 +577,8 @@ namespace Terminal.Gui {
 				}
 
 				if (item == null) {
-					if (SuperView?.Frame.Right - Frame.X > Frame.Width - 1) {
-						Move (Frame.Width - 1, i + 1);
+					if (BorderStyle != LineStyle.None && SuperView?.Frame.Right - Frame.X > Frame.Width) {
+						Move (Frame.Width - 2, i);
 						Driver.AddRune (Driver.RightTee);
 					}
 					continue;
@@ -604,9 +605,9 @@ namespace Terminal.Gui {
 					textToDraw = item.Title;
 				}
 
-				ViewToScreen (2, i + 1, out int vtsCol, out _, false);
+				ViewToScreen (0, i, out int vtsCol, out _, false);
 				if (vtsCol < Driver.Cols) {
-					Move (2, i + 1);
+					Move (1, i);
 					if (!item.IsEnabled ()) {
 						DrawHotString (textToDraw, ColorScheme.Disabled, ColorScheme.Disabled);
 					} else if (i == 0 && host.UseSubMenusSingleFrame && item.Parent.Parent != null) {
@@ -616,7 +617,7 @@ namespace Terminal.Gui {
 							Text = textToDraw
 						};
 						// The -3 is left/right border + one space (not sure what for)
-						tf.Draw (ViewToScreen (new Rect (2, i + 1, Frame.Width - 3, 1)),
+						tf.Draw (ViewToScreen (new Rect (1, i, Frame.Width - 3, 1)),
 							i == current ? ColorScheme.Focus : GetNormalColor (),
 							i == current ? ColorScheme.HotFocus : ColorScheme.HotNormal,
 							SuperView == null ? default : SuperView.ViewToScreen (SuperView.Bounds));
@@ -628,16 +629,16 @@ namespace Terminal.Gui {
 
 					// The help string
 					var l = item.ShortcutTag.ConsoleWidth == 0 ? item.Help.ConsoleWidth : item.Help.ConsoleWidth + item.ShortcutTag.ConsoleWidth + 2;
-					var col = Frame.Width - l - 2;
-					ViewToScreen (col, i + 1, out vtsCol, out _, false);
+					var col = Frame.Width - l - 3;
+					ViewToScreen (col, i, out vtsCol, out _, false);
 					if (vtsCol < Driver.Cols) {
-						Move (col, 1 + i);
+						Move (col, i);
 						Driver.AddStr (item.Help);
 
 						// The shortcut tag string
 						if (!item.ShortcutTag.IsEmpty) {
 							l = item.ShortcutTag.ConsoleWidth;
-							Move (Frame.Width - l - 2, 1 + i);
+							Move (Frame.Width - l - 3, i);
 							Driver.AddStr (item.ShortcutTag);
 						}
 					}
@@ -646,6 +647,11 @@ namespace Terminal.Gui {
 			Driver.Clip = savedClip;
 
 			PositionCursor ();
+		}
+
+		private void Current_DrawContentComplete (object sender, DrawEventArgs e)
+		{
+			Redraw (e.Rect);
 		}
 
 		public override void PositionCursor ()
@@ -692,7 +698,7 @@ namespace Terminal.Gui {
 		public override bool ProcessHotKey (KeyEvent keyEvent)
 		{
 			// To ncurses simulate a AltMask key pressing Alt+Space because
-			// it can�t detect an alone special key down was pressed.
+			// it can't detect an alone special key down was pressed.
 			if (keyEvent.IsAlt && keyEvent.Key == Key.AltMask) {
 				OnKeyDown (keyEvent);
 				return true;
@@ -852,11 +858,12 @@ namespace Terminal.Gui {
 			}
 			host.handled = false;
 			bool disabled;
+			var meYOffset = BorderStyle != LineStyle.None ? 1 : 0;
 			if (me.Flags == MouseFlags.Button1Clicked) {
 				disabled = false;
-				if (me.Y < 1)
+				if (me.Y < meYOffset)
 					return true;
-				var meY = me.Y - 1;
+				var meY = me.Y - meYOffset;
 				if (meY >= barItems.Children.Length)
 					return true;
 				var item = barItems.Children [meY];
@@ -871,14 +878,14 @@ namespace Terminal.Gui {
 				me.Flags.HasFlag (MouseFlags.Button1Pressed | MouseFlags.ReportMousePosition)) {
 
 				disabled = false;
-				if (me.Y < 1 || me.Y - 1 >= barItems.Children.Length) {
+				if (me.Y < meYOffset || me.Y - meYOffset >= barItems.Children.Length) {
 					return true;
 				}
-				var item = barItems.Children [me.Y - 1];
+				var item = barItems.Children [me.Y - meYOffset];
 				if (item == null) return true;
 				if (item == null || !item.IsEnabled ()) disabled = true;
 				if (item != null && !disabled)
-					current = me.Y - 1;
+					current = me.Y - meYOffset;
 				if (host.UseSubMenusSingleFrame || !CheckSubMenu ()) {
 					SetNeedsDisplay ();
 					SetParentSetNeedsDisplay ();
@@ -982,6 +989,11 @@ namespace Terminal.Gui {
 		/// <value>The menu array.</value>
 		public MenuBarItem [] Menus { get; set; }
 
+		/// <summary>
+		/// The default <see cref="LineStyle"/> for <see cref="Menus"/>'s border. The default is <see cref="LineStyle.Single"/>.
+		/// </summary>
+		public LineStyle MenusBorderStyle { get; set; } = LineStyle.Single;
+
 		private bool useKeysUpDownAsKeysLeftRight = false;
 
 		/// <summary>
@@ -1050,7 +1062,7 @@ namespace Terminal.Gui {
 		public MenuBar () : this (new MenuBarItem [] { }) { }
 
 		/// <summary>
-		/// Initializes a new instance of the <see cref="MenuBar"/> class with the specified set of toplevel menu items.
+		/// Initializes a new instance of the <see cref="MenuBar"/> class with the specified set of Toplevel menu items.
 		/// </summary>
 		/// <param name="menus">Individual menu items; a null item will result in a separator being drawn.</param>
 		public MenuBar (MenuBarItem [] menus) : base ()
@@ -1264,6 +1276,7 @@ namespace Terminal.Gui {
 		/// </summary>
 		public event EventHandler MenuAllClosed;
 
+		// BUGBUG: Hack
 		internal Menu openMenu;
 		Menu ocm;
 		internal Menu openCurrentMenu {
@@ -1384,7 +1397,7 @@ namespace Terminal.Gui {
 				} else {
 					locationOffset = new Point (superView.Frame.X, superView.Frame.Y);
 				}
-				openMenu = new Menu (this, Frame.X + pos + locationOffset.X, Frame.Y + 1 + locationOffset.Y, Menus [index]);
+				openMenu = new Menu (this, Frame.X + pos + locationOffset.X, Frame.Y + 1 + locationOffset.Y, Menus [index], null, MenusBorderStyle);
 				openCurrentMenu = openMenu;
 				openCurrentMenu.previousSubFocused = openMenu;
 
@@ -1400,7 +1413,8 @@ namespace Terminal.Gui {
 				} else {
 					var last = openSubMenu.Count > 0 ? openSubMenu.Last () : openMenu;
 					if (!UseSubMenusSingleFrame) {
-						openCurrentMenu = new Menu (this, last.Frame.Left + last.Frame.Width, last.Frame.Top + 1 + last.current, subMenu, last);
+						locationOffset = GetLocationOffset ();
+						openCurrentMenu = new Menu (this, last.Frame.Left + last.Frame.Width + locationOffset.X, last.Frame.Top + locationOffset.Y + last.current, subMenu, last, MenusBorderStyle);
 					} else {
 						var first = openSubMenu.Count > 0 ? openSubMenu.First () : openMenu;
 						var mbi = new MenuItem [2 + subMenu.Children.Length];
@@ -1411,7 +1425,7 @@ namespace Terminal.Gui {
 						}
 						var newSubMenu = new MenuBarItem (mbi);
 						ViewToScreen (first.Frame.Left, first.Frame.Top, out int rx, out int ry);
-						openCurrentMenu = new Menu (this, rx, ry, newSubMenu);
+						openCurrentMenu = new Menu (this, rx, ry, newSubMenu, null, MenusBorderStyle);
 						last.Visible = false;
 						Application.GrabMouse (openCurrentMenu);
 					}
@@ -1427,6 +1441,14 @@ namespace Terminal.Gui {
 			}
 			isMenuOpening = false;
 			IsMenuOpen = true;
+		}
+
+		Point GetLocationOffset ()
+		{
+			if (MenusBorderStyle != LineStyle.None) {
+				return new Point (0, 1);
+			}
+			return new Point (-2, 0);
 		}
 
 		/// <summary>
@@ -1785,7 +1807,7 @@ namespace Terminal.Gui {
 
 			if (mi.IsTopLevel) {
 				ViewToScreen (i, 0, out int rx, out int ry);
-				var menu = new Menu (this, rx, ry, mi);
+				var menu = new Menu (this, rx, ry, mi, null, MenusBorderStyle);
 				menu.Run (mi.Action);
 				menu.Dispose ();
 			} else {
@@ -1907,7 +1929,7 @@ namespace Terminal.Gui {
 						if (me.Flags == MouseFlags.Button1Clicked) {
 							if (Menus [i].IsTopLevel) {
 								ViewToScreen (i, 0, out int rx, out int ry);
-								var menu = new Menu (this, rx, ry, Menus [i]);
+								var menu = new Menu (this, rx, ry, Menus [i], null, MenusBorderStyle);
 								menu.Run (Menus [i].Action);
 								menu.Dispose ();
 							} else if (!IsMenuOpen) {

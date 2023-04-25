@@ -24,6 +24,7 @@ namespace Terminal.Gui.ViewsTests {
 			Assert.Equal (TextAlignment.Centered, btn.TextAlignment);
 			Assert.Equal ('_', btn.HotKeySpecifier);
 			Assert.True (btn.CanFocus);
+			Assert.Equal (new Rect (0, 0, 4, 1), btn.Bounds);
 			Assert.Equal (new Rect (0, 0, 4, 1), btn.Frame);
 			Assert.Equal (Key.Null, btn.HotKey);
 			var expected = @"
@@ -31,7 +32,7 @@ namespace Terminal.Gui.ViewsTests {
 ";
 			TestHelpers.AssertDriverContentsWithFrameAre (expected, output);
 			Application.End (rs);
-			
+
 			btn = new Button ("ARGS", true) { Text = "Test" };
 			Assert.Equal ("Test", btn.Text);
 			Application.Top.Add (btn);
@@ -42,6 +43,7 @@ namespace Terminal.Gui.ViewsTests {
 			Assert.Equal (TextAlignment.Centered, btn.TextAlignment);
 			Assert.Equal ('_', btn.HotKeySpecifier);
 			Assert.True (btn.CanFocus);
+			Assert.Equal (new Rect (0, 0, 10, 1), btn.Bounds);
 			Assert.Equal (new Rect (0, 0, 10, 1), btn.Frame);
 			Assert.Equal (Key.T, btn.HotKey);
 			expected = @"
@@ -49,7 +51,7 @@ namespace Terminal.Gui.ViewsTests {
 ";
 			TestHelpers.AssertDriverContentsWithFrameAre (expected, output);
 			Application.End (rs);
-			
+
 			btn = new Button (3, 4, "Test", true);
 			Assert.Equal ("Test", btn.Text);
 			Application.Top.Add (btn);
@@ -60,6 +62,7 @@ namespace Terminal.Gui.ViewsTests {
 			Assert.Equal (TextAlignment.Centered, btn.TextAlignment);
 			Assert.Equal ('_', btn.HotKeySpecifier);
 			Assert.True (btn.CanFocus);
+			Assert.Equal (new Rect (0, 0, 10, 1), btn.Bounds);
 			Assert.Equal (new Rect (3, 4, 10, 1), btn.Frame);
 			Assert.Equal (Key.T, btn.HotKey);
 			expected = @"
@@ -76,7 +79,7 @@ namespace Terminal.Gui.ViewsTests {
 		{
 			var clicked = false;
 			Button btn = new Button ("Test");
-			btn.Clicked += (s,e) => clicked = true;
+			btn.Clicked += (s, e) => clicked = true;
 			Application.Top.Add (btn);
 			Application.Begin (Application.Top);
 
@@ -119,7 +122,7 @@ namespace Terminal.Gui.ViewsTests {
 		{
 			var clicked = false;
 			Button btn = new Button ("Test");
-			btn.Clicked += (s,e) => clicked = true;
+			btn.Clicked += (s, e) => clicked = true;
 			Application.Top.Add (btn);
 			Application.Begin (Application.Top);
 
@@ -135,7 +138,6 @@ namespace Terminal.Gui.ViewsTests {
 			Assert.True (clicked);
 		}
 
-
 		/// <summary>
 		/// This test demonstrates how to change the activation key for Button
 		/// as described in the README.md keyboard handling section
@@ -146,7 +148,7 @@ namespace Terminal.Gui.ViewsTests {
 		{
 			int pressed = 0;
 			var btn = new Button ("Press Me");
-			btn.Clicked += (s,e) => pressed++;
+			btn.Clicked += (s, e) => pressed++;
 
 			// The Button class supports the Accept command
 			Assert.Contains (Command.Accept, btn.GetSupportedCommands ());
@@ -593,12 +595,12 @@ namespace Terminal.Gui.ViewsTests {
 			object sender = null;
 			KeyChangedEventArgs args = null;
 
-			btn.HotKeyChanged += (s, e) =>{
+			btn.HotKeyChanged += (s, e) => {
 				sender = s;
 				args = e;
 
 			};
-			
+
 			btn.HotKey = Key.r;
 			Assert.Same (btn, sender);
 			Assert.Equal (Key.Y, args.OldKey);

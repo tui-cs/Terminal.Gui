@@ -44,7 +44,6 @@ namespace UICatalog.Scenarios {
 				_itemsList.SetSource (items);
 			};
 
-
 			_btnActionCancel = new Button (1, 1, "Cancelable Load Items");
 			_btnActionCancel.Clicked += (s,e) => Application.MainLoop.Invoke (CallLoadItemsAsync);
 

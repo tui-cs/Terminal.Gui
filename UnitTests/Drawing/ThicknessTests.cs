@@ -50,7 +50,6 @@ namespace Terminal.Gui.DrawingTests {
 			Assert.Equal (1, t.Bottom);
 		}
 
-
 		[Fact ()]
 		public void Constructor_params ()
 		{
@@ -361,7 +360,6 @@ namespace Terminal.Gui.DrawingTests {
 			Assert.Equal (66, inside.Height);
 		}
 
-
 		[Fact ()]
 		public void GetInsideTests_Mixed_Pos_Neg_Thickness_Non_Empty_Size ()
 		{
@@ -411,7 +409,6 @@ namespace Terminal.Gui.DrawingTests {
 			TestHelpers.AssertDriverContentsWithFrameAre (@"
        Test (Left=0,Top=0,Right=0,Bottom=0)", output);
 
-
 			t = new Thickness (1, 1, 1, 1);
 			r = new Rect (5, 5, 40, 15);
 			ConsoleDriver.Diagnostics |= ConsoleDriver.DiagnosticFlags.FramePadding;
@@ -458,7 +455,6 @@ namespace Terminal.Gui.DrawingTests {
      TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT
      TTTest (Left=1,Top=2,Right=3,Bottom=4)TT", output);
 
-
 			t = new Thickness (-1, 1, 1, 1);
 			r = new Rect (5, 5, 40, 15);
 			ConsoleDriver.Diagnostics |= ConsoleDriver.DiagnosticFlags.FramePadding;
@@ -495,7 +491,6 @@ namespace Terminal.Gui.DrawingTests {
 				Height = Dim.Fill (),
 			};
 
-
 			Application.Top.Add (f);
 			Application.Begin (Application.Top);
 			
@@ -527,7 +522,6 @@ namespace Terminal.Gui.DrawingTests {
 │                                           │
 │                                           │
 └───────────────────────────────────────────┘", output);
-
 
 			t = new Thickness (1, 1, 1, 1);
 			r = new Rect (1, 1, 40, 15);
@@ -585,7 +579,6 @@ namespace Terminal.Gui.DrawingTests {
 │                                           │
 └───────────────────────────────────────────┘", output);
 
-
 			t = new Thickness (-1, 1, 1, 1);
 			r = new Rect (5, 5, 40, 15);
 			Application.Refresh ();
@@ -640,5 +633,4 @@ namespace Terminal.Gui.DrawingTests {
 		}
 	}
 }
-
 

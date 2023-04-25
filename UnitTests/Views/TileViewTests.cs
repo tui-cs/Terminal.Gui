@@ -6,7 +6,6 @@ using Xunit.Abstractions;
 
 // BUGBUG: v2 - These tests are all broken for now
 
-
 //namespace Terminal.Gui.ViewsTests {
 //	public class TileViewTests {
 //		readonly ITestOutputHelper output;
@@ -15,7 +14,6 @@ using Xunit.Abstractions;
 //		{
 //			this.output = output;
 //		}
-
 
 //		[Fact, AutoInitShutdown]
 //		public void TestTileView_Vertical ()
@@ -83,7 +81,6 @@ using Xunit.Abstractions;
 //      │     ";
 //			TestHelpers.AssertDriverContentsAre (looksLike, output);
 
-
 //			// and 2 to the left
 //			line.ProcessKey (new KeyEvent (Key.CursorLeft, new KeyModifiers ()));
 //			line.ProcessKey (new KeyEvent (Key.CursorLeft, new KeyModifiers ()));
@@ -123,7 +120,6 @@ using Xunit.Abstractions;
 //└─────┴───┘";
 //			TestHelpers.AssertDriverContentsAre (looksLike, output);
 
-
 //			// and 2 to the left
 //			line.ProcessKey (new KeyEvent (Key.CursorLeft, new KeyModifiers ()));
 //			line.ProcessKey (new KeyEvent (Key.CursorLeft, new KeyModifiers ()));
@@ -136,7 +132,6 @@ using Xunit.Abstractions;
 //└───┴─────┘";
 //			TestHelpers.AssertDriverContentsAre (looksLike, output);
 //		}
-
 
 //		[Fact, AutoInitShutdown]
 //		public void TestTileView_Vertical_Focused_50PercentSplit ()
@@ -168,7 +163,6 @@ using Xunit.Abstractions;
 
 //			// Even when moving the splitter location it should stay a Percentage based one
 //			Assert.IsType<Pos.PosFactor> (tileView.SplitterDistances.ElementAt (0));
-
 
 //			// and 2 to the left
 //			line.ProcessKey (new KeyEvent (Key.CursorLeft, new KeyModifiers ()));
@@ -205,7 +199,6 @@ using Xunit.Abstractions;
 //			tileView.Redraw (tileView.Bounds);
 //			TestHelpers.AssertDriverContentsAre (looksLike, output);
 //		}
-
 
 //		[Fact, AutoInitShutdown]
 //		public void TestTileView_Vertical_View1MinSize_Absolute ()
@@ -250,7 +243,6 @@ using Xunit.Abstractions;
 
 //			TestHelpers.AssertDriverContentsAre (looksLike, output);
 //		}
-
 
 //		[Fact, AutoInitShutdown]
 //		public void TestTileView_Vertical_View1MinSize_Absolute_WithBorder ()
@@ -478,7 +470,6 @@ using Xunit.Abstractions;
 //			TestHelpers.AssertDriverContentsAre (looksLike, output);
 //		}
 
-
 //		[Fact, AutoInitShutdown]
 //		public void TestTileView_Horizontal_View1MinSize_Absolute ()
 //		{
@@ -534,7 +525,6 @@ using Xunit.Abstractions;
 //			var ex = Assert.Throws<ArgumentException> (() => tileView.SetSplitterPos (0, Pos.Right (tileView)));
 //			Assert.Equal ("Only Percent and Absolute values are supported. Passed value was PosCombine", ex.Message);
 
-
 //			ex = Assert.Throws<ArgumentException> (() => tileView.SetSplitterPos (0, Pos.Function (() => 1)));
 //			Assert.Equal ("Only Percent and Absolute values are supported. Passed value was PosFunc", ex.Message);
 
@@ -555,7 +545,6 @@ using Xunit.Abstractions;
 //			Assert.IsType<TileView> (tileView.Tiles.ElementAt (0).ContentView);
 //			var left = (TileView)tileView.Tiles.ElementAt (0).ContentView;
 //			Assert.Same (left.SuperView, tileView);
-
 
 //			Assert.Equal (2, left.Tiles.ElementAt (0).ContentView.Subviews.Count);
 //			Assert.IsType<Label> (left.Tiles.ElementAt (0).ContentView.Subviews [0]);
@@ -585,9 +574,7 @@ using Xunit.Abstractions;
 //          │";
 //			TestHelpers.AssertDriverContentsAre (looksLike, output);
 
-
 //		}
-
 
 //		[Fact, AutoInitShutdown]
 //		public void TestNestedContainer3RightAnd1Down_RendersNicely ()
@@ -617,7 +604,6 @@ using Xunit.Abstractions;
 //			// 3 panels + 2 splitters
 //			Assert.Equal (5, tileView.Subviews.Count);
 
-
 //			// Check X and Widths of Tiles
 //			Assert.Equal (0, tileView.Tiles.ElementAt (0).ContentView.Frame.X);
 //			Assert.Equal (6, tileView.Tiles.ElementAt (0).ContentView.Frame.Width);
@@ -627,7 +613,6 @@ using Xunit.Abstractions;
 
 //			Assert.Equal (14, tileView.Tiles.ElementAt (2).ContentView.Frame.X);
 //			Assert.Equal (6, tileView.Tiles.ElementAt (2).ContentView.Frame.Width);
-
 
 //			// Check Y and Heights of Tiles
 //			Assert.Equal (0, tileView.Tiles.ElementAt (0).ContentView.Frame.Y);
@@ -690,7 +675,6 @@ using Xunit.Abstractions;
 
 //			Assert.Equal (14, tileView.Tiles.ElementAt (2).ContentView.Frame.X);
 //			Assert.Equal (5, tileView.Tiles.ElementAt (2).ContentView.Frame.Width);
-
 
 //			// Check Y and Heights of Tiles
 //			Assert.Equal (1, tileView.Tiles.ElementAt (0).ContentView.Frame.Y);
@@ -765,7 +749,6 @@ using Xunit.Abstractions;
 //			Assert.Same (toRemove, removed);
 //			Assert.DoesNotContain (removed, tileView.Tiles);
 
-
 //			tileView.Redraw (tileView.Bounds);
 
 //			looksLike =
@@ -787,7 +770,6 @@ using Xunit.Abstractions;
 //			tileView.RemoveTile (0);
 
 
-
 //			tileView.Redraw (tileView.Bounds);
 
 //			looksLike =
@@ -805,7 +787,6 @@ using Xunit.Abstractions;
 //			TestHelpers.AssertDriverContentsAre (looksLike, output);
 
 //			Assert.NotNull (tileView.RemoveTile (0));
-
 
 //			tileView.Redraw (tileView.Bounds);
 
@@ -942,7 +923,6 @@ using Xunit.Abstractions;
 //				Assert.True (tv.SetSplitterPos (0, x), $"Assert failed for x={x}");
 //			}
 
-
 //			for (int x = 10; x < 100; x++) {
 //				// These values would result in the first splitter moving past
 //				// the second splitter so are not allowed
@@ -966,7 +946,6 @@ using Xunit.Abstractions;
 //		public void Test5Panel_MinSizes_VerticalSplitters_ResizeSplitter1_NoBorder ()
 //		{
 //			var tv = Get5x1TilesView (false);
-
 
 //			tv.Tiles.ElementAt (0).MinSize = int.MaxValue;
 
@@ -992,7 +971,6 @@ using Xunit.Abstractions;
 //				// so are allowed
 //				Assert.True (tv.SetSplitterPos (0, x), $"Assert failed for x={x}");
 //			}
-
 
 //			for (int x = 10; x < 100; x++) {
 //				// These values would result in the first splitter moving past
@@ -1052,7 +1030,6 @@ using Xunit.Abstractions;
 //				Assert.True (tv.SetSplitterPos (0, x), $"Assert failed for x={x}");
 //			}
 
-
 //			for (int x = 10; x < 100; x++) {
 //				// These values would result in the first splitter moving past
 //				// the second splitter so are not allowed
@@ -1106,7 +1083,6 @@ using Xunit.Abstractions;
 //			for (int x = 6; x < 10; x++) {
 //				Assert.True (tv.SetSplitterPos (0, x), $"Assert failed for x={x}");
 //			}
-
 
 //			for (int x = 10; x < 100; x++) {
 //				// These values would result in the first splitter moving past
@@ -1164,11 +1140,9 @@ using Xunit.Abstractions;
 //";
 //			TestHelpers.AssertDriverContentsAre (looksLike, output);
 
-
 //			for (int x = 10; x < 15; x++) {
 //				Assert.True (tv.SetSplitterPos (1, x), $"Assert failed for x={x}");
 //			}
-
 
 //			for (int x = 15; x < 25; x++) {
 //				Assert.False (tv.SetSplitterPos (1, x), $"Assert failed for x={x}");
@@ -1225,11 +1199,9 @@ using Xunit.Abstractions;
 //";
 //			TestHelpers.AssertDriverContentsAre (looksLike, output);
 
-
 //			for (int x = 10; x < 15; x++) {
 //				Assert.True (tv.SetSplitterPos (1, x), $"Assert failed for x={x}");
 //			}
-
 
 //			for (int x = 15; x < 25; x++) {
 //				Assert.False (tv.SetSplitterPos (1, x), $"Assert failed for x={x}");
@@ -1287,11 +1259,9 @@ using Xunit.Abstractions;
 //";
 //			TestHelpers.AssertDriverContentsAre (looksLike, output);
 
-
 //			for (int x = 10; x < 12; x++) {
 //				Assert.True (tv.SetSplitterPos (1, x), $"Assert failed for x={x}");
 //			}
-
 
 //			for (int x = 12; x < 25; x++) {
 //				Assert.False (tv.SetSplitterPos (1, x), $"Assert failed for x={x}");
@@ -1352,11 +1322,9 @@ using Xunit.Abstractions;
 //";
 //			TestHelpers.AssertDriverContentsAre (looksLike, output);
 
-
 //			for (int x = 10; x < 12; x++) {
 //				Assert.True (tv.SetSplitterPos (1, x), $"Assert failed for x={x}");
 //			}
-
 
 //			for (int x = 12; x < 25; x++) {
 //				Assert.False (tv.SetSplitterPos (1, x), $"Assert failed for x={x}");
@@ -1376,7 +1344,6 @@ using Xunit.Abstractions;
 //			TestHelpers.AssertDriverContentsAre (looksLike, output);
 
 //		}
-
 
 //		[Fact, AutoInitShutdown]
 //		public void Test5Panel_NoMinSizes_VerticalSplitters_ResizeSplitter4_CannotMoveOverNeighbours ()
@@ -1414,11 +1381,9 @@ using Xunit.Abstractions;
 //";
 //			TestHelpers.AssertDriverContentsAre (looksLike, output);
 
-
 //			for (int x = 20; x < 24; x++) {
 //				Assert.True (tv.SetSplitterPos (3, x), $"Assert failed for x={x}");
 //			}
-
 
 //			for (int x = 24; x < 100; x++) {
 //				Assert.False (tv.SetSplitterPos (3, x), $"Assert failed for x={x}");
@@ -1475,11 +1440,9 @@ using Xunit.Abstractions;
 //";
 //			TestHelpers.AssertDriverContentsAre (looksLike, output);
 
-
 //			for (int x = 20; x < 25; x++) {
 //				Assert.True (tv.SetSplitterPos (3, x), $"Assert failed for x={x}");
 //			}
-
 
 //			for (int x = 25; x < 100; x++) {
 //				Assert.False (tv.SetSplitterPos (3, x), $"Assert failed for x={x}");
@@ -1498,7 +1461,6 @@ using Xunit.Abstractions;
 //			TestHelpers.AssertDriverContentsAre (looksLike, output);
 
 //		}
-
 
 //		[Fact, AutoInitShutdown]
 //		public void Test5Panel_MinSizes_VerticalSplitters_ResizeSplitter4 ()
@@ -1544,11 +1506,9 @@ using Xunit.Abstractions;
 //				Assert.True (tv.SetSplitterPos (3, x), $"Assert failed for x={x}");
 //			}
 
-
 //			for (int x = 23; x < 100; x++) {
 //				Assert.False (tv.SetSplitterPos (3, x), $"Assert failed for x={x}");
 //			}
-
 
 //			tv.SetNeedsDisplay ();
 //			tv.Redraw (tv.Bounds);
@@ -1606,11 +1566,9 @@ using Xunit.Abstractions;
 //				Assert.True (tv.SetSplitterPos (3, x), $"Assert failed for x={x}");
 //			}
 
-
 //			for (int x = 24; x < 100; x++) {
 //				Assert.False (tv.SetSplitterPos (3, x), $"Assert failed for x={x}");
 //			}
-
 
 //			tv.SetNeedsDisplay ();
 //			tv.Redraw (tv.Bounds);
@@ -1684,7 +1642,6 @@ using Xunit.Abstractions;
 //			Assert.Empty (tv.Tiles.ElementAt (0).Title);
 //		}
 
-
 //		[Fact, AutoInitShutdown]
 //		public void TestNestedContainer3RightAnd1Down_TileVisibility_WithBorder ()
 //		{
@@ -1752,7 +1709,6 @@ using Xunit.Abstractions;
 
 //			//			TestHelpers.AssertDriverContentsAre (looksLike, output);
 
-
 //			//			tileView.Tiles.ElementAt (0).ContentView.Visible = true;
 //			//			tileView.Tiles.ElementAt (1).ContentView.Visible = true;
 //			//			tileView.Tiles.ElementAt (2).ContentView.Visible = false;
@@ -1775,7 +1731,6 @@ using Xunit.Abstractions;
 
 //			//			TestHelpers.AssertDriverContentsAre (looksLike, output);
 
-
 //			//			tileView.Tiles.ElementAt (0).ContentView.Visible = true;
 //			//			tileView.Tiles.ElementAt (1).ContentView.Visible = false;
 //			//			tileView.Tiles.ElementAt (2).ContentView.Visible = false;
@@ -1797,7 +1752,6 @@ using Xunit.Abstractions;
 //			//└──────────────────┘";
 
 //			//			TestHelpers.AssertDriverContentsAre (looksLike, output);
-
 
 //			//			tileView.Tiles.ElementAt (0).ContentView.Visible = false;
 //			//			tileView.Tiles.ElementAt (1).ContentView.Visible = true;
@@ -1844,7 +1798,6 @@ using Xunit.Abstractions;
 //			TestHelpers.AssertDriverContentsAre (looksLike, output);
 
 
-
 //			TestHelpers.AssertDriverContentsAre (looksLike, output);
 
 //			tileView.Tiles.ElementAt (0).ContentView.Visible = false;
@@ -1870,7 +1823,6 @@ using Xunit.Abstractions;
 //			TestHelpers.AssertDriverContentsAre (looksLike, output);
 
 //		}
-
 
 
 //		[Fact, AutoInitShutdown]
@@ -1939,7 +1891,6 @@ using Xunit.Abstractions;
 
 //			//			TestHelpers.AssertDriverContentsAre (looksLike, output);
 
-
 //			//			tileView.Tiles.ElementAt (0).ContentView.Visible = true;
 //			//			tileView.Tiles.ElementAt (1).ContentView.Visible = true;
 //			//			tileView.Tiles.ElementAt (2).ContentView.Visible = false;
@@ -1962,7 +1913,6 @@ using Xunit.Abstractions;
 
 //			//			TestHelpers.AssertDriverContentsAre (looksLike, output);
 
-
 //			//			tileView.Tiles.ElementAt (0).ContentView.Visible = true;
 //			//			tileView.Tiles.ElementAt (1).ContentView.Visible = false;
 //			//			tileView.Tiles.ElementAt (2).ContentView.Visible = false;
@@ -1984,7 +1934,6 @@ using Xunit.Abstractions;
 //			//11111111111111111111";
 
 //			//			TestHelpers.AssertDriverContentsAre (looksLike, output);
-
 
 //			//			tileView.Tiles.ElementAt (0).ContentView.Visible = false;
 //			//			tileView.Tiles.ElementAt (1).ContentView.Visible = true;
@@ -2029,7 +1978,6 @@ using Xunit.Abstractions;
 //			//44444444444444444444";
 
 //			//			TestHelpers.AssertDriverContentsAre (looksLike, output);
-
 
 
 //			//			TestHelpers.AssertDriverContentsAre (looksLike, output);
@@ -2291,7 +2239,6 @@ using Xunit.Abstractions;
 //		{
 //			return tileView.Subviews.OfType<LineView> ().Single ();
 //		}
-
 
 //		private TileView Get5x1TilesView (bool border = true)
 //		{

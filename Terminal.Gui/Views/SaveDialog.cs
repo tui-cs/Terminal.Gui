@@ -49,7 +49,6 @@ namespace Terminal.Gui {
 			}
 		}
 
-
 		/// <summary>
 		/// Gets the name of the file the user selected for saving, or null
 		/// if the user canceled the <see cref="SaveDialog"/>.

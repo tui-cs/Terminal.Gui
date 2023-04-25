@@ -614,7 +614,6 @@ namespace Terminal.Gui {
 			return base.ProcessKey (keyEvent);
 		}
 
-
 		/// <summary>
 		/// <para>Triggers the <see cref="ObjectActivated"/> event with the <see cref="SelectedObject"/>.</para>
 		/// 
@@ -1079,7 +1078,6 @@ namespace Terminal.Gui {
 			GoToEnd ();
 		}
 
-
 		/// <summary>
 		/// Sets the selection to the next branch that matches the <paramref name="predicate"/>.
 		/// </summary>
@@ -1130,7 +1128,6 @@ namespace Terminal.Gui {
 			if (idx == -1) {
 				return;
 			}
-
 
 			/*this -1 allows for possible horizontal scroll bar in the last row of the control*/
 			int leaveSpace = Style.LeaveLastRow ? 1 : 0;

@@ -359,7 +359,6 @@ namespace Terminal.Gui.ViewsTests {
 			Assert.Equal ("╴ Check second out 你", checkBox2.TextFormatter.Text);
 			Assert.False (checkBox2.AutoSize);
 
-
 			var expected = @"
 ┌┤Test Demo 你├──────────────┐
 │                            │

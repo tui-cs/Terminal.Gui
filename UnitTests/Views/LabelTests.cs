@@ -71,7 +71,6 @@ Test
 			Assert.Equal ("heyb", ((Label)b).Text);
 		}
 
-
 		[Fact, AutoInitShutdown]
 		public void Update_Only_On_Or_After_Initialize ()
 		{
@@ -372,7 +371,6 @@ Test
 			Assert.Equal (Key.r, args.NewKey);
 		}
 
-
 		[Fact, AutoInitShutdown]
 		public void Label_WordWrap_PreserveTrailingSpaces_Horizontal_With_Simple_Runes ()
 		{
@@ -525,7 +523,6 @@ Test
 			Assert.Equal (new Rect (0, 0, width + 2, height + 2), pos);
 		}
 
-
 		[Fact, AutoInitShutdown]
 		public void Label_Draw_Horizontal_Simple_TextAlignments_Justified ()
 		{
@@ -672,7 +669,6 @@ e
 			var pos = TestHelpers.AssertDriverContentsWithFrameAre (expected, output);
 			Assert.Equal (new Rect (0, 0, 2, 7), pos);
 		}
-
 
 		[Fact, AutoInitShutdown]
 		public void Label_Draw_Horizontal_Simple_TextAlignments ()

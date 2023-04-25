@@ -380,9 +380,8 @@ namespace Terminal.Gui {
 		/// <summary>
 		/// Overridden so no Frames get drawn (BUGBUG: v2 fix this hack)
 		/// </summary>
-		/// <param name="bounds"></param>
 		/// <returns></returns>
-		public override bool OnDrawFrames (Rect bounds)
+		public override bool OnDrawFrames ()
 		{
 			return false;
 		}
@@ -433,7 +432,7 @@ namespace Terminal.Gui {
 			}
 
 			Driver.SetAttribute (ColorScheme.Normal);
-			foreach (var p in lc.GenerateImage (bounds)) {
+			foreach (var p in lc.GetMap (bounds)) {
 				this.AddRune (p.Key.X, p.Key.Y, p.Value);
 			}
 			
@@ -612,7 +611,6 @@ namespace Terminal.Gui {
 					spaceForLast--;
 				}
 
-
 				// don't shrink if it would take us below min size of left panel
 				if (spaceForLast < tiles [idx].MinSize) {
 					return false;
@@ -781,7 +779,6 @@ namespace Terminal.Gui {
 						splitterLines [Math.Min (i, splitterLines.Count - 1)].Visible = false;
 					}
 
-
 				}
 			}
 		}
@@ -941,7 +938,7 @@ namespace Terminal.Gui {
 
 					// Start a Drag
 					SetFocus ();
-					Application.EnsuresTopOnFront ();
+					Application.BringOverlappedTopToFront ();
 
 					if (mouseEvent.Flags == MouseFlags.Button1Pressed) {
 						dragPosition = new Point (mouseEvent.X, mouseEvent.Y);

@@ -68,7 +68,6 @@ namespace Terminal.Gui {
 			AddMenuStatusBar (view);
 		}
 
-
 		/// <inheritdoc/>
 		public override void Remove (View view)
 		{

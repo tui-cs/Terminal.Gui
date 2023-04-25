@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.IO.Abstractions;
 using System.Linq;
@@ -11,7 +12,6 @@ namespace Terminal.Gui {
 	/// (e.g. <see cref="IsParent"/>) and helper methods.
 	/// </summary>
 	internal class FileSystemInfoStats {
-
 
 		/* ---- Colors used by the ls command line tool ----
 		 *
@@ -34,14 +34,15 @@ namespace Terminal.Gui {
 		/// Initializes a new instance of the <see cref="FileSystemInfoStats"/> class.
 		/// </summary>
 		/// <param name="fsi">The directory of path to wrap.</param>
-		public FileSystemInfoStats (IFileSystemInfo fsi)
+		/// <param name="culture"></param>
+		public FileSystemInfoStats (IFileSystemInfo fsi, CultureInfo culture)
 		{
 			this.FileSystemInfo = fsi;
 			this.LastWriteTime = fsi.LastWriteTime;
 
 			if (fsi is IFileInfo fi) {
 				this.MachineReadableLength = fi.Length;
-				this.HumanReadableLength = GetHumanReadableFileSize (this.MachineReadableLength);				
+				this.HumanReadableLength = GetHumanReadableFileSize (this.MachineReadableLength, culture);
 				this.Type = fi.Extension;
 			} else {
 				this.HumanReadableLength = string.Empty;
@@ -113,11 +114,11 @@ namespace Terminal.Gui {
 			return 100;
 		}
 
-		private static string GetHumanReadableFileSize (long value)
+		private static string GetHumanReadableFileSize (long value, CultureInfo culture)
 		{
 
 			if (value < 0) {
-				return "-" + GetHumanReadableFileSize (-value);
+				return "-" + GetHumanReadableFileSize (-value, culture);
 			}
 
 			if (value == 0) {
@@ -126,9 +127,7 @@ namespace Terminal.Gui {
 
 			int mag = (int)Math.Log (value, ByteConversion);
 			double adjustedSize = value / Math.Pow (1000, mag);
-
-
-			return string.Format ("{0:n2} {1}", adjustedSize, SizeSuffixes [mag]);
+			return string.Format (culture.NumberFormat,"{0:n2} {1}", adjustedSize, SizeSuffixes [mag]);
 		}
 	}
 }

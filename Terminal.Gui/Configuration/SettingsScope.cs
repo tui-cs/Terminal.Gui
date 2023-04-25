@@ -6,7 +6,6 @@ using System.Reflection;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
-
 #nullable enable
 
 namespace Terminal.Gui {

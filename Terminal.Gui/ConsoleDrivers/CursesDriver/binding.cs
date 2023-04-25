@@ -73,7 +73,6 @@ namespace Unix.Terminal {
 		static UnmanagedLibrary curses_library;
 		static NativeMethods methods;
 
-
 		[DllImport ("libc")]
 		public extern static int setlocale (int cate, [MarshalAs (UnmanagedType.LPStr)] string locale);
 

@@ -27,7 +27,6 @@ namespace UICatalog.Scenarios {
 			var text = " jamp jemp jimp jomp jump";
 
 
-
 			var menu = new MenuBar (new MenuBarItem [] {
 				new MenuBarItem ("_File", new MenuItem [] {
 					miMultiline =  new MenuItem ("_Multiline", "", () => Multiline()){CheckType = MenuItemCheckStyle.Checked},

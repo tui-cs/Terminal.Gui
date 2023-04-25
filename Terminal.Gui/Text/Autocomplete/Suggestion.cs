@@ -21,7 +21,6 @@
 		/// </summary>
 		public string Replacement { get; }
 
-
 		/// <summary>
 		/// Creates a new instance of the <see cref="Suggestion"/> class.
 		/// </summary>

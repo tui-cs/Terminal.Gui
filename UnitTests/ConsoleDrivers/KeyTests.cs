@@ -11,7 +11,6 @@ namespace Terminal.Gui.InputTests {
 		[Flags]
 		enum FlaggedEnum { Zero, One, Two, Three, Four, Five }
 
-
 		enum SimpleHighValueEnum { Zero, One, Two, Three, Four, Last = 0x40000000 }
 
 		[Flags]
@@ -172,7 +171,6 @@ namespace Terminal.Gui.InputTests {
 			Assert.Equal ("d, ShiftMask", k.ToString ());
 		}
 
-
 		private static object packetLock = new object ();
 
 		/// <summary>
@@ -219,7 +217,6 @@ namespace Terminal.Gui.InputTests {
 				iterations++;
 				if (iterations == 0) Application.Driver.SendKeys ((char)mappedConsoleKey, ConsoleKey.Packet, shift, alt, control);
 			};
-
 
 			lock (packetLock) {
 				Application.Run ();

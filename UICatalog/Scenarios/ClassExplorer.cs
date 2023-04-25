@@ -183,7 +183,6 @@ namespace UICatalog.Scenarios {
 						}
 					}
 
-
 					if (val is ConstructorInfo ctor) {
 						sb.AppendLine ($"Name:{ctor.Name}");
 						sb.AppendLine ($"Parameters:{(ctor.GetParameters ().Any () ? "" : "None")}");
@@ -261,7 +260,6 @@ namespace UICatalog.Scenarios {
 				if (model is EventInfo ei) {
 					return ei.Name;
 				}
-
 
 
 			} catch (Exception ex) {

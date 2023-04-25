@@ -59,7 +59,6 @@ namespace Unix.Terminal {
 				}
 			}
 
-
 			public int wtimeout (int delay)
 			{
 				return Curses.wtimeout (Handle, delay);

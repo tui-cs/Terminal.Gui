@@ -17,7 +17,6 @@ namespace Terminal.Gui.ConfigurationTests {
 				}
 		};
 
-
 		[Fact]
 		public void ThemeManager_ClassMethodsWork ()
 		{

@@ -48,7 +48,6 @@ namespace UICatalog.Scenarios {
 				new StatusItem(Application.QuitKey, $"{Application.QuitKey} to Quit", () => Quit()),
 			});
 
-
 			Application.Top.Add (statusBar);
 		}
 
@@ -69,7 +68,6 @@ namespace UICatalog.Scenarios {
 			private Attribute blue;
 			private Attribute white;
 			private Attribute magenta;
-
 
 			public void Init ()
 			{
@@ -193,7 +191,6 @@ namespace UICatalog.Scenarios {
 				var words = Regex.Split (
 					new string (line.Select (r => (char)r).ToArray ()),
 					"\\b");
-
 
 				int count = 0;
 				string current = null;

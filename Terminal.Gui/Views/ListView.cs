@@ -544,7 +544,7 @@ namespace Terminal.Gui {
 			var current = ColorScheme.Focus;
 			Driver.SetAttribute (current);
 			Move (0, 0);
-			var f = Frame;
+			var f = Bounds;
 			var item = top;
 			bool focused = HasFocus;
 			int col = allowsMarking ? 2 : 0;
@@ -1043,8 +1043,10 @@ namespace Terminal.Gui {
 			}
 
 			var meY = showColumnHeaders ? me.Y - 1 : me.Y;
-
-			if (meY < 0 || top + meY / itemHeight >= source.Count) {
+            var framesThickness = GetFramesThickness();
+            if (meY + top - framesThickness.Top < 0
+                || meY + top > top + itemHeight - (framesThickness.Top + framesThickness.Bottom)
+                || top - framesThickness.Top + (meY / itemHeight) >= source.Count) {
 				return true;
 			}
 

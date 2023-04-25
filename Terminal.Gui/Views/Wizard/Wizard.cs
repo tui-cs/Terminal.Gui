@@ -73,25 +73,25 @@ namespace Terminal.Gui {
 		/// 
 		/// </remarks>
 		public class WizardStep : FrameView {
-			/// <summary>
-			/// The title of the <see cref="WizardStep"/>. 
-			/// </summary>
-			/// <remarks>The Title is only displayed when the <see cref="Wizard"/> is used as a modal pop-up (see <see cref="Wizard.Modal"/>.</remarks>
-			public new ustring Title {
-				// BUGBUG: v2 - No need for this as View now has Title w/ notifications.
-				get => title;
-				set {
-					if (!OnTitleChanging (title, value)) {
-						var old = title;
-						title = value;
-						OnTitleChanged (old, title);
-					}
-					base.Title = value;
-					SetNeedsDisplay ();
-				}
-			}
+			///// <summary>
+			///// The title of the <see cref="WizardStep"/>. 
+			///// </summary>
+			///// <remarks>The Title is only displayed when the <see cref="Wizard"/> is used as a modal pop-up (see <see cref="Wizard.Modal"/>.</remarks>
+			//public new ustring Title {
+			//	// BUGBUG: v2 - No need for this as View now has Title w/ notifications.
+			//	get => title;
+			//	set {
+			//		if (!OnTitleChanging (title, value)) {
+			//			var old = title;
+			//			title = value;
+			//			OnTitleChanged (old, title);
+			//		}
+			//		base.Title = value;
+			//		SetNeedsDisplay ();
+			//	}
+			//}
 
-			private ustring title = ustring.Empty;
+			//private ustring title = ustring.Empty;
 
 			// The contentView works like the ContentView in FrameView.
 			private View contentView = new View () { Data = "WizardContentView" };
@@ -127,14 +127,9 @@ namespace Terminal.Gui {
 			/// <summary>
 			/// Initializes a new instance of the <see cref="Wizard"/> class using <see cref="LayoutStyle.Computed"/> positioning.
 			/// </summary>
-			/// <param name="title">Title for the Step. Will be appended to the containing Wizard's title as 
-			/// "Wizard Title - Wizard Step Title" when this step is active.</param>
-			/// <remarks>
-			/// </remarks>
-			public WizardStep (ustring title)
+			public WizardStep ()
 			{
-				this.Title = title; // this.Title holds just the "Wizard Title"; base.Title holds "Wizard Title - Step Title"
-				this.BorderStyle = LineStyle.Rounded;
+				BorderStyle = LineStyle.None;
 				base.Add (contentView);
 
 				helpTextView.ReadOnly = true;
@@ -206,7 +201,7 @@ namespace Terminal.Gui {
 						helpTextView.Width = Dim.Fill ();
 
 					} else {
-						contentView.Width = Dim.Percent (100);
+						contentView.Width = Dim.Fill();
 					}
 				} else {
 					if (helpTextView.Text.Length > 0) {
@@ -282,10 +277,10 @@ namespace Terminal.Gui {
 			BorderStyle = LineStyle.Double;
 
 			//// Add a horiz separator
-			//var separator = new LineView (Graphs.Orientation.Horizontal) {
-			//	Y = Pos.AnchorEnd (2)
-			//};
-			//Add (separator);
+			var separator = new LineView (Orientation.Horizontal) {
+				Y = Pos.AnchorEnd (2)
+			};
+			Add (separator);
 
 			// BUGBUG: Space is to work around https://github.com/gui-cs/Terminal.Gui/issues/1812
 			backBtn = new Button (Strings.wzBack) { AutoSize = true };
@@ -300,13 +295,21 @@ namespace Terminal.Gui {
 
 			Loaded += Wizard_Loaded;
 			Closing += Wizard_Closing;
+			TitleChanged += Wizard_TitleChanged;
 
 			if (Modal) {
 				ClearKeybinding (Command.QuitToplevel);
 				AddKeyBinding (Key.Esc, Command.QuitToplevel);
 			}
 			SetNeedsLayout ();
+			
+		}
 
+		private void Wizard_TitleChanged (object sender, TitleEventArgs e)
+		{
+			if (ustring.IsNullOrEmpty (wizardTitle)) {
+				wizardTitle = e.NewTitle;
+			}
 		}
 
 		private void Wizard_Loaded (object sender, EventArgs args)
@@ -521,22 +524,22 @@ namespace Terminal.Gui {
 			UpdateButtonsAndTitle ();
 		}
 
-		/// <summary>
-		/// The title of the Wizard, shown at the top of the Wizard with " - currentStep.Title" appended.
-		/// </summary>
-		/// <remarks>
-		/// The Title is only displayed when the <see cref="Wizard"/> <see cref="Wizard.Modal"/> is set to <c>false</c>.
-		/// </remarks>
-		public new ustring Title {
-			get {
-				// The base (Dialog) Title holds the full title ("Wizard Title - Step Title")
-				return base.Title;
-			}
-			set {
-				wizardTitle = value;
-				base.Title = $"{wizardTitle}{(steps.Count > 0 && currentStep != null ? " - " + currentStep.Title : string.Empty)}";
-			}
-		}
+		///// <summary>
+		///// The title of the Wizard, shown at the top of the Wizard with " - currentStep.Title" appended.
+		///// </summary>
+		///// <remarks>
+		///// The Title is only displayed when the <see cref="Wizard"/> <see cref="Wizard.Modal"/> is set to <c>false</c>.
+		///// </remarks>
+		//public new ustring Title {
+		//	get {
+		//		// The base (Dialog) Title holds the full title ("Wizard Title - Step Title")
+		//		return base.Title;
+		//	}
+		//	set {
+		//		wizardTitle = value;
+		//		base.Title = $"{wizardTitle}{(steps.Count > 0 && currentStep != null ? " - " + currentStep.Title : string.Empty)}";
+		//	}
+		//}
 		private ustring wizardTitle = ustring.Empty;
 
 		/// <summary>
@@ -657,7 +660,7 @@ namespace Terminal.Gui {
 		{
 			if (CurrentStep == null) return;
 
-			base.Title = $"{wizardTitle}{(steps.Count > 0 ? " - " + CurrentStep.Title : string.Empty)}";
+			Title = $"{wizardTitle}{(steps.Count > 0 ? " - " + CurrentStep.Title : string.Empty)}";
 
 			// Configure the Back button
 			backBtn.Text = CurrentStep.BackButtonText != ustring.Empty ? CurrentStep.BackButtonText : Strings.wzBack; // "_Back";
@@ -682,9 +685,9 @@ namespace Terminal.Gui {
 			if (Modal) {
 				// If we're modal, then we expand the WizardStep so that the top and side 
 				// borders and not visible. The bottom border is the separator above the buttons.
-				step.X = step.Y = -1;
-				step.Height = Dim.Fill (1); // for button frame
-				step.Width = Dim.Fill (-1);
+				step.X = step.Y = 0;
+				step.Height = Dim.Fill (2); // for button frame
+				step.Width = Dim.Fill (0);
 			} else {
 				// If we're not a modal, then we show the border around the WizardStep
 				step.X = step.Y = 0;
@@ -696,7 +699,7 @@ namespace Terminal.Gui {
 		/// <summary>
 		/// Determines whether the <see cref="Wizard"/> is displayed as modal pop-up or not.
 		/// 
-		/// The default is <c>true</c>. The Wizard will be shown with a frame with <see cref="Title"/> and will behave like
+		/// The default is <see langword="true"/>. The Wizard will be shown with a frame and title and will behave like
 		/// any <see cref="Toplevel"/> window.
 		/// 
 		/// If set to <c>false</c> the Wizard will have no frame and will behave like any embedded <see cref="View"/>.

@@ -52,7 +52,6 @@ namespace Terminal.Gui {
 			SetInitialProperties (frame);
 		}
 
-
 		/// <summary>
 		///  Initializes a new instance of the <see cref="Gui.ScrollView"/> class using <see cref="LayoutStyle.Computed"/> positioning.
 		/// </summary>

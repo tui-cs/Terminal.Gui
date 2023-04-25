@@ -79,7 +79,7 @@ namespace Terminal.Gui {
 			}
 			if (container != null) {
 				container.Closing -= Container_Closing;
-				container.Resized -= Container_Resized;
+				container.TerminalResized -= Container_Resized;
 			}
 		}
 
@@ -93,7 +93,7 @@ namespace Terminal.Gui {
 			}
 			container = Application.Top;
 			container.Closing += Container_Closing;
-			container.Resized += Container_Resized;
+			container.TerminalResized += Container_Resized;
 			var frame = container.Frame;
 			var position = Position;
 			if (Host != null) {

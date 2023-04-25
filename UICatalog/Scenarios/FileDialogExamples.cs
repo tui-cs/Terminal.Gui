@@ -33,7 +33,6 @@ namespace UICatalog.Scenarios {
 			cbMustExist = new CheckBox ("Must Exist") { Checked = true, Y = y++, X = x };
 			Win.Add (cbMustExist);
 
-
 			cbUnicode = new CheckBox ("UseUnicode") { Checked = FileDialogStyle.DefaultUseUnicodeCharacters, Y = y++, X = x };
 			Win.Add (cbUnicode);
 

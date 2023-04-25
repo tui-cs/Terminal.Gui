@@ -17,7 +17,7 @@ using System;
 namespace Terminal.Gui {
 
 	/// <summary>
-	/// Event arguments for the <see cref="Application.Resized"/> event.
+	/// Event arguments for the <see cref="Application.TerminalResized"/> event.
 	/// </summary>
 	public class ResizedEventArgs : EventArgs {
 		/// <summary>

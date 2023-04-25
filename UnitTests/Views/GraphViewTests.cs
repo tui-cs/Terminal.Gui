@@ -111,7 +111,6 @@ namespace Terminal.Gui.ViewsTests {
 			Assert.Equal (1, botLeft.Width);
 			Assert.Equal (1, botLeft.Height);
 
-
 			// up 2 rows of the console and along 1 col
 			var up2along1 = gv.ScreenToGraphSpace (1, 7);
 			Assert.Equal (1, up2along1.X);
@@ -292,7 +291,6 @@ namespace Terminal.Gui.ViewsTests {
 			Assert.Equal (7, gv.GraphSpaceToScreen (new PointF (2, 11)).Y);
 		}
 
-
 		[Fact]
 		public void GraphSpaceToScreen_CustomCellSize_WithScrollOffset ()
 		{
@@ -318,7 +316,6 @@ namespace Terminal.Gui.ViewsTests {
 			Assert.Equal (12, along2up1.X);
 			Assert.Equal (7, along2up1.Y);
 
-
 			// More boundary testing for this cell size/offset
 			Assert.Equal (6, gv.GraphSpaceToScreen (new PointF (2, 6)).Y);
 			Assert.Equal (6, gv.GraphSpaceToScreen (new PointF (2, 7)).Y);
@@ -329,7 +326,6 @@ namespace Terminal.Gui.ViewsTests {
 		}
 
 		#endregion
-
 
 		/// <summary>
 		/// A cell size of 0 would result in mapping all graph space into the
@@ -355,7 +351,6 @@ namespace Terminal.Gui.ViewsTests {
 			// Shutdown must be called to safely clean up Application if Init has been called
 			Application.Shutdown ();
 		}
-
 
 
 		/// <summary>
@@ -549,7 +544,6 @@ namespace Terminal.Gui.ViewsTests {
 			Assert.Equal (4, series.SubSeries.ElementAt (4).Offset);
 		}
 
-
 		[Fact]
 		public void MultiBarSeriesColors_WrongNumber ()
 		{
@@ -567,7 +561,6 @@ namespace Terminal.Gui.ViewsTests {
 			// Shutdown must be called to safely clean up Application if Init has been called
 			Application.Shutdown ();
 		}
-
 
 		[Fact]
 		public void MultiBarSeriesColors_RightNumber ()
@@ -592,7 +585,6 @@ namespace Terminal.Gui.ViewsTests {
 			Application.Shutdown ();
 		}
 
-
 		[Fact]
 		public void MultiBarSeriesAddValues_WrongNumber ()
 		{
@@ -604,7 +596,6 @@ namespace Terminal.Gui.ViewsTests {
 
 			Assert.Equal ("Number of values must match the number of bars per category (Parameter 'values')", ex.Message);
 		}
-
 
 
 		[Fact]
@@ -684,7 +675,6 @@ namespace Terminal.Gui.ViewsTests {
 
 	public class BarSeriesTests {
 
-
 		private GraphView GetGraph (out FakeBarSeries series, out FakeHAxis axisX, out FakeVAxis axisY)
 		{
 			GraphViewTests.InitFakeDriver ();
@@ -741,7 +731,6 @@ namespace Terminal.Gui.ViewsTests {
 			// Shutdown must be called to safely clean up Application if Init has been called
 			Application.Shutdown ();
 		}
-
 
 		[Fact]
 		public void TestTwoTallBars_WithOffset ()
@@ -882,9 +871,7 @@ namespace Terminal.Gui.ViewsTests {
 		}
 	}
 
-
 	public class AxisTests {
-
 
 		private GraphView GetGraph (out FakeHAxis axis)
 		{
@@ -992,7 +979,6 @@ namespace Terminal.Gui.ViewsTests {
 		#endregion
 
 		#region VerticalAxisTests
-
 
 		/// <summary>
 		/// Tests that the horizontal axis is computed correctly and does not over spill
@@ -1124,7 +1110,6 @@ namespace Terminal.Gui.ViewsTests {
 			Application.Shutdown ();
 		}
 
-
 		[Fact]
 		public void TestTextAnnotation_GraphUnits ()
 		{
@@ -1197,11 +1182,9 @@ namespace Terminal.Gui.ViewsTests {
 
 			TestHelpers.AssertDriverContentsAre (expected, output);
 
-
 			// Shutdown must be called to safely clean up Application if Init has been called
 			Application.Shutdown ();
 		}
-
 
 		[Fact]
 		public void TestTextAnnotation_Offscreen ()
@@ -1262,7 +1245,6 @@ namespace Terminal.Gui.ViewsTests {
 
 			TestHelpers.AssertDriverContentsAre (expected, output);
 
-
 			// Shutdown must be called to safely clean up Application if Init has been called
 			Application.Shutdown ();
 		}
@@ -1297,7 +1279,6 @@ namespace Terminal.Gui.ViewsTests {
 
 			TestHelpers.AssertDriverContentsAre (expected, output);
 
-
 			// Shutdown must be called to safely clean up Application if Init has been called
 			Application.Shutdown ();
 		}
@@ -1325,7 +1306,6 @@ namespace Terminal.Gui.ViewsTests {
  0    5";
 
 			TestHelpers.AssertDriverContentsAre (expected, output);
-
 
 			// Shutdown must be called to safely clean up Application if Init has been called
 			Application.Shutdown ();
@@ -1369,7 +1349,6 @@ namespace Terminal.Gui.ViewsTests {
 
 			TestHelpers.AssertDriverContentsAre (expected, output);
 
-
 			// Shutdown must be called to safely clean up Application if Init has been called
 			Application.Shutdown ();
 		}
@@ -1408,7 +1387,6 @@ namespace Terminal.Gui.ViewsTests {
           
           ";
 			TestHelpers.AssertDriverContentsAre (expected, output);
-
 
 			// Shutdown must be called to safely clean up Application if Init has been called
 			Application.Shutdown ();
@@ -1451,11 +1429,9 @@ namespace Terminal.Gui.ViewsTests {
           ";
 			TestHelpers.AssertDriverContentsAre (expected, output);
 
-
 			// Shutdown must be called to safely clean up Application if Init has been called
 			Application.Shutdown ();
 		}
-
 
 		[Fact]
 		public void MarginBottom_BiggerThanHeight_ExpectBlankGraph ()
@@ -1477,7 +1453,6 @@ namespace Terminal.Gui.ViewsTests {
          
           ";
 			TestHelpers.AssertDriverContentsAre (expected, output);
-
 
 			// Shutdown must be called to safely clean up Application if Init has been called
 			Application.Shutdown ();
@@ -1502,7 +1477,6 @@ namespace Terminal.Gui.ViewsTests {
          
           ";
 			TestHelpers.AssertDriverContentsAre (expected, output);
-
 
 			// Shutdown must be called to safely clean up Application if Init has been called
 			Application.Shutdown ();
@@ -1537,7 +1511,6 @@ namespace Terminal.Gui.ViewsTests {
 
 			TestHelpers.AssertDriverContentsAre (expected, output);
 
-
 			// Shutdown must be called to safely clean up Application if Init has been called
 			Application.Shutdown ();
 		}
@@ -1571,7 +1544,7 @@ namespace Terminal.Gui.ViewsTests {
 				//put label into view
 				mount.Add (lbl1);
 
-				//putting mount into toplevel since changing size
+				//putting mount into Toplevel since changing size
 				//also change AutoSize to false
 				Application.Top.Add (mount);
 				Application.Begin (Application.Top);
@@ -1590,7 +1563,6 @@ namespace Terminal.Gui.ViewsTests {
 
 				// should have the new text rendered
 				TestHelpers.AssertDriverContentsAre ("ff1234", null);
-
 
 			} finally {
 				Application.Shutdown ();

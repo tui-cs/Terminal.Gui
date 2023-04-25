@@ -59,7 +59,6 @@ namespace UICatalog.Scenarios {
 				Height = 20,
 			};
 
-
 			tabView.AddTab (new TabView.Tab ("Tab1", new Label ("hodor!")), false);
 			tabView.AddTab (new TabView.Tab ("Tab2", new Label ("durdur")), false);
 			tabView.AddTab (new TabView.Tab ("Interactive Tab", GetInteractiveTab ()), false);
@@ -149,7 +148,6 @@ namespace UICatalog.Scenarios {
 
 			return interactiveTab;
 		}
-
 
 		private View GetBigTextFileTab ()
 		{

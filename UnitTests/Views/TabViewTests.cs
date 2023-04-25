@@ -300,7 +300,6 @@ namespace Terminal.Gui.ViewsTests {
 │hi2     │
 └────────┘", output);
 
-
 			// now make both tabs too long
 			tab1.Text = "12345678910";
 			tab2.Text = "abcdefghijklmnopq";
@@ -340,7 +339,6 @@ namespace Terminal.Gui.ViewsTests {
 │        │
 └────────┘", output);
 
-
 			tv.SelectedTab = tab2;
 
 			tv.Redraw (tv.Bounds);
@@ -377,7 +375,6 @@ namespace Terminal.Gui.ViewsTests {
 │hi2     │
 │        │
 └────────┘", output);
-
 
 			// now make both tabs too long
 			tab1.Text = "12345678910";
@@ -494,7 +491,6 @@ namespace Terminal.Gui.ViewsTests {
 │12│13    
 └──┘      ", output);
 
-
 			// Test first tab name too long
 			tab1.Text = "12345678910";
 			tab2.Text = "13";
@@ -518,7 +514,6 @@ namespace Terminal.Gui.ViewsTests {
 ◄  ┌─────┘
 │13│      
 └──┘      ", output);
-
 
 			// now make both tabs too long
 			tab1.Text = "12345678910";
@@ -559,7 +554,6 @@ namespace Terminal.Gui.ViewsTests {
 │  ┌─────┘
 │12│13    ", output);
 
-
 			tv.SelectedTab = tab2;
 
 			tv.Redraw (tv.Bounds);
@@ -596,7 +590,6 @@ namespace Terminal.Gui.ViewsTests {
 │        │
 ◄  ┌─────┘
 │13│      ", output);
-
 
 			// now make both tabs too long
 			tab1.Text = "12345678910";
@@ -812,7 +805,6 @@ namespace Terminal.Gui.ViewsTests {
 			Assert.Equal(tab1, clicked);
 			Assert.Equal(tab1, tv.SelectedTab);
 
-
 			// Click to tab2
 			tabRow.MouseEvent(new MouseEvent{
 					X = 7,
@@ -838,7 +830,6 @@ namespace Terminal.Gui.ViewsTests {
 			// Tab 1 was clicked but event handler blocked navigation
 			Assert.Equal(tab1, clicked);
 			Assert.Equal(tab2, tv.SelectedTab);
-
 
 			tabRow.MouseEvent (new MouseEvent {
 				X = 10,

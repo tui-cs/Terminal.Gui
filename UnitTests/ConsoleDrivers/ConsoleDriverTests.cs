@@ -173,7 +173,6 @@ namespace Terminal.Gui.DriverTests {
 		//	output.WriteLine ($"Add timeout to force quit after {abortTime}ms");
 		//	_ = Application.MainLoop.AddTimeout (TimeSpan.FromMilliseconds (abortTime), forceCloseCallback);
 
-
 		//	Key key = Key.Unknown;
 			
 		//	Application.Top.KeyPress += (e) => {
@@ -206,7 +205,7 @@ namespace Terminal.Gui.DriverTests {
 			var driver = (FakeDriver)Activator.CreateInstance (driverType);
 			Application.Init (driver);
 			var wasTerminalResized = false;
-			Application.Resized = (e) => {
+			Application.TerminalResized = (e) => {
 				wasTerminalResized = true;
 				Assert.Equal (120, e.Cols);
 				Assert.Equal (40, e.Rows);

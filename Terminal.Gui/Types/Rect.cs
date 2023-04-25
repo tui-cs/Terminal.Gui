@@ -9,6 +9,8 @@
 //
 
 using System;
+using System.Drawing;
+
 namespace Terminal.Gui
 {
 	/// <summary>
@@ -162,20 +164,27 @@ namespace Terminal.Gui
 		}
 
 		/// <summary>
-		///	Union Shared Method
+		///	Produces the uninion of two rectangles.
 		/// </summary>
 		///
 		/// <remarks>
 		///	Produces a new Rectangle from the union of 2 existing 
-		///	Rectangles.
+		///	Rectangles. 
 		/// </remarks>
 
 		public static Rect Union (Rect a, Rect b)
 		{
-			return FromLTRB (Math.Min (a.Left, b.Left),
-					 Math.Min (a.Top, b.Top),
-					 Math.Max (a.Right, b.Right),
-					 Math.Max (a.Bottom, b.Bottom));
+			//int x1 = Math.Min (a.X, b.X);
+			//int x2 = Math.Max (a.X + a.Width, b.X + b.Width);
+			//int y1 = Math.Min (a.Y, b.Y);oS
+			//int y2 = Math.Max (a.Y + a.Height, b.Y + b.Height);
+			//return new Rect (x1, y1, x2 - x1, y2 - y1);
+
+			int x1 = Math.Min (a.X, b.X);
+			int x2 = Math.Max (a.X + Math.Abs (a.Width), b.X + Math.Abs (b.Width));
+			int y1 = Math.Min (a.Y, b.Y);
+			int y2 = Math.Max (a.Y + Math.Abs (a.Height), b.Y + Math.Abs (b.Height));
+			return new Rect (x1, y1, x2 - x1, y2 - y1);
 		}
 
 		/// <summary>
@@ -250,7 +259,6 @@ namespace Terminal.Gui
 			Width = this.width;
 			Height = this.height;
 		}
-
 
 
 		/// <summary>
@@ -489,8 +497,7 @@ namespace Terminal.Gui
 
 		public override string ToString ()
 		{
-			return String.Format ("{{X={0},Y={1},Width={2},Height={3}}}",
-						 X, Y, Width, Height);
+			return $"({X},{Y},{Width},{Height})";
 		}
 	}
 }

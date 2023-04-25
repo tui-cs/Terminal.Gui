@@ -184,7 +184,6 @@ namespace Terminal.Gui.ViewsTests {
 			Assert.True (field.IsValid);
 		}
 
-
 		[Fact]
 		[AutoInitShutdown]
 		public void Initial_Value_Exact_Valid ()
@@ -295,7 +294,6 @@ namespace Terminal.Gui.ViewsTests {
 			Assert.Equal ("--(___4)--", field.Provider.DisplayText);
 			Assert.False (field.IsValid);
 		}
-
 
 		[Fact]
 		[AutoInitShutdown]

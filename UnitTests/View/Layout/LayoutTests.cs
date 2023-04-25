@@ -81,7 +81,6 @@ namespace Terminal.Gui.ViewTests {
 			Assert.Equal (6, second.Frame.X);
 		}
 
-
 		[Fact]
 		public void LayoutSubviews_ViewThatRefsSubView_Throws ()
 		{
@@ -300,7 +299,7 @@ namespace Terminal.Gui.ViewTests {
 			super.LayoutSubviews ();
 
 			Assert.False (label.AutoSize);
-			Assert.Equal ("{X=0,Y=0,Width=0,Height=1}", label.Bounds.ToString ());
+			Assert.Equal ("(0,0,0,1)", label.Bounds.ToString ());
 		}
 
 		[Fact]
@@ -315,7 +314,7 @@ namespace Terminal.Gui.ViewTests {
 			super.LayoutSubviews ();
 
 			Assert.True (label.AutoSize);
-			Assert.Equal ("{X=0,Y=0,Width=8,Height=1}", label.Bounds.ToString ());
+			Assert.Equal ("(0,0,8,1)", label.Bounds.ToString ());
 		}
 
 		[Fact, AutoInitShutdown]
@@ -328,19 +327,19 @@ namespace Terminal.Gui.ViewTests {
 
 			// Text is empty so height=0
 			Assert.False (label.AutoSize);
-			Assert.Equal ("{X=0,Y=0,Width=0,Height=0}", label.Bounds.ToString ());
+			Assert.Equal ("(0,0,0,0)", label.Bounds.ToString ());
 
 			label.Text = "New text\nNew line";
 			Application.Top.LayoutSubviews ();
 
 			Assert.False (label.AutoSize);
-			Assert.Equal ("{X=0,Y=0,Width=28,Height=78}", label.Bounds.ToString ());
+			Assert.Equal ("(0,0,28,78)", label.Bounds.ToString ());
 			Assert.False (label.IsInitialized);
 
 			Application.Begin (Application.Top);
 			Assert.True (label.IsInitialized);
 			Assert.False (label.AutoSize);
-			Assert.Equal ("{X=0,Y=0,Width=28,Height=78}", label.Bounds.ToString ());
+			Assert.Equal ("(0,0,28,78)", label.Bounds.ToString ());
 		}
 
 		[Fact, AutoInitShutdown]
@@ -356,27 +355,27 @@ namespace Terminal.Gui.ViewTests {
 			// Text is empty so height=0
 			Assert.True (label.AutoSize);
 			// BUGBUG: LayoutSubviews has not been called, so this test is not really valid (pos/dim are indeterminate, not 0)
-			Assert.Equal ("{X=0,Y=0,Width=0,Height=0}", label.Bounds.ToString ());
+			Assert.Equal ("(0,0,0,0)", label.Bounds.ToString ());
 
 			label.Text = "First line\nSecond line";
 			Application.Top.LayoutSubviews ();
 
 			Assert.True (label.AutoSize);
 			// BUGBUG: This test is bogus: label has not been initialized. pos/dim is indeterminate!
-			Assert.Equal ("{X=0,Y=0,Width=28,Height=2}", label.Bounds.ToString ());
+			Assert.Equal ("(0,0,28,2)", label.Bounds.ToString ());
 			Assert.False (label.IsInitialized);
 
 			Application.Begin (Application.Top);
 
 			Assert.True (label.AutoSize);
-			Assert.Equal ("{X=0,Y=0,Width=28,Height=2}", label.Bounds.ToString ());
+			Assert.Equal ("(0,0,28,2)", label.Bounds.ToString ());
 			Assert.True (label.IsInitialized);
 
 			label.AutoSize = false;
 			Application.Refresh ();
 
 			Assert.False (label.AutoSize);
-			Assert.Equal ("{X=0,Y=0,Width=28,Height=1}", label.Bounds.ToString ());
+			Assert.Equal ("(0,0,28,1)", label.Bounds.ToString ());
 		}
 
 		[Fact, AutoInitShutdown]
@@ -389,7 +388,7 @@ namespace Terminal.Gui.ViewTests {
 
 			// Text is empty so height=0
 			Assert.True (label.AutoSize);
-			Assert.Equal ("{X=0,Y=0,Width=0,Height=0}", label.Bounds.ToString ());
+			Assert.Equal ("(0,0,0,0)", label.Bounds.ToString ());
 
 			Application.Begin (Application.Top);
 
@@ -397,7 +396,7 @@ namespace Terminal.Gui.ViewTests {
 			// Here the AutoSize ensuring the right size with width 28 (Dim.Fill)
 			// and height 0 because wasn't set and the text is empty
 			// BUGBUG: Because of #2450, this test is bogus: pos/dim is indeterminate!
-			//Assert.Equal ("{X=0,Y=0,Width=28,Height=0}", label.Bounds.ToString ());
+			//Assert.Equal ("(0,0,28,0)", label.Bounds.ToString ());
 
 			label.Text = "First line\nSecond line";
 			Application.Refresh ();
@@ -405,14 +404,14 @@ namespace Terminal.Gui.ViewTests {
 			// Here the AutoSize ensuring the right size with width 28 (Dim.Fill)
 			// and height 2 because wasn't set and the text has 2 lines
 			Assert.True (label.AutoSize);
-			Assert.Equal ("{X=0,Y=0,Width=28,Height=2}", label.Bounds.ToString ());
+			Assert.Equal ("(0,0,28,2)", label.Bounds.ToString ());
 
 			label.AutoSize = false;
 			Application.Refresh ();
 
 			// Here the SetMinWidthHeight ensuring the minimum height
 			Assert.False (label.AutoSize);
-			Assert.Equal ("{X=0,Y=0,Width=28,Height=1}", label.Bounds.ToString ());
+			Assert.Equal ("(0,0,28,1)", label.Bounds.ToString ());
 
 			label.Text = "First changed line\nSecond changed line\nNew line";
 			Application.Refresh ();
@@ -420,7 +419,7 @@ namespace Terminal.Gui.ViewTests {
 			// Here the AutoSize is false and the width 28 (Dim.Fill) and
 			// height 1 because wasn't set and SetMinWidthHeight ensuring the minimum height
 			Assert.False (label.AutoSize);
-			Assert.Equal ("{X=0,Y=0,Width=28,Height=1}", label.Bounds.ToString ());
+			Assert.Equal ("(0,0,28,1)", label.Bounds.ToString ());
 
 			label.AutoSize = true;
 			Application.Refresh ();
@@ -429,7 +428,7 @@ namespace Terminal.Gui.ViewTests {
 			// and height 3 because wasn't set and the text has 3 lines
 			Assert.True (label.AutoSize);
 			// BUGBUG: v2 - AutoSize is broken - temporarily disabling test See #2432
-			//Assert.Equal ("{X=0,Y=0,Width=28,Height=3}", label.Bounds.ToString ());
+			//Assert.Equal ("(0,0,28,3)", label.Bounds.ToString ());
 		}
 
 		[Fact, AutoInitShutdown]
@@ -677,6 +676,10 @@ Y
 			Application.Begin (Application.Top);
 			((FakeDriver)Application.Driver).SetBufferSize (22, 22);
 
+			Assert.Equal (new Rect (0, 0, 22, 22), win.Frame);
+			Assert.Equal (new Rect (0, 0, 22, 22), win.Margin.Frame);
+			Assert.Equal (new Rect (0, 0, 22, 22), win.Border.Frame);
+			Assert.Equal (new Rect (1, 1, 20, 20), win.Padding.Frame);
 			Assert.False (view.AutoSize);
 			Assert.Equal (TextDirection.LeftRight_TopBottom, view.TextDirection);
 			Assert.Equal (Rect.Empty, view.Frame);
@@ -1010,15 +1013,15 @@ Y
 			Assert.Equal (new Rect (0, 0, 9, 1), horizontalView.Frame);
 			Assert.Equal ("Absolute(0)", horizontalView.X.ToString ());
 			Assert.Equal ("Absolute(0)", horizontalView.Y.ToString ());
-			// BUGBUG - v2 - With v1 AutoSize = true Width/Height should always match Frame.Width/Height, 
+			// BUGBUG - v2 - With v1 AutoSize = true Width/Height should always grow or keep initial value, 
 			// but in v2, autosize will be replaced by Dim.Fit. Disabling test for now.
-			//Assert.Equal ("Absolute(9)", horizontalView.Width.ToString ());
-			//Assert.Equal ("Absolute(1)", horizontalView.Height.ToString ());
-			//Assert.Equal (new Rect (0, 3, 2, 8), verticalView.Frame);
+			Assert.Equal ("Absolute(9)", horizontalView.Width.ToString ());
+			Assert.Equal ("Absolute(1)", horizontalView.Height.ToString ());
+			Assert.Equal (new Rect (0, 3, 2, 8), verticalView.Frame);
 			Assert.Equal ("Absolute(0)", verticalView.X.ToString ());
 			Assert.Equal ("Absolute(3)", verticalView.Y.ToString ());
-			//Assert.Equal ("Absolute(2)", verticalView.Width.ToString ());
-			//Assert.Equal ("Absolute(8)", verticalView.Height.ToString ());
+			Assert.Equal ("Absolute(2)", verticalView.Width.ToString ());
+			Assert.Equal ("Absolute(8)", verticalView.Height.ToString ());
 			var expected = @"
 ┌────────────────────┐
 │Finish 終           │
@@ -1051,12 +1054,12 @@ Y
 			Application.Top.Redraw (Application.Top.Bounds);
 			Assert.True (horizontalView.AutoSize);
 			Assert.True (verticalView.AutoSize);
-			// height was initialized with 8 and is kept as minimum
-			Assert.Equal (new Rect (0, 3, 2, 7), verticalView.Frame);
+			// height was initialized with 8 and can only grow or keep initial value
+			Assert.Equal (new Rect (0, 3, 2, 8), verticalView.Frame);
 			Assert.Equal ("Absolute(0)", verticalView.X.ToString ());
 			Assert.Equal ("Absolute(3)", verticalView.Y.ToString ());
-			//Assert.Equal ("Absolute(2)", verticalView.Width.ToString ());
-			//Assert.Equal ("Absolute(8)", verticalView.Height.ToString ());
+			Assert.Equal ("Absolute(2)", verticalView.Width.ToString ());
+			Assert.Equal ("Absolute(8)", verticalView.Height.ToString ());
 			expected = @"
 ┌────────────────────┐
 │Finish 終           │
@@ -1514,7 +1517,6 @@ Y
 			Assert.Equal (6, testView.Frame.Y);
 		}
 
-
 		[Theory, AutoInitShutdown]
 		[InlineData (1)]
 		[InlineData (2)]
@@ -1544,7 +1546,6 @@ Y
 
 			var rs = Application.Begin (win);
 			bool firstIteration = false;
-
 
 
 			((FakeDriver)Application.Driver).SetBufferSize (20, height);
@@ -1682,7 +1683,6 @@ Y
 
 			var rs = Application.Begin (win);
 			bool firstIteration = false;
-
 
 
 			((FakeDriver)Application.Driver).SetBufferSize (width, 7);
@@ -1855,7 +1855,6 @@ Y
 
 			Application.End (rs);
 		}
-
 
 		[Fact]
 		public void Draw_Vertical_Throws_IndexOutOfRangeException_With_Negative_Bounds ()

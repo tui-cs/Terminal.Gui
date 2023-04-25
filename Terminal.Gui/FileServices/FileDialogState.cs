@@ -10,10 +10,18 @@ namespace Terminal.Gui {
 
 		public FileSystemInfoStats Selected { get; set; }
 		protected readonly FileDialog Parent;
+
+		/// <summary>
+		/// Gets what was entered in the path text box of the dialog
+		/// when the state was active.
+		/// </summary>
+		public string Path { get; }
+		
 		public FileDialogState (IDirectoryInfo dir, FileDialog parent)
 		{
 			this.Directory = dir;
 			Parent = parent;
+			Path = parent.Path;
 
 			this.RefreshChildren ();
 		}
@@ -36,9 +44,9 @@ namespace Terminal.Gui {
 
 				// if directories only
 				if (Parent.OpenMode == OpenMode.Directory) {
-					children = dir.GetDirectories ().Select (e => new FileSystemInfoStats (e)).ToList ();
+					children = dir.GetDirectories ().Select (e => new FileSystemInfoStats (e, Parent.Style.Culture)).ToList ();
 				} else {
-					children = dir.GetFileSystemInfos ().Select (e => new FileSystemInfoStats (e)).ToList ();
+					children = dir.GetFileSystemInfos ().Select (e => new FileSystemInfoStats (e, Parent.Style.Culture)).ToList ();
 				}
 
 				// if only allowing specific file types
@@ -55,10 +63,9 @@ namespace Terminal.Gui {
 					children = children.Where (MatchesApiFilter).ToList ();
 				}
 
-
 				// allow navigating up as '..'
 				if (dir.Parent != null) {
-					children.Add (new FileSystemInfoStats (dir.Parent) { IsParent = true });
+					children.Add (new FileSystemInfoStats (dir.Parent, Parent.Style.Culture) { IsParent = true });
 				}
 
 				return children;

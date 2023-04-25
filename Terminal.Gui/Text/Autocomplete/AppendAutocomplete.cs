@@ -30,7 +30,6 @@ namespace Terminal.Gui {
 			this.textField = textField;
 			SelectionKey = Key.Tab;
 
-
 			ColorScheme = new ColorScheme{
 				Normal = new Attribute(Color.DarkGray,0),
 				Focus = new Attribute(Color.DarkGray,0),
@@ -147,7 +146,6 @@ namespace Terminal.Gui {
 			return false;
 		}
 
-
 		internal void SetTextTo (FileSystemInfo fileSystemInfo)
 		{
 			var newText = fileSystemInfo.FullName;
@@ -157,7 +155,6 @@ namespace Terminal.Gui {
 			textField.Text = newText;
 			textField.MoveEnd ();
 		}
-
 
 		/// <summary>
 		/// Returns true if there is a suggestion that can be made and the control

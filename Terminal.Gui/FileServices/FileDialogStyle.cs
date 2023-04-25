@@ -23,7 +23,6 @@ namespace Terminal.Gui {
 		[SerializableConfigurationProperty(Scope = typeof (SettingsScope))]
 		public static bool DefaultUseColors { get; set; }
 
-
 		/// <summary>
 		/// Gets or sets the default value to use for <see cref="UseUnicodeCharacters"/>.
 		/// This can be populated from .tui config files via <see cref="ConfigurationManager"/>
@@ -37,6 +36,12 @@ namespace Terminal.Gui {
 		/// to false.
 		/// </summary>
 		public bool UseColors { get; set; }
+
+		/// <summary>
+		/// Gets or sets the culture to use (e.g. for number formatting).
+		/// Defaults to <see cref="CultureInfo.CurrentUICulture"/>.
+		/// <summary>
+		public CultureInfo Culture {get;set;} = CultureInfo.CurrentUICulture;
 
 		/// <summary>
 		/// Sets a <see cref="ColorScheme"/> to use for directories rows of
@@ -158,13 +163,11 @@ namespace Terminal.Gui {
 		/// </summary>
 		public bool UseUnicodeCharacters { get; set; } = DefaultUseUnicodeCharacters;
 
-
 		/// <summary>
 		/// User defined delegate for picking which character(s)/unicode
 		/// symbol(s) to use as an 'icon' for files/folders. 
 		/// </summary>
 		public Func<IFileSystemInfo, string> IconGetter { get; set; }
-
 
 		/// <summary>
 		/// Gets or sets the format to use for date/times in the Modified column.
@@ -172,7 +175,6 @@ namespace Terminal.Gui {
 		/// of the <see cref="CultureInfo.CurrentCulture"/>
 		/// </summary>
 		public string DateFormat { get; set; }
-
 
 		/// <summary>
 		/// Creates a new instance of the <see cref="FileDialogStyle"/> class.
@@ -232,7 +234,6 @@ namespace Terminal.Gui {
 			} catch (Exception) {
 				// Cannot get the system disks thats fine
 			}
-
 
 			try {
 				foreach (var special in Enum.GetValues (typeof (Environment.SpecialFolder)).Cast<SpecialFolder> ()) {

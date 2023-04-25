@@ -223,7 +223,6 @@ namespace Terminal.Gui.DialogTests {
 
 				if (iterations == 0) {
 
-
 					MessageBox.Query (string.Empty, message, "_Ok");
 
 					Application.RequestStop ();

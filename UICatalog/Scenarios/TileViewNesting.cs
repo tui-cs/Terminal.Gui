@@ -37,7 +37,6 @@ namespace UICatalog.Scenarios {
 
 			textField.TextChanged += (s,e) => SetupTileView ();
 
-
 			cbHorizontal = new CheckBox ("Horizontal") {
 				X = Pos.Right (textField) + 1
 			};
@@ -111,9 +110,7 @@ namespace UICatalog.Scenarios {
 			root.Tiles.ElementAt (1).ContentView.Add (CreateContentControl (2));
 			root.Tiles.ElementAt (1).Title = (bool)cbTitles.Checked ? $"View 2" : string.Empty;
 
-
 			root.LineStyle = (bool)border ? LineStyle.Rounded : LineStyle.None;
-
 
 			workArea.Add (root);
 

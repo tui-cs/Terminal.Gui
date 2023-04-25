@@ -42,19 +42,19 @@ namespace Terminal.Gui.ViewsTests {
 
 			view.Redraw (view.Bounds);
 
-			var expected = "/";
+			var expected = @"\";
 			TestHelpers.AssertDriverContentsWithFrameAre (expected, output);
 
 			view.SetNeedsDisplay ();
 			view.Redraw (view.Bounds);
 
-			expected = "/";
+			expected = @"\";
 			TestHelpers.AssertDriverContentsWithFrameAre (expected, output);
 
 			view.SetNeedsDisplay ();
 			view.Redraw (view.Bounds);
 
-			expected = "/";
+			expected = @"\";
 			TestHelpers.AssertDriverContentsWithFrameAre (expected, output);
 
 			Task.Delay (400).Wait();
@@ -62,26 +62,24 @@ namespace Terminal.Gui.ViewsTests {
 			view.SetNeedsDisplay ();
 			view.Redraw (view.Bounds);
 
-			expected = "─";
+			expected = "|";
 			TestHelpers.AssertDriverContentsWithFrameAre (expected, output);
 		}
 		[Fact, AutoInitShutdown]
 		public void TestSpinnerView_NoThrottle ()
 		{
 			var view = GetSpinnerView ();
-			view.SpinDelayInMilliseconds = 0;
+			view.SpinDelay = 0;
 
 			view.Redraw (view.Bounds);
 
-
-			var expected = @"─";
+			var expected = "|";
 			TestHelpers.AssertDriverContentsWithFrameAre (expected, output);
 
 			view.SetNeedsDisplay ();
 			view.Redraw (view.Bounds);
 
-
-			expected = @"\";
+			expected = "/";
 			TestHelpers.AssertDriverContentsWithFrameAre (expected, output);
 		}
 

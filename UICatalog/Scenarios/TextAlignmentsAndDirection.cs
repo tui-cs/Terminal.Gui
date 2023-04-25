@@ -97,7 +97,6 @@ namespace UICatalog.Scenarios {
 
 			Win.Add (container);
 
-
 			// Edit Text
 
 			var editText = new TextView () {
@@ -131,7 +130,6 @@ namespace UICatalog.Scenarios {
 
 			Win.Add (editText);
 
-
 			// JUSTIFY CHECKBOX
 
 			var justifyCheckbox = new CheckBox ("Justify") {
@@ -161,7 +159,6 @@ namespace UICatalog.Scenarios {
 			};
 
 			Win.Add (justifyCheckbox);
-
 
 			// Direction Options
 

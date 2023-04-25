@@ -621,7 +621,6 @@ namespace Terminal.Gui.ViewTests {
 			Application.Shutdown ();
 		}
 
-
 		[Fact]
 		public void Navigation_With_Null_Focused_View ()
 		{
@@ -728,7 +727,6 @@ namespace Terminal.Gui.ViewTests {
 
 			Assert.Equal (1, iterations);
 		}
-
 
 		[Fact]
 		[AutoInitShutdown]
@@ -875,7 +873,7 @@ namespace Terminal.Gui.ViewTests {
 			tf.KeyPress -= Tf_KeyPress;
 			tfQuiting = false;
 			Application.Driver.SendKeys ('q', ConsoleKey.Q, false, false, true);
-			Application.MainLoop.MainIteration ();
+			Application.MainLoop.RunIteration ();
 			Assert.True (sbQuiting);
 			Assert.False (tfQuiting);
 			Assert.False (topQuiting);
@@ -883,7 +881,7 @@ namespace Terminal.Gui.ViewTests {
 			sb.RemoveItem (0);
 			sbQuiting = false;
 			Application.Driver.SendKeys ('q', ConsoleKey.Q, false, false, true);
-			Application.MainLoop.MainIteration ();
+			Application.MainLoop.RunIteration ();
 			Assert.False (sbQuiting);
 			Assert.False (tfQuiting);
 			Assert.True (topQuiting);
@@ -924,7 +922,7 @@ namespace Terminal.Gui.ViewTests {
 			tf.KeyPress -= Tf_KeyPress;
 			tfQuiting = false;
 			Application.Driver.SendKeys ('q', ConsoleKey.Q, false, false, true);
-			Application.MainLoop.MainIteration ();
+			Application.MainLoop.RunIteration ();
 			Assert.True (sbQuiting);
 			Assert.False (tfQuiting);
 		}

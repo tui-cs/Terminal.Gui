@@ -15,19 +15,19 @@ namespace UICatalog.Scenarios {
 
 		public override void Run ()
 		{
-			Application.Run<MdiMain> ();
+			Application.Run<OverlappedMain> ();
 		}
 
-		class MdiMain : Toplevel {
+		class OverlappedMain : Toplevel {
 			private WorkerApp workerApp;
 			private bool canOpenWorkerApp;
 			MenuBar menu;
 
-			public MdiMain ()
+			public OverlappedMain ()
 			{
-				Data = "MdiMain";
+				Data = "OverlappedMain";
 
-				IsMdiContainer = true;
+				IsOverlappedContainer = true;
 
 				workerApp = new WorkerApp () { Visible = false };
 
@@ -51,19 +51,19 @@ namespace UICatalog.Scenarios {
 				});
 				Add (statusBar);
 
-				Activate += MdiMain_Activate;
-				Deactivate += MdiMain_Deactivate;
+				Activate += OverlappedMain_Activate;
+				Deactivate += OverlappedMain_Deactivate;
 
-				Closed += MdiMain_Closed;
+				Closed += OverlappedMain_Closed;
 
 				Application.Iteration += () => {
-					if (canOpenWorkerApp && !workerApp.Running && Application.MdiTop.Running) {
+					if (canOpenWorkerApp && !workerApp.Running && Application.OverlappedTop.Running) {
 						Application.Run (workerApp);
 					}
 				};
 			}
 
-			private void MdiMain_Closed (object sender, ToplevelEventArgs e)
+			private void OverlappedMain_Closed (object sender, ToplevelEventArgs e)
 			{
 				workerApp.Dispose ();
 				Dispose ();
@@ -82,12 +82,12 @@ namespace UICatalog.Scenarios {
 				}
 			}
 
-			private void MdiMain_Deactivate (object sender, ToplevelEventArgs top)
+			private void OverlappedMain_Deactivate (object sender, ToplevelEventArgs top)
 			{
 				workerApp.WriteLog ($"{top.Toplevel.Data} deactivate.");
 			}
 
-			private void MdiMain_Activate (object sender, ToplevelEventArgs top)
+			private void OverlappedMain_Activate (object sender, ToplevelEventArgs top)
 			{
 				workerApp.WriteLog ($"{top.Toplevel.Data} activate.");
 			}
@@ -99,17 +99,17 @@ namespace UICatalog.Scenarios {
 					Title = "WorkerApp",
 					CheckType = MenuItemCheckStyle.Checked
 				};
-				var top = Application.MdiChildren?.Find ((x) => x.Data.ToString () == "WorkerApp");
+				var top = Application.OverlappedChildren?.Find ((x) => x.Data.ToString () == "WorkerApp");
 				if (top != null) {
 					item.Checked = top.Visible;
 				}
 				item.Action += () => {
-					var top = Application.MdiChildren.Find ((x) => x.Data.ToString () == "WorkerApp");
+					var top = Application.OverlappedChildren.Find ((x) => x.Data.ToString () == "WorkerApp");
 					item.Checked = top.Visible = (bool)!item.Checked;
 					if (top.Visible) {
-						top.ShowChild ();
+						Application.MoveToOverlappedChild (top);
 					} else {
-						Application.MdiTop.SetNeedsDisplay ();
+						Application.OverlappedTop.SetNeedsDisplay ();
 					}
 				};
 				menuItems.Add (item);
@@ -121,9 +121,9 @@ namespace UICatalog.Scenarios {
 			{
 				var index = 1;
 				List<MenuItem> menuItems = new List<MenuItem> ();
-				var sortedChildes = Application.MdiChildren;
-				sortedChildes.Sort (new ToplevelComparer ());
-				foreach (var top in sortedChildes) {
+				var sortedChildren = Application.OverlappedChildren;
+				sortedChildren.Sort (new ToplevelComparer ());
+				foreach (var top in sortedChildren) {
 					if (top.Data.ToString () == "WorkerApp" && !top.Visible) {
 						continue;
 					}
@@ -133,13 +133,13 @@ namespace UICatalog.Scenarios {
 					item.CheckType |= MenuItemCheckStyle.Checked;
 					var topTitle = top is Window ? ((Window)top).Title : top.Data.ToString ();
 					var itemTitle = item.Title.Substring (index.ToString ().Length + 1);
-					if (top == top.GetTopMdiChild () && topTitle == itemTitle) {
+					if (top == Application.GetTopOverlappedChild () && topTitle == itemTitle) {
 						item.Checked = true;
 					} else {
 						item.Checked = false;
 					}
 					item.Action += () => {
-						top.ShowChild ();
+						Application.MoveToOverlappedChild (top);
 					};
 					menuItems.Add (item);
 				}

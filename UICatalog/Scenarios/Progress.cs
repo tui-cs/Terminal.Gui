@@ -3,7 +3,6 @@ using System;
 using System.Threading;
 using Terminal.Gui;
 using System.Linq;
-using System.Runtime.CompilerServices;
 
 namespace UICatalog.Scenarios {
 	// 
@@ -11,7 +10,7 @@ namespace UICatalog.Scenarios {
 	//
 	[ScenarioMetadata (Name: "Progress", Description: "Shows off ProgressBar and Threading.")]
 	[ScenarioCategory ("Controls")]
-	[ScenarioCategory ("Threading"), ScenarioCategory ("ProgressBar")]
+	[ScenarioCategory ("Threading"), ScenarioCategory ("Progress")]
 	public class Progress : Scenario {
 
 		class ProgressDemo : FrameView {
@@ -79,25 +78,29 @@ namespace UICatalog.Scenarios {
 				ActivityProgressBar = new ProgressBar () {
 					X = Pos.Right (LeftFrame) + 1,
 					Y = Pos.Bottom (startButton) + 1,
-					Width = Dim.Fill (),
+					Width = Dim.Fill () - 1,
 					Height = 1,
 					Fraction = 0.25F,
 					ColorScheme = Colors.Error
 				};
 				Add (ActivityProgressBar);
 
-				Spinner = new SpinnerView {
-					X = Pos.Right (ActivityProgressBar),
+				Spinner = new SpinnerView () {
+					Style = new SpinnerStyle.Dots2 (),
+					SpinReverse = true,
 					Y = ActivityProgressBar.Y,
-					Visible = false,
-
+					Visible = false
 				};
+				ActivityProgressBar.Width = Dim.Fill () - Spinner.Width;
+				Spinner.X = Pos.Right (ActivityProgressBar);
+
+
 				Add (Spinner);
 
 				PulseProgressBar = new ProgressBar () {
 					X = Pos.Right (LeftFrame) + 1,
 					Y = Pos.Bottom (ActivityProgressBar) + 1,
-					Width = Dim.Fill (),
+					Width = Dim.Fill () - Spinner.Width,
 					Height = 1,
 					ColorScheme = Colors.Error
 				};
@@ -122,7 +125,7 @@ namespace UICatalog.Scenarios {
 				StartBtnClick?.Invoke ();
 				Application.MainLoop.Invoke(()=>{
 					Spinner.Visible = true;
-					ActivityProgressBar.Width = Dim.Fill(1);
+					ActivityProgressBar.Width = Dim.Fill () - Spinner.Width;
 					this.LayoutSubviews();
 				});
 			}
@@ -134,13 +137,14 @@ namespace UICatalog.Scenarios {
 
 				Application.MainLoop.Invoke(()=>{
 					Spinner.Visible = false;
-					ActivityProgressBar.Width = Dim.Fill();
+					ActivityProgressBar.Width = Dim.Fill () - Spinner.Width;
 					this.LayoutSubviews();
 				});
 			}
 
 			internal void Pulse ()
 			{
+				Spinner.Visible = true;
 				if (PulseBtnClick != null) {
 					PulseBtnClick?.Invoke ();
 

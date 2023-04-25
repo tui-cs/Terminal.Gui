@@ -113,7 +113,6 @@ namespace Terminal.Gui.ViewsTests {
 			Assert.Throws<ArgumentException> (() => lv.AddKeyBinding (Key.Space));
 		}
 
-
 		/// <summary>
 		/// Tests that when none of the Commands in a chained keybinding are possible
 		/// the <see cref="View.ProcessKey(KeyEvent)"/> returns the appropriate result
@@ -180,6 +179,7 @@ namespace Terminal.Gui.ViewsTests {
 		{
 			List<string> source = new List<string> () { "One", "Two", "Three" };
 			ListView lv = new ListView (source) { Height = 2, AllowsMarking = true };
+			lv.BeginInit (); lv.EndInit ();
 			Assert.Equal (-1, lv.SelectedItem);
 			Assert.True (lv.ProcessKey (new KeyEvent (Key.CursorDown, new KeyModifiers ())));
 			Assert.Equal (0, lv.SelectedItem);
@@ -544,6 +544,71 @@ Item 6", output);
 			top.Add (lv);
 			var exception = Record.Exception (lv.SetFocus);
 			Assert.Null (exception);
+		}
+
+		[Fact, AutoInitShutdown]
+		public void Clicking_On_Border_Is_Ignored ()
+		{
+			var selected = "";
+			var lv = new ListView {
+				Height = 5,
+				Width = 7,
+				BorderStyle = LineStyle.Single
+			};
+			lv.SetSource (new List<string> { "One", "Two", "Three", "Four" });
+			lv.SelectedItemChanged += (s, e) => selected = e.Value.ToString ();
+			Application.Top.Add (lv);
+			Application.Begin (Application.Top);
+
+			Assert.Equal (new Thickness (1), lv.Border.Thickness);
+			Assert.Equal (-1, lv.SelectedItem);
+			Assert.Equal ("", lv.Text);
+			TestHelpers.AssertDriverContentsWithFrameAre (@"
+┌─────┐
+│One  │
+│Two  │
+│Three│
+└─────┘", output);
+
+			Assert.True (lv.MouseEvent (new MouseEvent {
+				X = 0,
+				Y = 0,
+				Flags = MouseFlags.Button1Clicked
+			}));
+			Assert.Equal ("", selected);
+			Assert.Equal (-1, lv.SelectedItem);
+
+			Assert.True (lv.MouseEvent (new MouseEvent {
+				X = 0,
+				Y = 1,
+				Flags = MouseFlags.Button1Clicked
+			}));
+			Assert.Equal ("One", selected);
+			Assert.Equal (0, lv.SelectedItem);
+
+			Assert.True (lv.MouseEvent (new MouseEvent {
+				X = 0,
+				Y = 2,
+				Flags = MouseFlags.Button1Clicked
+			}));
+			Assert.Equal ("Two", selected);
+			Assert.Equal (1, lv.SelectedItem);
+
+			Assert.True (lv.MouseEvent (new MouseEvent {
+				X = 0,
+				Y = 3,
+				Flags = MouseFlags.Button1Clicked
+			}));
+			Assert.Equal ("Three", selected);
+			Assert.Equal (2, lv.SelectedItem);
+
+			Assert.True (lv.MouseEvent (new MouseEvent {
+				X = 0,
+				Y = 4,
+				Flags = MouseFlags.Button1Clicked
+			}));
+			Assert.Equal ("Three", selected);
+			Assert.Equal (2, lv.SelectedItem);
 		}
 	}
 }

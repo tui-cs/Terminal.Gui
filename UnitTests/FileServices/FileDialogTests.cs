@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.IO.Abstractions.TestingHelpers;
 using System.Linq;
@@ -128,40 +129,279 @@ namespace Terminal.Gui.FileServicesTests {
 			Assert.False (dlg.Canceled);
 		}
 
+		[Theory, AutoInitShutdown]
+		[InlineData(true,true)]
+		[InlineData(true,false)]
+		[InlineData(false,true)]
+		[InlineData(false,false)]
+		public void PickDirectory_DirectTyping (bool openModeMixed, bool multiple)
+		{
+			var dlg = GetDialog();
+			dlg.OpenMode = openModeMixed ? OpenMode.Mixed : OpenMode.Directory;
+			dlg.AllowsMultipleSelection = multiple;
+
+			// whe first opening the text field will have select all on
+			// so to add to current path user must press End or right
+			Send ('>', ConsoleKey.RightArrow, false);
+
+			Send("subfolder");
+
+			// Dialog has not yet been confirmed with a choice
+			Assert.True(dlg.Canceled);
+
+			// Now it has
+			Send ('\n', ConsoleKey.Enter, false);
+			Assert.False(dlg.Canceled);
+			AssertIsTheSubfolder(dlg.Path);
+		}
+
+		[Theory, AutoInitShutdown]
+		[InlineData(true,true)]
+		[InlineData(true,false)]
+		[InlineData(false,true)]
+		[InlineData(false,false)]
+		public void PickDirectory_ArrowNavigation (bool openModeMixed, bool multiple)
+		{
+			var dlg = GetDialog();
+			dlg.OpenMode = openModeMixed ? OpenMode.Mixed : OpenMode.Directory;
+			dlg.AllowsMultipleSelection = multiple;
+
+			Assert.IsType<TextField>(dlg.MostFocused);
+			Send ('v', ConsoleKey.DownArrow, false);
+			Assert.IsType<TableView>(dlg.MostFocused);
+
+			// Should be selecting ..
+			Send ('v', ConsoleKey.DownArrow, false);
+
+			// Down to the directory
+			Assert.True(dlg.Canceled);
+			// Alt+O to open (enter would just navigate into the child dir)
+			Send ('o', ConsoleKey.O, false,true);
+			Assert.False(dlg.Canceled);
+
+			AssertIsTheSubfolder(dlg.Path);
+		}
+
+		[Theory, AutoInitShutdown]
+		[InlineData(true)]
+		[InlineData(false)]
+		public void MultiSelectDirectory_CannotToggleDotDot (bool acceptWithEnter)
+		{
+			var dlg = GetDialog();
+			dlg.OpenMode = OpenMode.Directory;
+			dlg.AllowsMultipleSelection = true;
+			IReadOnlyCollection<string> eventMultiSelected = null;
+			dlg.FilesSelected += (s,e)=>
+			{
+				eventMultiSelected  = e.Dialog.MultiSelected;
+			};
+
+			Assert.IsType<TextField>(dlg.MostFocused);
+			Send ('v', ConsoleKey.DownArrow, false);
+			Assert.IsType<TableView>(dlg.MostFocused);
+
+			// Try to toggle '..'
+			Send (' ', ConsoleKey.Spacebar, false);
+			Send ('v', ConsoleKey.DownArrow, false);
+			// Toggle subfolder
+			Send (' ', ConsoleKey.Spacebar, false);
+
+			Assert.True(dlg.Canceled);
+
+			if(acceptWithEnter)
+			{
+				Send ('\n', ConsoleKey.Enter);
+			}
+			else
+			{
+				Send ('o', ConsoleKey.O,false,true);
+			}
+			Assert.False(dlg.Canceled);
+
+			Assert.Multiple(
+				()=>{
+					// Only the subfolder should be selected
+					Assert.Equal(1,dlg.MultiSelected.Count);
+					AssertIsTheSubfolder(dlg.Path);
+					AssertIsTheSubfolder(dlg.MultiSelected.Single());
+				},
+				()=>{
+					// Event should also agree with the final state
+					Assert.NotNull(eventMultiSelected);
+					Assert.Equal(1,eventMultiSelected.Count);
+					AssertIsTheSubfolder(eventMultiSelected.Single());
+				}
+			);
+		}
+		
+		[Fact, AutoInitShutdown]
+		public void DotDot_MovesToRoot_ThenPressBack ()
+		{
+			var dlg = GetDialog();
+			dlg.OpenMode = OpenMode.Directory;
+			dlg.AllowsMultipleSelection = true;
+			bool selected = false;
+			dlg.FilesSelected += (s,e)=>
+			{
+				selected = true;
+			};
+
+			AssertIsTheStartingDirectory(dlg.Path);
+
+			Assert.IsType<TextField>(dlg.MostFocused);
+			Send ('v', ConsoleKey.DownArrow, false);
+			Assert.IsType<TableView>(dlg.MostFocused);
+			
+			// ".." should be the first thing selected
+			// ".." should not mess with the displayed path
+			AssertIsTheStartingDirectory(dlg.Path);
+
+			// Accept navigation up a directory
+			Send ('\n', ConsoleKey.Enter);
+
+			AssertIsTheRootDirectory(dlg.Path);
+			
+			Assert.True(dlg.Canceled);
+			Assert.False(selected);
+
+			// Now press the back button (in table view)
+			Send ('<', ConsoleKey.Backspace);
+
+			// Should move us back to the root
+			AssertIsTheStartingDirectory(dlg.Path);
+
+			Assert.True(dlg.Canceled);
+			Assert.False(selected);
+		}
+
+		[Fact, AutoInitShutdown]
+		public void MultiSelectDirectory_EnterOpensFolder ()
+		{
+			var dlg = GetDialog();
+			dlg.OpenMode = OpenMode.Directory;
+			dlg.AllowsMultipleSelection = true;
+			IReadOnlyCollection<string> eventMultiSelected = null;
+			dlg.FilesSelected += (s,e)=>
+			{
+				eventMultiSelected  = e.Dialog.MultiSelected;
+			};
+
+			Assert.IsType<TextField>(dlg.MostFocused);
+			Send ('v', ConsoleKey.DownArrow, false);
+			Assert.IsType<TableView>(dlg.MostFocused);
+			// Move selection to subfolder
+			Send ('v', ConsoleKey.DownArrow, false);
+
+			Send ('\n', ConsoleKey.Enter);
+
+			// Path should update to the newly opened folder
+			AssertIsTheSubfolder(dlg.Path);
+
+			// No selection will have been confirmed
+			Assert.True(dlg.Canceled);
+			Assert.Empty(dlg.MultiSelected);
+			Assert.Null(eventMultiSelected);
+		}
+
+		[Theory, AutoInitShutdown]
+		[InlineData(true)]
+		[InlineData(false)]
+		public void MultiSelectDirectory_CanToggleThenAccept (bool acceptWithEnter)
+		{
+			var dlg = GetDialog();
+			dlg.OpenMode = OpenMode.Directory;
+			dlg.AllowsMultipleSelection = true;
+			IReadOnlyCollection<string> eventMultiSelected = null;
+			dlg.FilesSelected += (s,e)=>
+			{
+				eventMultiSelected  = e.Dialog.MultiSelected;
+			};
+
+			Assert.IsType<TextField>(dlg.MostFocused);
+			Send ('v', ConsoleKey.DownArrow, false);
+			Assert.IsType<TableView>(dlg.MostFocused);
+			// Move selection to subfolder
+			Send ('v', ConsoleKey.DownArrow, false);
+			// Toggle subfolder
+			Send (' ', ConsoleKey.Spacebar, false);
+
+			Assert.True(dlg.Canceled);
+
+			if(acceptWithEnter)
+			{
+				Send ('\n', ConsoleKey.Enter);
+			}
+			else
+			{
+				Send ('o', ConsoleKey.O,false,true);
+			}
+			Assert.False(dlg.Canceled);
+
+			Assert.Multiple(
+				()=>{
+					// Only the subfolder should be selected
+					Assert.Equal(1,dlg.MultiSelected.Count);
+					AssertIsTheSubfolder(dlg.Path);
+					AssertIsTheSubfolder(dlg.MultiSelected.Single());
+				},
+				()=>{
+					// Event should also agree with the final state
+					Assert.NotNull(eventMultiSelected);
+					Assert.Equal(1,eventMultiSelected.Count);
+					AssertIsTheSubfolder(eventMultiSelected.Single());
+				}
+			);
+		}
+
+		private void AssertIsTheStartingDirectory (string path)
+		{
+			if(IsWindows())
+			{
+				Assert.Equal (@"c:\demo\",path);
+			}
+			else
+			{
+				Assert.Equal ("/demo/",path);
+			}
+		}
+
+		private void AssertIsTheRootDirectory (string path)
+		{
+			if(IsWindows())
+			{
+				Assert.Equal (@"c:\",path);
+			}
+			else
+			{
+				Assert.Equal ("/",path);
+			}
+		}
+
+		private void AssertIsTheSubfolder (string path)
+		{
+			if(IsWindows())
+			{
+				Assert.Equal (@"c:\demo\subfolder",path);
+			}
+			else
+			{
+				Assert.Equal ("/demo/subfolder",path);
+			}
+		}
+
 		[Fact, AutoInitShutdown]
 		public void TestDirectoryContents_Linux ()
 		{
-			if (System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform (System.Runtime.InteropServices.OSPlatform.Windows)) {
-				// Cannot run test except on linux :( 
-				// See: https://github.com/TestableIO/System.IO.Abstractions/issues/800
+			if (IsWindows()) {
 				return;
 			}
-
-			// Arrange
-			var fileSystem = new MockFileSystem (new Dictionary<string, MockFileData> (), "/");
-			fileSystem.MockTime (() => new DateTime (2010, 01, 01, 11, 12, 43));
-
-			fileSystem.AddFile (@"/myfile.txt", new MockFileData ("Testing is meh.") { LastWriteTime = new DateTime (2001, 01, 01, 11, 12, 11) });
-			fileSystem.AddFile (@"/demo/jQuery.js", new MockFileData ("some js") { LastWriteTime = new DateTime (2001, 01, 01, 11, 44, 42) });
-			fileSystem.AddFile (@"/demo/image.gif", new MockFileData (new byte [] { 0x12, 0x34, 0x56, 0xd2 }) { LastWriteTime = new DateTime (2002, 01, 01, 22, 42, 10) });
-
-			var m = (MockDirectoryInfo)fileSystem.DirectoryInfo.New (@"/demo/subfolder");
-			m.Create ();
-			m.LastWriteTime = new DateTime (2002, 01, 01, 22, 42, 10);
-
-			fileSystem.AddFile (@"/demo/subfolder/image2.gif", new MockFileData (new byte [] { 0x12, 0x34, 0x56, 0xd2 }) { LastWriteTime = new DateTime (2002, 01, 01, 22, 42, 10) });
-
-			var fd = new FileDialog (fileSystem) {
-				Height = 15
-			};
-			fd.Path = @"/demo/";
-			Begin (fd);
+			var fd = GetLinuxDialog();
 			fd.Title = string.Empty;
 
+			fd.Style.Culture = new CultureInfo("en-US");
+
 			fd.Redraw (fd.Bounds);
-
-			fd.Style.DateFormat = "yyyy-MM-dd hh:mm:ss";
-
+			
 			string expected =
 			@"
  ┌──────────────────────────────────────────────────────────────────┐
@@ -183,39 +423,20 @@ namespace Terminal.Gui.FileServicesTests {
 			TestHelpers.AssertDriverContentsAre (expected, output, true);
 		}
 
-
 		[Fact, AutoInitShutdown]
 		public void TestDirectoryContents_Windows ()
 		{
-			if (!System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform (System.Runtime.InteropServices.OSPlatform.Windows)) {
-				// Can only run this test on windows :( 
-				// See: https://github.com/TestableIO/System.IO.Abstractions/issues/800
+			if (!IsWindows()) {
 				return;
 			}
-			// Arrange
-			var fileSystem = new MockFileSystem (new Dictionary<string, MockFileData> (), @"c:\");
-			fileSystem.MockTime (() => new DateTime (2010, 01, 01, 11, 12, 43));
 
-			fileSystem.AddFile (@"c:\myfile.txt", new MockFileData ("Testing is meh.") { LastWriteTime = new DateTime (2001, 01, 01, 11, 12, 11) });
-			fileSystem.AddFile (@"c:\demo\jQuery.js", new MockFileData ("some js") { LastWriteTime = new DateTime (2001, 01, 01, 11, 44, 42) });
-			fileSystem.AddFile (@"c:\demo\image.gif", new MockFileData (new byte [] { 0x12, 0x34, 0x56, 0xd2 }) { LastWriteTime = new DateTime (2002, 01, 01, 22, 42, 10) });
-
-			var m = (MockDirectoryInfo)fileSystem.DirectoryInfo.New (@"c:\demo\subfolder");
-			m.Create ();
-			m.LastWriteTime = new DateTime (2002, 01, 01, 22, 42, 10);
-
-			fileSystem.AddFile (@"c:\demo\subfolder\image2.gif", new MockFileData (new byte [] { 0x12, 0x34, 0x56, 0xd2 }) { LastWriteTime = new DateTime (2002, 01, 01, 22, 42, 10) });
-
-			var fd = new FileDialog (fileSystem) {
-				Height = 15
-			};
-			fd.Path = @"c:\demo\";
-			Begin (fd);
+			var fd = GetWindowsDialog();
 			fd.Title = string.Empty;
+
+			fd.Style.Culture = new CultureInfo("en-US");
 
 			fd.Redraw (fd.Bounds);
 
-			fd.Style.DateFormat = "yyyy-MM-dd hh:mm:ss";
 
 			string expected =
 			@"
@@ -266,7 +487,6 @@ namespace Terminal.Gui.FileServicesTests {
 			foreach (var ch in chars) {
 				Application.Driver.SendKeys (ch, ConsoleKey.NoName, false, false, false);
 			}
-
 		}
 		/*
 				[Fact, AutoInitShutdown]
@@ -284,7 +504,6 @@ namespace Terminal.Gui.FileServicesTests {
 					Assert.False (tb.AcceptSelectionIfAny ());
 				}
 
-
 				[Fact, AutoInitShutdown]
 				public void Autocomplete_AcceptSuggstion ()
 				{
@@ -299,7 +518,63 @@ namespace Terminal.Gui.FileServicesTests {
 					Assert.Equal (@"/bob/fish", tb.Text);
 				}*/
 
+		private bool IsWindows()
+		{
+			return System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform (System.Runtime.InteropServices.OSPlatform.Windows);
+		}
 
+		private FileDialog GetDialog()
+		{
+			return IsWindows() ? GetWindowsDialog() : GetLinuxDialog();			
+		}
+
+		private FileDialog GetWindowsDialog()
+		{
+			// Arrange
+			var fileSystem = new MockFileSystem (new Dictionary<string, MockFileData> (), @"c:\");
+			fileSystem.MockTime (() => new DateTime (2010, 01, 01, 11, 12, 43));
+
+			fileSystem.AddFile (@"c:\myfile.txt", new MockFileData ("Testing is meh.") { LastWriteTime = new DateTime (2001, 01, 01, 11, 12, 11) });
+			fileSystem.AddFile (@"c:\demo\jQuery.js", new MockFileData ("some js") { LastWriteTime = new DateTime (2001, 01, 01, 11, 44, 42) });
+			fileSystem.AddFile (@"c:\demo\image.gif", new MockFileData (new byte [] { 0x12, 0x34, 0x56, 0xd2 }) { LastWriteTime = new DateTime (2002, 01, 01, 22, 42, 10) });
+
+			var m = (MockDirectoryInfo)fileSystem.DirectoryInfo.New (@"c:\demo\subfolder");
+			m.Create ();
+			m.LastWriteTime = new DateTime (2002, 01, 01, 22, 42, 10);
+
+			fileSystem.AddFile (@"c:\demo\subfolder\image2.gif", new MockFileData (new byte [] { 0x12, 0x34, 0x56, 0xd2 }) { LastWriteTime = new DateTime (2002, 01, 01, 22, 42, 10) });
+
+			var fd = new FileDialog (fileSystem) {
+				Height = 15
+			};
+			fd.Path = @"c:\demo\";
+			Begin (fd);
+			return fd;
+		}
+
+		private FileDialog GetLinuxDialog()
+		{
+			// Arrange
+			var fileSystem = new MockFileSystem (new Dictionary<string, MockFileData> (), "/");
+			fileSystem.MockTime (() => new DateTime (2010, 01, 01, 11, 12, 43));
+
+			fileSystem.AddFile (@"/myfile.txt", new MockFileData ("Testing is meh.") { LastWriteTime = new DateTime (2001, 01, 01, 11, 12, 11) });
+			fileSystem.AddFile (@"/demo/jQuery.js", new MockFileData ("some js") { LastWriteTime = new DateTime (2001, 01, 01, 11, 44, 42) });
+			fileSystem.AddFile (@"/demo/image.gif", new MockFileData (new byte [] { 0x12, 0x34, 0x56, 0xd2 }) { LastWriteTime = new DateTime (2002, 01, 01, 22, 42, 10) });
+
+			var m = (MockDirectoryInfo)fileSystem.DirectoryInfo.New (@"/demo/subfolder");
+			m.Create ();
+			m.LastWriteTime = new DateTime (2002, 01, 01, 22, 42, 10);
+
+			fileSystem.AddFile (@"/demo/subfolder/image2.gif", new MockFileData (new byte [] { 0x12, 0x34, 0x56, 0xd2 }) { LastWriteTime = new DateTime (2002, 01, 01, 22, 42, 10) });
+
+			var fd = new FileDialog (fileSystem) {
+				Height = 15
+			};
+			fd.Path = @"/demo/";
+			Begin (fd);
+			return fd;
+		}
 		private FileDialog GetInitializedFileDialog ()
 		{
 			var dlg = new FileDialog ();

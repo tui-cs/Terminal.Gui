@@ -150,16 +150,16 @@ namespace UICatalog.Scenarios {
 			};
 			borderTopEdit.TextChanging += (s, e) => {
 				try {
-					smartView.BorderFrame.Thickness = new Thickness (smartView.BorderFrame.Thickness.Left,
-						int.Parse (e.NewText.ToString ()), smartView.BorderFrame.Thickness.Right,
-						smartView.BorderFrame.Thickness.Bottom);
+					smartView.Border.Thickness = new Thickness (smartView.Border.Thickness.Left,
+						int.Parse (e.NewText.ToString ()), smartView.Border.Thickness.Right,
+						smartView.Border.Thickness.Bottom);
 				} catch {
 					if (!e.NewText.IsEmpty) {
 						e.Cancel = true;
 					}
 				}
 			};
-			borderTopEdit.Text = $"{smartView.BorderFrame.Thickness.Top}";
+			borderTopEdit.Text = $"{smartView.Border.Thickness.Top}";
 
 			Add (borderTopEdit);
 
@@ -170,16 +170,16 @@ namespace UICatalog.Scenarios {
 			};
 			borderLeftEdit.TextChanging += (s, e) => {
 				try {
-					smartView.BorderFrame.Thickness = new Thickness (int.Parse (e.NewText.ToString ()),
-						smartView.BorderFrame.Thickness.Top, smartView.BorderFrame.Thickness.Right,
-						smartView.BorderFrame.Thickness.Bottom);
+					smartView.Border.Thickness = new Thickness (int.Parse (e.NewText.ToString ()),
+						smartView.Border.Thickness.Top, smartView.Border.Thickness.Right,
+						smartView.Border.Thickness.Bottom);
 				} catch {
 					if (!e.NewText.IsEmpty) {
 						e.Cancel = true;
 					}
 				}
 			};
-			borderLeftEdit.Text = $"{smartView.BorderFrame.Thickness.Left}";
+			borderLeftEdit.Text = $"{smartView.Border.Thickness.Left}";
 			Add (borderLeftEdit);
 
 			var borderRightEdit = new TextField ("") {
@@ -189,16 +189,16 @@ namespace UICatalog.Scenarios {
 			};
 			borderRightEdit.TextChanging += (s, e) => {
 				try {
-					smartView.BorderFrame.Thickness = new Thickness (smartView.BorderFrame.Thickness.Left,
-						smartView.BorderFrame.Thickness.Top, int.Parse (e.NewText.ToString ()),
-						smartView.BorderFrame.Thickness.Bottom);
+					smartView.Border.Thickness = new Thickness (smartView.Border.Thickness.Left,
+						smartView.Border.Thickness.Top, int.Parse (e.NewText.ToString ()),
+						smartView.Border.Thickness.Bottom);
 				} catch {
 					if (!e.NewText.IsEmpty) {
 						e.Cancel = true;
 					}
 				}
 			};
-			borderRightEdit.Text = $"{smartView.BorderFrame.Thickness.Right}";
+			borderRightEdit.Text = $"{smartView.Border.Thickness.Right}";
 			Add (borderRightEdit);
 
 			var borderBottomEdit = new TextField ("") {
@@ -208,8 +208,8 @@ namespace UICatalog.Scenarios {
 			};
 			borderBottomEdit.TextChanging += (s, e) => {
 				try {
-					smartView.BorderFrame.Thickness = new Thickness (smartView.BorderFrame.Thickness.Left,
-						smartView.BorderFrame.Thickness.Top, smartView.BorderFrame.Thickness.Right,
+					smartView.Border.Thickness = new Thickness (smartView.Border.Thickness.Left,
+						smartView.Border.Thickness.Top, smartView.Border.Thickness.Right,
 						int.Parse (e.NewText.ToString ()));
 				} catch {
 					if (!e.NewText.IsEmpty) {
@@ -217,7 +217,7 @@ namespace UICatalog.Scenarios {
 					}
 				}
 			};
-			borderBottomEdit.Text = $"{smartView.BorderFrame.Thickness.Bottom}";
+			borderBottomEdit.Text = $"{smartView.Border.Thickness.Bottom}";
 			Add (borderBottomEdit);
 
 			var replaceBorder = new Button ("Replace all based on top") {
@@ -225,7 +225,7 @@ namespace UICatalog.Scenarios {
 				Y = 5
 			};
 			replaceBorder.Clicked += (s, e) => {
-				smartView.BorderFrame.Thickness = new Thickness (smartView.BorderFrame.Thickness.Top);
+				smartView.Border.Thickness = new Thickness (smartView.Border.Thickness.Top);
 				if (borderTopEdit.Text.IsEmpty) {
 					borderTopEdit.Text = "0";
 				}
@@ -253,7 +253,7 @@ namespace UICatalog.Scenarios {
 			};
 
 			Add (new Label ("Background:") {
-				Y = 5
+				Y = 12
 			});
 
 			var colorEnum = Enum.GetValues (typeof (Color)).Cast<Color> ().ToList ();
@@ -261,12 +261,12 @@ namespace UICatalog.Scenarios {
 				e => NStack.ustring.Make (e.ToString ())).ToArray ()) {
 
 				X = 2,
-				Y = 6,
+				Y = 13,
 				//SelectedItem = (int)smartView.BorderFrame.BackgroundColor
 			};
 			rbBackground.SelectedItemChanged += (s, e) => {
 //				smartView.Border.BackgroundColor = (Color)e.SelectedItem;
-				smartView.BorderFrame.ColorScheme = new ColorScheme() { 
+				smartView.Border.ColorScheme = new ColorScheme() { 
 					Normal = new Terminal.Gui.Attribute(Color.Red, Color.White),
 					HotNormal = new Terminal.Gui.Attribute (Color.Magenta, Color.White),
 					Disabled = new Terminal.Gui.Attribute (Color.Gray, Color.White),

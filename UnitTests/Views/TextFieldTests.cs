@@ -1286,7 +1286,6 @@ namespace Terminal.Gui.ViewsTests {
 			Assert.Equal (2, clickCounter);
 		}
 
-
 		private bool SuppressKey (KeyEvent arg)
 		{
 			if (arg.KeyValue == 'j')
@@ -1360,7 +1359,6 @@ namespace Terminal.Gui.ViewsTests {
 			Assert.Equal (0, tf.SelectedLength);
 			Assert.Null (tf.SelectedText);
 		}
-
 
 		[Fact]
 		public void WordBackward_WordForward_SelectedText_With_Accent ()
@@ -1531,7 +1529,6 @@ Les Miśerables", output);
 			tf.Redraw (tf.Bounds);
 			TestHelpers.AssertDriverContentsAre (expectedRender, output);
 		}
-
 
 		private TextField GetTextFieldsInView ()
 		{

@@ -53,7 +53,7 @@ namespace Terminal.Gui.DialogTests {
 				ButtonAlignment = align,
 			};
 			// Create with no top or bottom border to simplify testing button layout (no need to account for title etc..)
-			dlg.BorderFrame.Thickness = new Thickness (1, 0, 1, 0);
+			dlg.Border.Thickness = new Thickness (1, 0, 1, 0);
 			return (Application.Begin (dlg), dlg);
 		}
 
@@ -83,7 +83,6 @@ namespace Terminal.Gui.DialogTests {
 			var expected = 7;
 			Assert.Equal (new Point (expected, expected), d.Frame.Location);
 		}
-
 
 		[Fact]
 		[AutoInitShutdown]
@@ -116,7 +115,6 @@ namespace Terminal.Gui.DialogTests {
 			var expected = 1;
 			Assert.Equal (new Point (expected, expected), d.Frame.Location);
 		}
-
 
 		[Fact]
 		[AutoInitShutdown]
@@ -152,7 +150,7 @@ namespace Terminal.Gui.DialogTests {
 			var iterations = -1;
 			Application.Iteration += () => {
 				iterations++;
-				
+
 				if (iterations == 0) {
 					var d = new Dialog () {
 						X = 5,
@@ -195,17 +193,16 @@ namespace Terminal.Gui.DialogTests {
 ║  │               │
 ╚══└───────────────┘", output);
 
-
 				} else if (iterations > 0) {
 					Application.RequestStop ();
 				}
 			};
-			
+
 			Application.Begin (Application.Top);
 			((FakeDriver)Application.Driver).SetBufferSize (20, 10);
 			Application.Run ();
 		}
-		
+
 		[Fact]
 		[AutoInitShutdown]
 		public void ButtonAlignment_One ()
@@ -511,10 +508,10 @@ namespace Terminal.Gui.DialogTests {
 			var btn4Text = "never";
 			var btn4 = $"{d.LeftBracket} {btn4Text} {d.RightBracket}";
 			var buttonRow = string.Empty;
-			
+
 			var width = 30;
 			d.SetBufferSize (width, 1);
-			
+
 			// Default - Center
 			buttonRow = $"{d.VLine}es ] {btn2} {btn3} [ neve{d.VLine}";
 			(runstate, var dlg) = RunButtonTestDialog (title, width, Dialog.ButtonAlignments.Center, new Button (btn1Text), new Button (btn2Text), new Button (btn3Text), new Button (btn4Text));
@@ -673,12 +670,12 @@ namespace Terminal.Gui.DialogTests {
 
 			var d = (FakeDriver)Application.Driver;
 
-			var title = "1234";
+			var title = "";
 			var btnText = "ok";
 			var buttonRow = $"{d.VLine}   {d.LeftBracket} {btnText} {d.RightBracket}   {d.VLine}";
 
 			var width = buttonRow.Length;
-			d.SetBufferSize (buttonRow.Length, 3);
+			d.SetBufferSize (buttonRow.Length, 10);
 
 			(runstate, var _) = RunButtonTestDialog (title, width, Dialog.ButtonAlignments.Center, new Button (btnText));
 			TestHelpers.AssertDriverContentsWithFrameAre ($"{buttonRow}", output);
@@ -706,7 +703,7 @@ namespace Terminal.Gui.DialogTests {
 			// Default (center)
 			var dlg = new Dialog (new Button (btn1Text)) { Title = title, Width = width, Height = 1, ButtonAlignment = Dialog.ButtonAlignments.Center };
 			// Create with no top or bottom border to simplify testing button layout (no need to account for title etc..)
-			dlg.BorderFrame.Thickness = new Thickness (1, 0, 1, 0);
+			dlg.Border.Thickness = new Thickness (1, 0, 1, 0);
 			runstate = Application.Begin (dlg);
 			var buttonRow = $"{d.VLine}     {btn1}    {d.VLine}";
 			TestHelpers.AssertDriverContentsWithFrameAre ($"{buttonRow}", output);
@@ -722,7 +719,7 @@ namespace Terminal.Gui.DialogTests {
 			// Justify
 			dlg = new Dialog (new Button (btn1Text)) { Title = title, Width = width, Height = 1, ButtonAlignment = Dialog.ButtonAlignments.Justify };
 			// Create with no top or bottom border to simplify testing button layout (no need to account for title etc..)
-			dlg.BorderFrame.Thickness = new Thickness (1, 0, 1, 0);
+			dlg.Border.Thickness = new Thickness (1, 0, 1, 0);
 			runstate = Application.Begin (dlg);
 			buttonRow = $"{d.VLine}         {btn1}{d.VLine}";
 			TestHelpers.AssertDriverContentsWithFrameAre ($"{buttonRow}", output);
@@ -738,7 +735,7 @@ namespace Terminal.Gui.DialogTests {
 			// Right
 			dlg = new Dialog (new Button (btn1Text)) { Title = title, Width = width, Height = 1, ButtonAlignment = Dialog.ButtonAlignments.Right };
 			// Create with no top or bottom border to simplify testing button layout (no need to account for title etc..)
-			dlg.BorderFrame.Thickness = new Thickness (1, 0, 1, 0);
+			dlg.Border.Thickness = new Thickness (1, 0, 1, 0);
 			runstate = Application.Begin (dlg);
 			buttonRow = $"{d.VLine}{new string (' ', width - btn1.Length - 2)}{btn1}{d.VLine}";
 			TestHelpers.AssertDriverContentsWithFrameAre ($"{buttonRow}", output);
@@ -754,7 +751,7 @@ namespace Terminal.Gui.DialogTests {
 			// Left
 			dlg = new Dialog (new Button (btn1Text)) { Title = title, Width = width, Height = 1, ButtonAlignment = Dialog.ButtonAlignments.Left };
 			// Create with no top or bottom border to simplify testing button layout (no need to account for title etc..)
-			dlg.BorderFrame.Thickness = new Thickness (1, 0, 1, 0);
+			dlg.Border.Thickness = new Thickness (1, 0, 1, 0);
 			runstate = Application.Begin (dlg);
 			buttonRow = $"{d.VLine}{btn1}{new string (' ', width - btn1.Length - 2)}{d.VLine}";
 			TestHelpers.AssertDriverContentsWithFrameAre ($"{buttonRow}", output);
@@ -937,6 +934,65 @@ namespace Terminal.Gui.DialogTests {
 		//			Application.Run (win);
 		//			Application.Shutdown ();
 		//		}
-	}
 
+		[Fact, AutoInitShutdown]
+		public void Dialog_In_Window_With_TexxtField_And_Button_AnchorEnd ()
+		{
+			((FakeDriver)Application.Driver).SetBufferSize (20, 5);
+
+			var win = new Window ();
+
+			int iterations = 0;
+			Application.Iteration += () => {
+				if (++iterations > 2) {
+					Application.RequestStop ();
+				}
+			};
+
+			win.Loaded += (s, a) => {
+				var dlg = new Dialog () { Width = 18, Height = 3 };
+				Button btn = null;
+				btn = new Button ("Ok") {
+					X = Pos.AnchorEnd () - Pos.Function (Btn_Width)
+				};
+				int Btn_Width ()
+				{
+					return (btn?.Bounds.Width) ?? 0;
+				}
+				var tf = new TextField ("01234567890123456789") {
+					Width = Dim.Fill (1) - Dim.Function (Btn_Width)
+				};
+
+				dlg.Loaded += (s, a) => {
+					Application.Refresh ();
+					Assert.Equal (new Rect (10, 0, 6, 1), btn.Frame);
+					Assert.Equal (new Rect (0, 0, 6, 1), btn.Bounds);
+					var expected = @"
+┌──────────────────┐
+│┌────────────────┐│
+││23456789  [ Ok ]││
+│└────────────────┘│
+└──────────────────┘";
+					_ = TestHelpers.AssertDriverContentsWithFrameAre (expected, output);
+
+					dlg.SetNeedsLayout ();
+					dlg.LayoutSubviews ();
+					Application.Refresh ();
+					Assert.Equal (new Rect (10, 0, 6, 1), btn.Frame);
+					Assert.Equal (new Rect (0, 0, 6, 1), btn.Bounds);
+					expected = @"
+┌──────────────────┐
+│┌────────────────┐│
+││23456789  [ Ok ]││
+│└────────────────┘│
+└──────────────────┘";
+					_ = TestHelpers.AssertDriverContentsWithFrameAre (expected, output);
+				};
+				dlg.Add (btn, tf);
+
+				Application.Run (dlg);
+			};
+			Application.Run (win);
+		}
+	}
 }

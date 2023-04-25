@@ -19,7 +19,6 @@ namespace Terminal.Gui {
 		/// error handling (e.g. showing a <see cref="MessageBox"/></remarks>
 		bool Delete (IEnumerable<IFileSystemInfo> toDelete);
 
-
 		/// <summary>
 		/// Specifies how to handle file/directory rename attempts
 		/// in <see cref="FileDialog"/>.
@@ -30,7 +29,6 @@ namespace Terminal.Gui {
 		/// <remarks>Ensure you use a try/catch block with appropriate
 		/// error handling (e.g. showing a <see cref="MessageBox"/></remarks>
 		IFileSystemInfo Rename (IFileSystem fileSystem, IFileSystemInfo toRename);
-
 
 		/// <summary>
 		/// Specifies how to handle 'new directory' operation

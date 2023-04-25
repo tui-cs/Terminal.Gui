@@ -699,7 +699,6 @@ namespace Terminal.Gui.TextTests {
 			Assert.True (expectedClippedWidth <= maxWidth);
 			Assert.Equal (ustring.Make (text.ToRunes () [0..expectedClippedWidth]), justifiedText);
 
-
 			text = "A\tsentence\thas\twords.";
 			maxWidth = int.MaxValue;
 			expectedClippedWidth = Math.Min (text.RuneCount, maxWidth);
@@ -844,7 +843,6 @@ namespace Terminal.Gui.TextTests {
 			Assert.Equal (expectedClippedWidth, justifiedText.ConsoleWidth);
 			Assert.True (expectedClippedWidth <= maxWidth);
 			Assert.Equal (ustring.Make (text.ToRunes () [0..expectedClippedWidth]), justifiedText);
-
 
 			text = "A\tsentence\thas\twords.";
 			maxWidth = int.MaxValue;
@@ -1066,7 +1064,6 @@ namespace Terminal.Gui.TextTests {
 			Assert.Equal (ustring.Make (text.ToRunes () [0..expectedClippedWidth]), justifiedText);
 		}
 
-
 		[Fact]
 		public void ClipAndJustify_Valid_Justified ()
 		{
@@ -1130,7 +1127,6 @@ namespace Terminal.Gui.TextTests {
 			//Assert.Equal (expectedClippedWidth, justifiedText.RuneCount);
 			Assert.True (expectedClippedWidth <= maxWidth);
 			Assert.Equal (ustring.Make (text.ToRunes () [0..expectedClippedWidth]), justifiedText);
-
 
 			text = "A\tsentence\thas\twords.";
 			maxWidth = int.MaxValue;
@@ -1258,7 +1254,6 @@ namespace Terminal.Gui.TextTests {
 			width = text.RuneCount + 11;
 			Assert.Equal (justifiedText.ToString (), TextFormatter.Justify (text, width, fillChar).ToString ());
 
-
 			// Unicode (even #)
 			text = "Ð¿ÑÐ¸Ð²ÐµÑ";
 			justifiedText = text;
@@ -1289,7 +1284,6 @@ namespace Terminal.Gui.TextTests {
 			width = text.RuneCount + 11;
 			Assert.Equal (justifiedText.ToString (), TextFormatter.Justify (text, width, fillChar).ToString ());
 		}
-
 
 		[Fact]
 		public void Justify_Sentence ()
@@ -3649,7 +3643,6 @@ namespace Terminal.Gui.TextTests {
 		}
 
 
-
 		[Fact]
 		public void Format_Justified_Always_Returns_Text_Width_Equal_To_Passed_Width_Horizontal ()
 		{
@@ -3780,7 +3773,6 @@ namespace Terminal.Gui.TextTests {
 			Assert.Equal (0, TextFormatter.GetLengthThatFits (text, columns));
 		}
 
-
 		[Fact]
 		public void GetLengthThatFits_Simple_And_Wide_Runes ()
 		{
@@ -3812,7 +3804,6 @@ namespace Terminal.Gui.TextTests {
 			list = TextFormatter.Format (text, 3, false, false);
 			Assert.Equal ("デ", list [^1].ToString ());
 		}
-
 
 
 		[Fact]

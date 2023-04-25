@@ -17,7 +17,6 @@ namespace Terminal.Gui.DriverTests {
 			this.output = output;
 		}
 
-
 		[Theory]
 		[InlineData (typeof (FakeDriver))]
 		public void EnableConsoleScrolling_Is_False_Left_And_Top_Is_Always_Zero (Type driverType)

@@ -254,7 +254,6 @@ namespace UICatalog.Scenarios {
 				Application.Top.LayoutSubviews ();
 			};
 
-
 			// show positioning vertically using Pos.AnchorEnd
 			var centerButton = new Button ("Center") {
 				X = Pos.Center (),

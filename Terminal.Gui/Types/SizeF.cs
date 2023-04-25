@@ -136,7 +136,6 @@ namespace Terminal.Gui {
 		/// </summary>
 		public override bool Equals (object obj) => obj is SizeF && Equals ((SizeF)obj);
 
-
 		/// <summary>
 		/// Tests whether two <see cref='Terminal.Gui.SizeF'/> objects are identical.
 		/// </summary>

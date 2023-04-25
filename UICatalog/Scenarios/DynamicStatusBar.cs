@@ -133,7 +133,6 @@ namespace UICatalog.Scenarios {
 
 				Add (_frmStatusBar);
 
-
 				var _frmStatusBarDetails = new DynamicStatusBarDetails ("StatusBar Item Details:") {
 					X = Pos.Right (_frmStatusBar),
 					Y = Pos.Top (_frmStatusBar),
@@ -268,15 +267,12 @@ namespace UICatalog.Scenarios {
 					SetFrameDetails (null);
 				};
 
-
 				SetFrameDetails ();
-
 
 				var ustringConverter = new UStringValueConverter ();
 				var listWrapperConverter = new ListWrapperConverter ();
 
 				var lstItems = new Binding (this, "Items", _lstItems, "Source", listWrapperConverter);
-
 
 				void SetFrameDetails (StatusItem statusItem = null)
 				{
@@ -330,7 +326,6 @@ namespace UICatalog.Scenarios {
 					DataContext.Items [index] = new DynamicStatusItemList (_currentEditStatusItem.Title, _currentEditStatusItem);
 					SetFrameDetails (_currentEditStatusItem);
 				}
-
 
 				//_frmStatusBarDetails.Initialized += (s, e) => _frmStatusBarDetails.Enabled = false;
 			}
@@ -462,7 +457,6 @@ namespace UICatalog.Scenarios {
 				};
 				Add (_btnShortcut);
 			}
-
 
 			public DynamicStatusItem EnterStatusItem ()
 			{

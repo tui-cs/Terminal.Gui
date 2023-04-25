@@ -31,7 +31,7 @@ namespace Terminal.Gui {
 	/// </summary>
 	public class ToplevelClosingEventArgs : EventArgs {
 		/// <summary>
-		/// The toplevel requesting stop.
+		/// The Toplevel requesting stop.
 		/// </summary>
 		public View RequestingTop { get; }
 		/// <summary>
@@ -40,7 +40,7 @@ namespace Terminal.Gui {
 		public bool Cancel { get; set; }
 
 		/// <summary>
-		/// Initializes the event arguments with the requesting toplevel.
+		/// Initializes the event arguments with the requesting Toplevel.
 		/// </summary>
 		/// <param name="requestingTop">The <see cref="RequestingTop"/>.</param>
 		public ToplevelClosingEventArgs (Toplevel requestingTop)

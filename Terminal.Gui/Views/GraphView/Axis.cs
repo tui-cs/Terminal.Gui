@@ -123,7 +123,6 @@ namespace Terminal.Gui {
 		{
 		}
 
-
 		/// <summary>
 		/// Draws the horizontal axis line
 		/// </summary>
@@ -157,7 +156,6 @@ namespace Terminal.Gui {
 				DrawAxisLine (graph, i, y);
 			}
 		}
-
 
 		/// <summary>
 		/// Draws a horizontal axis line at the given <paramref name="x"/>, <paramref name="y"/> 
@@ -312,7 +310,6 @@ namespace Terminal.Gui {
 	/// </summary>
 	public class VerticalAxis : Axis {
 
-
 		/// <summary>
 		/// Creates a new <see cref="Orientation.Vertical"/> axis
 		/// </summary>
@@ -370,7 +367,6 @@ namespace Terminal.Gui {
 
 			return graph.Bounds.Height;
 		}
-
 
 		/// <summary>
 		/// Draws axis <see cref="Axis.Increment"/> markers and labels
@@ -500,7 +496,6 @@ namespace Terminal.Gui {
 			return Math.Min (Math.Max ((int)graph.MarginLeft, origin.X), graph.Bounds.Width - 1);
 		}
 	}
-
 
 	/// <summary>
 	/// A location on an axis of a <see cref="GraphView"/> that may

@@ -24,7 +24,6 @@ namespace Terminal.Gui {
 			return dictionary;
 		}
 
-
 		public override void Write (Utf8JsonWriter writer, Dictionary<string, T> value, JsonSerializerOptions options)
 		{
 			writer.WriteStartArray ();

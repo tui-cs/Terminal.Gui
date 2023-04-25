@@ -270,7 +270,6 @@ namespace Terminal.Gui {
 			/// </summary>
 			public bool ValidateOnInput { get; set; } = true;
 
-
 			bool Validate (List<Rune> text)
 			{
 				var match = regex.Match (ustring.Make (text).ToString ());

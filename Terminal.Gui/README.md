@@ -34,12 +34,11 @@ All files required to build the **Terminal.Gui** library (and NuGet package).
 
 - `Views\` - Sub-classes of `View` 
 	- `Toplevel` - Derived from `View`, the base class for modal visual elements such as top-level windows and dialogs. Supports the concept of `MenuBar` and `StatusBar`.
-	- `Window` - Derived from `TopLevel`; implements toplevel views with a visible frame and Title.
+	- `Window` - Derived from `TopLevel`; implements Toplevel views with a visible frame and Title.
 	- `Dialog` -
 	- etc...
 
 - `Types/` - A folder (not namespace) containing implementations of `Point`, `Rect`, and `Size` which are ancient versions of the modern `System.Drawing.Point`, `System.Drawing.Size`, and `System.Drawning.Rectangle`.
-
 
 ## Version numbers
 

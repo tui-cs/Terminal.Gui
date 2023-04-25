@@ -25,7 +25,7 @@ namespace Terminal.Gui.ViewsTests {
 			Assert.NotNull (r);
 			Assert.Equal (ustring.Empty, r.Title);
 			Assert.Equal (LayoutStyle.Computed, r.LayoutStyle);
-			Assert.Equal ("Window()({X=0,Y=0,Width=0,Height=0})", r.ToString ());
+			Assert.Equal ("Window()((0,0,0,0))", r.ToString ());
 			Assert.True (r.CanFocus);
 			Assert.False (r.HasFocus);
 			Assert.Equal (new Rect (0, 0, 0, 0), r.Bounds);
@@ -49,7 +49,7 @@ namespace Terminal.Gui.ViewsTests {
 			Assert.NotNull (r);
 			Assert.Equal ("title", r.Title);
 			Assert.Equal (LayoutStyle.Absolute, r.LayoutStyle);
-			Assert.Equal ("Window(title)({X=0,Y=0,Width=0,Height=0})", r.ToString ());
+			Assert.Equal ("Window(title)((0,0,0,0))", r.ToString ());
 			Assert.True (r.CanFocus);
 			Assert.False (r.HasFocus);
 			Assert.Equal (new Rect (0, 0, 0, 0), r.Bounds);
@@ -73,7 +73,7 @@ namespace Terminal.Gui.ViewsTests {
 			Assert.Equal ("title", r.Title);
 			Assert.NotNull (r);
 			Assert.Equal (LayoutStyle.Absolute, r.LayoutStyle);
-			Assert.Equal ("Window(title)({X=1,Y=2,Width=3,Height=4})", r.ToString ());
+			Assert.Equal ("Window(title)((1,2,3,4))", r.ToString ());
 			Assert.True (r.CanFocus);
 			Assert.False (r.HasFocus);
 			Assert.Equal (new Rect (0, 0, 1, 2), r.Bounds);

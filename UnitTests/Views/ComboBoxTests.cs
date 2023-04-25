@@ -93,7 +93,6 @@ namespace Terminal.Gui.ViewsTests {
 			}
 		}
 
-
 		[Fact]
 		[AutoInitShutdown]
 		public void KeyBindings_Command ()

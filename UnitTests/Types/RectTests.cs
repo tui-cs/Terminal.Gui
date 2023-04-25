@@ -149,7 +149,6 @@ namespace Terminal.Gui.TypeTests {
 			Assert.Equal (yxCount, rect.Height * rect.Width);
 		}
 
-
 		[Theory]
 		// Empty
 		[InlineData (
@@ -232,5 +231,145 @@ namespace Terminal.Gui.TypeTests {
 			Assert.Equal (expectedX, rect.X);
 			Assert.Equal (exptectedY, rect.Y);
 		}
+
+		[Fact]
+		public void Union_PositiveCoords ()
+		{
+			var r1 = new Rect (0, 0, 2, 2);
+			var r2 = new Rect (1, 1, 2, 2);
+			var result = Rect.Union (r1, r2);
+			Assert.Equal (new Rect (0, 0, 3, 3), result);
+		}
+
+		[Fact]
+		public void Union_NegativeCoords ()
+		{
+			// arrange
+			Rect rect1 = new Rect (-2, -2, 4, 4);
+			Rect rect2 = new Rect (-1, -1, 5, 5);
+
+			// act
+			Rect result = Rect.Union (rect1, rect2);
+
+			// assert
+			Assert.Equal (new Rect (-2, -2, 6, 6), result);
+		}
+
+		[Fact]
+		public void Union_EmptyRectangles ()
+		{
+			var r1 = new Rect (0, 0, 0, 0);
+			var r2 = new Rect (1, 1, 0, 0);
+			var result = Rect.Union (r1, r2);
+			Assert.Equal (new Rect (0, 0, 1, 1), result);
+		}
+
+		[Fact]
+		public void Union_SameRectangle ()
+		{
+			var r1 = new Rect (0, 0, 2, 2);
+			var r2 = new Rect (0, 0, 2, 2);
+			var result = Rect.Union (r1, r2);
+			Assert.Equal (new Rect (0, 0, 2, 2), result);
+		}
+
+		[Fact]
+		public void Union_RectanglesOverlap_ReturnsCombinedRectangle ()
+		{
+			// arrange
+			var rect1 = new Rect (1, 1, 3, 3);
+			var rect2 = new Rect (2, 2, 3, 3);
+
+			// act
+			var result = Rect.Union (rect1, rect2);
+
+			// assert
+			Assert.Equal (new Rect (1, 1, 4, 4), result);
+		}
+
+		[Fact]
+		public void Union_RectanglesTouchHorizontally_ReturnsCombinedRectangle ()
+		{
+			// arrange
+			var rect1 = new Rect (1, 1, 3, 3);
+			var rect2 = new Rect (4, 2, 3, 3);
+
+			// act
+			var result = Rect.Union (rect1, rect2);
+
+			// assert
+			Assert.Equal (new Rect (1, 1, 6, 4), result);
+		}
+
+		[Fact]
+		public void Union_RectanglesTouchVertically_ReturnsCombinedRectangle ()
+		{
+			// arrange
+			var rect1 = new Rect (1, 1, 3, 3);
+			var rect2 = new Rect (2, 4, 3, 3);
+
+			// act
+			var result = Rect.Union (rect1, rect2);
+
+			// assert
+			Assert.Equal (new Rect (1, 1, 4, 6), result);
+		}
+
+		[Fact]
+		public void Union_RectanglesDoNotOverlap_ReturnsCombinedRectangle ()
+		{
+			// arrange
+			var rect1 = new Rect (1, 1, 3, 3);
+			var rect2 = new Rect (5, 5, 3, 3);
+
+			// act
+			var result = Rect.Union (rect1, rect2);
+
+			// assert
+			Assert.Equal (new Rect (1, 1, 7, 7), result);
+		}
+
+		[Fact]
+		public void Union_RectangleBIsLarger_ReturnsB ()
+		{
+			// arrange
+			var rect1 = new Rect (1, 1, 3, 3);
+			var rect2 = new Rect (2, 2, 6, 6);
+
+			// act
+			var result = Rect.Union (rect1, rect2);
+
+			// assert
+			Assert.Equal (new Rect (1, 1, 7, 7), result);
+		}
+
+		[Fact]
+		public void Union_RectangleAIsLarger_ReturnsA ()
+		{
+			// arrange
+			var rect1 = new Rect (1, 1, 6, 6);
+			var rect2 = new Rect (2, 2, 3, 3);
+
+			// act
+			var result = Rect.Union (rect1, rect2);
+
+			// assert
+			Assert.Equal (new Rect (1, 1, 6, 6), result);
+		}
+
+		[Fact]
+		public void Union_RectangleAHasNegativeCoordinates_ReturnsCombinedRectangle ()
+		{
+			// arrange
+			var rect1 = new Rect (-2, -2, 5, 5);
+			var rect2 = new Rect (3, 3, 4, 4);
+
+			// act
+			var result = Rect.Union (rect1, rect2);
+
+			// assert
+			Assert.Equal (new Rect (-2, -2, 9, 9), result);
+		}
+
 	}
 }

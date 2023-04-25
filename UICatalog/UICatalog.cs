@@ -80,6 +80,8 @@ namespace UICatalog {
 			// If a Scenario name has been provided on the commandline
 			// run it and exit when done.
 			if (args.Length > 0) {
+				_topLevelColorScheme = "Base";
+
 				var item = _scenarios.FindIndex (s => s.GetName ().Equals (args [0], StringComparison.OrdinalIgnoreCase));
 				_selectedScenario = (Scenario)Activator.CreateInstance (_scenarios [item].GetType ())!;
 				Application.UseSystemConsole = _useSystemConsole;
@@ -247,10 +249,10 @@ namespace UICatalog {
 		/// the command line) and each time a Scenario ends.
 		/// </summary>
 		public class UICatalogTopLevel : Toplevel {
+			public MenuItem? miIsMenuBorderDisabled;
 			public MenuItem? miIsMouseDisabled;
 			public MenuItem? miEnableConsoleScrolling;
 
-			public TileView ContentPane;
 			public ListView CategoryListView;
 			public ListView ScenarioListView;
 
@@ -300,7 +302,7 @@ namespace UICatalog {
 					}),
 					new StatusItem(Key.F10, "~F10~ Status Bar", () => {
 						StatusBar.Visible = !StatusBar.Visible;
-						ContentPane!.Height = Dim.Fill(StatusBar.Visible ? 1 : 0);
+						//ContentPane!.Height = Dim.Fill(StatusBar.Visible ? 1 : 0);
 						LayoutSubviews();
 						SetSubViewNeedsDisplay();
 					}),
@@ -308,55 +310,63 @@ namespace UICatalog {
 					OS
 				};
 
-				ContentPane = new TileView () {
-					Id = "ContentPane",
-					X = 0,
-					Y = 1, // for menu
-					Width = Dim.Fill (),
-					Height = Dim.Fill (1),
-					CanFocus = true,
-					Shortcut = Key.CtrlMask | Key.C,
-				};
-				ContentPane.LineStyle = LineStyle.Single;
-				ContentPane.SetSplitterPos (0, 25);
-				ContentPane.ShortcutAction = () => ContentPane.SetFocus ();
+				//ContentPane = new TileView () {
+				//	Id = "ContentPane",
+				//	X = 0,
+				//	Y = 1, // for menu
+				//	Width = Dim.Fill (),
+				//	Height = Dim.Fill (1),
+				//	CanFocus = true,
+				//	Shortcut = Key.CtrlMask | Key.C,
+				//};
+				//ContentPane.LineStyle = LineStyle.Single;
+				//ContentPane.SetSplitterPos (0, 25);
+				//ContentPane.ShortcutAction = () => ContentPane.SetFocus ();
 
 				CategoryListView = new ListView (_categories) {
 					X = 0,
-					Y = 0,
-					Width = Dim.Fill (0),
-					Height = Dim.Fill (0),
+					Y = 1,
+					Width = Dim.Percent (30),
+					Height = Dim.Fill (1),
 					AllowsMarking = false,
 					CanFocus = true,
+					Title = "Categories",
+					BorderStyle = LineStyle.Single,
+					SuperViewRendersLineCanvas = true
 				};
 				CategoryListView.OpenSelectedItem += (s, a) => {
 					ScenarioListView!.SetFocus ();
 				};
 				CategoryListView.SelectedItemChanged += CategoryListView_SelectedChanged;
 
-				ContentPane.Tiles.ElementAt (0).Title = "Categories";
-				ContentPane.Tiles.ElementAt (0).MinSize = 2;
-				ContentPane.Tiles.ElementAt (0).ContentView.Add (CategoryListView);
+				//ContentPane.Tiles.ElementAt (0).Title = "Categories";
+				//ContentPane.Tiles.ElementAt (0).MinSize = 2;
+				//ContentPane.Tiles.ElementAt (0).ContentView.Add (CategoryListView);
 
 				ScenarioListView = new ListView () {
-					X = 0,
-					Y = 0,
+					X = Pos.Right (CategoryListView) - 1,
+					Y = 1,
 					Width = Dim.Fill (0),
-					Height = Dim.Fill (0),
+					Height = Dim.Fill (1),
 					AllowsMarking = false,
 					CanFocus = true,
+					Title = "Scenarios",
+					BorderStyle = LineStyle.Single,
+					SuperViewRendersLineCanvas = true
 				};
 
 				ScenarioListView.OpenSelectedItem += ScenarioListView_OpenSelectedItem;
 
-				ContentPane.Tiles.ElementAt (1).Title = "Scenarios";
-				ContentPane.Tiles.ElementAt (1).ContentView.Add (ScenarioListView);
-				ContentPane.Tiles.ElementAt (1).MinSize = 2;
+				//ContentPane.Tiles.ElementAt (1).Title = "Scenarios";
+				//ContentPane.Tiles.ElementAt (1).ContentView.Add (ScenarioListView);
+				//ContentPane.Tiles.ElementAt (1).MinSize = 2;
 
 				KeyDown += KeyDownHandler;
-				Add (MenuBar);
-				Add (ContentPane);
+				//Add (ContentPane);
+				Add (CategoryListView);
+				Add (ScenarioListView);
 
+				Add (MenuBar);
 				Add (StatusBar);
 
 				Loaded += LoadedHandler;
@@ -390,7 +400,9 @@ namespace UICatalog {
 					UICatalogApp.ShowStatusBar = StatusBar.Visible;
 
 					var height = (StatusBar.Visible ? 1 : 0);
-					ContentPane.Height = Dim.Fill (height);
+					CategoryListView.Height = Dim.Fill (height);
+					ScenarioListView.Height = Dim.Fill (height);
+					// ContentPane.Height = Dim.Fill (height);
 					LayoutSubviews ();
 					SetSubViewNeedsDisplay ();
 				};
@@ -436,9 +448,27 @@ namespace UICatalog {
 					new MenuItem [] { },
 					CreateEnableConsoleScrollingMenuItems (),
 					CreateDisabledEnabledMouseItems (),
+					CreateDisabledEnabledMenuBorder (),
 					CreateKeybindingsMenuItems ()
 				};
 				return menuItems;
+			}
+
+			MenuItem [] CreateDisabledEnabledMenuBorder ()
+			{
+				List<MenuItem> menuItems = new List<MenuItem> ();
+				miIsMenuBorderDisabled = new MenuItem {
+					Title = "Disable _Menu Border"
+				};
+				miIsMenuBorderDisabled.Shortcut = Key.CtrlMask | Key.AltMask | (Key)miIsMenuBorderDisabled!.Title!.ToString ()!.Substring (1, 1) [0];
+				miIsMenuBorderDisabled.CheckType |= MenuItemCheckStyle.Checked;
+				miIsMenuBorderDisabled.Action += () => {
+					miIsMenuBorderDisabled.Checked = (bool)!miIsMenuBorderDisabled.Checked!;
+					MenuBar.MenusBorderStyle = !(bool)miIsMenuBorderDisabled.Checked ? LineStyle.Single : LineStyle.None;
+				};
+				menuItems.Add (miIsMenuBorderDisabled);
+
+				return menuItems.ToArray ();
 			}
 
 			MenuItem [] CreateDisabledEnabledMouseItems ()
@@ -655,7 +685,7 @@ namespace UICatalog {
 
 				ColorScheme = Colors.ColorSchemes [_topLevelColorScheme];
 
-				ContentPane.LineStyle = FrameView.DefaultBorderStyle;
+				//ContentPane.LineStyle = FrameView.DefaultBorderStyle;
 
 				MenuBar.Menus [0].Children [0].Shortcut = Application.QuitKey;
 				StatusBar.Items [0].Shortcut = Application.QuitKey;
@@ -665,7 +695,7 @@ namespace UICatalog {
 				miEnableConsoleScrolling!.Checked = Application.EnableConsoleScrolling;
 
 				var height = (UICatalogApp.ShowStatusBar ? 1 : 0);// + (MenuBar.Visible ? 1 : 0);
-				ContentPane.Height = Dim.Fill (height);
+										  //ContentPane.Height = Dim.Fill (height);
 
 				StatusBar.Visible = UICatalogApp.ShowStatusBar;
 

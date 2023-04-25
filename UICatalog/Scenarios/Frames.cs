@@ -23,8 +23,8 @@ namespace UICatalog.Scenarios {
 
 			public ThicknessEditor ()
 			{
-				Margin.Thickness = new Thickness (1);
-				BorderFrame.Thickness = new Thickness (1);
+				Margin.Thickness = new Thickness (0);
+				BorderStyle = LineStyle.Single;
 			}
 
 			public override void BeginInit ()
@@ -122,7 +122,7 @@ namespace UICatalog.Scenarios {
 				Add (copyTop);
 
 				LayoutSubviews ();
-				Height = Margin.Thickness.Vertical + BorderFrame.Thickness.Vertical + Padding.Thickness.Vertical + 4;
+				Height = Margin.Thickness.Vertical + Border.Thickness.Vertical + Padding.Thickness.Vertical + 4;
 				Width = 20;
 			}
 		}
@@ -138,31 +138,44 @@ namespace UICatalog.Scenarios {
 					Thickness = viewToEdit.Margin.Thickness,
 				};
 				marginEditor.ThicknessChanged += (s, a) => {
-					viewToEdit.Margin.Thickness = a.Thickness;
+					try {
+						viewToEdit.Margin.Thickness = a.Thickness;
+					} catch {
+
+						viewToEdit.Margin.Thickness = a.PreviousThickness;
+					}
 				};
 				Add (marginEditor);
 
-				viewToEdit.BorderFrame.ColorScheme = Colors.ColorSchemes ["Base"];
+				viewToEdit.Border.ColorScheme = Colors.ColorSchemes ["Base"];
 				var borderEditor = new ThicknessEditor () {
-					X = Pos.Right(marginEditor),
+					X = Pos.Right(marginEditor) - 1,
 					Y = 0,
 					Title = "Border",
-					Thickness = viewToEdit.BorderFrame.Thickness,
+					Thickness = viewToEdit.Border.Thickness,
 				};
 				borderEditor.ThicknessChanged += (s, a) => {
-					viewToEdit.BorderFrame.Thickness = a.Thickness;
+					try {
+						viewToEdit.Border.Thickness = a.Thickness;
+					} catch {
+						viewToEdit.Border.Thickness = a.PreviousThickness;
+					}
 				};
 				Add (borderEditor);
 
 				viewToEdit.Padding.ColorScheme = Colors.ColorSchemes ["Error"];
 				var paddingEditor = new ThicknessEditor () {
-					X = Pos.Right (borderEditor),
+					X = Pos.Right (borderEditor) - 1,
 					Y = 0,
 					Title = "Padding",
 					Thickness = viewToEdit.Padding.Thickness,
 				};
 				paddingEditor.ThicknessChanged += (s, a) => {
-					viewToEdit.Padding.Thickness = a.Thickness;
+					try {
+						viewToEdit.Padding.Thickness = a.Thickness;
+					} catch {
+						viewToEdit.Padding.Thickness = a.PreviousThickness;
+					}
 				};
 				Add (paddingEditor);
 
@@ -176,12 +189,12 @@ namespace UICatalog.Scenarios {
 
 					X = 2,
 					Y = 1,
-					SelectedItem = (int)viewToEdit.BorderFrame.BorderStyle
+					SelectedItem = (int)viewToEdit.Border.BorderStyle
 				};
 				Add (rbBorderStyle);
 
 				rbBorderStyle.SelectedItemChanged += (s, e) => {
-					viewToEdit.BorderFrame.BorderStyle = (LineStyle)e.SelectedItem;
+					viewToEdit.Border.BorderStyle = (LineStyle)e.SelectedItem;
 					viewToEdit.SetNeedsDisplay ();
 				};
 
@@ -225,8 +238,8 @@ namespace UICatalog.Scenarios {
 
 				viewToEdit.X = Pos.Center ();
 				viewToEdit.Y = Pos.Bottom (marginEditor);
-				viewToEdit.Width = 50;
-				viewToEdit.Height = 20;
+				viewToEdit.Width = 60;
+				viewToEdit.Height = 25;
 				Add (viewToEdit);
 
 				LayoutSubviews ();

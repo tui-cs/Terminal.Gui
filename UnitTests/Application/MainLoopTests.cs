@@ -95,7 +95,7 @@ namespace Terminal.Gui.ApplicationTests {
 			};
 
 			ml.AddIdle (fn);
-			ml.MainIteration ();
+			ml.RunIteration ();
 			Assert.Equal (1, functionCalled);
 		}
 
@@ -111,7 +111,7 @@ namespace Terminal.Gui.ApplicationTests {
 			};
 
 			Assert.False (ml.RemoveIdle (fn));
-			ml.MainIteration ();
+			ml.RunIteration ();
 			Assert.Equal (0, functionCalled);
 		}
 
@@ -128,7 +128,7 @@ namespace Terminal.Gui.ApplicationTests {
 
 			ml.AddIdle (fn);
 			Assert.True (ml.RemoveIdle (fn));
-			ml.MainIteration ();
+			ml.RunIteration ();
 			Assert.Equal (0, functionCalled);
 		}
 
@@ -145,20 +145,20 @@ namespace Terminal.Gui.ApplicationTests {
 
 			ml.AddIdle (fn);
 			ml.AddIdle (fn);
-			ml.MainIteration ();
+			ml.RunIteration ();
 			Assert.Equal (2, functionCalled);
 			Assert.Equal (2, ml.IdleHandlers.Count);
 
 			functionCalled = 0;
 			Assert.True (ml.RemoveIdle (fn));
 			Assert.Single (ml.IdleHandlers);
-			ml.MainIteration ();
+			ml.RunIteration ();
 			Assert.Equal (1, functionCalled);
 
 			functionCalled = 0;
 			Assert.True (ml.RemoveIdle (fn));
 			Assert.Empty (ml.IdleHandlers);
-			ml.MainIteration ();
+			ml.RunIteration ();
 			Assert.Equal (0, functionCalled);
 			Assert.False (ml.RemoveIdle (fn));
 		}
@@ -370,7 +370,6 @@ namespace Terminal.Gui.ApplicationTests {
 			Assert.Equal (2, callbackCount);
 		}
 
-
 		class MillisecondTolerance : IEqualityComparer<TimeSpan> {
 			int _tolerance = 0;
 			public MillisecondTolerance (int tolerance) { _tolerance = tolerance; }
@@ -497,7 +496,7 @@ namespace Terminal.Gui.ApplicationTests {
 
 			var actionCalled = 0;
 			ml.Invoke (() => { actionCalled++; });
-			ml.MainIteration ();
+			ml.RunIteration ();
 			Assert.Equal (1, actionCalled);
 		}
 
@@ -522,7 +521,7 @@ namespace Terminal.Gui.ApplicationTests {
 				throw new NotImplementedException ();
 			}
 
-			public void MainIteration ()
+			public void Iteration ()
 			{
 				throw new NotImplementedException ();
 			}
@@ -566,7 +565,6 @@ namespace Terminal.Gui.ApplicationTests {
 
 				_wakeUp.Reset ();
 				for (var i = 0; i < numIncrements; i++) 					Launch (r, tf, (j + 1) * numIncrements);
-
 
 				while (tbCounter != (j + 1) * numIncrements) // Wait for tbCounter to reach expected value
 				{

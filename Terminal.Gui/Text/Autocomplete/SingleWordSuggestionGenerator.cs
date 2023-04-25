@@ -53,7 +53,6 @@ namespace Terminal.Gui {
 			return Char.IsLetterOrDigit ((char)rune);
 		}
 
-
 		/// <summary>
 		/// <para>
 		/// Given a <paramref name="line"/> of characters, returns the word which ends at <paramref name="idx"/> 

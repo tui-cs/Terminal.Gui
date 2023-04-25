@@ -156,7 +156,6 @@ namespace UICatalog.Scenarios {
 				return;
 			}
 
-
 			try {
 				tableView.Table.Columns.RemoveAt (tableView.SelectedColumn);
 				tableView.Update ();
@@ -237,7 +236,6 @@ namespace UICatalog.Scenarios {
 				if (GetText ("Move Row", "New Row:", oldIdx.ToString (), out string newOrdinal)) {
 
 					var newIdx = Math.Min (Math.Max (0, int.Parse (newOrdinal)), tableView.Table.Rows.Count - 1);
-
 
 					if (newIdx == oldIdx)
 						return;
@@ -361,7 +359,6 @@ namespace UICatalog.Scenarios {
 			}
 
 
-
 		}
 
 		private void Save ()
@@ -408,7 +405,6 @@ namespace UICatalog.Scenarios {
 
 			int lineNumber = 0;
 			currentFile = null;
-
 
 			try {
 				using var reader = new CsvReader (File.OpenText (filename), CultureInfo.InvariantCulture);
@@ -498,7 +494,6 @@ namespace UICatalog.Scenarios {
 			tableView.Style.ColumnStyles.Clear ();
 			tableView.Update ();
 		}
-
 
 		private void CloseExample ()
 		{

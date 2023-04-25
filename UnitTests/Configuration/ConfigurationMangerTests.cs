@@ -103,7 +103,6 @@ namespace Terminal.Gui.ConfigurationTests {
 			Assert.Equal (dictSrc ["Disabled"], dictCopy ["Disabled"]);
 			Assert.Equal (dictDest ["Normal"], dictCopy ["Normal"]);
 
-
 		}
 
 		//[Fact ()]
@@ -177,7 +176,6 @@ namespace Terminal.Gui.ConfigurationTests {
 		//{
 		//	Assert.True (false, "This test needs an implementation");
 		//}
-
 
 		/// <summary>
 		/// Save the `config.json` file; this can be used to update the file in `Terminal.Gui.Resources.config.json'.
@@ -261,7 +259,6 @@ namespace Terminal.Gui.ConfigurationTests {
 			ConfigurationManager.Settings ["Application.EnableConsoleScrolling"].PropertyValue = true;
 			ConfigurationManager.Settings.Apply ();
 
-
 			ConfigurationManager.Locations = ConfigLocations.DefaultOnly;
 
 			// act
@@ -279,7 +276,6 @@ namespace Terminal.Gui.ConfigurationTests {
 			Assert.False (Application.EnableConsoleScrolling);
 
 		}
-
 
 		[Fact]
 		public void TestConfigProperties ()
@@ -622,7 +618,6 @@ namespace Terminal.Gui.ConfigurationTests {
 			jsonException = Assert.Throws<JsonException> (() => ConfigurationManager.Settings.Update (json, "test"));
 			Assert.Equal ("Both Foreground and Background colors must be provided.", jsonException.Message);
 
-
 			// Unknown proeprty
 			json = @"
 			{
@@ -760,7 +755,6 @@ namespace Terminal.Gui.ConfigurationTests {
 			//// Check that the settings from the highest precedence source are loaded
 			//Assert.Equal ("AppSpecific", ConfigurationManager.Config.Settings.TestSetting);
 		}
-
 
 		[Fact]
 		public void Load_FiresUpdated ()

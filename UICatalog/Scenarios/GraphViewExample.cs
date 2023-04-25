@@ -35,7 +35,6 @@ namespace UICatalog.Scenarios {
 				 ()=>MultiBarGraph()                     //7
 			};
 
-
 			var menu = new MenuBar (new MenuBarItem [] {
 				new MenuBarItem ("_File", new MenuItem [] {
 					new MenuItem ("Scatter _Plot", "",()=>graphs[currentGraph = 0]()),
@@ -67,9 +66,7 @@ namespace UICatalog.Scenarios {
 				Height = 20,
 			};
 
-
 			Win.Add (graphView);
-
 
 			var frameRight = new FrameView ("About") {
 				X = Pos.Right (graphView) + 1,
@@ -78,14 +75,12 @@ namespace UICatalog.Scenarios {
 				Height = Dim.Fill (),
 			};
 
-
 			frameRight.Add (about = new TextView () {
 				Width = Dim.Fill (),
 				Height = Dim.Fill ()
 			});
 
 			Win.Add (frameRight);
-
 
 			var statusBar = new StatusBar (new StatusItem [] {
 				new StatusItem(Application.QuitKey, $"{Application.QuitKey} to Quit", () => Quit()),
@@ -135,7 +130,6 @@ namespace UICatalog.Scenarios {
 			graphView.AxisX.ShowLabelsEvery = 0;
 			graphView.AxisX.Minimum = 0;
 
-
 			graphView.AxisY.Minimum = 0;
 
 			var legend = new LegendAnnotation (new Rect (graphView.Bounds.Width - 20, 0, 20, 5));
@@ -179,13 +173,11 @@ namespace UICatalog.Scenarios {
 			graphView.Series.Add (points);
 			graphView.Annotations.Add (line);
 
-
 			randomPoints = new List<PointF> ();
 
 			for (int i = 0; i < 10; i++) {
 				randomPoints.Add (new PointF (r.Next (100), r.Next (100)));
 			}
-
 
 			var points2 = new ScatterSeries () {
 				Points = randomPoints,
@@ -471,7 +463,6 @@ namespace UICatalog.Scenarios {
 			};
 			graphView.Series.Add (malesSeries);
 
-
 			// Females
 			var femalesSeries = new BarSeries () {
 				Orientation = Orientation.Horizontal,
@@ -500,7 +491,6 @@ namespace UICatalog.Scenarios {
 					new BarSeries.Bar("100+",stiple,12818)
 				}
 			};
-
 
 			var softStiple = new GraphCellToRender ('\u2591');
 			var mediumStiple = new GraphCellToRender ('\u2592');
@@ -586,7 +576,6 @@ namespace UICatalog.Scenarios {
 						});
 				}
 				graphView.SetNeedsDisplay ();
-
 
 				// while the equaliser is showing
 				return graphView.Series.Contains (series);

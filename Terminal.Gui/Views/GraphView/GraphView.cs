@@ -27,7 +27,6 @@ namespace Terminal.Gui {
 		/// </summary>
 		public List<ISeries> Series { get; } = new List<ISeries> ();
 
-
 		/// <summary>
 		/// Elements drawn into graph after series have been drawn e.g. Legends etc
 		/// </summary>
@@ -162,7 +161,6 @@ namespace Terminal.Gui {
 
 			SetDriverColorToGraphColor ();
 
-
 			Rect drawBounds = new Rect((int)MarginLeft,0, graphScreenWidth, graphScreenHeight);
 			
 			RectangleF graphSpace = ScreenToGraphSpace (drawBounds);
@@ -207,7 +205,6 @@ namespace Terminal.Gui {
 				ScrollOffset.Y + ((Bounds.Height - (row + MarginBottom + 1)) * CellSize.Y),
 				CellSize.X, CellSize.Y);
 		}
-
 
 		/// <summary>
 		/// Returns the section of the graph that is represented by the screen area
@@ -289,12 +286,10 @@ namespace Terminal.Gui {
 			SetNeedsDisplay ();
 		}
 
-
 		#region Bresenham's line algorithm
 		// https://rosettacode.org/wiki/Bitmap/Bresenham%27s_line_algorithm#C.23
 
 		int ipart (decimal x) { return (int)x; }
-
 
 		decimal fpart (decimal x)
 		{

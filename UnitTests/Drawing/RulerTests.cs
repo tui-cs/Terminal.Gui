@@ -29,7 +29,6 @@ namespace Terminal.Gui.DrawingTests {
 			Assert.Equal (default, r.Attribute);
 		}
 
-
 		[Fact ()]
 		public void Orientation_set ()
 		{
@@ -182,7 +181,6 @@ namespace Terminal.Gui.DrawingTests {
 				Height = Dim.Fill (),
 			};
 
-
 			Application.Top.Add (f);
 			Application.Begin (Application.Top);
 			((FakeDriver)Application.Driver).SetBufferSize (5, len + 5);
@@ -303,7 +301,6 @@ namespace Terminal.Gui.DrawingTests {
 				Height = Dim.Fill (),
 			};
 
-
 			Application.Top.Add (f);
 			Application.Begin (Application.Top);
 			((FakeDriver)Application.Driver).SetBufferSize (5, len + 5);
@@ -363,5 +360,4 @@ namespace Terminal.Gui.DrawingTests {
 		}
 	}
 }
-
 

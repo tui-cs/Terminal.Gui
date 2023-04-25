@@ -200,7 +200,6 @@ namespace UICatalog.Scenarios {
 
 				Add (_frmMenu);
 
-
 				var _frmMenuDetails = new DynamicMenuBarDetails ("Menu Details:") {
 					X = Pos.Right (_frmMenu),
 					Y = Pos.Top (_frmMenu),
@@ -285,7 +284,6 @@ namespace UICatalog.Scenarios {
 						DataContext.Parent = ustring.Empty;
 					}
 				};
-
 
 				var _btnOk = new Button ("Ok") {
 					X = Pos.Right (_frmMenu) + 20,
@@ -493,9 +491,7 @@ namespace UICatalog.Scenarios {
 					SetFrameDetails (null);
 				};
 
-
 				SetFrameDetails ();
-
 
 				var ustringConverter = new UStringValueConverter ();
 				var listWrapperConverter = new ListWrapperConverter ();
@@ -503,7 +499,6 @@ namespace UICatalog.Scenarios {
 				var lblMenuBar = new Binding (this, "MenuBar", _lblMenuBar, "Text", ustringConverter);
 				var lblParent = new Binding (this, "Parent", _lblParent, "Text", ustringConverter);
 				var lstMenus = new Binding (this, "Menus", _lstMenus, "Source", listWrapperConverter);
-
 
 				void SetFrameDetails (MenuItem menuBarItem = null)
 				{
@@ -625,7 +620,6 @@ namespace UICatalog.Scenarios {
 					_currentEditMenuBarItem.CheckType = menuItem.checkStyle;
 					SetFrameDetails (_currentEditMenuBarItem);
 				}
-
 
 				//_frmMenuDetails.Initialized += (s, e) => _frmMenuDetails.Enabled = false;
 			}
@@ -844,7 +838,6 @@ namespace UICatalog.Scenarios {
 				//Add (_frmMenuDetails);
 
 			}
-
 
 			public DynamicMenuItem EnterMenuItem ()
 			{

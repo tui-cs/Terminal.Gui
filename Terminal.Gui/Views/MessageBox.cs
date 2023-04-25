@@ -164,7 +164,6 @@ namespace Terminal.Gui {
 			return QueryFull (false, 0, 0, title, message, defaultButton, wrapMessage, buttons);
 		}
 
-
 		/// <summary>
 		/// Presents an error <see cref="MessageBox"/> with the specified title and message and a list of buttons to show to the user.
 		/// </summary>

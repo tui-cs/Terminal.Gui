@@ -75,7 +75,6 @@ namespace Terminal.Gui {
 		/// <param name="renderAt"></param>
 		void RenderOverlay (Point renderAt);
 
-
 		/// <summary>
 		/// Handle key events before <see cref="HostControl"/> e.g. to make key events like
 		/// up/down apply to the autocomplete control instead of changing the cursor position in
@@ -100,13 +99,11 @@ namespace Terminal.Gui {
 		/// </summary>
 		void ClearSuggestions ();
 
-
 		/// <summary>
 		/// Gets or Sets the class responsible for generating <see cref="Suggestions"/>
 		/// based on a given <see cref="AutocompleteContext"/> of the <see cref="HostControl"/>.
 		/// </summary>
 		ISuggestionGenerator SuggestionGenerator { get; set; }
-
 
 		/// <summary>
 		/// Populates <see cref="Suggestions"/> with all <see cref="Suggestion"/> 

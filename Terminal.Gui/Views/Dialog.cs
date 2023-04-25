@@ -90,7 +90,6 @@ namespace Terminal.Gui {
 				LayoutButtons ();
 			};
 
-
 		}
 
 		/// <summary>
@@ -145,7 +144,6 @@ namespace Terminal.Gui {
 			/// </summary>
 			Right
 		}
-
 
 		/// <summary>
 		/// Determines how the <see cref="Dialog"/> <see cref="Button"/>s are aligned along the 

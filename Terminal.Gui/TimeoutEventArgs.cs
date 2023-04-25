@@ -17,7 +17,6 @@ namespace Terminal.Gui {
 		/// </summary>
 		public long Ticks { get; }
 
-
 		/// <summary>
 		/// Creates a new instance of the <see cref="TimeoutEventArgs"/> class.
 		/// </summary>

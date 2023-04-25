@@ -9,7 +9,6 @@ namespace UICatalog.Scenarios {
 	public class Dialogs : Scenario {
 		static int CODE_POINT = '你'; // We know this is a wide char
 
-
 		public override void Setup ()
 		{
 			var frame = new FrameView ("Dialog Options") {
@@ -114,7 +113,6 @@ namespace UICatalog.Scenarios {
 				Y = Pos.Top (label),
 			};
 			frame.Add (styleRadioGroup);
-
 
 			frame.ForceValidatePosDim = true;
 			void Top_Loaded (object sender, EventArgs args)

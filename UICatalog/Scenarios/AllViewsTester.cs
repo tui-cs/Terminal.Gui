@@ -49,7 +49,6 @@ namespace UICatalog.Scenarios {
 			Application.Top.ColorScheme = Colors.ColorSchemes [TopLevelColorScheme];
 		}
 
-
 		public override void Setup ()
 		{
 			var statusBar = new StatusBar (new StatusItem [] {

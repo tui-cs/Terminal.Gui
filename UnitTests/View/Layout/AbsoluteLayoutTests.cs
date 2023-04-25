@@ -51,7 +51,6 @@ namespace Terminal.Gui.ViewTests {
 			Assert.Null (v.Width);
 		}
 
-
 		[Fact]
 		public void AbsoluteLayout_Change_Frame ()
 		{
@@ -97,7 +96,6 @@ namespace Terminal.Gui.ViewTests {
 			Assert.Null (v.Width);
 
 		}
-
 
 		[Fact]
 		public void AbsoluteLayout_Change_Height_or_Width_Absolute ()

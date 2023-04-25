@@ -341,6 +341,7 @@ namespace Terminal.Gui {
 			}
 		}
 
+		// TODO: Use v2 Frames
 		void DrawFrame ()
 		{
 			switch (progressBarFormat) {
@@ -351,12 +352,12 @@ namespace Terminal.Gui {
 			case ProgressBarFormat.Framed:
 			case ProgressBarFormat.FramedPlusPercentage:
 				padding = 1;
-				Application.Driver.DrawWindowFrame (ViewToScreen (Bounds), padding, padding, padding, padding, true);
+				Border.DrawFrame (Bounds, false);
 				break;
 			case ProgressBarFormat.FramedProgressPadded:
 				padding = 2;
-				Application.Driver.DrawWindowFrame (ViewToScreen (Bounds), padding, padding, padding, padding + 1, true);
-				Application.Driver.DrawWindowFrame (ViewToScreen (Bounds), padding - 1, padding - 1, padding - 1, padding - 1, true);
+				Border.DrawFrame (Bounds, false);
+				Border.DrawFrame (new Rect (Bounds.X + padding/2, Bounds.Y + padding/2, Bounds.Width - (padding), Bounds.Height - padding - 1), false);
 				break;
 			}
 		}

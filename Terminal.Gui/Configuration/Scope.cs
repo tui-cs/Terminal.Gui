@@ -7,7 +7,6 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using static Terminal.Gui.ConfigurationManager;
 
-
 #nullable enable
 
 namespace Terminal.Gui {

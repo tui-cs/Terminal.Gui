@@ -26,7 +26,6 @@ namespace UICatalog.Scenarios {
 			});
 			Application.Top.Add (menu);
 
-
 			Win.Add (new Label ("Regular Line") { Y = 0 });
 
 			// creates a horizontal line
@@ -56,7 +55,6 @@ namespace UICatalog.Scenarios {
 
 			Win.Add (shortLine);
 
-
 			Win.Add (new Label ("Arrow Line") { Y = 6 });
 
 			// creates a horizontal line
@@ -69,7 +67,6 @@ namespace UICatalog.Scenarios {
 
 			Win.Add (arrowLine);
 
-
 			Win.Add (new Label ("Vertical Line") { Y = 9,X=11 });
 
 			// creates a horizontal line
@@ -78,7 +75,6 @@ namespace UICatalog.Scenarios {
 			};
 
 			Win.Add (verticalLine);
-
 
 			Win.Add (new Label ("Vertical Arrow") { Y = 11, X = 28 });
 

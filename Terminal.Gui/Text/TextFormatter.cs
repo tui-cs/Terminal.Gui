@@ -877,7 +877,6 @@ namespace Terminal.Gui {
 				i++;
 			}
 
-
 			// Legacy support - use first upper case char if the specifier was not found
 			if (hot_pos == -1 && firstUpperCase) {
 				i = 0;
@@ -1105,7 +1104,6 @@ namespace Terminal.Gui {
 		/// 
 		/// </summary>
 		public bool WordWrap { get; set; } = false;
-
 
 		/// <summary>
 		/// Gets or sets the size of the area the text will be constrained to when formatted.

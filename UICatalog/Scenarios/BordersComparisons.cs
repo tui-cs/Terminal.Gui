@@ -43,8 +43,8 @@ namespace UICatalog.Scenarios {
 			Application.Top.Add (win);
 
 			var topLevel = new Toplevel (new Rect (50, 5, 40, 20));
-			//topLevel.BorderFrame.Thickness = borderThickness;
-			//topLevel.BorderFrame.BorderStyle = borderStyle;
+			//topLevel.Border.Thickness = borderThickness;
+			//topLevel.Border.BorderStyle = borderStyle;
 			//topLevel.Padding.Thickness = paddingThickness;
 
 			var tf3 = new TextField ("1234567890") { Width = 10 };
@@ -73,8 +73,8 @@ namespace UICatalog.Scenarios {
 			Application.Top.Add (topLevel);
 
 			var frameView = new FrameView (new Rect (95, 5, 40, 20), "FrameView", null);
-			frameView.BorderFrame.Thickness = borderThickness;
-			frameView.BorderFrame.BorderStyle = borderStyle;
+			frameView.Border.Thickness = borderThickness;
+			frameView.Border.BorderStyle = borderStyle;
 			//frameView.Padding.Thickness = paddingThickness;
 
 			var tf5 = new TextField ("1234567890") { Width = 10 };

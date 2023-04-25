@@ -26,7 +26,6 @@ namespace Terminal.Gui {
 
 		/// <inheritdoc/>
 
-
 		/// <inheritdoc/>
 		public virtual bool Visible { get; set; }
 
@@ -34,10 +33,8 @@ namespace Terminal.Gui {
 		public virtual ReadOnlyCollection<Suggestion> Suggestions { get; set; } = new ReadOnlyCollection<Suggestion> (new Suggestion [0]);
 
 
-
 		/// <inheritdoc/>
 		public virtual int SelectedIdx { get; set; }
-
 
 		/// <inheritdoc/>
 		public abstract ColorScheme ColorScheme { get; set; }
@@ -64,7 +61,6 @@ namespace Terminal.Gui {
 		{
 			Suggestions = Enumerable.Empty<Suggestion> ().ToList ().AsReadOnly ();
 		}
-
 
 		/// <inheritdoc/>
 		public virtual void GenerateSuggestions (AutocompleteContext context)

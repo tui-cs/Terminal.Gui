@@ -153,7 +153,6 @@ namespace Terminal.Gui.ViewsTests {
 				new MenuItem ("Third", "", null)
 			});
 
-
 			cm.Show ();
 			Application.Refresh ();
 
@@ -904,6 +903,7 @@ namespace Terminal.Gui.ViewsTests {
 			Assert.Null (tf.ContextMenu.MenuBar);
 		}
 
+		// BUGBUG: Broke this test with #2483 - @bdisp I need your help figuring out why
 		[Fact, AutoInitShutdown]
 		public void Draw_A_ContextManu_Over_A_Dialog ()
 		{

@@ -307,7 +307,6 @@ namespace UICatalog.Scenarios {
 			treeViewFiles.MultiSelect = (bool)miMultiSelect.Checked;
 		}
 
-
 		private void SetCustomColors ()
 		{
 			var hidden = new ColorScheme {

@@ -97,7 +97,7 @@ namespace UICatalog.Scenarios {
 				IsDefault = true,
 			};
 
-			showWizardButton.Clicked += (s,e) => {
+			showWizardButton.Clicked += (s, e) => {
 				try {
 					int width = 0;
 					int.TryParse (widthEdit.Text.ToString (), out width);
@@ -138,13 +138,13 @@ namespace UICatalog.Scenarios {
 					};
 
 					// Add 1st step
-					var firstStep = new Wizard.WizardStep ("End User License Agreement");
+					var firstStep = new Wizard.WizardStep () { Title = "End User License Agreement"};
 					firstStep.NextButtonText = "Accept!";
 					firstStep.HelpText = "This is the End User License Agreement.\n\n\n\n\n\nThis is a test of the emergency broadcast system. This is a test of the emergency broadcast system.\nThis is a test of the emergency broadcast system.\n\n\nThis is a test of the emergency broadcast system.\n\nThis is a test of the emergency broadcast system.\n\n\n\nThe end of the EULA.";
 					wizard.AddStep (firstStep);
 
 					// Add 2nd step
-					var secondStep = new Wizard.WizardStep ("Second Step");
+					var secondStep = new Wizard.WizardStep () { Title = "Second Step" };
 					wizard.AddStep (secondStep);
 					secondStep.HelpText = "This is the help text for the Second Step.\n\nPress the button to change the Title.\n\nIf First Name is empty the step will prevent moving to the next step.";
 
@@ -154,7 +154,7 @@ namespace UICatalog.Scenarios {
 						X = Pos.Right (buttonLbl),
 						Y = Pos.Top (buttonLbl)
 					};
-					button.Clicked += (s,e) => {
+					button.Clicked += (s, e) => {
 						secondStep.Title = "2nd Step";
 						MessageBox.Query ("Wizard Scenario", "This Wizard Step's title was changed to '2nd Step'");
 					};
@@ -185,7 +185,7 @@ namespace UICatalog.Scenarios {
 					};
 
 					// Add 3rd (optional) step
-					var thirdStep = new Wizard.WizardStep ("Third Step (Optional)");
+					var thirdStep = new Wizard.WizardStep () { Title = "Third Step (Optional)" };
 					wizard.AddStep (thirdStep);
 					thirdStep.HelpText = "This is step is optional (WizardStep.Enabled = false). Enable it with the checkbox in Step 2.";
 					var step3Label = new Label () {
@@ -208,7 +208,7 @@ namespace UICatalog.Scenarios {
 					};
 
 					// Add 4th step
-					var fourthStep = new Wizard.WizardStep ("Step Four");
+					var fourthStep = new Wizard.WizardStep () { Title = "Step Four" };
 					wizard.AddStep (fourthStep);
 					var someText = new TextView () {
 						Text = "This step (Step Four) shows how to show/hide the Help pane. The step contains this TextView (but it's hard to tell it's a TextView because of Issue #1800).",
@@ -227,7 +227,7 @@ namespace UICatalog.Scenarios {
 						X = Pos.Center (),
 						Y = Pos.AnchorEnd (1)
 					};
-					hideHelpBtn.Clicked += (s,e) => {
+					hideHelpBtn.Clicked += (s, e) => {
 						if (fourthStep.HelpText.Length > 0) {
 							fourthStep.HelpText = ustring.Empty;
 						} else {
@@ -238,7 +238,7 @@ namespace UICatalog.Scenarios {
 					fourthStep.NextButtonText = "Go To Last Step";
 					var scrollBar = new ScrollBarView (someText, true);
 
-					scrollBar.ChangedPosition += (s,e) => {
+					scrollBar.ChangedPosition += (s, e) => {
 						someText.TopRow = scrollBar.Position;
 						if (someText.TopRow != scrollBar.Position) {
 							scrollBar.Position = someText.TopRow;
@@ -254,7 +254,7 @@ namespace UICatalog.Scenarios {
 						}
 					};
 
-					someText.DrawContent += (s,e) => {
+					someText.DrawContent += (s, e) => {
 						scrollBar.Size = someText.Lines;
 						scrollBar.Position = someText.TopRow;
 						if (scrollBar.OtherScrollBarView != null) {
@@ -267,14 +267,14 @@ namespace UICatalog.Scenarios {
 					fourthStep.Add (scrollBar);
 
 					// Add last step
-					var lastStep = new Wizard.WizardStep ("The last step");
+					var lastStep = new Wizard.WizardStep () { Title = "The last step" };
 					wizard.AddStep (lastStep);
 					lastStep.HelpText = "The wizard is complete!\n\nPress the Finish button to continue.\n\nPressing ESC will cancel the wizard.";
 					var finalFinalStepEnabledCeckBox = new CheckBox () { Text = "Enable _Final Final Step", Checked = false, X = 0, Y = 1 };
 					lastStep.Add (finalFinalStepEnabledCeckBox);
 
 					// Add an optional FINAL last step
-					var finalFinalStep = new Wizard.WizardStep ("The VERY last step");
+					var finalFinalStep = new Wizard.WizardStep () { Title = "The VERY last step" };
 					wizard.AddStep (finalFinalStep);
 					finalFinalStep.HelpText = "This step only shows if it was enabled on the other last step.";
 					finalFinalStep.Enabled = (bool)thirdStepEnabledCeckBox.Checked;

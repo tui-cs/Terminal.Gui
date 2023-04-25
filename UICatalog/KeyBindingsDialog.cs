@@ -7,9 +7,7 @@ using Terminal.Gui;
 
 namespace UICatalog {
 
-
 	class KeyBindingsDialog : Dialog {
-
 
 		static Dictionary<Command,Key> CurrentBindings = new Dictionary<Command,Key>();
 		private Command[] commands;

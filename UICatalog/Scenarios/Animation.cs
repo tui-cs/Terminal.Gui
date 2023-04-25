@@ -23,7 +23,6 @@ namespace UICatalog.Scenarios {
 		{
 			base.Setup ();
 
-
 			var imageView = new ImageView () {
 				Width = Dim.Fill(),
 				Height = Dim.Fill()-2,
@@ -145,7 +144,6 @@ namespace UICatalog.Scenarios {
 
 			Rect oldSize = Rect.Empty;
 
-
 			internal void SetImage (Image<Rgba32> image)
 			{
 				frameCount = image.Frames.Count;
@@ -200,7 +198,6 @@ namespace UICatalog.Scenarios {
 				{
 					brailleCache[currentFrame] = braille = GetBraille(matchSizes[currentFrame]);
 				}
-
 
 				var lines = braille.Split('\n');
 

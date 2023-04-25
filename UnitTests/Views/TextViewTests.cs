@@ -5231,7 +5231,6 @@ line.
 			Assert.Equal (1, tv.Lines);
 			Assert.Equal (new Point (0, 0), tv.CursorPosition);
 
-
 			// Undo
 			Assert.True (tv.ProcessKey (new KeyEvent (Key.Z | Key.CtrlMask, new KeyModifiers ())));
 			Assert.Equal ("First line.", tv.Text);
@@ -6738,7 +6737,6 @@ This is the second line.
 			Kill_To_Start_Delete_Backwards_And_Copy_To_The_Clipboard ();
 			Assert.Equal (expectedEventCount, eventcount);
 		}
-
 
 		[Fact, TextViewTestsAutoInitShutdown]
 		public void ContentsChanged_Event_Fires_Using_Copy_Or_Cut_Tests ()
