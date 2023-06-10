@@ -1045,7 +1045,7 @@ namespace Terminal.Gui {
 			var meY = _showColumnHeaders ? me.Y - 1 : me.Y;
 			var framesThickness = GetFramesThickness ();
 			if (meY + _top - framesThickness.Top < 0
-			    || meY + _top > _top + _itemHeight - (framesThickness.Top + framesThickness.Bottom)
+			    || meY + _top > _top + VisibleItems - (framesThickness.Top + framesThickness.Bottom)
 			    || _top - framesThickness.Top + (meY / _itemHeight) >= _source.Count) {
 				return true;
 			}
