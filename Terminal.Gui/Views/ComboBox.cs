@@ -8,6 +8,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 
 namespace Terminal.Gui {
@@ -108,7 +109,7 @@ namespace Terminal.Gui {
 			public override bool MoveUp ()
 			{
 				if (!_container.ReadOnly && HasFocus && SelectedItem == 0 && _container._searchset?.Count > 0) {
-					_container._search.CursorPosition = _container._search.Text.RuneCount;
+					_container._search.CursorPosition = _container._search.Text.EnumerateRunes ().Count ();
 					_container._search.SetFocus ();
 					return true;
 				}
@@ -766,7 +767,7 @@ namespace Terminal.Gui {
 			}
 			// jump back to search
 			if (_listView?.HasFocus == true && _listView?.SelectedItem == 0 && _searchset?.Count > 0) {
-				_search.CursorPosition = _search.Text.RuneCount;
+				_search.CursorPosition = _search.Text.EnumerateRunes ().Count ();
 				_search.SetFocus ();
 				return true;
 				//} else if (_listview?.HasFocus == true) {
@@ -1000,7 +1001,7 @@ namespace Terminal.Gui {
 			if (_searchset?.Count > 0) {
 				//SetValue (_searchset [_listview.SelectedItem], false);
 				SetValue (_searchset [_listView.SelectedItem]);
-				_search.CursorPosition = _search.Text.RuneCount;
+				_search.CursorPosition = _search.Text.EnumerateRunes ().Count ();
 				_selectedItem = GetSelectedItemFromSource (_search.Text);
 			}
 		}
@@ -1196,7 +1197,7 @@ namespace Terminal.Gui {
 				//Application.Top.Redraw (Application.Top.Bounds);
 				var savedClip = Driver.Clip;
 				Driver.Clip = _listView.Frame;
-				_listView.Redraw (_listView.Bounds);
+				_listView.Draw ();
 				//Driver.UpdateScreen ();
 				//_search.PositionCursor ();
 				Driver.Clip = savedClip;

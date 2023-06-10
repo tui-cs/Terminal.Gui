@@ -1006,7 +1006,7 @@ Three ", output);
 			Assert.False (cb.IsShow);
 			Assert.Equal (0, cb.SelectedItem);
 			Assert.Equal ("One", cb.Text);
-			Application.Top.Redraw (Application.Top.Bounds);
+			Application.Top.Draw ();
 			TestHelpers.AssertDriverColorsAre (@"
 000000
 222222
@@ -1361,7 +1361,7 @@ One  ▼  First  ▼
 			Assert.True (cb.IsShow);
 			Assert.Equal (0, cb.SelectedItem);
 			Assert.Equal ("One", cb.Text);
-			Application.Top.Redraw (Application.Top.Bounds);
+			Application.Top.Draw ();
 			TestHelpers.AssertDriverContentsWithFrameAre (@"
 ┌──────────────────┐
 │One  ▼            │
@@ -1386,7 +1386,7 @@ One  ▼  First  ▼
 			Assert.Equal (0, cb.SelectedItem);
 			Assert.Equal ("One", cb.Text);
 			Assert.Equal (win, Application.MouseGrabView);
-			Application.Top.Redraw (Application.Top.Bounds);
+			Application.Top.Draw ();
 			TestHelpers.AssertDriverContentsWithFrameAre (@"
 ┌──────────────────┐
 │One  ▼            │
@@ -1448,7 +1448,7 @@ One  ▼  First  ▼
                               └──────────────────┘", output);
 
 			Assert.True (cb.ProcessKey (new KeyEvent (Key.CursorDown, new KeyModifiers ())));
-			Application.Top.Redraw (Application.Top.Bounds);
+			Application.Top.Draw ();
 			TestHelpers.AssertDriverContentsWithFrameAre (@"
                               ┌──────────────────┐
                               │One               │
@@ -1460,7 +1460,7 @@ One  ▼  First  ▼
                               └──────────────────┘", output);
 
 			Assert.True (cb.ProcessKey (new KeyEvent (Key.CursorDown, new KeyModifiers ())));
-			Application.Top.Redraw (Application.Top.Bounds);
+			Application.Top.Draw ();
 			TestHelpers.AssertDriverContentsWithFrameAre (@"
                               ┌──────────────────┐
                               │Two               │
@@ -1472,7 +1472,7 @@ One  ▼  First  ▼
                               └──────────────────┘", output);
 
 			Assert.True (cb.ProcessKey (new KeyEvent (Key.CursorDown, new KeyModifiers ())));
-			Application.Top.Redraw (Application.Top.Bounds);
+			Application.Top.Draw ();
 			TestHelpers.AssertDriverContentsWithFrameAre (@"
                               ┌──────────────────┐
                               │Three             │
@@ -1484,7 +1484,7 @@ One  ▼  First  ▼
                               └──────────────────┘", output);
 
 			Assert.True (cb.ProcessKey (new KeyEvent (Key.Enter, new KeyModifiers ())));
-			Application.Top.Redraw (Application.Top.Bounds);
+			Application.Top.Draw ();
 			Assert.Equal ("Three", cb.Text);
 			TestHelpers.AssertDriverContentsWithFrameAre (@"
                               ┌──────────────────┐
@@ -1499,7 +1499,7 @@ One  ▼  First  ▼
 			cb.Text = "";
 			cb.SelectedItem = -1;
 			Assert.True (cb.Subviews [0].ProcessKey (new KeyEvent (Key.T, new KeyModifiers ())));
-			Application.Top.Redraw (Application.Top.Bounds);
+			Application.Top.Draw ();
 			Assert.Equal ("", cb.Text);
 			TestHelpers.AssertDriverContentsWithFrameAre (@"
                               ┌──────────────────┐
@@ -1535,7 +1535,7 @@ One  ▼  First  ▼
 				});
 
 			Assert.Equal (cb.Subviews [1], Application.MouseGrabView);
-			Application.Top.Redraw (Application.Top.Bounds);
+			Application.Top.Draw ();
 			var expectedColors = @"
 000000000000000000000000000000000000000000000000000
 000000000000000000000000000000000000000000000000000
@@ -1567,7 +1567,7 @@ One  ▼  First  ▼
 				});
 
 			Assert.Equal (cb.Subviews [1], Application.MouseGrabView);
-			Application.Top.Redraw (Application.Top.Bounds);
+			Application.Top.Draw ();
 			TestHelpers.AssertDriverColorsAre (expectedColors, attributes);
 
 			Application.End (rs);

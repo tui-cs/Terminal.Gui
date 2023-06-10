@@ -46,14 +46,14 @@ namespace Terminal.Gui {
 			Both
 		}
 
-		bool vertical;
-		int size, position, selected;
-		bool showScrollIndicator;
-		bool keepContentAlwaysInViewport = true;
-		bool autoHideScrollBars = true;
-		bool hosted;
-		ScrollBarView otherScrollBarView;
-		View contentBottomRightCorner;
+		bool _vertical;
+		int _size, _position, _selected;
+		bool _showScrollIndicator;
+		bool _keepContentAlwaysInViewport = true;
+		bool _autoHideScrollBars = true;
+		bool _hosted;
+		ScrollBarView _otherScrollBarView;
+		View _contentBottomRightCorner;
 
 		bool _showBothScrollIndicator => OtherScrollBarView?._showScrollIndicator == true && _showScrollIndicator;
 
@@ -104,7 +104,7 @@ namespace Terminal.Gui {
 			throw new ArgumentException ("Cannot create an instance of ScrollBarType.None!", nameof (scrollBarType));
 		}
 
-		string lines, cols, line, col, top, left;// bottom, right;
+		string _lines, _cols, _line, _col, _top, _left;// bottom, right;
 							 //int savedBottom, savedRight;
 
 		/// <summary>
@@ -131,10 +131,10 @@ namespace Terminal.Gui {
 			}
 			host.DrawContent += Host_DrawContent;
 			host.LayoutComplete += Host_LayoutComplete;
-			this.lines = lines;
-			this.cols = cols;
-			this.top = top;
-			this.left = left;
+			this._lines = lines;
+			this._cols = cols;
+			this._top = top;
+			this._left = left;
 			//this.bottom = bottom;
 			//this.right = right;
 			//savedBottom = GetPropertyValue (bottom);
@@ -154,11 +154,11 @@ namespace Terminal.Gui {
 
 		private void Host_DrawContent (object sender, DrawEventArgs e)
 		{
-			Size = GetPropertyValue (lines);
-			Position = GetPropertyValue (top);
+			Size = GetPropertyValue (_lines);
+			Position = GetPropertyValue (_top);
 			if (OtherScrollBarView != null) {
-				OtherScrollBarView.Size = GetPropertyValue (cols);
-				OtherScrollBarView.Position = GetPropertyValue (left);
+				OtherScrollBarView.Size = GetPropertyValue (_cols);
+				OtherScrollBarView.Position = GetPropertyValue (_left);
 			}
 			LayoutSubviews ();
 			Refresh ();
@@ -166,9 +166,9 @@ namespace Terminal.Gui {
 
 		private void ScrollBarView_ChangedPosition (object sender, EventArgs e)
 		{
-			SetPropertyValue (top, position);
-			if (GetPropertyValue (top) != Position) {
-				Position = GetPropertyValue (top);
+			SetPropertyValue (_top, _position);
+			if (GetPropertyValue (_top) != Position) {
+				Position = GetPropertyValue (_top);
 			}
 			SetNeedsDisplay ();
 		}
@@ -184,9 +184,9 @@ namespace Terminal.Gui {
 
 		private void OtherScrollBarView_ChangedPosition (object sender, EventArgs e)
 		{
-			SetPropertyValue (left, OtherScrollBarView.Position);
-			if (GetPropertyValue (left) != OtherScrollBarView.Position) {
-				OtherScrollBarView.Position = GetPropertyValue (left);
+			SetPropertyValue (_left, OtherScrollBarView.Position);
+			if (GetPropertyValue (_left) != OtherScrollBarView.Position) {
+				OtherScrollBarView.Position = GetPropertyValue (_left);
 			}
 			SetNeedsDisplay ();
 		}
@@ -256,49 +256,44 @@ namespace Terminal.Gui {
 			ClearOnVisibleFalse = false;
 		}
 
-        private void CreateBottomRightCorner()
-        {
-            if (Host != null && (_contentBottomRightCorner == null && OtherScrollBarView == null
-                || (_contentBottomRightCorner == null && OtherScrollBarView != null && OtherScrollBarView._contentBottomRightCorner == null)))
-            {
+		private void CreateBottomRightCorner ()
+		{
+			if (Host != null && (_contentBottomRightCorner == null && OtherScrollBarView == null
+			    || (_contentBottomRightCorner == null && OtherScrollBarView != null && OtherScrollBarView._contentBottomRightCorner == null))) {
 
-                _contentBottomRightCorner = new View()
-                {
-                    Id = "contentBottomRightCorner",
-                    Visible = Host.Visible,
-                    ClearOnVisibleFalse = false,
-                    ColorScheme = ColorScheme
-                };
-                if (_hosted)
-                {
-                    Host.SuperView.Add(_contentBottomRightCorner);
-                }
-                else
-                {
-                    Host.Add(_contentBottomRightCorner);
-                }
-                _contentBottomRightCorner.X = Pos.Right(Host) - 1;
-                _contentBottomRightCorner.Y = Pos.Bottom(Host) - 1;
-                _contentBottomRightCorner.Width = 1;
-                _contentBottomRightCorner.Height = 1;
-                _contentBottomRightCorner.MouseClick += ContentBottomRightCorner_MouseClick;
-                _contentBottomRightCorner.DrawContent += _contentBottomRightCorner_DrawContent;
-            }
-        }
+				_contentBottomRightCorner = new View () {
+					Id = "contentBottomRightCorner",
+					Visible = Host.Visible,
+					ClearOnVisibleFalse = false,
+					ColorScheme = ColorScheme
+				};
+				if (_hosted) {
+					Host.SuperView.Add (_contentBottomRightCorner);
+				} else {
+					Host.Add (_contentBottomRightCorner);
+				}
+				_contentBottomRightCorner.X = Pos.Right (Host) - 1;
+				_contentBottomRightCorner.Y = Pos.Bottom (Host) - 1;
+				_contentBottomRightCorner.Width = 1;
+				_contentBottomRightCorner.Height = 1;
+				_contentBottomRightCorner.MouseClick += ContentBottomRightCorner_MouseClick;
+				_contentBottomRightCorner.DrawContent += _contentBottomRightCorner_DrawContent;
+			}
+		}
 
-        private void _contentBottomRightCorner_DrawContent(object sender, DrawEventArgs e)
-        {
-            Driver.SetAttribute(Host.HasFocus ? ColorScheme.Focus : GetNormalColor());
-        }
+		private void _contentBottomRightCorner_DrawContent (object sender, DrawEventArgs e)
+		{
+			Driver.SetAttribute (Host.HasFocus ? ColorScheme.Focus : GetNormalColor ());
+		}
 
-        public override void RemoveAll ()
+		public override void RemoveAll ()
 		{
 			if (Host != null) {
 				Host.SuperView.Remove (this);
 				if (OtherScrollBarView != null) {
 					OtherScrollBarView.Host.SuperView.Remove (OtherScrollBarView);
 				}
-				Host.SuperView.Remove (contentBottomRightCorner);
+				Host.SuperView.Remove (_contentBottomRightCorner);
 			}
 
 			base.RemoveAll ();
@@ -442,14 +437,14 @@ namespace Terminal.Gui {
 		/// The current selected object from the <see cref="Host"/>.
 		/// </summary>
 		public int Selected {
-			get => selected;
+			get => _selected;
 			set {
-				if (selected != value) {
-					selected = value;
-					var s = (vertical ? Host.Bounds.Height : Host.Bounds.Width)
-						- (otherScrollBarView != null && otherScrollBarView.showBothScrollIndicator ? 1 : 0);
+				if (_selected != value) {
+					_selected = value;
+					var s = (_vertical ? Host.Bounds.Height : Host.Bounds.Width)
+						- (_otherScrollBarView != null && _otherScrollBarView._showBothScrollIndicator ? 1 : 0);
 					//if (selected == size - 1 && position + s < size) {
-					if (selected - position == s) {
+					if (_selected - _position == s) {
 						Position++;
 					}
 				}
@@ -643,10 +638,10 @@ namespace Terminal.Gui {
 			var isHostWidthOrHeightZero = (bool)(Host?.Bounds.Width == 0 || Host?.Bounds.Height == 0);
 
 			if (barsize == 0 || barsize >= scrollBarView._size || isHostWidthOrHeightZero) {
-				if (scrollBarView.showScrollIndicator) {
+				if (scrollBarView._showScrollIndicator) {
 					scrollBarView.ShowScrollIndicator = false;
 				}
-				if (isHostWidthOrHeightZero && scrollBarView.OtherScrollBarView.showScrollIndicator) {
+				if (isHostWidthOrHeightZero && scrollBarView.OtherScrollBarView._showScrollIndicator) {
 					scrollBarView.OtherScrollBarView.ShowScrollIndicator = false;
 				}
 				if (scrollBarView.Visible) {

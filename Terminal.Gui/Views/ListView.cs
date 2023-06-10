@@ -103,11 +103,11 @@ namespace Terminal.Gui {
 	/// </para>
 	/// </remarks>
 	public class ListView : View {
-		int top, left;
-		int selected = -1;
+		int _top, _left;
+		int _selected = -1;
 		//int bottomOffset, rightOffset;
-		ScrollBarView.ScrollBarType scrollBarType;
-		ScrollBarView scrollBar;
+		ScrollBarView.ScrollBarType _scrollBarType;
+		ScrollBarView _scrollBar;
 
 		public class ColumnHeader {
 			public string HeaderName { get; set; }
@@ -125,7 +125,7 @@ namespace Terminal.Gui {
 			public string MemberFormat { get; set; }
 		}
 
-		IListDataSource source;
+		IListDataSource _source;
 		/// <summary>
 		/// Gets or sets the <see cref="IListDataSource"/> backing this <see cref="ListView"/>, enabling custom rendering.
 		/// </summary>
@@ -134,13 +134,13 @@ namespace Terminal.Gui {
 		///  Use <see cref="SetSource"/> to set a new <see cref="IList"/> source.
 		/// </remarks>
 		public IListDataSource Source {
-			get => source;
+			get => _source;
 			set {
-				source = value;
-				KeystrokeNavigator.Collection = source?.ToList ();
-				top = 0;
-				selected = -1;
-				lastSelectedItem = -1;
+				_source = value;
+				KeystrokeNavigator.Collection = _source?.ToList ();
+				_top = 0;
+				_selected = -1;
+				_lastSelectedItem = -1;
 				SetNeedsDisplay ();
 			}
 		}
@@ -179,7 +179,7 @@ namespace Terminal.Gui {
 			}, CancellationToken.None, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default);
 		}
 
-		bool allowsMarking;
+		bool _allowsMarking;
 		/// <summary>
 		/// Gets or sets whether this <see cref="ListView"/> allows items to be marked.
 		/// </summary>
@@ -189,10 +189,10 @@ namespace Terminal.Gui {
 		/// spaces. SPACE key will toggle marking. The default is <see langword="false"/>.
 		/// </remarks>
 		public bool AllowsMarking {
-			get => allowsMarking;
+			get => _allowsMarking;
 			set {
-				allowsMarking = value;
-				if (allowsMarking) {
+				_allowsMarking = value;
+				if (_allowsMarking) {
 					AddKeyBinding (Key.Space, Command.ToggleChecked);
 				} else {
 					ClearKeyBinding (Key.Space);
@@ -207,13 +207,13 @@ namespace Terminal.Gui {
 		/// an item will cause all others to be un-selected. The default is <see langword="false"/>.
 		/// </summary>
 		public bool AllowsMultipleSelection {
-			get => allowsMultipleSelection;
+			get => _allowsMultipleSelection;
 			set {
-				allowsMultipleSelection = value;
-				if (Source != null && !allowsMultipleSelection) {
+				_allowsMultipleSelection = value;
+				if (Source != null && !_allowsMultipleSelection) {
 					// Clear all selections except selected 
 					for (int i = 0; i < Source.Count; i++) {
-						if (Source.IsMarked (i) && i != selected) {
+						if (Source.IsMarked (i) && i != _selected) {
 							Source.SetMark (i, false);
 						}
 					}
@@ -227,14 +227,14 @@ namespace Terminal.Gui {
 		/// </summary>
 		/// <value>The top item.</value>
 		public int TopItem {
-			get => top;
+			get => _top;
 			set {
-				if (source == null)
+				if (_source == null)
 					return;
 
-				if (value < 0 || (source.Count > 0 && value >= source.Count))
+				if (value < 0 || (_source.Count > 0 && value >= _source.Count))
 					throw new ArgumentException ("value");
-				top = Math.Max (value, 0);
+				_top = Math.Max (value, 0);
 				SetNeedsDisplay ();
 			}
 		}
@@ -244,14 +244,14 @@ namespace Terminal.Gui {
 		/// </summary>
 		/// <value>The left position.</value>
 		public int LeftItem {
-			get => left;
+			get => _left;
 			set {
-				if (source == null)
+				if (_source == null)
 					return;
 
 				if (value < 0 || (Maxlength > 0 && value >= Maxlength))
 					throw new ArgumentException ("value");
-				left = value;
+				_left = value;
 				SetNeedsDisplay ();
 			}
 		}
@@ -259,22 +259,22 @@ namespace Terminal.Gui {
 		/// <summary>
 		/// Gets the widest item in the list.
 		/// </summary>
-		public int Maxlength => (source?.Length) ?? 0;
+		public int Maxlength => (_source?.Length) ?? 0;
 
 		/// <summary>
 		/// Gets or sets the index of the currently selected item.
 		/// </summary>
 		/// <value>The selected item.</value>
 		public int SelectedItem {
-			get => selected;
+			get => _selected;
 			set {
-				if (source == null || source.Count == 0) {
+				if (_source == null || _source.Count == 0) {
 					return;
 				}
-				if (value < -1 || value >= source.Count) {
+				if (value < -1 || value >= _source.Count) {
 					throw new ArgumentException ("value");
 				}
-				selected = value;
+				_selected = value;
 				OnSelectedChanged ();
 			}
 		}
@@ -312,18 +312,18 @@ namespace Terminal.Gui {
 		/// <summary>
 		/// Get the <see cref="ScrollBarView"/> used by this view or <see langword="null"/> if none are used.
 		/// </summary>
-		public ScrollBarView ScrollBar { get => scrollBar; }
+		public ScrollBarView ScrollBar { get => _scrollBar; }
 
 		/// <summary>
 		/// Gets or sets the <see cref="ScrollBarView.ScrollBarType"/> used by this view.
 		/// </summary>
 		public ScrollBarView.ScrollBarType ScrollBarType {
-			get => scrollBarType;
+			get => _scrollBarType;
 			set {
-				if (scrollBarType != value) {
-					scrollBarType = value;
+				if (_scrollBarType != value) {
+					_scrollBarType = value;
 					DisposeScrollBar ();
-					if (scrollBarType != ScrollBarView.ScrollBarType.None) {
+					if (_scrollBarType != ScrollBarView.ScrollBarType.None) {
 						if (!IsAdded) {
 							Added += ListView_Added;
 						} else {
@@ -342,23 +342,23 @@ namespace Terminal.Gui {
 
 		private void CreateScrollBar ()
 		{
-			scrollBar = new ScrollBarView (this, scrollBarType, false);
+			_scrollBar = new ScrollBarView (this, _scrollBarType, false);
 			AddHandlers ();
 		}
 
 		private void AddHandlers ()
 		{
-			if (scrollBar != null) {
+			if (_scrollBar != null) {
 				LayoutComplete += ListView_LayoutComplete;
-				scrollBar.ChangedPosition += ScrollBar_ChangedPosition;
+				_scrollBar.ChangedPosition += ScrollBar_ChangedPosition;
 				//scrollBar.VisibleChanged += ScrollBar_VisibleChanged;
 				//if (scrollBar.IsVertical) {
 				//	BottomOffset = 1;
 				//} else {
 				//	RightOffset = 1;
 				//}
-				if (scrollBar.OtherScrollBarView != null) {
-					scrollBar.OtherScrollBarView.ChangedPosition += OtherScrollBarView_ChangedPosition;
+				if (_scrollBar.OtherScrollBarView != null) {
+					_scrollBar.OtherScrollBarView.ChangedPosition += OtherScrollBarView_ChangedPosition;
 					//scrollBar.OtherScrollBarView.VisibleChanged += OtherScrollBarView_VisibleChanged;
 					//if (scrollBar.OtherScrollBarView.IsVertical) {
 					//	BottomOffset = 1;
@@ -371,22 +371,22 @@ namespace Terminal.Gui {
 
 		private void ListView_LayoutComplete (object sender, LayoutEventArgs e)
 		{
-			if (scrollBar != null) {
-				scrollBar.Refresh ();
+			if (_scrollBar != null) {
+				_scrollBar.Refresh ();
 			}
 		}
 
 		private void DisposeScrollBar ()
 		{
-			if (scrollBar != null) {
-				scrollBar.ChangedPosition -= ScrollBar_ChangedPosition;
+			if (_scrollBar != null) {
+				_scrollBar.ChangedPosition -= ScrollBar_ChangedPosition;
 				//scrollBar.VisibleChanged -= ScrollBar_VisibleChanged;
-				if (scrollBar.OtherScrollBarView != null) {
-					scrollBar.OtherScrollBarView.ChangedPosition -= OtherScrollBarView_ChangedPosition;
+				if (_scrollBar.OtherScrollBarView != null) {
+					_scrollBar.OtherScrollBarView.ChangedPosition -= OtherScrollBarView_ChangedPosition;
 					//scrollBar.OtherScrollBarView.VisibleChanged -= OtherScrollBarView_VisibleChanged;
 				}
-				scrollBar.RemoveAll ();
-				scrollBar = null;
+				_scrollBar.RemoveAll ();
+				_scrollBar = null;
 				//BottomOffset = 0;
 				//RightOffset = 0;
 			}
@@ -394,18 +394,18 @@ namespace Terminal.Gui {
 
 		private void ScrollBar_ChangedPosition (object sender, EventArgs e)
 		{
-			TopItem = scrollBar.Position;
-			if (TopItem != scrollBar.Position) {
-				scrollBar.Position = TopItem;
+			TopItem = _scrollBar.Position;
+			if (TopItem != _scrollBar.Position) {
+				_scrollBar.Position = TopItem;
 			}
 			SetNeedsDisplay ();
 		}
 
 		private void OtherScrollBarView_ChangedPosition (object sender, EventArgs e)
 		{
-			LeftItem = scrollBar.OtherScrollBarView.Position;
-			if (LeftItem != scrollBar.OtherScrollBarView.Position) {
-				scrollBar.OtherScrollBarView.Position = LeftItem;
+			LeftItem = _scrollBar.OtherScrollBarView.Position;
+			if (LeftItem != _scrollBar.OtherScrollBarView.Position) {
+				_scrollBar.OtherScrollBarView.Position = LeftItem;
 			}
 			SetNeedsDisplay ();
 		}
@@ -452,7 +452,7 @@ namespace Terminal.Gui {
 		/// the "Source" property to reset the internal settings of the ListView.</param>
 		public ListView (IListDataSource source) : base ()
 		{
-			this.source = source;
+			this._source = source;
 			Initialize ();
 		}
 
@@ -484,13 +484,13 @@ namespace Terminal.Gui {
 		/// set the "Source" property to reset the internal settings of the ListView.</param>
 		public ListView (Rect rect, IListDataSource source) : base (rect)
 		{
-			this.source = source;
+			this._source = source;
 			Initialize ();
 		}
 
 		void Initialize ()
 		{
-			Source = source;
+			Source = _source;
 			CanFocus = true;
 
 			// Things this view knows how to do
@@ -532,37 +532,37 @@ namespace Terminal.Gui {
 		///<inheritdoc/>
 		public override void OnDrawContent (Rect contentArea)
 		{
-			if (scrollBar != null) {
-				scrollBar.Size = Source.Count - 1;
-				scrollBar.Position = TopItem;
-				scrollBar.Selected = SelectedItem;
-				scrollBar.OtherScrollBarView.Size = Maxlength - 1;
-				scrollBar.OtherScrollBarView.Position = LeftItem;
-				scrollBar.Refresh ();
+			if (_scrollBar != null) {
+				_scrollBar.Size = Source.Count - 1;
+				_scrollBar.Position = TopItem;
+				_scrollBar.Selected = SelectedItem;
+				_scrollBar.OtherScrollBarView.Size = Maxlength - 1;
+				_scrollBar.OtherScrollBarView.Position = LeftItem;
+				_scrollBar.Refresh ();
 			}
 
 			var current = ColorScheme.Focus;
 			Driver.SetAttribute (current);
 			Move (0, 0);
 			var f = Bounds;
-			var item = top;
+			var item = _top;
 			bool focused = HasFocus;
-			int col = allowsMarking ? 2 : 0;
-			int row = showColumnHeaders ? 1 : 0;
-			int start = left;
+			int col = _allowsMarking ? 2 : 0;
+			int row = _showColumnHeaders ? 1 : 0;
+			int start = _left;
 
-			if (showColumnHeaders) {
+			if (_showColumnHeaders) {
 				current = new Attribute (ColorScheme.Normal.Background, ColorScheme.HotNormal.Foreground);
 				Driver.SetAttribute (current);
-				if (source != null) {
+				if (_source != null) {
 					Source.Render (this, Driver, false, item, col, 0, f.Width - col, start);
 				}
 			}
-			for (; row < f.Height; row += itemHeight, item++) {
-				bool isSelected = item == selected;
+			for (; row < f.Height; row += _itemHeight, item++) {
+				bool isSelected = item == _selected;
 
 				var newcolor = focused ? (isSelected ? ColorScheme.Focus : GetNormalColor ())
-						       : (isSelected ? ColorScheme.HotNormal : GetNormalColor ());
+					       : (isSelected ? ColorScheme.HotNormal : GetNormalColor ());
 
 				if (newcolor != current) {
 					Driver.SetAttribute (newcolor);
@@ -570,7 +570,7 @@ namespace Terminal.Gui {
 				}
 
 				Move (0, row);
-				if (source == null || item >= source.Count) {
+				if (_source == null || item >= _source.Count) {
 					for (int c = 0; c < f.Width; c++)
 						Driver.AddRune ((Rune)' ');
 				} else {
@@ -580,9 +580,9 @@ namespace Terminal.Gui {
 						current = (Attribute)rowEventArgs.RowAttribute;
 						Driver.SetAttribute (current);
 					}
-					if (allowsMarking) {
-						Driver.AddRune (source.IsMarked (item) ? (AllowsMultipleSelection ? CM.Glyphs.Checked : CM.Glyphs.Selected) :
-							(AllowsMultipleSelection ? CM.Glyphs.UnChecked : CM.Glyphs.UnSelected));
+					if (_allowsMarking) {
+						Driver.AddRune (_source.IsMarked (item) ? (AllowsMultipleSelection ? CM.Glyphs.Checked : CM.Glyphs.Selected) :
+						    (AllowsMultipleSelection ? CM.Glyphs.UnChecked : CM.Glyphs.UnSelected));
 						Driver.AddRune ((Rune)' ');
 					}
 					Source.Render (this, Driver, isSelected, item, col, row, f.Width - col, start);
@@ -590,7 +590,7 @@ namespace Terminal.Gui {
 			}
 		}
 
-		private int itemHeight = 1;
+		private int _itemHeight = 1;
 
 		/// <summary>
 		/// The number of lines occupied by a an item in the ListView, this defaults to one,
@@ -600,12 +600,12 @@ namespace Terminal.Gui {
 		/// </summary>
 		public int ItemHeight {
 			get {
-				return itemHeight;
+				return _itemHeight;
 			}
 			set {
 				if (value < 1)
 					throw new ArgumentOutOfRangeException ("Must be larger than one");
-				itemHeight = value;
+				_itemHeight = value;
 			}
 		}
 
@@ -614,16 +614,16 @@ namespace Terminal.Gui {
 		/// </summary>
 		public int VisibleItems {
 			get {
-				return (Frame.Height - (showColumnHeaders ? 1 : 0)) / itemHeight;
+				return (Frame.Height - (_showColumnHeaders ? 1 : 0)) / _itemHeight;
 			}
 		}
 
-		private bool showColumnHeaders;
+		private bool _showColumnHeaders;
 
 		public bool ShowColumnHeaders {
-			get { return showColumnHeaders; }
+			get { return _showColumnHeaders; }
 			set {
-				showColumnHeaders = value;
+				_showColumnHeaders = value;
 				SetNeedsDisplay ();
 			}
 		}
@@ -660,7 +660,7 @@ namespace Terminal.Gui {
 		///<inheritdoc/>
 		public override bool ProcessKey (KeyEvent kb)
 		{
-			if (source == null) {
+			if (_source == null) {
 				return base.ProcessKey (kb);
 			}
 
@@ -690,11 +690,11 @@ namespace Terminal.Gui {
 		/// <returns><see langword="true"/> if unmarking was successful.</returns>
 		public virtual bool AllowsAll ()
 		{
-			if (!allowsMarking)
+			if (!_allowsMarking)
 				return false;
 			if (!AllowsMultipleSelection) {
 				for (int i = 0; i < Source.Count; i++) {
-					if (Source.IsMarked (i) && i != selected) {
+					if (Source.IsMarked (i) && i != _selected) {
 						Source.SetMark (i, false);
 						return true;
 					}
@@ -724,12 +724,12 @@ namespace Terminal.Gui {
 		/// <returns></returns>
 		public virtual bool MovePageUp ()
 		{
-			int n = selected - VisibleItems;
+			int n = _selected - VisibleItems;
 			if (n < 0)
 				n = 0;
-			if (n != selected) {
-				selected = n;
-				top = Math.Max (selected, 0);
+			if (n != _selected) {
+				_selected = n;
+				_top = Math.Max (_selected, 0);
 				OnSelectedChanged ();
 				SetNeedsDisplay ();
 			}
@@ -744,15 +744,15 @@ namespace Terminal.Gui {
 		/// <returns></returns>
 		public virtual bool MovePageDown ()
 		{
-			var n = (selected + VisibleItems);
-			if (n >= source.Count)
-				n = source.Count - 1;
-			if (n != selected) {
-				selected = n;
-				if (source.Count * itemHeight >= top + VisibleItems)
-					top = Math.Max (selected, 0);
+			var n = (_selected + VisibleItems);
+			if (n >= _source.Count)
+				n = _source.Count - 1;
+			if (n != _selected) {
+				_selected = n;
+				if (_source.Count * _itemHeight >= _top + VisibleItems)
+					_top = Math.Max (_selected, 0);
 				else
-					top = 0;
+					_top = 0;
 				OnSelectedChanged ();
 				SetNeedsDisplay ();
 			}
@@ -767,32 +767,32 @@ namespace Terminal.Gui {
 		/// <returns></returns>
 		public virtual bool MoveDown ()
 		{
-			if (source.Count == 0) {
+			if (_source.Count == 0) {
 				// Do we set lastSelectedItem to -1 here?
 				return false; //Nothing for us to move to
 			}
-			if (selected >= source.Count) {
+			if (_selected >= _source.Count) {
 				// If for some reason we are currently outside of the
 				// valid values range, we should select the bottommost valid value.
 				// This can occur if the backing data source changes.
-				selected = source.Count - 1;
+				_selected = _source.Count - 1;
 				OnSelectedChanged ();
 				SetNeedsDisplay ();
-			} else if (selected + 1 < source.Count) { //can move by down by one.
-				selected++;
+			} else if (_selected + 1 < _source.Count) { //can move by down by one.
+				_selected++;
 
-				if (selected >= top + VisibleItems) {
-					top++;
-				} else if (selected < top) {
-					top = Math.Max (selected, 0);
+				if (_selected >= _top + VisibleItems) {
+					_top++;
+				} else if (_selected < _top) {
+					_top = Math.Max (_selected, 0);
 				}
 				OnSelectedChanged ();
 				SetNeedsDisplay ();
-			} else if (selected == 0) {
+			} else if (_selected == 0) {
 				OnSelectedChanged ();
 				SetNeedsDisplay ();
-			} else if (selected >= top + VisibleItems) {
-				top = Math.Max (source.Count - VisibleItems, 0);
+			} else if (_selected >= _top + VisibleItems) {
+				_top = Math.Max (_source.Count - VisibleItems, 0);
 				SetNeedsDisplay ();
 			}
 
@@ -806,31 +806,31 @@ namespace Terminal.Gui {
 		/// <returns></returns>
 		public virtual bool MoveUp ()
 		{
-			if (source.Count == 0) {
+			if (_source.Count == 0) {
 				// Do we set lastSelectedItem to -1 here?
 				return false; //Nothing for us to move to
 			}
-			if (selected >= source.Count) {
+			if (_selected >= _source.Count) {
 				// If for some reason we are currently outside of the
 				// valid values range, we should select the bottommost valid value.
 				// This can occur if the backing data source changes.
-				selected = source.Count - 1;
+				_selected = _source.Count - 1;
 				OnSelectedChanged ();
 				SetNeedsDisplay ();
-			} else if (selected > 0) {
-				selected--;
-				if (selected > Source.Count) {
-					selected = Source.Count - 1;
+			} else if (_selected > 0) {
+				_selected--;
+				if (_selected > Source.Count) {
+					_selected = Source.Count - 1;
 				}
-				if (selected < top) {
-					top = Math.Max (selected, 0);
-				} else if (selected > top + VisibleItems) {
-					top = Math.Max (selected - VisibleItems + 1, 0);
+				if (_selected < _top) {
+					_top = Math.Max (_selected, 0);
+				} else if (_selected > _top + VisibleItems) {
+					_top = Math.Max (_selected - VisibleItems + 1, 0);
 				}
 				OnSelectedChanged ();
 				SetNeedsDisplay ();
-			} else if (selected < top) {
-				top = Math.Max (selected, 0);
+			} else if (_selected < _top) {
+				_top = Math.Max (_selected, 0);
 				SetNeedsDisplay ();
 			}
 			return true;
@@ -843,10 +843,10 @@ namespace Terminal.Gui {
 		/// <returns></returns>
 		public virtual bool MoveEnd ()
 		{
-			if (source.Count > 0 && selected != source.Count - 1) {
-				selected = source.Count - 1;
-				if (top + selected > VisibleItems - 1) {
-					top = Math.Max (selected, 0);
+			if (_source.Count > 0 && _selected != _source.Count - 1) {
+				_selected = _source.Count - 1;
+				if (_top + _selected > VisibleItems - 1) {
+					_top = Math.Max (_selected, 0);
 				}
 				OnSelectedChanged ();
 				SetNeedsDisplay ();
@@ -862,9 +862,9 @@ namespace Terminal.Gui {
 		/// <returns></returns>
 		public virtual bool MoveHome ()
 		{
-			if (selected != 0) {
-				selected = 0;
-				top = Math.Max (selected, 0);
+			if (_selected != 0) {
+				_selected = 0;
+				_top = Math.Max (_selected, 0);
 				OnSelectedChanged ();
 				SetNeedsDisplay ();
 			}
@@ -878,7 +878,7 @@ namespace Terminal.Gui {
 		/// <param name="items">Number of items to scroll down.</param>
 		public virtual bool ScrollDown (int items)
 		{
-			top = Math.Max (Math.Min (top + items * itemHeight, source.Count - 1), 0);
+			_top = Math.Max (Math.Min (_top + items * _itemHeight, _source.Count - 1), 0);
 			SetNeedsDisplay ();
 			return true;
 		}
@@ -889,7 +889,7 @@ namespace Terminal.Gui {
 		/// <param name="items">Number of items to scroll up.</param>
 		public virtual bool ScrollUp (int items)
 		{
-			top = Math.Max (top - items * itemHeight, 0);
+			_top = Math.Max (_top - items * _itemHeight, 0);
 			SetNeedsDisplay ();
 			return true;
 		}
@@ -901,9 +901,9 @@ namespace Terminal.Gui {
 		public virtual bool ScrollRight (int cols)
 		{
 			if (ScrollBar?.KeepContentAlwaysInViewport == true) {
-				left = Math.Max (Math.Max (cols, Maxlength - left), 0);
+				_left = Math.Max (Math.Max (cols, Maxlength - _left), 0);
 			} else {
-				left = Math.Max (Math.Min (left + cols, Maxlength - 1), 0);
+				_left = Math.Max (Math.Min (_left + cols, Maxlength - 1), 0);
 			}
 			SetNeedsDisplay ();
 			return true;
@@ -915,13 +915,13 @@ namespace Terminal.Gui {
 		/// <param name="cols">Number of columns to scroll left.</param>
 		public virtual bool ScrollLeft (int cols)
 		{
-			left = Math.Max (left - cols, 0);
+			_left = Math.Max (_left - cols, 0);
 			SetNeedsDisplay ();
 			return true;
 		}
 
-		int lastSelectedItem = -1;
-		private bool allowsMultipleSelection = true;
+		int _lastSelectedItem = -1;
+		private bool _allowsMultipleSelection = true;
 
 		/// <summary>
 		/// Invokes the <see cref="SelectedItemChanged"/> event if it is defined.
@@ -929,10 +929,10 @@ namespace Terminal.Gui {
 		/// <returns></returns>
 		public virtual bool OnSelectedChanged ()
 		{
-			if (selected != lastSelectedItem) {
-				var value = source?.Count > 0 ? source.ToList () [selected] : null;
-				SelectedItemChanged?.Invoke (this, new ListViewItemEventArgs (selected, value));
-				lastSelectedItem = selected;
+			if (_selected != _lastSelectedItem) {
+				var value = _source?.Count > 0 ? _source.ToList () [_selected] : null;
+				SelectedItemChanged?.Invoke (this, new ListViewItemEventArgs (_selected, value));
+				_lastSelectedItem = _selected;
 				EnsureSelectedItemVisible ();
 				return true;
 			}
@@ -946,13 +946,13 @@ namespace Terminal.Gui {
 		/// <returns></returns>
 		public virtual bool OnOpenSelectedItem ()
 		{
-			if (source.Count <= selected || selected < 0 || OpenSelectedItem == null) {
+			if (_source.Count <= _selected || _selected < 0 || OpenSelectedItem == null) {
 				return false;
 			}
 
-			var value = source.ToList () [selected];
+			var value = _source.ToList () [_selected];
 
-			OpenSelectedItem?.Invoke (this, new ListViewItemEventArgs (selected, value));
+			OpenSelectedItem?.Invoke (this, new ListViewItemEventArgs (_selected, value));
 
 			return true;
 		}
@@ -972,7 +972,7 @@ namespace Terminal.Gui {
 			if (IsInitialized) {
 				Application.Driver.SetCursorVisibility (CursorVisibility.Invisible);
 			}
-			if (lastSelectedItem != selected) {
+			if (_lastSelectedItem != _selected) {
 				EnsureSelectedItemVisible ();
 			}
 
@@ -985,11 +985,11 @@ namespace Terminal.Gui {
 		public void EnsureSelectedItemVisible ()
 		{
 			if (SuperView?.IsInitialized == true) {
-				if (selected < top) {
-					top = Math.Max (selected, 0);
-				} else if (Frame.Height > 0 && selected >= top + Frame.Height) {
-                    top = Math.Max(selected - VisibleItems + 1, 0);
-                }
+				if (_selected < _top) {
+					_top = Math.Max (_selected, 0);
+				} else if (Frame.Height > 0 && _selected >= _top + Frame.Height) {
+					_top = Math.Max (_selected - VisibleItems + 1, 0);
+				}
 				LayoutStarted -= ListView_LayoutStarted;
 			} else {
 				LayoutStarted += ListView_LayoutStarted;
@@ -1004,18 +1004,18 @@ namespace Terminal.Gui {
 		///<inheritdoc/>
 		public override void PositionCursor ()
 		{
-			if (allowsMarking)
-				Move (0, selected * itemHeight - top);
+			if (_allowsMarking)
+				Move (0, _selected * _itemHeight - _top);
 			else
-				Move (Bounds.Width - 1, selected * itemHeight - top);
+				Move (Bounds.Width - 1, _selected * _itemHeight - _top);
 		}
 
 		///<inheritdoc/>
 		public override bool MouseEvent (MouseEvent me)
 		{
 			if (!me.Flags.HasFlag (MouseFlags.Button1Clicked) && !me.Flags.HasFlag (MouseFlags.Button1DoubleClicked) &&
-				me.Flags != MouseFlags.WheeledDown && me.Flags != MouseFlags.WheeledUp &&
-				me.Flags != MouseFlags.WheeledRight && me.Flags != MouseFlags.WheeledLeft) {
+			    me.Flags != MouseFlags.WheeledDown && me.Flags != MouseFlags.WheeledUp &&
+			    me.Flags != MouseFlags.WheeledRight && me.Flags != MouseFlags.WheeledLeft) {
 
 				return false;
 			}
@@ -1024,7 +1024,7 @@ namespace Terminal.Gui {
 				SetFocus ();
 			}
 
-			if (source == null) {
+			if (_source == null) {
 				return false;
 			}
 
@@ -1042,22 +1042,22 @@ namespace Terminal.Gui {
 				return true;
 			}
 
-			var meY = showColumnHeaders ? me.Y - 1 : me.Y;
-            var framesThickness = GetFramesThickness();
-            if (meY + top - framesThickness.Top < 0
-                || meY + top > top + itemHeight - (framesThickness.Top + framesThickness.Bottom)
-                || top - framesThickness.Top + (meY / itemHeight) >= source.Count) {
+			var meY = _showColumnHeaders ? me.Y - 1 : me.Y;
+			var framesThickness = GetFramesThickness ();
+			if (meY + _top - framesThickness.Top < 0
+			    || meY + _top > _top + _itemHeight - (framesThickness.Top + framesThickness.Bottom)
+			    || _top - framesThickness.Top + (meY / _itemHeight) >= _source.Count) {
 				return true;
 			}
 
-			selected = top + meY / itemHeight;
+			_selected = _top + meY / _itemHeight;
 			if (AllowsAll ()) {
 				Source.SetMark (SelectedItem, !Source.IsMarked (SelectedItem));
 				SetNeedsDisplay ();
 				return true;
 			}
-			if (selected == top + VisibleItems) {
-				top++;
+			if (_selected == _top + VisibleItems) {
+				_top++;
 			}
 			OnSelectedChanged ();
 			SetNeedsDisplay ();
@@ -1068,13 +1068,13 @@ namespace Terminal.Gui {
 			return true;
 		}
 
-		public override void OnDrawContent (Rect viewport)
-		{
-			if (source != null) {
-				source.PreRender (this, Frame.Width - (allowsMarking ? 2 : 0));
-			}
-			base.OnDrawContent (viewport);
-		}
+		//public override void OnDrawContent (Rect viewport)
+		//{
+		//	if (source != null) {
+		//		source.PreRender (this, Frame.Width - (allowsMarking ? 2 : 0));
+		//	}
+		//	base.OnDrawContent (viewport);
+		//}
 	}
 
 	/// <summary>
@@ -1082,90 +1082,90 @@ namespace Terminal.Gui {
 	/// <see cref="ListView"/> items using <see cref="object.ToString()"/>.
 	/// </summary>
 	public class ListWrapper : IListDataSource {
-		IList src;
-		BitArray marks;
-		int count, len, itemHeight, width;
-		private bool rendered;
-		private List<int> maxLength, colsStart, colsWidth;
-		private List<ListView.ColumnHeader> columnHeaders;
+		IList _src;
+		BitArray _marks;
+		int _count, _len, _itemHeight, _width;
+		private bool _rendered;
+		private List<int> _maxLength, _colsStart, _colsWidth;
+		private List<ListView.ColumnHeader> _columnHeaders;
 
 		/// <inheritdoc/>
 		public ListWrapper (IList source)
 		{
 			if (source != null) {
-				count = source.Count;
-				marks = new BitArray (count);
-				src = source;
-				len = GetMaxLengthItem ();
+				_count = source.Count;
+				_marks = new BitArray (_count);
+				_src = source;
+				_len = GetMaxLengthItem ();
 			}
 		}
 
 		/// <inheritdoc/>
-		public int Count => src != null ? src.Count : 0;
+		public int Count => _src != null ? _src.Count : 0;
 
 		/// <inheritdoc/>
-		public int Length => len;
+		public int Length => _len;
 
 		int GetMaxLengthItem (int colStart = 0, int width = 0, int colMargin = 0)
 		{
-			colsStart = new List<int> { colStart };
-			colsWidth = new List<int> { width };
+			_colsStart = new List<int> { colStart };
+			_colsWidth = new List<int> { width };
 
-			if (columnHeaders == null && (src == null || src?.Count == 0)) {
+			if (_columnHeaders == null && (_src == null || _src?.Count == 0)) {
 				return 0;
 			}
 
-			var colHeadersCount = Math.Max (columnHeaders != null ? Math.Max (columnHeaders.Count, 1) / itemHeight : 1, 1);
-			maxLength = new List<int> ();
+			var colHeadersCount = Math.Max (_columnHeaders != null ? Math.Max (_columnHeaders.Count, 1) / _itemHeight : 1, 1);
+			_maxLength = new List<int> ();
 			var colHeadersWidth = 0;
 			ListView.ColumnHeader ch = null;
-			ustring us;
+			string us;
 
 			for (int c = 0; c < colHeadersCount; c++) {
-				maxLength.Add (0);
+				_maxLength.Add (0);
 
 				int colWidth = 0;
 
-				if (columnHeaders != null) {
-					ch = columnHeaders [c];
+				if (_columnHeaders != null) {
+					ch = _columnHeaders [c];
 
 					if (c > 0) {
-						colsStart.Add (colStart + colHeadersWidth);
+						_colsStart.Add (colStart + colHeadersWidth);
 					}
 
 					if (ch.Width == -1) {
-						colsStart [c] = -1;
+						_colsStart [c] = -1;
 						continue;
 					}
 
-					us = GetColumnName (columnHeaders, c, ch);
+					us = GetColumnName (_columnHeaders, c, ch);
 
-					maxLength [c] = us.ConsoleWidth;
+					_maxLength [c] = us.GetColumns ();
 
 					if (ch.Width == 0) {
-						if (src == null) {
+						if (_src == null) {
 							colWidth = Math.Min (width / colHeadersCount, width);
 						} else if (c == colHeadersCount - 1) {
 							colWidth = width - colHeadersWidth;
 						} else {
-							colWidth = us.ConsoleWidth;
+							colWidth = us.GetColumns ();
 						}
 					} else {
 						colWidth = Math.Min (ch.Width, width);
 					}
 				}
 
-				for (int i = 0; i < src?.Count; i++) {
-					var t = src [i];
+				for (int i = 0; i < _src?.Count; i++) {
+					var t = _src [i];
 					int l;
-					List<ustring> lines;
+					List<string> lines;
 					//if (t == null) {
 					//	l = 0;
 					//} else {
-					//	if (t is ustring u) {
+					//	if (t is string u) {
 					//		l = u.ConsoleWidth;
 					//	} else if (t is string s) {
-					//		us = ustring.Make (s);
+					//		us = string.Make (s);
 					//		lines = TextFormatter.SplitNewLine (us);
 					//		l = lines [c].ConsoleWidth;
 					//	} else {
@@ -1173,16 +1173,13 @@ namespace Terminal.Gui {
 					//	}
 					//}
 
-					if (t is ustring u) {
-						us = u;
-						lines = GetFormattedLines (TextFormatter.SplitNewLine (us), columnHeaders, colHeadersCount, itemHeight);
-					} else if (t is string s) {
-						us = ustring.Make (s);
-						lines = GetFormattedLines (TextFormatter.SplitNewLine (us), columnHeaders, colHeadersCount, itemHeight);
+					if (t is string s) {
+						us = s;
+						lines = GetFormattedLines (TextFormatter.SplitNewLine (us), _columnHeaders, colHeadersCount, _itemHeight);
 						//if (itemHeight > 0) {
 						//	lines = TextFormatter.SplitNewLine (us);
 						//	if (lines.Count > colHeadersCount) {
-						//		us = ustring.Empty;
+						//		us = string.Empty;
 						//		for (int line = 0; line < lines.Count / itemHeight; line++) {
 						//			var ustr = lines [line];
 						//			if (ustr.ConsoleWidth > us.ConsoleWidth) {
@@ -1194,10 +1191,10 @@ namespace Terminal.Gui {
 						//	}
 						//}
 					} else {
-						lines = GetCustomTypesLines (t, columnHeaders, colHeadersCount, itemHeight);
+						lines = GetCustomTypesLines (t, _columnHeaders, colHeadersCount, _itemHeight);
 
 						//if (columnHeaders == null) {
-						//	us = ustring.Make (t.ToString ());
+						//	us = string.Make (t.ToString ());
 						//	//lines = TextFormatter.SplitNewLine (us);
 						//} else {
 						//	//for (int c = 0; c < colHeadersCount; c++) {
@@ -1211,10 +1208,10 @@ namespace Terminal.Gui {
 						//		} else {
 						//			value.ToString ();
 						//		}
-						//		us = ustring.Make (value.ToString ());
+						//		us = string.Make (value.ToString ());
 						//		//lines.Add (us);
 						//	} else {
-						//		us = ustring.Make (t.ToString ());
+						//		us = string.Make (t.ToString ());
 						//	}
 						//	//}
 						//	//}
@@ -1223,10 +1220,10 @@ namespace Terminal.Gui {
 
 					us = lines [c];
 					//l = lines [c].ConsoleWidth;
-					l = us.ConsoleWidth;
+					l = us.GetColumns ();
 
-					if (l > maxLength [c]) {
-						maxLength [c] = l;
+					if (l > _maxLength [c]) {
+						_maxLength [c] = l;
 						//if (ch != null && ch.Width == 0 && c == colHeadersCount - 1) {
 						//	maxLength [c] += colMargin;
 						//}
@@ -1247,7 +1244,7 @@ namespace Terminal.Gui {
 							//	colWidth = maxLength [c];
 							//}
 							if (c < colHeadersCount - 1) {
-								colWidth = maxLength [c];
+								colWidth = _maxLength [c];
 							}
 						} else {
 							colWidth = Math.Min (ch.Width, width);
@@ -1256,31 +1253,31 @@ namespace Terminal.Gui {
 				}
 
 				if (c < colHeadersCount - 1) {
-					maxLength [c] += colStart + colMargin;
+					_maxLength [c] += colStart + colMargin;
 					colWidth += colMargin;
 				}
 
 				if (ch != null) {
 					if (c == 0) {
-						colsWidth [0] = colWidth;
+						_colsWidth [0] = colWidth;
 					} else if (c == colHeadersCount - 1) {
 						if (ch.Width == 0) {
-							if (width - colHeadersWidth > maxLength [c]) {
+							if (width - colHeadersWidth > _maxLength [c]) {
 								colWidth = width - colHeadersWidth;
 							} else {
-								colWidth = maxLength [c];
+								colWidth = _maxLength [c];
 							}
 						}
-						colsWidth.Add (colWidth);
+						_colsWidth.Add (colWidth);
 					} else {
-						colsWidth.Add (colWidth);
+						_colsWidth.Add (colWidth);
 					}
 
 					colHeadersWidth += colWidth;
 				}
 			}
 
-			return maxLength.Sum ();
+			return _maxLength.Sum ();
 		}
 
 		public void PreRender (ListView container, int width)
@@ -1290,12 +1287,12 @@ namespace Terminal.Gui {
 			var colStart = container.AllowsMarking ? 2 : 0;
 			var colMargin = container.ColumnMargin;
 
-			if (!rendered || colHeaders != columnHeaders || itemHeight != this.itemHeight || colStart != colsStart [0] || width != this.width) {
-				columnHeaders = colHeaders;
-				this.itemHeight = itemHeight;
-				this.width = width;
-				len = GetMaxLengthItem (colStart, width, colMargin);
-				rendered = true;
+			if (!_rendered || colHeaders != _columnHeaders || itemHeight != this._itemHeight || colStart != _colsStart [0] || width != this._width) {
+				_columnHeaders = colHeaders;
+				this._itemHeight = itemHeight;
+				this._width = width;
+				_len = GetMaxLengthItem (colStart, width, colMargin);
+				_rendered = true;
 			}
 		}
 
@@ -1309,7 +1306,7 @@ namespace Terminal.Gui {
 			}
 		}
 
-		private static void RenderUstr (ListView container, ConsoleDriver driver, ustring ustr, int colStart, int line, int width, int start, ListView.ColumnHeader colHeader)
+		private static void RenderUstr (ListView container, ConsoleDriver driver, string ustr, int colStart, int line, int width, int start, ListView.ColumnHeader colHeader)
 		{
 			int colWidth = width;
 			var align = container.ShowColumnHeaders && line == 0 ? container.HeadersAlignment : container.ItemsAlignment;
@@ -1323,7 +1320,7 @@ namespace Terminal.Gui {
 				RenderUstr (container, driver, ustr, colStart, line, colWidth, start, colHeader.MemberAlignment);
 			}
 			if (width != colWidth) {
-				var us = ustring.Make (new String (' ', container.ColumnMargin));
+				var us = new String (' ', container.ColumnMargin);
 				RenderUstr (container, driver, us, colStart + colWidth, line, container.ColumnMargin, start, colHeader.MemberAlignment);
 			}
 		}
@@ -1346,7 +1343,7 @@ namespace Terminal.Gui {
 			return width;
 		}
 
-		private static void RenderUstr (ListView container, ConsoleDriver driver, ustring ustr, int colStart, int line, int width, int start, TextAlignment align)
+		private static void RenderUstr (ListView container, ConsoleDriver driver, string ustr, int colStart, int line, int width, int start, TextAlignment align)
 		{
 			var tf = new TextFormatter ();
 			tf.Text = ustr;
@@ -1363,9 +1360,9 @@ namespace Terminal.Gui {
 		{
 			var height = container.ItemHeight;
 			//container.Move (col, line);
-			var t = src? [item];
-			ustring us;
-			List<ustring> lines = new List<ustring> ();
+			var t = _src? [item];
+			string us;
+			List<string> lines = new List<string> ();
 			var colHeaders = container.ColumnHeaders;
 			var colHeadersCount = Math.Max (colHeaders != null ? Math.Max (colHeaders.Count, 1) / height : 1, 1);
 			//if (line == 0) {
@@ -1395,7 +1392,7 @@ namespace Terminal.Gui {
 			//	for (int i = 0; i < colHeadersCount; i++) {
 			//		if (colHeaders == null) {
 			//			if (container.ShowColumnHeaders) {
-			//				us = ustring.Make ($"Col{i}");
+			//				us = string.Make ($"Col{i}");
 			//				RenderUstr (container, driver, us, colsStart [i], line, width, start, container.HeadersAlignment);
 			//			}
 			//			break;
@@ -1413,12 +1410,12 @@ namespace Terminal.Gui {
 			//			continue;
 			//		}
 
-			//		//if (ch.HeaderName != null && !ustring.IsNullOrEmpty (ch.HeaderName)) {
-			//		//	us = ustring.Make (ch.HeaderName);
-			//		//} else if (ch.MemberName != null && !ustring.IsNullOrEmpty (ch.MemberName)) {
-			//		//	us = ustring.Make (ch.MemberName);
+			//		//if (ch.HeaderName != null && !string.IsNullOrEmpty (ch.HeaderName)) {
+			//		//	us = string.Make (ch.HeaderName);
+			//		//} else if (ch.MemberName != null && !string.IsNullOrEmpty (ch.MemberName)) {
+			//		//	us = string.Make (ch.MemberName);
 			//		//} else {
-			//		//	us = ustring.Make ($"Col{i}");
+			//		//	us = string.Make ($"Col{i}");
 			//		//}
 			//		us = GetColumnName (colHeaders, i, ch);
 
@@ -1461,8 +1458,8 @@ namespace Terminal.Gui {
 				for (int i = 0; i < colHeadersCount; i++) {
 					if (colHeaders == null) {
 						if (container.ShowColumnHeaders) {
-							us = ustring.Make ($"Col{i}");
-							RenderUstr (container, driver, us, colsStart [i], line, width, start, container.HeadersAlignment);
+							us = $"Col{i}";
+							RenderUstr (container, driver, us, _colsStart [i], line, width, start, container.HeadersAlignment);
 						}
 						break;
 					}
@@ -1479,12 +1476,12 @@ namespace Terminal.Gui {
 						continue;
 					}
 
-					//if (ch.HeaderName != null && !ustring.IsNullOrEmpty (ch.HeaderName)) {
-					//	us = ustring.Make (ch.HeaderName);
-					//} else if (ch.MemberName != null && !ustring.IsNullOrEmpty (ch.MemberName)) {
-					//	us = ustring.Make (ch.MemberName);
+					//if (ch.HeaderName != null && !string.IsNullOrEmpty (ch.HeaderName)) {
+					//	us = string.Make (ch.HeaderName);
+					//} else if (ch.MemberName != null && !string.IsNullOrEmpty (ch.MemberName)) {
+					//	us = string.Make (ch.MemberName);
 					//} else {
-					//	us = ustring.Make ($"Col{i}");
+					//	us = string.Make ($"Col{i}");
 					//}
 					us = GetColumnName (colHeaders, i, ch);
 
@@ -1512,7 +1509,7 @@ namespace Terminal.Gui {
 					//colHeadersWidth += colWidth;
 
 					//RenderUstr (driver, us, colsStart [i], line, colWidth, start);
-					RenderUstr (container, driver, us, colsStart [i], line, colsWidth [i], start, ch);
+					RenderUstr (container, driver, us, _colsStart [i], line, _colsWidth [i], start, ch);
 				}
 				if (container.ShowColumnHeaders) {
 					return;
@@ -1520,29 +1517,29 @@ namespace Terminal.Gui {
 			}
 
 			if (t == null) {
-				us = ustring.Make (" ");
+				us = " ";
 				for (int i = 0; i < height; i++) {
 					lines.Add (us);
 				}
-			} else if (t is ustring u) {
+			} else if (t is string u) {
 				us = u;
 				lines = GetFormattedLines (TextFormatter.SplitNewLine (us), colHeaders, colHeadersCount, height);
 			} else if (t is string s) {
-				us = ustring.Make (s);
+				us = s;
 				lines = GetFormattedLines (TextFormatter.SplitNewLine (us), colHeaders, colHeadersCount, height);
 			} else {
 				lines = GetCustomTypesLines (t, colHeaders, colHeadersCount, height);
 			}
 
 			int row = 0;
-			int cs = colHeaders == null ? col : colsStart [0];
-			int cw = colHeaders == null ? width : colsWidth [0];
+			int cs = colHeaders == null ? col : _colsStart [0];
+			int cw = colHeaders == null ? width : _colsWidth [0];
 			for (int c = 0; c < colHeadersCount; c++) {
 				var ch = colHeaders? [c];
 
 				if (row < colHeadersCount && row == height) {
-					cs = colsStart [c];
-					cw = colsWidth [c];
+					cs = _colsStart [c];
+					cw = _colsWidth [c];
 					var l = lines [c];
 					container.Move (cs, line + 1);
 					//RenderUstr (driver, lines [row], cs, line, width - cs, start);
@@ -1558,7 +1555,7 @@ namespace Terminal.Gui {
 							container.Move (cs, line + row);
 							//RenderUstr (driver, "", cs, line + row, width - cs, start);
 							if (row > lines.Count - 1) {
-								RenderUstr (container, driver, ustring.Make (" "), cs, line + row, cw, start, ch);
+								RenderUstr (container, driver, " ", cs, line + row, cw, start, ch);
 							} else {
 								RenderUstr (container, driver, lines [row], cs, line + row, cw, start, ch);
 							}
@@ -1579,28 +1576,28 @@ namespace Terminal.Gui {
 			}
 		}
 
-		private ustring GetColumnName (List<ListView.ColumnHeader> colHeaders, int index, ListView.ColumnHeader ch)
+		private string GetColumnName (List<ListView.ColumnHeader> colHeaders, int index, ListView.ColumnHeader ch)
 		{
-			ustring us;
+			string us;
 			if (colHeaders == null) {
-				us = ustring.Make ($"Col{index}");
-			} else if (ch.HeaderName != null && !ustring.IsNullOrEmpty (ch.HeaderName)) {
-				us = ustring.Make (ch.HeaderName);
-			} else if (ch.MemberName != null && !ustring.IsNullOrEmpty (ch.MemberName)) {
-				us = ustring.Make (ch.MemberName);
+				us = $"Col{index}";
+			} else if (ch.HeaderName != null && !string.IsNullOrEmpty (ch.HeaderName)) {
+				us = ch.HeaderName;
+			} else if (ch.MemberName != null && !string.IsNullOrEmpty (ch.MemberName)) {
+				us = ch.MemberName;
 			} else {
-				us = ustring.Make ($"Col{index}");
+				us = $"Col{index}";
 			}
 			return us;
 		}
 
-		private List<ustring> GetFormattedLines (List<ustring> lines, List<ListView.ColumnHeader> colHeaders, int colHeadersCount, int height)
+		private List<string> GetFormattedLines (List<string> lines, List<ListView.ColumnHeader> colHeaders, int colHeadersCount, int height)
 		{
 			if (colHeaders == null) {
 				return lines;
 			}
 
-			List<ustring> fmtLines = new List<ustring> ();
+			List<string> fmtLines = new List<string> ();
 
 			for (int c = 0; c < colHeadersCount; c++) {
 				for (int r = 0; r < height; r++) {
@@ -1610,33 +1607,33 @@ namespace Terminal.Gui {
 						us = GetFormattedLine (ch, us);
 						fmtLines.Add (us);
 					} else {
-						fmtLines.Add (ustring.Make (" "));
+						fmtLines.Add (" ");
 					}
 				}
 			}
 			return fmtLines;
 		}
 
-		private ustring GetFormattedLine (ListView.ColumnHeader ch, ustring us)
+		private string GetFormattedLine (ListView.ColumnHeader ch, string us)
 		{
 			if (!string.IsNullOrEmpty (ch.MemberFormat)) {
 				var type = ch.MemberType;
 				var value = Convert.ChangeType (us, type);
 				value = string.Format (ch.MemberFormat, value);
-				return ustring.Make (value.ToString ());
+				return value.ToString ();
 			}
 			return us;
 		}
 
-		private List<ustring> GetCustomTypesLines (object t, List<ListView.ColumnHeader> colHeaders, int colHeadersCount, int height)
+		private List<string> GetCustomTypesLines (object t, List<ListView.ColumnHeader> colHeaders, int colHeadersCount, int height)
 		{
-			ustring us;
+			string us;
 			if (colHeaders == null) {
-				us = ustring.Make (t.ToString ());
+				us = t.ToString ();
 				return TextFormatter.SplitNewLine (us);
 			}
 
-			List<ustring> lines = new List<ustring> ();
+			List<string> lines = new List<string> ();
 
 			for (int c = 0; c < colHeadersCount; c++) {
 				for (int r = 0; r < height; r++) {
@@ -1650,13 +1647,13 @@ namespace Terminal.Gui {
 							} else {
 								value.ToString ();
 							}
-							us = ustring.Make (value.ToString ());
+							us = value.ToString ();
 							lines.Add (us);
 						} else {
-							lines.Add (ustring.Make (" "));
+							lines.Add (" ");
 						}
 					} else {
-						lines.Add (ustring.Make (" "));
+						lines.Add (" ");
 					}
 				}
 			}
@@ -1664,10 +1661,10 @@ namespace Terminal.Gui {
 		}
 
 		private object GetPropertyValue (object source, string propertyName) =>
-			source.GetType ().GetProperty (propertyName).GetValue (source, null);
+		    source.GetType ().GetProperty (propertyName).GetValue (source, null);
 
 		private void SetPropertyValue (object source, string propertyName, object value) =>
-			source.GetType ().GetProperty (propertyName).SetValue (source, value);
+		    source.GetType ().GetProperty (propertyName).SetValue (source, value);
 
 		/// <summary>
 		/// Returns true if the item is marked, false otherwise.
@@ -1676,33 +1673,33 @@ namespace Terminal.Gui {
 		/// <returns><c>true</c>If is marked.<c>false</c>otherwise.</returns>
 		public bool IsMarked (int item)
 		{
-			if (item >= 0 && item < count)
-				return marks [item];
+			if (item >= 0 && item < _count)
+				return _marks [item];
 			return false;
 		}
 
 		/// <inheritdoc/>
 		public void SetMark (int item, bool value)
 		{
-			if (item >= 0 && item < count)
-				marks [item] = value;
+			if (item >= 0 && item < _count)
+				_marks [item] = value;
 		}
 
 		/// <inheritdoc/>
 		public IList ToList ()
 		{
-			return src;
+			return _src;
 		}
 
 		/// <inheritdoc/>
 		public int StartsWith (string search)
 		{
-			if (src == null || src?.Count == 0) {
+			if (_src == null || _src?.Count == 0) {
 				return -1;
 			}
 
-			for (int i = 0; i < src.Count; i++) {
-				var t = src [i];
+			for (int i = 0; i < _src.Count; i++) {
+				var t = _src [i];
 				if (t is string u) {
 					if (u.ToUpper ().StartsWith (search.ToUpperInvariant ())) {
 						return i;

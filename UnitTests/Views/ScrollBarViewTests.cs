@@ -303,7 +303,7 @@ namespace Terminal.Gui.ViewsTests {
 				}
 			}
 
-			public override void Redraw (Rect bounds)
+			public override void OnDrawContent (Rect contentArea)
 			{
 				if (_scrollBar != null) {
 					_scrollBar.Size = Lines;
@@ -313,7 +313,7 @@ namespace Terminal.Gui.ViewsTests {
 					_scrollBar.Refresh ();
 				}
 
-				base.Redraw (bounds);
+				base.OnDrawContent (contentArea);
 			}
 
 			private void ScrollBar_ChangedPosition (object sender, EventArgs e)
@@ -439,7 +439,7 @@ namespace Terminal.Gui.ViewsTests {
 				_scrollBar = null;
 			}
 
-			public override void Redraw (Rect bounds)
+			public override void OnDrawContent (Rect contentArea)
 			{
 				for (int r = Top; r < Frame.Height; r++) {
 					var str = $"Line{r}:";
@@ -459,11 +459,12 @@ namespace Terminal.Gui.ViewsTests {
 					}
 				}
 
-				base.Redraw (bounds);
+				base.OnDrawContent (contentArea);
 			}
 		}
 
 		private static HostView _hostView;
+		private ScrollBarView _scrollBar;
 
 		[Fact]
 		[ScrollBarAutoInitShutdown]
@@ -703,7 +704,7 @@ namespace Terminal.Gui.ViewsTests {
 		{
 			Hosting_A_View_To_A_ScrollBarView ();
 
-			AddHandlers ();
+			//AddHandlers ();
 
 			_hostView.Draw ();
 			Assert.True (_scrollBar.ShowScrollIndicator);
@@ -825,22 +826,22 @@ namespace Terminal.Gui.ViewsTests {
 		//		};
 		//		win.Add (newScrollBarView);
 
-				//newScrollBarView.ChangedPosition += (s, e) => {
-				//	listView.TopItem = newScrollBarView.Position;
-				//	if (listView.TopItem != newScrollBarView.Position) {
-				//		newScrollBarView.Position = listView.TopItem;
-				//	}
-				//	Assert.Equal (newScrollBarView.Position, listView.TopItem);
-				//	listView.SetNeedsDisplay ();
-				//};
+		//newScrollBarView.ChangedPosition += (s, e) => {
+		//	listView.TopItem = newScrollBarView.Position;
+		//	if (listView.TopItem != newScrollBarView.Position) {
+		//		newScrollBarView.Position = listView.TopItem;
+		//	}
+		//	Assert.Equal (newScrollBarView.Position, listView.TopItem);
+		//	listView.SetNeedsDisplay ();
+		//};
 
-				//listView.DrawContent += (s, e) => {
-				//	newScrollBarView.Size = listView.Source.Count;
-				//	Assert.Equal (newScrollBarView.Size, listView.Source.Count);
-				//	newScrollBarView.Position = listView.TopItem;
-				//	Assert.Equal (newScrollBarView.Position, listView.TopItem);
-				//	newScrollBarView.Refresh ();
-				//};
+		//listView.DrawContent += (s, e) => {
+		//	newScrollBarView.Size = listView.Source.Count;
+		//	Assert.Equal (newScrollBarView.Size, listView.Source.Count);
+		//	newScrollBarView.Position = listView.TopItem;
+		//	Assert.Equal (newScrollBarView.Position, listView.TopItem);
+		//	newScrollBarView.Refresh ();
+		//};
 
 		//		top.Ready += (s, e) => {
 		//			newScrollBarView.Position = 45;
@@ -901,22 +902,22 @@ namespace Terminal.Gui.ViewsTests {
 			};
 			win.Add (newScrollBarView);
 
-				newScrollBarView.ChangedPosition += (s, e) => {
-					listView.LeftItem = newScrollBarView.Position;
-					if (listView.LeftItem != newScrollBarView.Position) {
-						newScrollBarView.Position = listView.LeftItem;
-					}
-					Assert.Equal (newScrollBarView.Position, listView.LeftItem);
-					listView.SetNeedsDisplay ();
-				};
-
-				listView.DrawContent += (s, e) => {
-					newScrollBarView.Size = listView.Maxlength;
-					Assert.Equal (newScrollBarView.Size, listView.Maxlength);
+			newScrollBarView.ChangedPosition += (s, e) => {
+				listView.LeftItem = newScrollBarView.Position;
+				if (listView.LeftItem != newScrollBarView.Position) {
 					newScrollBarView.Position = listView.LeftItem;
-					Assert.Equal (newScrollBarView.Position, listView.LeftItem);
-					newScrollBarView.Refresh ();
-				};
+				}
+				Assert.Equal (newScrollBarView.Position, listView.LeftItem);
+				listView.SetNeedsDisplay ();
+			};
+
+			listView.DrawContent += (s, e) => {
+				newScrollBarView.Size = listView.Maxlength;
+				Assert.Equal (newScrollBarView.Size, listView.Maxlength);
+				newScrollBarView.Position = listView.LeftItem;
+				Assert.Equal (newScrollBarView.Position, listView.LeftItem);
+				newScrollBarView.Refresh ();
+			};
 
 			top.Ready += (s, e) => {
 				newScrollBarView.Position = 100;
@@ -1407,14 +1408,14 @@ This is a tes
 			//Assert.Equal (1, _hostView.Right);
 
 			_hostView.Lines = 20;
-			_hostView.Redraw (_hostView.Bounds);
+			_hostView.Draw ();
 			Assert.Equal (0, _hostView.Top);
 			Assert.Equal (0, _hostView.Left);
 			//Assert.Equal (1, _hostView.Bottom);
 			//Assert.Equal (0, _hostView.Right);
 
 			_hostView.Cols = 70;
-			_hostView.Redraw (_hostView.Bounds);
+			_hostView.Draw ();
 			Assert.Equal (0, _hostView.Top);
 			Assert.Equal (0, _hostView.Left);
 			//Assert.Equal (0, _hostView.Bottom);
@@ -1494,7 +1495,7 @@ This is a tes
 			Assert.NotEqual (hostViewAuto.ScrollBar.OtherScrollBarView.Size, hostViewAuto.Cols);
 
 			hostViewAuto.SuperView.LayoutSubviews ();
-			hostViewAuto.Redraw (hostViewAuto.Bounds);
+			hostViewAuto.Draw ();
 
 			Assert.Equal (hostViewAuto.ScrollBar.Position, hostViewAuto.Top);
 			Assert.Equal (hostViewAuto.ScrollBar.Size, hostViewAuto.Lines);
@@ -1504,7 +1505,7 @@ This is a tes
 			Assert.Equal (1, hostViewAuto.Right);
 
 			hostViewAuto.Lines = 20;
-			hostViewAuto.Redraw (hostViewAuto.Bounds);
+			hostViewAuto.Draw ();
 		}
 
 		[Fact, AutoInitShutdown]
@@ -1528,14 +1529,14 @@ This is a tes
 			Assert.Equal (1, hostViewAuto.Right);
 
 			hostViewAuto.Lines = 20;
-			hostViewAuto.Redraw (hostViewAuto.Bounds);
+			hostViewAuto.Draw ();
 			Assert.Equal (0, hostViewAuto.Top);
 			Assert.Equal (0, hostViewAuto.Left);
 			Assert.Equal (1, hostViewAuto.Bottom);
 			Assert.Equal (0, hostViewAuto.Right);
 
 			hostViewAuto.Cols = 70;
-			hostViewAuto.Redraw (hostViewAuto.Bounds);
+			hostViewAuto.Draw ();
 			Assert.Equal (0, hostViewAuto.Top);
 			Assert.Equal (0, hostViewAuto.Left);
 			Assert.Equal (0, hostViewAuto.Bottom);

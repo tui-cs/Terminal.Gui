@@ -356,9 +356,9 @@ namespace UICatalog.Scenarios {
 			};
 			
 			scrollBar.OtherScrollBarView.ChangedPosition += (s,e) => {
-				tableView.LeftItem = scrollBar.OtherScrollBarView.Position;
-				if (tableView.LeftItem != scrollBar.OtherScrollBarView.Position) {
-					scrollBar.OtherScrollBarView.Position = tableView.LeftItem;
+				tableView.ColumnOffset = scrollBar.OtherScrollBarView.Position;
+				if (tableView.ColumnOffset != scrollBar.OtherScrollBarView.Position) {
+					scrollBar.OtherScrollBarView.Position = tableView.ColumnOffset;
 				}
 				tableView.SetNeedsDisplay ();
 			};
