@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using Rune = System.Rune;
+
 
 namespace Terminal.Gui {
 	
@@ -50,7 +50,7 @@ namespace Terminal.Gui {
 		/// <returns></returns>
 		public virtual bool IsWordChar (Rune rune)
 		{
-			return Char.IsLetterOrDigit ((char)rune);
+			return Char.IsLetterOrDigit ((char)rune.Value);
 		}
 
 		/// <summary>
@@ -92,7 +92,7 @@ namespace Terminal.Gui {
 			// we are at the end of a word. Work out what has been typed so far
 			while (endIdx-- > 0) {
 				if (IsWordChar (line [endIdx])) {
-					sb.Insert (0, (char)line [endIdx]);
+					sb.Insert (0, (char)line [endIdx].Value);
 				} else {
 					break;
 				}

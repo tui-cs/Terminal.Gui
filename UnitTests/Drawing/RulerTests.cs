@@ -1,5 +1,5 @@
 ﻿using Terminal.Gui;
-using NStack;
+using System.Text;
 using System;
 using System.Collections.Generic;
 using System.Xml.Linq;

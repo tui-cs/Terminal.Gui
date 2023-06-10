@@ -91,8 +91,8 @@ namespace Terminal.Gui.ViewsTests {
 		{
 			if (paramType == typeof (Rect)) {
 				pTypes.Add (Rect.Empty);
-			} else if (paramType == typeof (NStack.ustring)) {
-				pTypes.Add (NStack.ustring.Empty);
+			} else if (paramType == typeof (string)) {
+				pTypes.Add (string.Empty);
 			} else if (paramType == typeof (int)) {
 				pTypes.Add (0);
 			} else if (paramType == typeof (bool)) {

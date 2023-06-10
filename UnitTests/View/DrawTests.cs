@@ -1,4 +1,4 @@
-﻿using NStack;
+﻿using System.Text;
 using System;
 using Xunit;
 using Xunit.Abstractions;
@@ -11,23 +11,23 @@ namespace Terminal.Gui.ViewsTests {
 		{
 			this.output = output;
 		}
-		
+
 		// TODO: The tests below that use Label should use View instead.
 		[Fact, AutoInitShutdown]
 		public void Non_Bmp_ConsoleWidth_ColumnWidth_Equal_Two ()
 		{
-			ustring us = "\U0001d539";
-			Rune r = 0x1d539;
+			string us = "\U0001d539";
+			Rune r = (Rune)0x1d539;
 
 			Assert.Equal ("𝔹", us);
 			Assert.Equal ("𝔹", r.ToString ());
 			Assert.Equal (us, r.ToString ());
 
-			Assert.Equal (2, us.ConsoleWidth);
-			Assert.Equal (2, Rune.ColumnWidth (r));
+			Assert.Equal (2, us.GetColumns ());
+			Assert.Equal (2, r.GetColumns ());
 
 			var win = new Window () { Title = us };
-			var label = new Label (ustring.Make (r));
+			var label = new Label (r.ToString ());
 			var tf = new TextField (us) { Y = 1, Width = 3 };
 			win.Add (label, tf);
 			var top = Application.Top;
@@ -64,18 +64,18 @@ namespace Terminal.Gui.ViewsTests {
 		[Fact, AutoInitShutdown]
 		public void CJK_Compatibility_Ideographs_ConsoleWidth_ColumnWidth_Equal_Two ()
 		{
-			ustring us = "\U0000f900";
-			Rune r = 0xf900;
+			string us = "\U0000f900";
+			Rune r = (Rune)0xf900;
 
 			Assert.Equal ("豈", us);
 			Assert.Equal ("豈", r.ToString ());
 			Assert.Equal (us, r.ToString ());
 
-			Assert.Equal (2, us.ConsoleWidth);
-			Assert.Equal (2, Rune.ColumnWidth (r));
+			Assert.Equal (2, us.GetColumns ());
+			Assert.Equal (2, r.GetColumns ());
 
 			var win = new Window () { Title = us };
-			var label = new Label (ustring.Make (r));
+			var label = new Label (r.ToString ());
 			var tf = new TextField (us) { Y = 1, Width = 3 };
 			win.Add (label, tf);
 			var top = Application.Top;

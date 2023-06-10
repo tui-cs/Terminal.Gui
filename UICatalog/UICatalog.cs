@@ -1,4 +1,5 @@
-using NStack;
+global using CM = Terminal.Gui.ConfigurationManager;
+
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -12,9 +13,10 @@ using System.Reflection;
 using System.Threading;
 using static Terminal.Gui.ConfigurationManager;
 using System.Text.Json.Serialization;
+using static Terminal.Gui.TableView;
+
 
 #nullable enable
-
 /// <summary>
 /// UI Catalog is a comprehensive sample library for Terminal.Gui. It provides a simple UI for adding to the catalog of scenarios.
 /// </summary>
@@ -115,8 +117,8 @@ namespace UICatalog {
 			Scenario scenario;
 			while ((scenario = RunUICatalogTopLevel ()) != null) {
 				VerifyObjectsWereDisposed ();
-				ConfigurationManager.Themes!.Theme = _cachedTheme!;
-				ConfigurationManager.Apply ();
+				CM.Themes!.Theme = _cachedTheme!;
+				CM.Apply ();
 				scenario.Theme = _cachedTheme;
 				scenario.TopLevelColorScheme = _topLevelColorScheme;
 				scenario.Init ();
@@ -187,8 +189,8 @@ namespace UICatalog {
 
 			// TOOD: THis is a hack. Figure out how to ensure that the file is fully written before reading it.
 			Thread.Sleep (500);
-			ConfigurationManager.Load ();
-			ConfigurationManager.Apply ();
+			CM.Load ();
+			CM.Apply ();
 		}
 
 		/// <summary>
@@ -206,10 +208,10 @@ namespace UICatalog {
 			Application.Init ();
 
 			if (_cachedTheme is null) {
-				_cachedTheme = ConfigurationManager.Themes?.Theme;
+				_cachedTheme = CM.Themes?.Theme;
 			} else {
-				ConfigurationManager.Themes!.Theme = _cachedTheme;
-				ConfigurationManager.Apply ();
+				CM.Themes!.Theme = _cachedTheme;
+				CM.Apply ();
 			}
 
 			//Application.EnableConsoleScrolling = _enableConsoleScrolling;
@@ -249,12 +251,18 @@ namespace UICatalog {
 		/// the command line) and each time a Scenario ends.
 		/// </summary>
 		public class UICatalogTopLevel : Toplevel {
+			public MenuItem? miUseSubMenusSingleFrame;
 			public MenuItem? miIsMenuBorderDisabled;
 			public MenuItem? miIsMouseDisabled;
 			public MenuItem? miEnableConsoleScrolling;
 
-			public ListView CategoryListView;
-			public ListView ScenarioListView;
+			public ListView CategoryList;
+
+			// UI Catalog uses TableView for the scenario list instead of a ListView to demonstate how
+			// TableView works. There's no real reason not to use ListView. Because we use TableView, and TableView
+			// doesn't (currently) have CollectionNavigator support built in, we implement it here, within the app.
+			public TableView ScenarioList;
+			private CollectionNavigator _scenarioCollectionNav = new CollectionNavigator ();
 
 			public StatusItem Capslock;
 			public StatusItem Numlock;
@@ -310,20 +318,8 @@ namespace UICatalog {
 					OS
 				};
 
-				//ContentPane = new TileView () {
-				//	Id = "ContentPane",
-				//	X = 0,
-				//	Y = 1, // for menu
-				//	Width = Dim.Fill (),
-				//	Height = Dim.Fill (1),
-				//	CanFocus = true,
-				//	Shortcut = Key.CtrlMask | Key.C,
-				//};
-				//ContentPane.LineStyle = LineStyle.Single;
-				//ContentPane.SetSplitterPos (0, 25);
-				//ContentPane.ShortcutAction = () => ContentPane.SetFocus ();
-
-				CategoryListView = new ListView (_categories) {
+				// Create the Category list view. This list never changes.
+				CategoryList = new ListView (_categories) {
 					X = 0,
 					Y = 1,
 					Width = Dim.Percent (30),
@@ -334,37 +330,83 @@ namespace UICatalog {
 					BorderStyle = LineStyle.Single,
 					SuperViewRendersLineCanvas = true
 				};
-				CategoryListView.OpenSelectedItem += (s, a) => {
-					ScenarioListView!.SetFocus ();
+				CategoryList.OpenSelectedItem += (s, a) => {
+					ScenarioList!.SetFocus ();
 				};
-				CategoryListView.SelectedItemChanged += CategoryListView_SelectedChanged;
+				CategoryList.SelectedItemChanged += CategoryView_SelectedChanged;
 
-				//ContentPane.Tiles.ElementAt (0).Title = "Categories";
-				//ContentPane.Tiles.ElementAt (0).MinSize = 2;
-				//ContentPane.Tiles.ElementAt (0).ContentView.Add (CategoryListView);
-
-				ScenarioListView = new ListView () {
-					X = Pos.Right (CategoryListView) - 1,
+				// Create the scenario list. The contents of the scenario list changes whenever the
+				// Category list selection changes (to show just the scenarios that belong to the selected
+				// category).
+				ScenarioList = new TableView () {
+					X = Pos.Right (CategoryList) - 1,
 					Y = 1,
 					Width = Dim.Fill (0),
 					Height = Dim.Fill (1),
-					AllowsMarking = false,
+					//AllowsMarking = false,
 					CanFocus = true,
 					Title = "Scenarios",
 					BorderStyle = LineStyle.Single,
 					SuperViewRendersLineCanvas = true
 				};
 
-				ScenarioListView.OpenSelectedItem += ScenarioListView_OpenSelectedItem;
+				// TableView provides many options for table headers. For simplicity we turn all 
+				// of these off. By enabling FullRowSelect and turning off headers, TableView looks just
+				// like a ListView
+				ScenarioList.FullRowSelect = true;
+				ScenarioList.Style.ShowHeaders = false;
+				ScenarioList.Style.ShowHorizontalHeaderOverline = false;
+				ScenarioList.Style.ShowHorizontalHeaderUnderline = false;
+				ScenarioList.Style.ShowHorizontalBottomline = false;
+				ScenarioList.Style.ShowVerticalCellLines = false;
+				ScenarioList.Style.ShowVerticalHeaderLines = false;
 
-				//ContentPane.Tiles.ElementAt (1).Title = "Scenarios";
-				//ContentPane.Tiles.ElementAt (1).ContentView.Add (ScenarioListView);
-				//ContentPane.Tiles.ElementAt (1).MinSize = 2;
+				/* By default TableView lays out columns at render time and only
+				 * measures y rows of data at a time.  Where y is the height of the
+				 * console. This is for the following reasons:
+				 * 
+				 * - Performance, when tables have a large amount of data
+				 * - Defensive, prevents a single wide cell value pushing other
+				 *   columns off screen (requiring horizontal scrolling
+				 * 
+				 * In the case of UICatalog here, such an approach is overkill so
+				 * we just measure all the data ourselves and set the appropriate
+				 * max widths as ColumnStyles 
+				 */
+				var longestName = _scenarios!.Max (s => s.GetName ().Length);
+				ScenarioList.Style.ColumnStyles.Add (0, new ColumnStyle () { MaxWidth = longestName, MinWidth = longestName, MinAcceptableWidth = longestName });
+				ScenarioList.Style.ColumnStyles.Add (1, new ColumnStyle () { MaxWidth = 1 });
+
+				// Enable user to find & select a scenario by typing text
+				// TableView does not (currently) have built-in CollectionNavigator support (the ability for the 
+				// user to type and the items that match get selected). We implement it in the app instead. 
+				ScenarioList.KeyDown += (s, a) => {
+					if (CollectionNavigator.IsCompatibleKey (a.KeyEvent)) {
+						var newItem = _scenarioCollectionNav?.GetNextMatchingItem (ScenarioList.SelectedRow, (char)a.KeyEvent.KeyValue);
+						if (newItem is int && newItem != -1) {
+							ScenarioList.SelectedRow = (int)newItem;
+							ScenarioList.EnsureSelectedCellIsVisible ();
+							ScenarioList.SetNeedsDisplay ();
+							a.Handled = true;
+						}
+					}
+				};
+				ScenarioList.CellActivated += ScenarioView_OpenSelectedItem;
+
+				// TableView typically is a grid where nav keys are biased for moving left/right.
+				ScenarioList.AddKeyBinding (Key.Home, Command.TopHome);
+				ScenarioList.AddKeyBinding (Key.End, Command.BottomEnd);
+
+				// Ideally, TableView.MultiSelect = false would turn off any keybindings for
+				// multi-select options. But it currently does not. UI Catalog uses Ctrl-A for
+				// a shortcut to About.
+				ScenarioList.MultiSelect = false;
+				ScenarioList.ClearKeyBinding (Key.CtrlMask | Key.A);
 
 				KeyDown += KeyDownHandler;
-				//Add (ContentPane);
-				Add (CategoryListView);
-				Add (ScenarioListView);
+
+				Add (CategoryList);
+				Add (ScenarioList);
 
 				Add (MenuBar);
 				Add (StatusBar);
@@ -373,10 +415,10 @@ namespace UICatalog {
 				Unloaded += UnloadedHandler;
 
 				// Restore previous selections
-				CategoryListView.SelectedItem = _cachedCategoryIndex;
-				ScenarioListView.SelectedItem = _cachedScenarioIndex;
+				CategoryList.SelectedItem = _cachedCategoryIndex;
+				ScenarioList.SelectedRow = _cachedScenarioIndex;
 
-				ConfigurationManager.Applied += ConfigAppliedHandler;
+				CM.Applied += ConfigAppliedHandler;
 			}
 
 			void LoadedHandler (object? sender, EventArgs? args)
@@ -393,26 +435,28 @@ namespace UICatalog {
 					_isFirstRunning = false;
 				}
 				if (!_isFirstRunning) {
-					ScenarioListView.SetFocus ();
+					ScenarioList.SetFocus ();
 				}
 
 				StatusBar.VisibleChanged += (s, e) => {
 					UICatalogApp.ShowStatusBar = StatusBar.Visible;
 
 					var height = (StatusBar.Visible ? 1 : 0);
-					CategoryListView.Height = Dim.Fill (height);
-					ScenarioListView.Height = Dim.Fill (height);
+					CategoryList.Height = Dim.Fill (height);
+					ScenarioList.Height = Dim.Fill (height);
 					// ContentPane.Height = Dim.Fill (height);
 					LayoutSubviews ();
 					SetSubViewNeedsDisplay ();
 				};
 
 				Loaded -= LoadedHandler;
+				CategoryList.EnsureSelectedItemVisible ();
+				ScenarioList.EnsureSelectedCellIsVisible ();
 			}
 
 			private void UnloadedHandler (object? sender, EventArgs? args)
 			{
-				ConfigurationManager.Applied -= ConfigAppliedHandler;
+				CM.Applied -= ConfigAppliedHandler;
 				Unloaded -= UnloadedHandler;
 			}
 
@@ -425,16 +469,16 @@ namespace UICatalog {
 			/// Launches the selected scenario, setting the global _selectedScenario
 			/// </summary>
 			/// <param name="e"></param>
-			void ScenarioListView_OpenSelectedItem (object? sender, EventArgs? e)
+			void ScenarioView_OpenSelectedItem (object? sender, EventArgs? e)
 			{
 				if (_selectedScenario is null) {
 					// Save selected item state
-					_cachedCategoryIndex = CategoryListView.SelectedItem;
-					_cachedScenarioIndex = ScenarioListView.SelectedItem;
-					// Create new instance of scenario (even though Scenarios contains instances)
-					var sourceList = ScenarioListView.Source.ToList ();
+					_cachedCategoryIndex = CategoryList.SelectedItem;
+					_cachedScenarioIndex = ScenarioList.SelectedRow;
 
-					_selectedScenario = (Scenario)Activator.CreateInstance (ScenarioListView.Source.ToList () [ScenarioListView.SelectedItem]!.GetType ())!;
+					// Create new instance of scenario (even though Scenarios contains instances)
+					string selectedScenarioName = (string)ScenarioList.Table [ScenarioList.SelectedRow, 0];
+					_selectedScenario = (Scenario)Activator.CreateInstance (_scenarios!.FirstOrDefault (s => s.GetName () == selectedScenarioName)!.GetType ())!;
 
 					// Tell the main app to stop
 					Application.RequestStop ();
@@ -449,18 +493,36 @@ namespace UICatalog {
 					CreateEnableConsoleScrollingMenuItems (),
 					CreateDisabledEnabledMouseItems (),
 					CreateDisabledEnabledMenuBorder (),
+					CreateDisabledEnableUseSubMenusSingleFrame (),
 					CreateKeybindingsMenuItems ()
 				};
 				return menuItems;
+			}
+
+			MenuItem [] CreateDisabledEnableUseSubMenusSingleFrame ()
+			{
+				List<MenuItem> menuItems = new List<MenuItem> ();
+				miUseSubMenusSingleFrame = new MenuItem {
+					Title = "Enable _Sub-Menus Single Frame"
+				};
+				miUseSubMenusSingleFrame.Shortcut = Key.CtrlMask | Key.AltMask | (Key)miUseSubMenusSingleFrame!.Title!.Substring (8, 1) [0];
+				miUseSubMenusSingleFrame.CheckType |= MenuItemCheckStyle.Checked;
+				miUseSubMenusSingleFrame.Action += () => {
+					miUseSubMenusSingleFrame.Checked = (bool)!miUseSubMenusSingleFrame.Checked!;
+					MenuBar.UseSubMenusSingleFrame = (bool)miUseSubMenusSingleFrame.Checked;
+				};
+				menuItems.Add (miUseSubMenusSingleFrame);
+
+				return menuItems.ToArray ();
 			}
 
 			MenuItem [] CreateDisabledEnabledMenuBorder ()
 			{
 				List<MenuItem> menuItems = new List<MenuItem> ();
 				miIsMenuBorderDisabled = new MenuItem {
-					Title = "Disable _Menu Border"
+					Title = "Disable Menu _Border"
 				};
-				miIsMenuBorderDisabled.Shortcut = Key.CtrlMask | Key.AltMask | (Key)miIsMenuBorderDisabled!.Title!.ToString ()!.Substring (1, 1) [0];
+				miIsMenuBorderDisabled.Shortcut = Key.CtrlMask | Key.AltMask | (Key)miIsMenuBorderDisabled!.Title!.Substring (14, 1) [0];
 				miIsMenuBorderDisabled.CheckType |= MenuItemCheckStyle.Checked;
 				miIsMenuBorderDisabled.Action += () => {
 					miIsMenuBorderDisabled.Checked = (bool)!miIsMenuBorderDisabled.Checked!;
@@ -477,7 +539,7 @@ namespace UICatalog {
 				miIsMouseDisabled = new MenuItem {
 					Title = "_Disable Mouse"
 				};
-				miIsMouseDisabled.Shortcut = Key.CtrlMask | Key.AltMask | (Key)miIsMouseDisabled!.Title!.ToString ()!.Substring (1, 1) [0];
+				miIsMouseDisabled.Shortcut = Key.CtrlMask | Key.AltMask | (Key)miIsMouseDisabled!.Title!.Substring (1, 1) [0];
 				miIsMouseDisabled.CheckType |= MenuItemCheckStyle.Checked;
 				miIsMouseDisabled.Action += () => {
 					miIsMouseDisabled.Checked = Application.IsMouseDisabled = (bool)!miIsMouseDisabled.Checked!;
@@ -510,7 +572,7 @@ namespace UICatalog {
 				List<MenuItem> menuItems = new List<MenuItem> ();
 				miEnableConsoleScrolling = new MenuItem ();
 				miEnableConsoleScrolling.Title = "_Enable Console Scrolling";
-				miEnableConsoleScrolling.Shortcut = Key.CtrlMask | Key.AltMask | (Key)miEnableConsoleScrolling.Title.ToString ()!.Substring (1, 1) [0];
+				miEnableConsoleScrolling.Shortcut = Key.CtrlMask | Key.AltMask | (Key)miEnableConsoleScrolling.Title!.Substring (1, 1) [0];
 				miEnableConsoleScrolling.CheckType |= MenuItemCheckStyle.Checked;
 				miEnableConsoleScrolling.Action += () => {
 					miEnableConsoleScrolling.Checked = !miEnableConsoleScrolling.Checked;
@@ -583,9 +645,9 @@ namespace UICatalog {
 					};
 				}
 
-				Enum GetDiagnosticsEnumValue (ustring title)
+				Enum GetDiagnosticsEnumValue (string title)
 				{
-					return title!.ToString () switch {
+					return title switch {
 						FRAME_RULER => ConsoleDriver.DiagnosticFlags.FrameRuler,
 						FRAME_PADDING => ConsoleDriver.DiagnosticFlags.FramePadding,
 						_ => null!,
@@ -619,16 +681,16 @@ namespace UICatalog {
 			public MenuItem []? CreateThemeMenuItems ()
 			{
 				List<MenuItem> menuItems = new List<MenuItem> ();
-				foreach (var theme in ConfigurationManager.Themes!) {
+				foreach (var theme in CM.Themes!) {
 					var item = new MenuItem {
 						Title = theme.Key,
 						Shortcut = Key.AltMask + theme.Key [0]
 					};
 					item.CheckType |= MenuItemCheckStyle.Checked;
-					item.Checked = theme.Key == _cachedTheme; // ConfigurationManager.Themes.Theme;
+					item.Checked = theme.Key == _cachedTheme; // CM.Themes.Theme;
 					item.Action += () => {
-						ConfigurationManager.Themes.Theme = _cachedTheme = theme.Key;
-						ConfigurationManager.Apply ();
+						CM.Themes.Theme = _cachedTheme = theme.Key;
+						CM.Apply ();
 					};
 					menuItems.Add (item);
 				}
@@ -667,14 +729,19 @@ namespace UICatalog {
 
 				_themeMenuItems = ((UICatalogTopLevel)Application.Top).CreateThemeMenuItems ();
 				_themeMenuBarItem!.Children = _themeMenuItems;
+				foreach (var mi in _themeMenuItems!) {
+					if (mi != null && mi.Parent == null) {
+						mi.Parent = _themeMenuBarItem;
+					}
+				}
 
 				var checkedThemeMenu = _themeMenuItems?.Where (m => m?.Checked ?? false).FirstOrDefault ();
 				if (checkedThemeMenu != null) {
 					checkedThemeMenu.Checked = false;
 				}
-				checkedThemeMenu = _themeMenuItems?.Where (m => m != null && m.Title == ConfigurationManager.Themes?.Theme).FirstOrDefault ();
+				checkedThemeMenu = _themeMenuItems?.Where (m => m != null && m.Title == CM.Themes?.Theme).FirstOrDefault ();
 				if (checkedThemeMenu != null) {
-					ConfigurationManager.Themes!.Theme = checkedThemeMenu.Title.ToString ()!;
+					CM.Themes!.Theme = checkedThemeMenu.Title!;
 					checkedThemeMenu.Checked = true;
 				}
 
@@ -729,18 +796,31 @@ namespace UICatalog {
 				}
 			}
 
-			void CategoryListView_SelectedChanged (object? sender, ListViewItemEventArgs? e)
+			void CategoryView_SelectedChanged (object? sender, ListViewItemEventArgs? e)
 			{
 				var item = _categories! [e!.Item];
 				List<Scenario> newlist;
 				if (e.Item == 0) {
 					// First category is "All"
 					newlist = _scenarios!;
+					newlist = _scenarios!;
 
 				} else {
 					newlist = _scenarios!.Where (s => s.GetCategories ().Contains (item)).ToList ();
 				}
-				ScenarioListView.SetSource (newlist.ToList ());
+				ScenarioList.Table = new EnumerableTableSource<Scenario> (newlist, new Dictionary<string, Func<Scenario, object>> () {
+					{ "Name", (s) => s.GetName() },
+					{ "Description", (s) => s.GetDescription() },
+				});
+
+				// Create a collection of just the scenario names (the 1st column in our TableView)
+				// for CollectionNavigator. 
+				var firstColumnList = new List<object> ();
+				for (var i = 0; i < ScenarioList.Table.Rows; i++) {
+					firstColumnList.Add (ScenarioList.Table [i, 0]);
+				}
+				_scenarioCollectionNav.Collection = firstColumnList;
+
 			}
 
 			public void PreRender (ListView container, int width)
@@ -763,10 +843,10 @@ namespace UICatalog {
 			// Validate there are no outstanding Application.RunState-based instances 
 			// after a scenario was selected to run. This proves the main UI Catalog
 			// 'app' closed cleanly.
-			foreach (var inst in Application.RunState.Instances) {
+			foreach (var inst in RunState.Instances) {
 				Debug.Assert (inst.WasDisposed);
 			}
-			Application.RunState.Instances.Clear ();
+			RunState.Instances.Clear ();
 #endif
 		}
 

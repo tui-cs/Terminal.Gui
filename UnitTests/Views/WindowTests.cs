@@ -5,7 +5,7 @@ using Xunit.Abstractions;
 
 // Alias Console to MockConsole so we don't accidentally use Console
 using Console = Terminal.Gui.FakeConsole;
-using NStack;
+using System.Text;
 using Terminal.Gui;
 
 namespace Terminal.Gui.ViewsTests {
@@ -23,7 +23,7 @@ namespace Terminal.Gui.ViewsTests {
 			// Parameterless
 			var r = new Window ();
 			Assert.NotNull (r);
-			Assert.Equal (ustring.Empty, r.Title);
+			Assert.Equal (string.Empty, r.Title);
 			Assert.Equal (LayoutStyle.Computed, r.LayoutStyle);
 			Assert.Equal ("Window()((0,0,0,0))", r.ToString ());
 			Assert.True (r.CanFocus);

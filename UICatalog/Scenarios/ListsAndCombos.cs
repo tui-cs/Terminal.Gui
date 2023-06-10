@@ -3,7 +3,7 @@ using System.Linq;
 using System.IO;
 using System.Collections.Generic;
 using Terminal.Gui;
-using NStack;
+using System.Text;
 
 namespace UICatalog.Scenarios {
 	[ScenarioMetadata (Name: "ListView & ComboBox", Description: "Demonstrates a ListView populating a ComboBox that acts as a filter.")]
@@ -13,13 +13,13 @@ namespace UICatalog.Scenarios {
 		public override void Setup ()
 		{
 			//TODO: Duplicated code in Demo.cs Consider moving to shared assembly
-			var items = new List<ustring> ();
+			var items = new List<string> ();
 			foreach (var dir in new [] { "/etc", @$"{Environment.GetEnvironmentVariable ("SystemRoot")}\System32" }) {
 				if (Directory.Exists (dir)) {
 					items = Directory.GetFiles (dir).Union (Directory.GetDirectories (dir))
 						.Select (Path.GetFileName)
 						.Where (x => char.IsLetterOrDigit (x [0]))
-						.OrderBy (x => x).Select (x => ustring.Make (x)).ToList ();
+						.OrderBy (x => x).Select(x => x).ToList() ;
 				}
 			}
 
@@ -41,30 +41,30 @@ namespace UICatalog.Scenarios {
 			Win.Add (lbListView, listview);
 			listview.LayoutComplete += (s, e) => listview?.ScrollBar.Refresh ();
 
-			//var _scrollBar = new ScrollBarView (listview, true);
+			//var scrollBar = new ScrollBarView (listview, true);
 
-			//_scrollBar.ChangedPosition += () => {
-			//	listview.TopItem = _scrollBar.Position;
-			//	if (listview.TopItem != _scrollBar.Position) {
-			//		_scrollBar.Position = listview.TopItem;
+			//scrollBar.ChangedPosition += (s,e) => {
+			//	listview.TopItem = scrollBar.Position;
+			//	if (listview.TopItem != scrollBar.Position) {
+			//		scrollBar.Position = listview.TopItem;
 			//	}
 			//	listview.SetNeedsDisplay ();
 			//};
 
-			//_scrollBar.OtherScrollBarView.ChangedPosition += () => {
-			//	listview.LeftItem = _scrollBar.OtherScrollBarView.Position;
-			//	if (listview.LeftItem != _scrollBar.OtherScrollBarView.Position) {
-			//		_scrollBar.OtherScrollBarView.Position = listview.LeftItem;
+			//scrollBar.OtherScrollBarView.ChangedPosition += (s,e) => {
+			//	listview.LeftItem = scrollBar.OtherScrollBarView.Position;
+			//	if (listview.LeftItem != scrollBar.OtherScrollBarView.Position) {
+			//		scrollBar.OtherScrollBarView.Position = listview.LeftItem;
 			//	}
 			//	listview.SetNeedsDisplay ();
 			//};
 
-			//listview.DrawContent += (e) => {
-			//	_scrollBar.Size = listview.Source.Count - 1;
-			//	_scrollBar.Position = listview.TopItem;
-			//	_scrollBar.OtherScrollBarView.Size = listview.Maxlength - 1;
-			//	_scrollBar.OtherScrollBarView.Position = listview.LeftItem;
-			//	_scrollBar.Refresh ();
+			//listview.DrawContent += (s,e) => {
+			//	scrollBar.Size = listview.Source.Count - 1;
+			//	scrollBar.Position = listview.TopItem;
+			//	scrollBar.OtherScrollBarView.Size = listview.Maxlength - 1;
+			//	scrollBar.OtherScrollBarView.Position = listview.LeftItem;
+			//	scrollBar.Refresh ();
 			//};
 
 			// ComboBox

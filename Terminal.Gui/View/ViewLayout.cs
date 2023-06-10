@@ -4,7 +4,7 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
-using NStack;
+using System.Text;
 
 namespace Terminal.Gui {
 	/// <summary>
@@ -198,7 +198,7 @@ namespace Terminal.Gui {
 
 		/// <summary>
 		/// The View-relative rectangle where View content is displayed. SubViews are positioned relative to 
-		/// Bounds.<see cref="Rect.Location">Location</see> (which is always (0, 0)) and <see cref="Redraw(Rect)"/> clips drawing to 
+		/// Bounds.<see cref="Rect.Location">Location</see> (which is always (0, 0)) and <see cref="Draw()"/> clips drawing to 
 		/// Bounds.<see cref="Rect.Size">Size</see>.
 		/// </summary>
 		/// <value>The bounds.</value>
@@ -379,12 +379,16 @@ namespace Terminal.Gui {
 		/// </remarks>
 		public bool GetMinimumBounds (out Size size)
 		{
+			if (!IsInitialized) {
+				size = new Size (0, 0);
+				return false;
+			}
 			size = Bounds.Size;
 
-			if (!AutoSize && !ustring.IsNullOrEmpty (TextFormatter.Text)) {
+			if (!AutoSize && !string.IsNullOrEmpty (TextFormatter.Text)) {
 				switch (TextFormatter.IsVerticalDirection (TextDirection)) {
 				case true:
-					var colWidth = TextFormatter.GetSumMaxCharWidth (new List<ustring> { TextFormatter.Text }, 0, 1);
+					var colWidth = TextFormatter.GetSumMaxCharWidth (new List<string> { TextFormatter.Text }, 0, 1);
 					// TODO: v2 - This uses frame.Width; it should only use Bounds
 					if (_frame.Width < colWidth &&
 						(Width == null ||
@@ -469,13 +473,13 @@ namespace Terminal.Gui {
 			if (LayoutNeeded)
 				return;
 			LayoutNeeded = true;
-			if (SuperView == null)
-				return;
-			SuperView.SetNeedsLayout ();
 			foreach (var view in Subviews) {
 				view.SetNeedsLayout ();
 			}
 			TextFormatter.NeedsFormat = true;
+			if (SuperView == null)
+				return;
+			SuperView.SetNeedsLayout ();
 		}
 
 		/// <summary>
@@ -494,28 +498,12 @@ namespace Terminal.Gui {
 		/// <param name="y">Y screen-coordinate point.</param>
 		public Point ScreenToView (int x, int y)
 		{
+			Point boundsOffset = SuperView == null ? Point.Empty : SuperView.GetBoundsOffset ();
 			if (SuperView == null) {
-				return new Point (x - Frame.X, y - _frame.Y);
-			} else {
-				var parent = SuperView.ScreenToView (x, y);
-				return new Point (parent.X - _frame.X, parent.Y - _frame.Y);
-			}
-		}
-
-		/// <summary>
-		/// Converts a point from screen-relative coordinates to bounds-relative coordinates.
-		/// </summary>
-		/// <returns>The mapped point.</returns>
-		/// <param name="x">X screen-coordinate point.</param>
-		/// <param name="y">Y screen-coordinate point.</param>
-		public Point ScreenToBounds (int x, int y)
-		{
-			if (SuperView == null) {
-				var boundsOffset = GetBoundsOffset ();
 				return new Point (x - Frame.X + boundsOffset.X, y - Frame.Y + boundsOffset.Y);
 			} else {
-				var parent = SuperView.ScreenToView (x, y);
-				return new Point (parent.X - _frame.X, parent.Y - _frame.Y);
+				var parent = SuperView.ScreenToView (x - boundsOffset.X, y - boundsOffset.Y);
+				return new Point (parent.X - Frame.X, parent.Y - Frame.Y);
 			}
 		}
 
@@ -962,7 +950,7 @@ namespace Terminal.Gui {
 
 			var aSize = true;
 			var nBoundsSize = GetAutoSize ();
-			if (nBoundsSize != Bounds.Size) {
+			if (IsInitialized && nBoundsSize != Bounds.Size) {
 				if (ForceValidatePosDim) {
 					aSize = SetWidthHeight (nBoundsSize);
 				} else {
@@ -1007,7 +995,13 @@ namespace Terminal.Gui {
 		/// <returns>The <see cref="Size"/> required to fit the text.</returns>
 		public Size GetAutoSize ()
 		{
-			var rect = TextFormatter.CalcRect (Bounds.X, Bounds.Y, TextFormatter.Text, TextFormatter.Direction);
+			int x = 0;
+			int y = 0;
+			if (IsInitialized) {
+				x = Bounds.X;
+				y = Bounds.Y; 
+			}
+			var rect = TextFormatter.CalcRect (x, y,TextFormatter.Text, TextFormatter.Direction);
 			var newWidth = rect.Size.Width - GetHotKeySpecifierLength () + Margin.Thickness.Horizontal + Border.Thickness.Horizontal + Padding.Thickness.Horizontal;
 			var newHeight = rect.Size.Height - GetHotKeySpecifierLength (false) + Margin.Thickness.Vertical + Border.Thickness.Vertical + Padding.Thickness.Vertical;
 			return new Size (newWidth, newHeight);

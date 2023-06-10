@@ -1,6 +1,6 @@
 using System.Reactive.Disposables;
 using System.Reactive.Linq;
-using NStack;
+using System.Text;
 using ReactiveUI;
 using Terminal.Gui;
 using ReactiveMarbles.ObservableEvents;
@@ -64,7 +64,7 @@ namespace ReactiveExample {
 			};
 			ViewModel
 				.WhenAnyValue (x => x.UsernameLength)
-				.Select (length => ustring.Make ($"Username ({length} characters)"))
+				.Select (length => $"Username ({length} characters)")
 				.BindTo (usernameLengthLabel, x => x.Text)
 				.DisposeWith (_disposable);
 			Add (usernameLengthLabel);
@@ -100,7 +100,7 @@ namespace ReactiveExample {
 			};
 			ViewModel
 				.WhenAnyValue (x => x.PasswordLength)
-				.Select (length => ustring.Make ($"Password ({length} characters)"))
+				.Select (length => $"Password ({length} characters)")
 				.BindTo (passwordLengthLabel, x => x.Text)
 				.DisposeWith (_disposable);
 			Add (passwordLengthLabel);
@@ -108,8 +108,8 @@ namespace ReactiveExample {
 		}
 
 		Label ValidationLabel (View previous) {
-			var error = ustring.Make("Please, enter user name and password.");
-			var success = ustring.Make("The input is valid!");
+			var error = "Please, enter user name and password.";
+			var success = "The input is valid!";
 			var validationLabel = new Label(error) {
 				X = Pos.Left(previous),
 				Y = Pos.Top(previous) + 1,
@@ -130,8 +130,8 @@ namespace ReactiveExample {
 		}
 
 		Label LoginProgressLabel (View previous) {
-			var progress = ustring.Make ("Logging in...");
-			var idle = ustring.Make ("Press 'Login' to log in.");
+			var progress = "Logging in...";
+			var idle = "Press 'Login' to log in.";
 			var loginProgressLabel = new Label(idle) {
 				X = Pos.Left(previous),
 				Y = Pos.Top(previous) + 1,

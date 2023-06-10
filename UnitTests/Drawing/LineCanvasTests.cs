@@ -1,5 +1,4 @@
-﻿using NStack;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Text;
 using Xunit;
@@ -168,7 +167,7 @@ namespace Terminal.Gui.DrawingTests {
 			TestHelpers.AssertEqual (output, @"
 ╔╡╞╗
 ║  ║",
-			ustring.Make ($"{Environment.NewLine}{lc}"));
+			$"{Environment.NewLine}{lc}");
 		}
 
 		[Fact, SetupFakeDriver]
@@ -417,7 +416,7 @@ namespace Terminal.Gui.DrawingTests {
 			var v = GetCanvas (out var canvas);
 			canvas.AddLine (new Point (0, 0), 2, Orientation.Horizontal, style);
 
-			v.Redraw (v.Bounds);
+			v.Draw ();
 
 			string looksLike =
 @"    
@@ -431,7 +430,7 @@ namespace Terminal.Gui.DrawingTests {
 			var v = GetCanvas (out var canvas);
 			canvas.AddLine (new Point (0, 0), 2, Orientation.Horizontal, LineStyle.Double);
 
-			v.Redraw (v.Bounds);
+			v.Draw ();
 
 			string looksLike =
 @" 
@@ -447,7 +446,7 @@ namespace Terminal.Gui.DrawingTests {
 			var v = GetCanvas (out var canvas);
 			canvas.AddLine (new Point (0, 0), 2, Orientation.Vertical, style);
 
-			v.Redraw (v.Bounds);
+			v.Draw ();
 
 			string looksLike =
 @"    
@@ -462,7 +461,7 @@ namespace Terminal.Gui.DrawingTests {
 			var v = GetCanvas (out var canvas);
 			canvas.AddLine (new Point (0, 0), 2, Orientation.Vertical, LineStyle.Double);
 
-			v.Redraw (v.Bounds);
+			v.Draw ();
 
 			string looksLike =
 @"    
@@ -482,7 +481,7 @@ namespace Terminal.Gui.DrawingTests {
 			canvas.AddLine (new Point (0, 0), 2, Orientation.Horizontal, LineStyle.Single);
 			canvas.AddLine (new Point (0, 1), 2, Orientation.Vertical, LineStyle.Single);
 
-			v.Redraw (v.Bounds);
+			v.Draw ();
 
 			string looksLike =
 @"    
@@ -502,7 +501,7 @@ namespace Terminal.Gui.DrawingTests {
 			canvas.AddLine (new Point (0, 0), 2, Orientation.Horizontal, LineStyle.Single);
 			canvas.AddLine (new Point (0, 0), 2, Orientation.Vertical, LineStyle.Single);
 
-			v.Redraw (v.Bounds);
+			v.Draw ();
 
 			string looksLike =
 @"    
@@ -591,7 +590,7 @@ namespace Terminal.Gui.DrawingTests {
 			canvas.AddLine (new Point (5, 0), 5, Orientation.Vertical, LineStyle.Rounded);
 			canvas.AddLine (new Point (0, 2), 10, Orientation.Horizontal, LineStyle.Rounded);
 
-			v.Redraw (v.Bounds);
+			v.Draw ();
 
 			string looksLike =
 @"    
@@ -617,7 +616,7 @@ namespace Terminal.Gui.DrawingTests {
 			canvas.AddLine (new Point (5, 0), 5, Orientation.Vertical, LineStyle.Double);
 			canvas.AddLine (new Point (0, 2), 10, Orientation.Horizontal, LineStyle.Double);
 
-			v.Redraw (v.Bounds);
+			v.Draw ();
 
 			string looksLike =
 @"    
@@ -645,7 +644,7 @@ namespace Terminal.Gui.DrawingTests {
 			canvas.AddLine (new Point (5, 0), 5, Orientation.Vertical, thinStyle);
 			canvas.AddLine (new Point (0, 2), 10, Orientation.Horizontal, LineStyle.Double);
 
-			v.Redraw (v.Bounds);
+			v.Draw ();
 
 			string looksLike =
 @"    
@@ -674,7 +673,7 @@ namespace Terminal.Gui.DrawingTests {
 			canvas.AddLine (new Point (5, 0), 5, Orientation.Vertical, LineStyle.Double);
 			canvas.AddLine (new Point (0, 2), 10, Orientation.Horizontal, thinStyle);
 
-			v.Redraw (v.Bounds);
+			v.Draw ();
 
 			string looksLike =
 @"    
@@ -703,7 +702,7 @@ namespace Terminal.Gui.DrawingTests {
 			canvas.AddLine (new Point (5, 0), 5, Orientation.Vertical, LineStyle.Heavy);
 			canvas.AddLine (new Point (0, 2), 10, Orientation.Horizontal, LineStyle.Heavy);
 
-			v.Redraw (v.Bounds);
+			v.Draw ();
 
 			string looksLike =
 @"    
@@ -732,7 +731,7 @@ namespace Terminal.Gui.DrawingTests {
 			canvas.AddLine (new Point (5, 0), 5, Orientation.Vertical, thinStyle);
 			canvas.AddLine (new Point (0, 2), 10, Orientation.Horizontal, LineStyle.Heavy);
 
-			v.Redraw (v.Bounds);
+			v.Draw ();
 
 			string looksLike =
 @"    
@@ -762,7 +761,7 @@ namespace Terminal.Gui.DrawingTests {
 			canvas.AddLine (new Point (5, 0), 5, Orientation.Vertical, LineStyle.Heavy);
 			canvas.AddLine (new Point (0, 2), 10, Orientation.Horizontal, thinStyle);
 
-			v.Redraw (v.Bounds);
+			v.Draw ();
 
 			string looksLike =
 @"    
@@ -858,7 +857,7 @@ namespace Terminal.Gui.DrawingTests {
 
 			lc.AddLine (new Point (x1, y1), length, o1, s1);
 
-			v.Redraw (v.Bounds);
+			v.Draw ();
 
 			TestHelpers.AssertDriverContentsAre (expected, output);
 		}

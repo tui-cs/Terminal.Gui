@@ -130,13 +130,13 @@ namespace Terminal.Gui.FileServicesTests {
 		}
 
 		[Theory, AutoInitShutdown]
-		[InlineData(true,true)]
-		[InlineData(true,false)]
-		[InlineData(false,true)]
-		[InlineData(false,false)]
+		[InlineData (true, true)]
+		[InlineData (true, false)]
+		[InlineData (false, true)]
+		[InlineData (false, false)]
 		public void PickDirectory_DirectTyping (bool openModeMixed, bool multiple)
 		{
-			var dlg = GetDialog();
+			var dlg = GetDialog ();
 			dlg.OpenMode = openModeMixed ? OpenMode.Mixed : OpenMode.Directory;
 			dlg.AllowsMultipleSelection = multiple;
 
@@ -144,61 +144,60 @@ namespace Terminal.Gui.FileServicesTests {
 			// so to add to current path user must press End or right
 			Send ('>', ConsoleKey.RightArrow, false);
 
-			Send("subfolder");
+			Send ("subfolder");
 
 			// Dialog has not yet been confirmed with a choice
-			Assert.True(dlg.Canceled);
+			Assert.True (dlg.Canceled);
 
 			// Now it has
 			Send ('\n', ConsoleKey.Enter, false);
-			Assert.False(dlg.Canceled);
-			AssertIsTheSubfolder(dlg.Path);
+			Assert.False (dlg.Canceled);
+			AssertIsTheSubfolder (dlg.Path);
 		}
 
 		[Theory, AutoInitShutdown]
-		[InlineData(true,true)]
-		[InlineData(true,false)]
-		[InlineData(false,true)]
-		[InlineData(false,false)]
+		[InlineData (true, true)]
+		[InlineData (true, false)]
+		[InlineData (false, true)]
+		[InlineData (false, false)]
 		public void PickDirectory_ArrowNavigation (bool openModeMixed, bool multiple)
 		{
-			var dlg = GetDialog();
+			var dlg = GetDialog ();
 			dlg.OpenMode = openModeMixed ? OpenMode.Mixed : OpenMode.Directory;
 			dlg.AllowsMultipleSelection = multiple;
 
-			Assert.IsType<TextField>(dlg.MostFocused);
+			Assert.IsType<TextField> (dlg.MostFocused);
 			Send ('v', ConsoleKey.DownArrow, false);
-			Assert.IsType<TableView>(dlg.MostFocused);
+			Assert.IsType<TableView> (dlg.MostFocused);
 
 			// Should be selecting ..
 			Send ('v', ConsoleKey.DownArrow, false);
 
 			// Down to the directory
-			Assert.True(dlg.Canceled);
+			Assert.True (dlg.Canceled);
 			// Alt+O to open (enter would just navigate into the child dir)
-			Send ('o', ConsoleKey.O, false,true);
-			Assert.False(dlg.Canceled);
+			Send ('o', ConsoleKey.O, false, true);
+			Assert.False (dlg.Canceled);
 
-			AssertIsTheSubfolder(dlg.Path);
+			AssertIsTheSubfolder (dlg.Path);
 		}
 
 		[Theory, AutoInitShutdown]
-		[InlineData(true)]
-		[InlineData(false)]
+		[InlineData (true)]
+		[InlineData (false)]
 		public void MultiSelectDirectory_CannotToggleDotDot (bool acceptWithEnter)
 		{
-			var dlg = GetDialog();
+			var dlg = GetDialog ();
 			dlg.OpenMode = OpenMode.Directory;
 			dlg.AllowsMultipleSelection = true;
 			IReadOnlyCollection<string> eventMultiSelected = null;
-			dlg.FilesSelected += (s,e)=>
-			{
-				eventMultiSelected  = e.Dialog.MultiSelected;
+			dlg.FilesSelected += (s, e) => {
+				eventMultiSelected = e.Dialog.MultiSelected;
 			};
 
-			Assert.IsType<TextField>(dlg.MostFocused);
+			Assert.IsType<TextField> (dlg.MostFocused);
 			Send ('v', ConsoleKey.DownArrow, false);
-			Assert.IsType<TableView>(dlg.MostFocused);
+			Assert.IsType<TableView> (dlg.MostFocused);
 
 			// Try to toggle '..'
 			Send (' ', ConsoleKey.Spacebar, false);
@@ -206,218 +205,200 @@ namespace Terminal.Gui.FileServicesTests {
 			// Toggle subfolder
 			Send (' ', ConsoleKey.Spacebar, false);
 
-			Assert.True(dlg.Canceled);
+			Assert.True (dlg.Canceled);
 
-			if(acceptWithEnter)
-			{
+			if (acceptWithEnter) {
 				Send ('\n', ConsoleKey.Enter);
+			} else {
+				Send ('o', ConsoleKey.O, false, true);
 			}
-			else
-			{
-				Send ('o', ConsoleKey.O,false,true);
-			}
-			Assert.False(dlg.Canceled);
+			Assert.False (dlg.Canceled);
 
-			Assert.Multiple(
-				()=>{
+			Assert.Multiple (
+				() => {
 					// Only the subfolder should be selected
-					Assert.Equal(1,dlg.MultiSelected.Count);
-					AssertIsTheSubfolder(dlg.Path);
-					AssertIsTheSubfolder(dlg.MultiSelected.Single());
+					Assert.Equal (1, dlg.MultiSelected.Count);
+					AssertIsTheSubfolder (dlg.Path);
+					AssertIsTheSubfolder (dlg.MultiSelected.Single ());
 				},
-				()=>{
+				() => {
 					// Event should also agree with the final state
-					Assert.NotNull(eventMultiSelected);
-					Assert.Equal(1,eventMultiSelected.Count);
-					AssertIsTheSubfolder(eventMultiSelected.Single());
+					Assert.NotNull (eventMultiSelected);
+					Assert.Equal (1, eventMultiSelected.Count);
+					AssertIsTheSubfolder (eventMultiSelected.Single ());
 				}
 			);
 		}
-		
+
 		[Fact, AutoInitShutdown]
 		public void DotDot_MovesToRoot_ThenPressBack ()
 		{
-			var dlg = GetDialog();
+			var dlg = GetDialog ();
 			dlg.OpenMode = OpenMode.Directory;
 			dlg.AllowsMultipleSelection = true;
 			bool selected = false;
-			dlg.FilesSelected += (s,e)=>
-			{
+			dlg.FilesSelected += (s, e) => {
 				selected = true;
 			};
 
-			AssertIsTheStartingDirectory(dlg.Path);
+			AssertIsTheStartingDirectory (dlg.Path);
 
-			Assert.IsType<TextField>(dlg.MostFocused);
+			Assert.IsType<TextField> (dlg.MostFocused);
 			Send ('v', ConsoleKey.DownArrow, false);
-			Assert.IsType<TableView>(dlg.MostFocused);
-			
+			Assert.IsType<TableView> (dlg.MostFocused);
+
 			// ".." should be the first thing selected
 			// ".." should not mess with the displayed path
-			AssertIsTheStartingDirectory(dlg.Path);
+			AssertIsTheStartingDirectory (dlg.Path);
 
 			// Accept navigation up a directory
 			Send ('\n', ConsoleKey.Enter);
 
-			AssertIsTheRootDirectory(dlg.Path);
-			
-			Assert.True(dlg.Canceled);
-			Assert.False(selected);
+			AssertIsTheRootDirectory (dlg.Path);
+
+			Assert.True (dlg.Canceled);
+			Assert.False (selected);
 
 			// Now press the back button (in table view)
 			Send ('<', ConsoleKey.Backspace);
 
 			// Should move us back to the root
-			AssertIsTheStartingDirectory(dlg.Path);
+			AssertIsTheStartingDirectory (dlg.Path);
 
-			Assert.True(dlg.Canceled);
-			Assert.False(selected);
+			Assert.True (dlg.Canceled);
+			Assert.False (selected);
 		}
 
 		[Fact, AutoInitShutdown]
 		public void MultiSelectDirectory_EnterOpensFolder ()
 		{
-			var dlg = GetDialog();
+			var dlg = GetDialog ();
 			dlg.OpenMode = OpenMode.Directory;
 			dlg.AllowsMultipleSelection = true;
 			IReadOnlyCollection<string> eventMultiSelected = null;
-			dlg.FilesSelected += (s,e)=>
-			{
-				eventMultiSelected  = e.Dialog.MultiSelected;
+			dlg.FilesSelected += (s, e) => {
+				eventMultiSelected = e.Dialog.MultiSelected;
 			};
 
-			Assert.IsType<TextField>(dlg.MostFocused);
+			Assert.IsType<TextField> (dlg.MostFocused);
 			Send ('v', ConsoleKey.DownArrow, false);
-			Assert.IsType<TableView>(dlg.MostFocused);
+			Assert.IsType<TableView> (dlg.MostFocused);
 			// Move selection to subfolder
 			Send ('v', ConsoleKey.DownArrow, false);
 
 			Send ('\n', ConsoleKey.Enter);
 
 			// Path should update to the newly opened folder
-			AssertIsTheSubfolder(dlg.Path);
+			AssertIsTheSubfolder (dlg.Path);
 
 			// No selection will have been confirmed
-			Assert.True(dlg.Canceled);
-			Assert.Empty(dlg.MultiSelected);
-			Assert.Null(eventMultiSelected);
+			Assert.True (dlg.Canceled);
+			Assert.Empty (dlg.MultiSelected);
+			Assert.Null (eventMultiSelected);
 		}
 
 		[Theory, AutoInitShutdown]
-		[InlineData(true)]
-		[InlineData(false)]
+		[InlineData (true)]
+		[InlineData (false)]
 		public void MultiSelectDirectory_CanToggleThenAccept (bool acceptWithEnter)
 		{
-			var dlg = GetDialog();
+			var dlg = GetDialog ();
 			dlg.OpenMode = OpenMode.Directory;
 			dlg.AllowsMultipleSelection = true;
 			IReadOnlyCollection<string> eventMultiSelected = null;
-			dlg.FilesSelected += (s,e)=>
-			{
-				eventMultiSelected  = e.Dialog.MultiSelected;
+			dlg.FilesSelected += (s, e) => {
+				eventMultiSelected = e.Dialog.MultiSelected;
 			};
 
-			Assert.IsType<TextField>(dlg.MostFocused);
+			Assert.IsType<TextField> (dlg.MostFocused);
 			Send ('v', ConsoleKey.DownArrow, false);
-			Assert.IsType<TableView>(dlg.MostFocused);
+			Assert.IsType<TableView> (dlg.MostFocused);
 			// Move selection to subfolder
 			Send ('v', ConsoleKey.DownArrow, false);
 			// Toggle subfolder
 			Send (' ', ConsoleKey.Spacebar, false);
 
-			Assert.True(dlg.Canceled);
+			Assert.True (dlg.Canceled);
 
-			if(acceptWithEnter)
-			{
+			if (acceptWithEnter) {
 				Send ('\n', ConsoleKey.Enter);
+			} else {
+				Send ('o', ConsoleKey.O, false, true);
 			}
-			else
-			{
-				Send ('o', ConsoleKey.O,false,true);
-			}
-			Assert.False(dlg.Canceled);
+			Assert.False (dlg.Canceled);
 
-			Assert.Multiple(
-				()=>{
+			Assert.Multiple (
+				() => {
 					// Only the subfolder should be selected
-					Assert.Equal(1,dlg.MultiSelected.Count);
-					AssertIsTheSubfolder(dlg.Path);
-					AssertIsTheSubfolder(dlg.MultiSelected.Single());
+					Assert.Equal (1, dlg.MultiSelected.Count);
+					AssertIsTheSubfolder (dlg.Path);
+					AssertIsTheSubfolder (dlg.MultiSelected.Single ());
 				},
-				()=>{
+				() => {
 					// Event should also agree with the final state
-					Assert.NotNull(eventMultiSelected);
-					Assert.Equal(1,eventMultiSelected.Count);
-					AssertIsTheSubfolder(eventMultiSelected.Single());
+					Assert.NotNull (eventMultiSelected);
+					Assert.Equal (1, eventMultiSelected.Count);
+					AssertIsTheSubfolder (eventMultiSelected.Single ());
 				}
 			);
 		}
 
 		private void AssertIsTheStartingDirectory (string path)
 		{
-			if(IsWindows())
-			{
-				Assert.Equal (@"c:\demo\",path);
-			}
-			else
-			{
-				Assert.Equal ("/demo/",path);
+			if (IsWindows ()) {
+				Assert.Equal (@"c:\demo\", path);
+			} else {
+				Assert.Equal ("/demo/", path);
 			}
 		}
 
 		private void AssertIsTheRootDirectory (string path)
 		{
-			if(IsWindows())
-			{
-				Assert.Equal (@"c:\",path);
-			}
-			else
-			{
-				Assert.Equal ("/",path);
+			if (IsWindows ()) {
+				Assert.Equal (@"c:\", path);
+			} else {
+				Assert.Equal ("/", path);
 			}
 		}
 
 		private void AssertIsTheSubfolder (string path)
 		{
-			if(IsWindows())
-			{
-				Assert.Equal (@"c:\demo\subfolder",path);
-			}
-			else
-			{
-				Assert.Equal ("/demo/subfolder",path);
+			if (IsWindows ()) {
+				Assert.Equal (@"c:\demo\subfolder", path);
+			} else {
+				Assert.Equal ("/demo/subfolder", path);
 			}
 		}
 
 		[Fact, AutoInitShutdown]
 		public void TestDirectoryContents_Linux ()
 		{
-			if (IsWindows()) {
+			if (IsWindows ()) {
 				return;
 			}
-			var fd = GetLinuxDialog();
+			var fd = GetLinuxDialog ();
 			fd.Title = string.Empty;
 
-			fd.Style.Culture = new CultureInfo("en-US");
+			fd.Style.Culture = new CultureInfo ("en-US");
 
-			fd.Redraw (fd.Bounds);
+			fd.Draw ();
 			
 			string expected =
-			@"
+			@$"
  ┌──────────────────────────────────────────────────────────────────┐
  │/demo/                                                            │
- │[▲]                                                               │
+│{CM.Glyphs.LeftBracket}▲{CM.Glyphs.RightBracket}                                                               │
  │┌────────────┬──────────┬──────────────────────────────┬─────────┐│
  ││Filename (▲)│Size      │Modified                      │Type     ││
  │├────────────┼──────────┼──────────────────────────────┼─────────┤│
  ││..          │          │                              │dir      ││
- ││\subfolder  │          │2002-01-01T22:42:10           │dir      ││
+ ││/subfolder  │          │2002-01-01T22:42:10           │dir      ││
  ││image.gif   │4.00 bytes│2002-01-01T22:42:10           │.gif     ││
  ││jQuery.js   │7.00 bytes│2001-01-01T11:44:42           │.js      ││
  │                                                                  │
  │                                                                  │
  │                                                                  │
- │[ ►► ] Enter Search                            [ Cancel ] [ Ok ]  │
+│{CM.Glyphs.LeftBracket} ►► {CM.Glyphs.RightBracket} Enter Search                            {CM.Glyphs.LeftBracket} Cancel {CM.Glyphs.RightBracket} {CM.Glyphs.LeftBracket} Ok {CM.Glyphs.RightBracket}  │
  └──────────────────────────────────────────────────────────────────┘
 ";
 			TestHelpers.AssertDriverContentsAre (expected, output, true);
@@ -426,23 +407,23 @@ namespace Terminal.Gui.FileServicesTests {
 		[Fact, AutoInitShutdown]
 		public void TestDirectoryContents_Windows ()
 		{
-			if (!IsWindows()) {
+			if (!IsWindows ()) {
 				return;
 			}
 
-			var fd = GetWindowsDialog();
+			var fd = GetWindowsDialog ();
 			fd.Title = string.Empty;
 
-			fd.Style.Culture = new CultureInfo("en-US");
+			fd.Style.Culture = new CultureInfo ("en-US");
 
-			fd.Redraw (fd.Bounds);
+			fd.Draw ();
 
 
 			string expected =
-			@"
+			@$"
 ┌──────────────────────────────────────────────────────────────────┐
 │c:\demo\                                                          │
-│[▲]                                                               │
+│{CM.Glyphs.LeftBracket}▲{CM.Glyphs.RightBracket}                                                               │
 │┌────────────┬──────────┬──────────────────────────────┬─────────┐│
 ││Filename (▲)│Size      │Modified                      │Type     ││
 │├────────────┼──────────┼──────────────────────────────┼─────────┤│
@@ -450,13 +431,85 @@ namespace Terminal.Gui.FileServicesTests {
 ││\subfolder  │          │2002-01-01T22:42:10           │dir      ││
 ││image.gif   │4.00 bytes│2002-01-01T22:42:10           │.gif     ││
 ││jQuery.js   │7.00 bytes│2001-01-01T11:44:42           │.js      ││
+││mybinary.exe│7.00 bytes│2001-01-01T11:44:42           │.exe     ││
 │                                                                  │
 │                                                                  │
-│                                                                  │
-│[ ►► ] Enter Search                            [ Cancel ] [ Ok ]  │
+│{CM.Glyphs.LeftBracket} ►► {CM.Glyphs.RightBracket} Enter Search                            {CM.Glyphs.LeftBracket} Cancel {CM.Glyphs.RightBracket} {CM.Glyphs.LeftBracket} Ok {CM.Glyphs.RightBracket}  │
 └──────────────────────────────────────────────────────────────────┘
 ";
 			TestHelpers.AssertDriverContentsAre (expected, output, true);
+		}
+
+		[Fact, AutoInitShutdown]
+		public void TestDirectoryContents_Windows_Colors ()
+		{
+			if (!IsWindows ()) {
+				return;
+			}
+
+			var fd = GetWindowsDialog ();
+			fd.Title = string.Empty;
+
+			fd.Style.Culture = new CultureInfo ("en-US");
+			fd.Style.UseColors = true;
+
+			var dir = new Attribute (Color.Magenta);
+			fd.Style.ColorSchemeDirectory = GetColorScheme (dir);
+
+			var img = new Attribute (Color.Cyan);
+			fd.Style.ColorSchemeImage = GetColorScheme (img);
+
+			var other = new Attribute (Color.BrightGreen);
+			fd.Style.ColorSchemeOther = GetColorScheme (other);
+
+			var exe = new Attribute (Color.BrightYellow);
+			fd.Style.ColorSchemeExeOrRecommended = GetColorScheme (exe);
+
+			fd.Draw ();
+
+			TestHelpers.AssertDriverUsedColors (other,dir,img,exe);
+		}
+
+		private ColorScheme GetColorScheme (Attribute a)
+		{
+			return new ColorScheme {
+				Normal = a,
+				Focus = a,
+				Disabled = a,
+				HotFocus = a,
+				HotNormal = a,
+			};
+		}
+
+		[Theory]
+		[InlineData (".csv", null, false)]
+		[InlineData (".csv", "", false)]
+		[InlineData (".csv", "c:\\MyFile.csv", true)]
+		[InlineData (".csv", "c:\\MyFile.CSV", true)]
+		[InlineData (".csv", "c:\\MyFile.csv.bak", false)]
+		public void TestAllowedType_Basic(string allowed, string candidate, bool expected)
+		{
+			Assert.Equal (expected, new AllowedType ("Test", allowed).IsAllowed (candidate));
+		}
+
+		[Theory]
+		[InlineData ("Dockerfile", "c:\\temp\\Dockerfile", true)]
+		[InlineData ("Dockerfile", "Dockerfile", true)]
+		[InlineData ("Dockerfile", "someimg.Dockerfile", true)]
+		public void TestAllowedType_SpecificFile(string allowed, string candidate, bool expected)
+		{
+			Assert.Equal (expected, new AllowedType ("Test", allowed).IsAllowed (candidate));
+		}
+
+		[Theory]
+		[InlineData (".Designer.cs", "c:\\MyView.Designer.cs", true)]
+		[InlineData (".Designer.cs", "c:\\temp/MyView.Designer.cs", true)]
+		[InlineData(".Designer.cs","MyView.Designer.cs",true)]
+		[InlineData (".Designer.cs", "c:\\MyView.DESIGNER.CS", true)]
+		[InlineData (".Designer.cs", "MyView.cs", false)]
+		public void TestAllowedType_DoubleBarreled (string allowed, string candidate, bool expected)
+		{
+			Assert.Equal (expected, new AllowedType ("Test", allowed).IsAllowed (candidate));
 		}
 
 		[Theory, AutoInitShutdown]
@@ -518,17 +571,17 @@ namespace Terminal.Gui.FileServicesTests {
 					Assert.Equal (@"/bob/fish", tb.Text);
 				}*/
 
-		private bool IsWindows()
+		private bool IsWindows ()
 		{
 			return System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform (System.Runtime.InteropServices.OSPlatform.Windows);
 		}
 
-		private FileDialog GetDialog()
+		private FileDialog GetDialog ()
 		{
-			return IsWindows() ? GetWindowsDialog() : GetLinuxDialog();			
+			return IsWindows () ? GetWindowsDialog () : GetLinuxDialog ();
 		}
 
-		private FileDialog GetWindowsDialog()
+		private FileDialog GetWindowsDialog ()
 		{
 			// Arrange
 			var fileSystem = new MockFileSystem (new Dictionary<string, MockFileData> (), @"c:\");
@@ -536,6 +589,7 @@ namespace Terminal.Gui.FileServicesTests {
 
 			fileSystem.AddFile (@"c:\myfile.txt", new MockFileData ("Testing is meh.") { LastWriteTime = new DateTime (2001, 01, 01, 11, 12, 11) });
 			fileSystem.AddFile (@"c:\demo\jQuery.js", new MockFileData ("some js") { LastWriteTime = new DateTime (2001, 01, 01, 11, 44, 42) });
+			fileSystem.AddFile (@"c:\demo\mybinary.exe", new MockFileData ("some js") { LastWriteTime = new DateTime (2001, 01, 01, 11, 44, 42) });
 			fileSystem.AddFile (@"c:\demo\image.gif", new MockFileData (new byte [] { 0x12, 0x34, 0x56, 0xd2 }) { LastWriteTime = new DateTime (2002, 01, 01, 22, 42, 10) });
 
 			var m = (MockDirectoryInfo)fileSystem.DirectoryInfo.New (@"c:\demo\subfolder");
@@ -552,7 +606,7 @@ namespace Terminal.Gui.FileServicesTests {
 			return fd;
 		}
 
-		private FileDialog GetLinuxDialog()
+		private FileDialog GetLinuxDialog ()
 		{
 			// Arrange
 			var fileSystem = new MockFileSystem (new Dictionary<string, MockFileData> (), "/");

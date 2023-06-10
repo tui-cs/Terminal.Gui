@@ -61,7 +61,7 @@ namespace UICatalog.Scenarios {
 
 			Application.Top.Add (statusBar);
 
-			Open ();
+			Application.Top.Loaded += (s, a) => Open ();
 
 			ConfigurationEditor._editorColorSchemeChanged += () => {
 				foreach (var t in _tileView.Tiles) {
@@ -75,12 +75,12 @@ namespace UICatalog.Scenarios {
 		}
 
 		private class ConfigTextView : TextView {
-			internal TileView.Tile Tile { get; set; }
+			internal Tile Tile { get; set; }
 			internal FileInfo FileInfo { get; set; }
 
 			internal ConfigTextView ()
 			{
-				ContentsChanged += (s,obj) => {
+				ContentsChanged += (s, obj) => {
 					if (IsDirty) {
 						if (!Tile.Title.EndsWith ('*')) {
 							Tile.Title += '*';
@@ -129,10 +129,10 @@ namespace UICatalog.Scenarios {
 					Directory.CreateDirectory (FileInfo.DirectoryName!);
 				}
 				using var writer = File.CreateText (FileInfo.FullName);
-				writer.Write (Text.ToString ());
+				writer.Write (Text);
 				writer.Close ();
 				Tile.Title = Tile.Title.TrimEnd ('*');
-				//IsDirty = false;
+				IsDirty = false;
 			}
 		}
 
@@ -163,26 +163,13 @@ namespace UICatalog.Scenarios {
 
 				textView.Read ();
 
-				textView.Enter += (s,e) => {
+				textView.Enter += (s, e) => {
 					_lenStatusItem.Title = $"Len:{textView.Text.Length}";
 				};
 
-				//var mi = new MenuItem () {
-				//	Title = tile.Title,
-				//	CheckType = MenuItemCheckStyle.Checked,
-				//	Checked = true,
-				//};
-				//mi.Action += () => {
-				//	mi.Checked =! mi.Checked;
-				//	_tileView.SetNeedsDisplay ();
-				//};
-
-				//subMenu.Children = subMenu.Children.Append (mi).ToArray ();
 			}
 
-			//var menu = new MenuBar (new MenuBarItem [] { subMenu });
-			//Application.Top.Add (menu);
-
+			Application.Top.LayoutSubviews ();
 		}
 
 		private void Reload ()

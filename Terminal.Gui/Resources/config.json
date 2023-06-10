@@ -1,16 +1,21 @@
 {
-  // This document specifies the "source of truth" for default values for all Terminal.GUi settings managed by
+  // Specifies the "source of truth" for default values for all Terminal.Gui settings managed by
   // ConfigurationManager. It is automatically loaded, and applied, each time Application.Init
   // is run (via the ConfiguraitonManager.Reset method). 
   //
   // In otherwords, initial values set in the the codebase are always overwritten by the contents of this 
-  // file.
+  // resource embedded in the Terminal.Gui.dll assembly.
   //
-  // The Unit Test method "TestConfigurationManagerSaveDefaults" can be used to re-create the base of this file, but
+  // The Unit Test method "ConfigurationManagerTests.SaveDefaults" can be used to re-create the base of this file, but
   // note that not all values here will be recreated (e.g. the Light and Dark themes and any property initialized
-  // null.
+  // null).
   //
   "$schema": "https://gui-cs.github.io/Terminal.Gui/schemas/tui-config-schema.json",
+
+  // Set this to true in a .config file to be loaded to cause JSON parsing errors
+  // to throw exceptions. 
+  "ConfigurationManager.ThrowOnJsonErrors": false,
+
   "Application.AlternateBackwardKey": {
     "Key": "PageUp",
     "Modifiers": [
@@ -30,7 +35,6 @@
       "Ctrl"
     ]
   },
-  "Application.UseSystemConsole": false,
   "Application.IsMouseDisabled": false,
   "Theme": "Default",
   "Themes": [

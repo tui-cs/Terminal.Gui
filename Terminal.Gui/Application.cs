@@ -51,12 +51,11 @@ namespace Terminal.Gui {
 		/// <summary>
 		/// If <see langword="true"/>, forces the use of the System.Console-based (see <see cref="NetDriver"/>) driver. The default is <see langword="false"/>.
 		/// </summary>
-		[SerializableConfigurationProperty (Scope = typeof (SettingsScope))]
 		public static bool UseSystemConsole { get; set; } = false;
 
 		// For Unit testing - ignores UseSystemConsole
 		internal static bool _forceFakeConsole;
-		
+
 		private static bool? _enableConsoleScrolling;
 		/// <summary>
 		/// The current <see cref="ConsoleDriver.EnableConsoleScrolling"/> used in the terminal.
@@ -119,7 +118,7 @@ namespace Terminal.Gui {
 			   File.Exists (Path.Combine (assemblyLocation, cultureInfo.Name, resourceFilename))
 			).ToList ();
 		}
-		
+
 		#region Initialization (Init/Shutdown)
 
 		/// <summary>
@@ -326,81 +325,6 @@ namespace Terminal.Gui {
 		public static event EventHandler<ToplevelEventArgs> NotifyStopRunState;
 
 		/// <summary>
-		/// The execution state for a <see cref="Toplevel"/> view.
-		/// </summary>
-		public class RunState : IDisposable {
-			/// <summary>
-			/// Initializes a new <see cref="RunState"/> class.
-			/// </summary>
-			/// <param name="view"></param>
-			public RunState (Toplevel view)
-			{
-				Toplevel = view;
-			}
-			/// <summary>
-			/// The <see cref="Toplevel"/> belonging to this <see cref="RunState"/>.
-			/// </summary>
-			public Toplevel Toplevel { get; internal set; }
-
-#if DEBUG_IDISPOSABLE
-			/// <summary>
-			/// For debug (see DEBUG_IDISPOSABLE define) purposes to verify objects are being disposed properly
-			/// </summary>
-			public bool WasDisposed = false;
-
-			/// <summary>
-			/// For debug (see DEBUG_IDISPOSABLE define) purposes to verify objects are being disposed properly
-			/// </summary>
-			public int DisposedCount = 0;
-
-			/// <summary>
-			/// For debug (see DEBUG_IDISPOSABLE define) purposes; the runstate instances that have been created
-			/// </summary>
-			public static List<RunState> Instances = new List<RunState> ();
-			
-			/// <summary>
-			/// Creates a new RunState object.
-			/// </summary>
-			public RunState ()
-			{
-				Instances.Add (this);
-			}
-#endif
-
-			/// <summary>
-			/// Releases all resource used by the <see cref="Application.RunState"/> object.
-			/// </summary>
-			/// <remarks>
-			/// Call <see cref="Dispose()"/> when you are finished using the <see cref="Application.RunState"/>. 
-			/// </remarks>
-			/// <remarks>
-			/// <see cref="Dispose()"/> method leaves the <see cref="Application.RunState"/> in an unusable state. After
-			/// calling <see cref="Dispose()"/>, you must release all references to the
-			/// <see cref="Application.RunState"/> so the garbage collector can reclaim the memory that the
-			/// <see cref="Application.RunState"/> was occupying.
-			/// </remarks>
-			public void Dispose ()
-			{
-				Dispose (true);
-				GC.SuppressFinalize (this);
-#if DEBUG_IDISPOSABLE
-				WasDisposed = true;
-#endif
-			}
-
-			/// <summary>
-			/// Releases all resource used by the <see cref="Application.RunState"/> object.
-			/// </summary>
-			/// <param name="disposing">If set to <see langword="true"/> we are disposing and should dispose held objects.</param>
-			protected virtual void Dispose (bool disposing)
-			{
-				if (Toplevel != null && disposing) {
-					throw new InvalidOperationException ("You must clean up (Dispose) the Toplevel before calling Application.RunState.Dispose");
-				}
-			}
-		}
-
-		/// <summary>
 		/// Building block API: Prepares the provided <see cref="Toplevel"/> for execution.
 		/// </summary>
 		/// <returns>The <see cref="RunState"/> handle that needs to be passed to the <see cref="End(RunState)"/> method upon completion.</returns>
@@ -421,6 +345,9 @@ namespace Terminal.Gui {
 				throw new InvalidOperationException ("Only one Overlapped Container is allowed.");
 			}
 
+			// Ensure the mouse is ungrabed.
+			_mouseGrabView = null;
+
 			var rs = new RunState (Toplevel);
 
 			// View implements ISupportInitializeNotification which is derived from ISupportInitialize
@@ -439,10 +366,10 @@ namespace Terminal.Gui {
 				} else if (Top != null && Toplevel != Top && _toplevels.Contains (Top)) {
 					Top.OnLeave (Toplevel);
 				}
-				if (string.IsNullOrEmpty (Toplevel.Id.ToString ())) {
+				if (string.IsNullOrEmpty (Toplevel.Id)) {
 					var count = 1;
 					var id = (_toplevels.Count + count).ToString ();
-					while (_toplevels.Count > 0 && _toplevels.FirstOrDefault (x => x.Id.ToString () == id) != null) {
+					while (_toplevels.Count > 0 && _toplevels.FirstOrDefault (x => x.Id == id) != null) {
 						count++;
 						id = (_toplevels.Count + count).ToString ();
 					}
@@ -450,7 +377,7 @@ namespace Terminal.Gui {
 
 					_toplevels.Push (Toplevel);
 				} else {
-					var dup = _toplevels.FirstOrDefault (x => x.Id.ToString () == Toplevel.Id);
+					var dup = _toplevels.FirstOrDefault (x => x.Id == Toplevel.Id);
 					if (dup == null) {
 						_toplevels.Push (Toplevel);
 					}
@@ -494,7 +421,7 @@ namespace Terminal.Gui {
 				OverlappedTop?.OnChildLoaded (Toplevel);
 				Toplevel.OnLoaded ();
 				Toplevel.SetNeedsDisplay ();
-				Toplevel.Redraw (Toplevel.Bounds);
+				Toplevel.Draw ();
 				Toplevel.PositionCursor ();
 				Driver.Refresh ();
 			}
@@ -618,7 +545,7 @@ namespace Terminal.Gui {
 				}
 #endif
 			}
-		}		
+		}
 
 		/// <summary>
 		/// Triggers a refresh of the entire display.
@@ -630,7 +557,8 @@ namespace Terminal.Gui {
 			foreach (var v in _toplevels.Reverse ()) {
 				if (v.Visible) {
 					v.SetNeedsDisplay ();
-					v.Redraw (v.Bounds);
+					v.SetSubViewNeedsDisplay ();
+					v.Draw ();
 				}
 				last = v;
 			}
@@ -763,28 +691,29 @@ namespace Terminal.Gui {
 			firstIteration = false;
 
 			if (state.Toplevel != Top
-				&& (!Top._needsDisplay.IsEmpty || Top._childNeedsDisplay || Top.LayoutNeeded)) {
+				&& (!Top._needsDisplay.IsEmpty || Top._subViewNeedsDisplay || Top.LayoutNeeded)) {
 				state.Toplevel.SetNeedsDisplay (state.Toplevel.Bounds);
-				Top.Redraw (Top.Bounds);
+				Top.Draw ();
 				foreach (var top in _toplevels.Reverse ()) {
 					if (top != Top && top != state.Toplevel) {
 						top.SetNeedsDisplay ();
-						top.Redraw (top.Bounds);
+						top.SetSubViewNeedsDisplay ();
+						top.Draw ();
 					}
 				}
 			}
 			if (_toplevels.Count == 1 && state.Toplevel == Top
 				&& (Driver.Cols != state.Toplevel.Frame.Width || Driver.Rows != state.Toplevel.Frame.Height)
-				&& (!state.Toplevel._needsDisplay.IsEmpty || state.Toplevel._childNeedsDisplay || state.Toplevel.LayoutNeeded)) {
+				&& (!state.Toplevel._needsDisplay.IsEmpty || state.Toplevel._subViewNeedsDisplay || state.Toplevel.LayoutNeeded)) {
 
 				Driver.SetAttribute (Colors.TopLevel.Normal);
 				state.Toplevel.Clear (new Rect (0, 0, Driver.Cols, Driver.Rows));
 
 			}
 
-			if (!state.Toplevel._needsDisplay.IsEmpty || state.Toplevel._childNeedsDisplay || state.Toplevel.LayoutNeeded
+			if (!state.Toplevel._needsDisplay.IsEmpty || state.Toplevel._subViewNeedsDisplay || state.Toplevel.LayoutNeeded
 				|| OverlappedChildNeedsDisplay ()) {
-				state.Toplevel.Redraw (state.Toplevel.Bounds);
+				state.Toplevel.Draw ();
 				//if (state.Toplevel.SuperView != null) {
 				//	state.Toplevel.SuperView?.OnRenderLineCanvas ();
 				//} else {
@@ -796,8 +725,8 @@ namespace Terminal.Gui {
 				Driver.UpdateCursor ();
 			}
 			if (state.Toplevel != Top && !state.Toplevel.Modal
-				&& (!Top._needsDisplay.IsEmpty || Top._childNeedsDisplay || Top.LayoutNeeded)) {
-				Top.Redraw (Top.Bounds);
+				&& (!Top._needsDisplay.IsEmpty || Top._subViewNeedsDisplay || Top.LayoutNeeded)) {
+				Top.Draw ();
 			}
 		}
 
@@ -892,7 +821,7 @@ namespace Terminal.Gui {
 				NotifyStopRunState?.Invoke (top, new ToplevelEventArgs (top));
 			}
 		}
-		
+
 		/// <summary>
 		/// Building block API: completes the execution of a <see cref="Toplevel"/> that was started with <see cref="Begin(Toplevel)"/> .
 		/// </summary>
@@ -1203,9 +1132,9 @@ namespace Terminal.Gui {
 
 		static void ProcessMouseEvent (MouseEvent me)
 		{
-			bool OutsideFrame (Point p, Rect r)
+			bool OutsideBounds (Point p, Rect r)
 			{
-				return p.X < 0 || p.X > r.Width - 1 || p.Y < 0 || p.Y > r.Height - 1;
+				return p.X < 0 || p.X > r.Right || p.Y < 0 || p.Y > r.Bottom;
 			}
 
 			if (IsMouseDisabled) {
@@ -1238,7 +1167,7 @@ namespace Terminal.Gui {
 					OfY = me.Y - newxy.Y,
 					View = view
 				};
-				if (OutsideFrame (new Point (nme.X, nme.Y), _mouseGrabView.Frame)) {
+				if (OutsideBounds (new Point (nme.X, nme.Y), _mouseGrabView.Bounds)) {
 					_lastMouseOwnerView?.OnMouseLeave (me);
 				}
 				//System.Diagnostics.Debug.WriteLine ($"{nme.Flags};{nme.X};{nme.Y};{mouseGrabView}");

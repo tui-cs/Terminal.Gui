@@ -7,34 +7,34 @@ namespace UICatalog.Scenarios {
 	[ScenarioMetadata (Name: "ASCIICustomButtonTest", Description: "ASCIICustomButton sample")]
 	[ScenarioCategory ("Controls")]
 	public class ASCIICustomButtonTest : Scenario {
-		private static bool smallerWindow;
-		private ScrollViewTestWindow scrollViewTestWindow;
-		private MenuItem miSmallerWindow;
+		private static bool _smallerWindow;
+		private ScrollViewTestWindow _scrollViewTestWindow;
+		private MenuItem _miSmallerWindow;
 
 		public override void Init ()
 		{
 			Application.Init ();
-			scrollViewTestWindow = new ScrollViewTestWindow ();
+			_scrollViewTestWindow = new ScrollViewTestWindow ();
 			var menu = new MenuBar (new MenuBarItem [] {
 				new MenuBarItem("Window Size", new MenuItem [] {
-					miSmallerWindow = new MenuItem ("Smaller Window", "", ChangeWindowSize) {
+					_miSmallerWindow = new MenuItem ("Smaller Window", "", ChangeWindowSize) {
 						CheckType = MenuItemCheckStyle.Checked
 					},
 					null,
 					new MenuItem("Quit", "",() => Application.RequestStop(),null,null, Application.QuitKey)
 				})
 			});
-			Application.Top.Add (menu, scrollViewTestWindow);
+			Application.Top.Add (menu, _scrollViewTestWindow);
 			Application.Run ();
 		}
 
 		private void ChangeWindowSize ()
 		{
-			smallerWindow = (bool)(miSmallerWindow.Checked = !miSmallerWindow.Checked);
-			scrollViewTestWindow.Dispose ();
-			Application.Top.Remove (scrollViewTestWindow);
-			scrollViewTestWindow = new ScrollViewTestWindow ();
-			Application.Top.Add (scrollViewTestWindow);
+			_smallerWindow = (bool)(_miSmallerWindow.Checked = !_miSmallerWindow.Checked);
+			_scrollViewTestWindow.Dispose ();
+			Application.Top.Remove (_scrollViewTestWindow);
+			_scrollViewTestWindow = new ScrollViewTestWindow ();
+			Application.Top.Add (_scrollViewTestWindow);
 		}
 
 		public override void Run ()
@@ -162,7 +162,7 @@ namespace UICatalog.Scenarios {
 				Title = "ScrollViewTestWindow";
 
 				Label titleLabel = null;
-				if (smallerWindow) {
+				if (_smallerWindow) {
 					Width = 80;
 					Height = 25;
 
@@ -193,7 +193,7 @@ namespace UICatalog.Scenarios {
 					};
 				}
 
-				scrollView.ClearKeybindings ();
+				scrollView.ClearKeyBindings ();
 
 				buttons = new List<Button> ();
 				Button prevButton = null;
@@ -224,7 +224,7 @@ namespace UICatalog.Scenarios {
 					pages++;
 
 				scrollView.ContentSize = new Size (25, pages * BUTTONS_ON_PAGE * BUTTON_HEIGHT);
-				if (smallerWindow) {
+				if (_smallerWindow) {
 					Add (scrollView);
 				} else {
 					Add (titleLabel, scrollView);

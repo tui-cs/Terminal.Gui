@@ -9,15 +9,12 @@
 //
 
 using System;
-using System.Drawing;
 
-namespace Terminal.Gui
-{
+namespace Terminal.Gui {
 	/// <summary>
 	/// Stores a set of four integers that represent the location and size of a rectangle
 	/// </summary>
-	public struct Rect
-	{
+	public struct Rect {
 		int width;
 		int height;
 
@@ -199,7 +196,7 @@ namespace Terminal.Gui
 
 		public static bool operator == (Rect left, Rect right)
 		{
-			return ((left.Location == right.Location) && 
+			return ((left.Location == right.Location) &&
 				(left.Size == right.Size));
 		}
 
@@ -215,7 +212,7 @@ namespace Terminal.Gui
 
 		public static bool operator != (Rect left, Rect right)
 		{
-			return ((left.Location != right.Location) || 
+			return ((left.Location != right.Location) ||
 				(left.Size != right.Size));
 		}
 
@@ -379,7 +376,7 @@ namespace Terminal.Gui
 
 		public bool Contains (int x, int y)
 		{
-			return ((x >= Left) && (x < Right) && 
+			return ((x >= Left) && (x < Right) &&
 				(y >= Top) && (y < Bottom));
 		}
 
@@ -423,7 +420,7 @@ namespace Terminal.Gui
 			if (!(obj is Rect))
 				return false;
 
-			return (this == (Rect) obj);
+			return (this == (Rect)obj);
 		}
 
 		/// <summary>

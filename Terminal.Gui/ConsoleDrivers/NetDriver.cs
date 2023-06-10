@@ -11,7 +11,7 @@ using System.Linq;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
-using NStack;
+using System.Text;
 
 namespace Terminal.Gui {
 	internal class NetWinVTConsole {
@@ -195,12 +195,13 @@ namespace Terminal.Gui {
 						isEscSeq = false;
 						break;
 					}
-				} else if (consoleKeyInfo.KeyChar == (char)Key.Esc && isEscSeq) {
+				} else if (consoleKeyInfo.KeyChar == (char)Key.Esc && isEscSeq && cki != null) {
 					DecodeEscSeq (ref newConsoleKeyInfo, ref key, cki, ref mod);
 					cki = null;
 					break;
 				} else {
 					GetConsoleInputType (consoleKeyInfo);
+					isEscSeq = false;
 					break;
 				}
 			}
@@ -668,14 +669,14 @@ namespace Terminal.Gui {
 			if (contents.Length != Rows * Cols * 3) {
 				return;
 			}
-			rune = MakePrintable (rune);
-			var runeWidth = Rune.ColumnWidth (rune);
+			rune = rune.MakePrintable ();
+			var runeWidth = rune.GetColumns ();
 			var validClip = IsValidContent (ccol, crow, Clip);
 
 			if (validClip) {
 				if (runeWidth == 0 && ccol > 0) {
 					var r = contents [crow, ccol - 1, 0];
-					var s = new string (new char [] { (char)r, (char)rune });
+					var s = new string (new char [] { (char)r, (char)rune.Value });
 					string sn;
 					if (!s.IsNormalized ()) {
 						sn = s.Normalize ();
@@ -689,12 +690,12 @@ namespace Terminal.Gui {
 
 				} else {
 					if (runeWidth < 2 && ccol > 0
-						&& Rune.ColumnWidth ((char)contents [crow, ccol - 1, 0]) > 1) {
+						&& ((Rune)(char)contents [crow, ccol - 1, 0]).GetColumns () > 1) {
 
 						contents [crow, ccol - 1, 0] = (int)(uint)' ';
 
 					} else if (runeWidth < 2 && ccol <= Clip.Right - 1
-						&& Rune.ColumnWidth ((char)contents [crow, ccol, 0]) > 1) {
+						&& ((Rune)(char)contents [crow, ccol, 0]).GetColumns () > 1) {
 
 						contents [crow, ccol + 1, 0] = (int)(uint)' ';
 						contents [crow, ccol + 1, 2] = 1;
@@ -703,7 +704,7 @@ namespace Terminal.Gui {
 					if (runeWidth > 1 && ccol == Clip.Right - 1) {
 						contents [crow, ccol, 0] = (int)(uint)' ';
 					} else {
-						contents [crow, ccol, 0] = (int)(uint)rune;
+						contents [crow, ccol, 0] = (int)(uint)rune.Value;
 					}
 					contents [crow, ccol, 1] = CurrentAttribute;
 					contents [crow, ccol, 2] = 1;
@@ -729,9 +730,9 @@ namespace Terminal.Gui {
 			}
 		}
 
-		public override void AddStr (ustring str)
+		public override void AddStr (string str)
 		{
-			foreach (var rune in str)
+			foreach (var rune in str.EnumerateRunes ())
 				AddRune (rune);
 		}
 
@@ -908,7 +909,8 @@ namespace Terminal.Gui {
 			int redrawAttr = -1;
 			var lastCol = -1;
 
-			Console.CursorVisible = false;
+			GetCursorVisibility (out CursorVisibility savedVisibitity);
+			SetCursorVisibility (CursorVisibility.Invisible);
 
 			for (int row = top; row < rows; row++) {
 				if (Console.WindowHeight < 1) {
@@ -950,12 +952,12 @@ namespace Terminal.Gui {
 							output.Append (WriteAttributes (attr));
 						}
 						outputWidth++;
-						var rune = contents [row, col, 0];
+						var rune = (Rune)contents [row, col, 0];
 						char [] spair;
-						if (Rune.DecodeSurrogatePair ((uint)rune, out spair)) {
+						if (rune.DecodeSurrogatePair (out spair)) {
 							output.Append (spair);
 						} else {
-							output.Append ((char)rune);
+							output.Append ((char)rune.Value);
 						}
 						contents [row, col, 2] = 0;
 					}
@@ -966,6 +968,7 @@ namespace Terminal.Gui {
 				}
 			}
 			SetCursorPosition (0, 0);
+			SetCursorVisibility (savedVisibitity);
 		}
 
 		void SetVirtualCursorPosition (int col, int row)
@@ -1443,7 +1446,13 @@ namespace Terminal.Gui {
 		public override bool SetCursorVisibility (CursorVisibility visibility)
 		{
 			savedCursorVisibility = visibility;
-			return Console.CursorVisible = visibility == CursorVisibility.Default;
+			var isVisible = Console.CursorVisible = visibility == CursorVisibility.Default;
+			if (isVisible) {
+				Console.Out.Write ("\x1b[?25h");
+			} else {
+				Console.Out.Write ("\x1b[?25l");
+			}
+			return isVisible;
 		}
 
 		/// <inheritdoc/>

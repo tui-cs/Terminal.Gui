@@ -9,7 +9,7 @@ try {
 
     rm ../docs -Recurse -Force -ErrorAction SilentlyContinue
 
-    $env:DOCFX_SOURCE_BRANCH_NAME="main"
+    $env:DOCFX_SOURCE_BRANCH_NAME="v2_develop"
 
     docfx --metadata --serve --force
 }

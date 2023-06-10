@@ -38,7 +38,7 @@ namespace UICatalog.Scenarios {
 			_cultureInfos = Application.SupportedCultures;
 			ConfigurationManager.Themes.Theme = Theme;
 			ConfigurationManager.Apply ();
-			
+
 			Win = new Window () {
 				Title = _fileName ?? "Untitled",
 				X = 0,
@@ -62,7 +62,7 @@ namespace UICatalog.Scenarios {
 
 			var siCursorPosition = new StatusItem (Key.Null, "", null);
 
-			_textView.UnwrappedCursorPosition += (s,e) => {
+			_textView.UnwrappedCursorPosition += (s, e) => {
 				siCursorPosition.Title = $"Ln {e.Point.Y + 1}, Col {e.Point.X + 1}";
 			};
 
@@ -131,7 +131,7 @@ namespace UICatalog.Scenarios {
 
 			//_scrollBar = new ScrollBarView (_textView, true);
 
-			//_scrollBar.ChangedPosition += () => {
+			//_scrollBar.ChangedPosition += (s, e) => {
 			//	_textView.TopRow = _scrollBar.Position;
 			//	if (_textView.TopRow != _scrollBar.Position) {
 			//		_scrollBar.Position = _textView.TopRow;
@@ -139,7 +139,7 @@ namespace UICatalog.Scenarios {
 			//	_textView.SetNeedsDisplay ();
 			//};
 
-			//_scrollBar.OtherScrollBarView.ChangedPosition += () => {
+			//_scrollBar.OtherScrollBarView.ChangedPosition += (s, e) => {
 			//	_textView.LeftColumn = _scrollBar.OtherScrollBarView.Position;
 			//	if (_textView.LeftColumn != _scrollBar.OtherScrollBarView.Position) {
 			//		_scrollBar.OtherScrollBarView.Position = _textView.LeftColumn;
@@ -147,7 +147,7 @@ namespace UICatalog.Scenarios {
 			//	_textView.SetNeedsDisplay ();
 			//};
 
-			//_scrollBar.VisibleChanged += () => {
+			//_scrollBar.VisibleChanged += (s, e) => {
 			//	if (_scrollBar.Visible && _textView.RightOffset == 0) {
 			//		_textView.RightOffset = 1;
 			//	} else if (!_scrollBar.Visible && _textView.RightOffset == 1) {
@@ -155,7 +155,7 @@ namespace UICatalog.Scenarios {
 			//	}
 			//};
 
-			//_scrollBar.OtherScrollBarView.VisibleChanged += () => {
+			//_scrollBar.OtherScrollBarView.VisibleChanged += (s, e) => {
 			//	if (_scrollBar.OtherScrollBarView.Visible && _textView.BottomOffset == 0) {
 			//		_textView.BottomOffset = 1;
 			//	} else if (!_scrollBar.OtherScrollBarView.Visible && _textView.BottomOffset == 1) {
@@ -163,7 +163,7 @@ namespace UICatalog.Scenarios {
 			//	}
 			//};
 
-			//_textView.DrawContent += (e) => {
+			//_textView.DrawContent += (s, e) => {
 			//	_scrollBar.Size = _textView.Lines;
 			//	_scrollBar.Position = _textView.TopRow;
 			//	if (_scrollBar.OtherScrollBarView != null) {
@@ -173,8 +173,6 @@ namespace UICatalog.Scenarios {
 			//	_scrollBar.LayoutSubviews ();
 			//	_scrollBar.Refresh ();
 			//};
-
-			_textView.ScrollBarType = ScrollBarView.ScrollBarType.Both;
 
 			Win.KeyPress += (s, e) => {
 				var keys = ShortcutHelper.GetModifiersKey (e.KeyEvent);
@@ -201,7 +199,7 @@ namespace UICatalog.Scenarios {
 				}
 			};
 
-			Application.Top.Closed += (s,e) => Thread.CurrentThread.CurrentUICulture = new CultureInfo ("en-US");
+			Application.Top.Closed += (s, e) => Thread.CurrentThread.CurrentUICulture = new CultureInfo ("en-US");
 		}
 
 		private void DisposeWinDialog ()
@@ -224,7 +222,7 @@ namespace UICatalog.Scenarios {
 			Win.Title = "Untitled.txt";
 			_fileName = null;
 			_originalText = new System.IO.MemoryStream ().ToArray ();
-			_textView.Text = _originalText;
+			_textView.Text = Encoding.Unicode.GetString (_originalText);
 		}
 
 		private void LoadFile ()
@@ -233,7 +231,7 @@ namespace UICatalog.Scenarios {
 				// FIXED: BUGBUG: #452 TextView.LoadFile keeps file open and provides no way of closing it
 				_textView.LoadFile (_fileName);
 				//_textView.Text = System.IO.File.ReadAllText (_fileName);
-				_originalText = _textView.Text.ToByteArray ();
+				_originalText = Encoding.Unicode.GetBytes(_textView.Text);
 				Win.Title = _fileName;
 				_saved = true;
 			}
@@ -347,7 +345,7 @@ namespace UICatalog.Scenarios {
 
 		private bool CanCloseFile ()
 		{
-			if (_textView.Text == _originalText) {
+			if (_textView.Text == Encoding.Unicode.GetString (_originalText)) {
 				//System.Diagnostics.Debug.Assert (!_textView.IsDirty);
 				return true;
 			}
@@ -388,7 +386,7 @@ namespace UICatalog.Scenarios {
 			if (_fileName != null) {
 				// FIXED: BUGBUG: #279 TextView does not know how to deal with \r\n, only \r 
 				// As a result files saved on Windows and then read back will show invalid chars.
-				return SaveFile (Win.Title.ToString (), _fileName);
+				return SaveFile (Win.Title, _fileName);
 			} else {
 				return SaveAs ();
 			}
@@ -402,20 +400,20 @@ namespace UICatalog.Scenarios {
 			};
 			var sd = new SaveDialog ("Save file", aTypes);
 
-			sd.Path = System.IO.Path.Combine (sd.FileName.ToString (), Win.Title.ToString ());
+			sd.Path = System.IO.Path.Combine (sd.FileName, Win.Title);
 			Application.Run (sd);
 
 			if (!sd.Canceled) {
-				if (System.IO.File.Exists (sd.Path.ToString ())) {
+				if (System.IO.File.Exists (sd.Path)) {
 					if (MessageBox.Query ("Save File",
 						"File already exists. Overwrite any way?", "No", "Ok") == 1) {
-						return SaveFile (sd.FileName.ToString (), sd.Path.ToString ());
+						return SaveFile (sd.FileName, sd.Path);
 					} else {
 						_saved = false;
 						return _saved;
 					}
 				} else {
-					return SaveFile (sd.FileName.ToString (), sd.Path.ToString ());
+					return SaveFile (sd.FileName, sd.Path);
 				}
 			} else {
 				_saved = false;
@@ -428,8 +426,8 @@ namespace UICatalog.Scenarios {
 			try {
 				Win.Title = title;
 				_fileName = file;
-				System.IO.File.WriteAllText (_fileName, _textView.Text.ToString ());
-				_originalText = _textView.Text.ToByteArray ();
+				System.IO.File.WriteAllText (_fileName, _textView.Text);
+				_originalText = Encoding.Unicode.GetBytes(_textView.Text);
 				_saved = true;
 				_textView.ClearHistoryChanges ();
 				MessageBox.Query ("Save File", "File was successfully saved.", "Ok");
@@ -511,10 +509,10 @@ namespace UICatalog.Scenarios {
 			void CreateAction (List<MenuItem> supportedCultures, MenuItem culture)
 			{
 				culture.Action += () => {
-					Thread.CurrentThread.CurrentUICulture = new CultureInfo (culture.Help.ToString ());
+					Thread.CurrentThread.CurrentUICulture = new CultureInfo (culture.Help);
 					culture.Checked = true;
 					foreach (var item in supportedCultures) {
-						item.Checked = item.Help.ToString () == Thread.CurrentThread.CurrentUICulture.Name;
+						item.Checked = item.Help == Thread.CurrentThread.CurrentUICulture.Name;
 					}
 				};
 			}
@@ -565,7 +563,7 @@ namespace UICatalog.Scenarios {
 					// setup autocomplete with all words currently in the editor
 					singleWordGenerator.AllSuggestions =
 
-					Regex.Matches (_textView.Text.ToString (), "\\w+")
+					Regex.Matches (_textView.Text, "\\w+")
 					.Select (s => s.Value)
 					.Distinct ().ToList ();
 				} else {
@@ -753,9 +751,9 @@ namespace UICatalog.Scenarios {
 				Height = Dim.Fill ()
 			};
 
-			_tabView.AddTab (new TabView.Tab ("Find", FindTab ()), isFind);
+			_tabView.AddTab (new Tab ("Find", FindTab ()), isFind);
 			var replace = ReplaceTab ();
-			_tabView.AddTab (new TabView.Tab ("Replace", replace), !isFind);
+			_tabView.AddTab (new Tab ("Replace", replace), !isFind);
 			_tabView.SelectedTabChanged += (s, e) => _tabView.SelectedTab.View.FocusFirst ();
 			_winDialog.Add (_tabView);
 
@@ -770,8 +768,8 @@ namespace UICatalog.Scenarios {
 
 		private void SetFindText ()
 		{
-			_textToFind = !_textView.SelectedText.IsEmpty
-				? _textView.SelectedText.ToString ()
+			_textToFind = !string.IsNullOrEmpty(_textView.SelectedText)
+				? _textView.SelectedText
 				: string.IsNullOrEmpty (_textToFind) ? "" : _textToFind;
 
 			_textToReplace = string.IsNullOrEmpty (_textToReplace) ? "" : _textToReplace;
@@ -780,7 +778,7 @@ namespace UICatalog.Scenarios {
 		private View FindTab ()
 		{
 			var d = new View ();
-			d.DrawContent += (s,e) => {
+			d.DrawContent += (s, e) => {
 				foreach (var v in d.Subviews) {
 					v.SetNeedsDisplay ();
 				}
@@ -809,30 +807,30 @@ namespace UICatalog.Scenarios {
 				X = Pos.Right (txtToFind) + 1,
 				Y = Pos.Top (label),
 				Width = 20,
-				Enabled = !txtToFind.Text.IsEmpty,
+				Enabled = !string.IsNullOrEmpty(txtToFind.Text),
 				TextAlignment = TextAlignment.Centered,
 				IsDefault = true,
 				AutoSize = false
 			};
-			btnFindNext.Clicked += (s,e) => FindNext ();
+			btnFindNext.Clicked += (s, e) => FindNext ();
 			d.Add (btnFindNext);
 
 			var btnFindPrevious = new Button ("Find _Previous") {
 				X = Pos.Right (txtToFind) + 1,
 				Y = Pos.Top (btnFindNext) + 1,
 				Width = 20,
-				Enabled = !txtToFind.Text.IsEmpty,
+				Enabled = !string.IsNullOrEmpty(txtToFind.Text),
 				TextAlignment = TextAlignment.Centered,
 				AutoSize = false
 			};
-			btnFindPrevious.Clicked += (s,e) => FindPrevious ();
+			btnFindPrevious.Clicked += (s, e) => FindPrevious ();
 			d.Add (btnFindPrevious);
 
 			txtToFind.TextChanged += (s, e) => {
-				_textToFind = txtToFind.Text.ToString ();
+				_textToFind = txtToFind.Text;
 				_textView.FindTextChanged ();
-				btnFindNext.Enabled = !txtToFind.Text.IsEmpty;
-				btnFindPrevious.Enabled = !txtToFind.Text.IsEmpty;
+				btnFindNext.Enabled = !string.IsNullOrEmpty(txtToFind.Text);
+				btnFindPrevious.Enabled = !string.IsNullOrEmpty(txtToFind.Text);
 			};
 
 			var btnCancel = new Button ("Cancel") {
@@ -842,7 +840,7 @@ namespace UICatalog.Scenarios {
 				TextAlignment = TextAlignment.Centered,
 				AutoSize = false
 			};
-			btnCancel.Clicked += (s,e) => {
+			btnCancel.Clicked += (s, e) => {
 				DisposeWinDialog ();
 			};
 			d.Add (btnCancel);
@@ -872,7 +870,7 @@ namespace UICatalog.Scenarios {
 		private View ReplaceTab ()
 		{
 			var d = new View ();
-			d.DrawContent += (s,e) => {
+			d.DrawContent += (s, e) => {
 				foreach (var v in d.Subviews) {
 					v.SetNeedsDisplay ();
 				}
@@ -901,12 +899,12 @@ namespace UICatalog.Scenarios {
 				X = Pos.Right (txtToFind) + 1,
 				Y = Pos.Top (label),
 				Width = 20,
-				Enabled = !txtToFind.Text.IsEmpty,
+				Enabled = !string.IsNullOrEmpty(txtToFind.Text),
 				TextAlignment = TextAlignment.Centered,
 				IsDefault = true,
 				AutoSize = false
 			};
-			btnFindNext.Clicked += (s,e) => ReplaceNext ();
+			btnFindNext.Clicked += (s, e) => ReplaceNext ();
 			d.Add (btnFindNext);
 
 			label = new Label ("Replace:") {
@@ -923,37 +921,37 @@ namespace UICatalog.Scenarios {
 				Y = Pos.Top (label),
 				Width = 20
 			};
-			txtToReplace.TextChanged += (s, e) => _textToReplace = txtToReplace.Text.ToString ();
+			txtToReplace.TextChanged += (s, e) => _textToReplace = txtToReplace.Text;
 			d.Add (txtToReplace);
 
 			var btnFindPrevious = new Button ("Replace _Previous") {
 				X = Pos.Right (txtToFind) + 1,
 				Y = Pos.Top (btnFindNext) + 1,
 				Width = 20,
-				Enabled = !txtToFind.Text.IsEmpty,
+				Enabled = !string.IsNullOrEmpty(txtToFind.Text),
 				TextAlignment = TextAlignment.Centered,
 				AutoSize = false
 			};
-			btnFindPrevious.Clicked += (s,e) => ReplacePrevious ();
+			btnFindPrevious.Clicked += (s, e) => ReplacePrevious ();
 			d.Add (btnFindPrevious);
 
 			var btnReplaceAll = new Button ("Replace _All") {
 				X = Pos.Right (txtToFind) + 1,
 				Y = Pos.Top (btnFindPrevious) + 1,
 				Width = 20,
-				Enabled = !txtToFind.Text.IsEmpty,
+				Enabled = !string.IsNullOrEmpty(txtToFind.Text),
 				TextAlignment = TextAlignment.Centered,
 				AutoSize = false
 			};
-			btnReplaceAll.Clicked += (s,e) => ReplaceAll ();
+			btnReplaceAll.Clicked += (s, e) => ReplaceAll ();
 			d.Add (btnReplaceAll);
 
 			txtToFind.TextChanged += (s, e) => {
-				_textToFind = txtToFind.Text.ToString ();
+				_textToFind = txtToFind.Text;
 				_textView.FindTextChanged ();
-				btnFindNext.Enabled = !txtToFind.Text.IsEmpty;
-				btnFindPrevious.Enabled = !txtToFind.Text.IsEmpty;
-				btnReplaceAll.Enabled = !txtToFind.Text.IsEmpty;
+				btnFindNext.Enabled = !string.IsNullOrEmpty(txtToFind.Text);
+				btnFindPrevious.Enabled = !string.IsNullOrEmpty(txtToFind.Text);
+				btnReplaceAll.Enabled = !string.IsNullOrEmpty(txtToFind.Text);
 			};
 
 			var btnCancel = new Button ("Cancel") {
@@ -963,7 +961,7 @@ namespace UICatalog.Scenarios {
 				TextAlignment = TextAlignment.Centered,
 				AutoSize = false
 			};
-			btnCancel.Clicked += (s,e) => {
+			btnCancel.Clicked += (s, e) => {
 				DisposeWinDialog ();
 			};
 			d.Add (btnCancel);

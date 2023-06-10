@@ -40,7 +40,7 @@ namespace Terminal.Gui.InputTests {
 		{
 
 		}
-		
+
 		public class DerivedView : View {
 			public DerivedView ()
 			{
@@ -80,10 +80,10 @@ namespace Terminal.Gui.InputTests {
 
 			// OnKeyDown is defined on DerivedView
 			Assert.True (Responder.IsOverridden (new DerivedView () { Text = "DerivedView overrides OnKeyDown" }, "OnKeyDown"));
-			
+
 			// ScrollBarView overrides both MouseEvent (from Responder) and Redraw (from View)
 			Assert.True (Responder.IsOverridden (new ScrollBarView () { Text = "ScrollBarView overrides MouseEvent" }, "MouseEvent"));
-			Assert.True (Responder.IsOverridden (new ScrollBarView () { Text = "ScrollBarView overrides Redraw" }, "Redraw"));
+			Assert.True (Responder.IsOverridden (new ScrollBarView () { Text = "ScrollBarView overrides OnDrawContent" }, "OnDrawContent"));
 
 			Assert.True (Responder.IsOverridden (new Button () { Text = "Button overrides MouseEvent" }, "MouseEvent"));
 		}

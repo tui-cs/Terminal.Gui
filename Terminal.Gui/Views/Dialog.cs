@@ -8,7 +8,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.Json.Serialization;
-using NStack;
+using System.Text;
 using Terminal.Gui;
 using static Terminal.Gui.ConfigurationManager;
 
@@ -106,7 +106,9 @@ namespace Terminal.Gui {
 			buttons.Add (button);
 			Add (button);
 			SetNeedsDisplay ();
-			LayoutSubviews ();
+			if (IsInitialized) {
+				LayoutSubviews ();
+			}
 		}
 
 		// Get the width of all buttons, not including any Margin.

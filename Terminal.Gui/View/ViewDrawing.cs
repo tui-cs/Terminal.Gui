@@ -1,6 +1,6 @@
 ﻿using System;
 using System.Linq;
-using NStack;
+using System.Text;
 
 namespace Terminal.Gui {
 	public partial class View {
@@ -76,12 +76,12 @@ namespace Terminal.Gui {
 		}
 
 		/// <summary>
-		/// Removes the <see cref="_needsDisplay"/> and the <see cref="_childNeedsDisplay"/> setting on this view.
+		/// Removes the <see cref="_needsDisplay"/> and the <see cref="_subViewNeedsDisplay"/> setting on this view.
 		/// </summary>
 		protected void ClearNeedsDisplay ()
 		{
 			_needsDisplay = Rect.Empty;
-			_childNeedsDisplay = false;
+			_subViewNeedsDisplay = false;
 		}
 
 		// The view-relative region that needs to be redrawn
@@ -102,9 +102,9 @@ namespace Terminal.Gui {
 		/// <param name="region">The view-relative region that needs to be redrawn.</param>
 		public void SetNeedsDisplay (Rect region)
 		{
-			if (_needsDisplay.IsEmpty)
+			if (_needsDisplay.IsEmpty) {
 				_needsDisplay = region;
-			else {
+			} else {
 				var x = Math.Min (_needsDisplay.X, region.X);
 				var y = Math.Min (_needsDisplay.Y, region.Y);
 				var w = Math.Max (_needsDisplay.Width, region.Width);
@@ -125,18 +125,18 @@ namespace Terminal.Gui {
 				}
 		}
 
-		internal bool _childNeedsDisplay { get; private set; }
+		internal bool _subViewNeedsDisplay { get; private set; }
 
 		/// <summary>
 		/// Indicates that any Subviews (in the <see cref="Subviews"/> list) need to be repainted.
 		/// </summary>
 		public void SetSubViewNeedsDisplay ()
 		{
-			if (_childNeedsDisplay) {
+			if (_subViewNeedsDisplay) {
 				return;
 			}
-			_childNeedsDisplay = true;
-			if (_superView != null && !_superView._childNeedsDisplay)
+			_subViewNeedsDisplay = true;
+			if (_superView != null && !_superView._subViewNeedsDisplay)
 				_superView.SetSubViewNeedsDisplay ();
 		}
 
@@ -155,7 +155,7 @@ namespace Terminal.Gui {
 			for (var line = 0; line < h; line++) {
 				Move (0, line);
 				for (var col = 0; col < w; col++)
-					Driver.AddRune (' ');
+					Driver.AddRune ((Rune)' ');
 			}
 		}
 
@@ -174,7 +174,7 @@ namespace Terminal.Gui {
 			for (var line = regionScreen.Y; line < regionScreen.Y + h; line++) {
 				Driver.Move (regionScreen.X, line);
 				for (var col = 0; col < w; col++)
-					Driver.AddRune (' ');
+					Driver.AddRune ((Rune)' ');
 			}
 		}
 
@@ -203,9 +203,7 @@ namespace Terminal.Gui {
 		/// </remarks>
 		public Rect ClipToBounds ()
 		{
-			var clip = Bounds;
-
-			return SetClip (clip);
+			return SetClip (Bounds);
 		}
 
 		// BUGBUG: v2 - SetClip should return VIEW-relative so that it can be used to reset it; using Driver.Clip directly should not be necessary. 
@@ -234,16 +232,16 @@ namespace Terminal.Gui {
 		/// <para>The hotkey is any character following the hotkey specifier, which is the underscore ('_') character by default.</para>
 		/// <para>The hotkey specifier can be changed via <see cref="HotKeySpecifier"/></para>
 		/// </remarks>
-		public void DrawHotString (ustring text, Attribute hotColor, Attribute normalColor)
+		public void DrawHotString (string text, Attribute hotColor, Attribute normalColor)
 		{
 			var hotkeySpec = HotKeySpecifier == (Rune)0xffff ? (Rune)'_' : HotKeySpecifier;
 			Application.Driver.SetAttribute (normalColor);
 			foreach (var rune in text) {
-				if (rune == hotkeySpec) {
+				if (rune == hotkeySpec.Value) {
 					Application.Driver.SetAttribute (hotColor);
 					continue;
 				}
-				Application.Driver.AddRune (rune);
+				Application.Driver.AddRune ((Rune)rune);
 				Application.Driver.SetAttribute (normalColor);
 			}
 		}
@@ -254,7 +252,7 @@ namespace Terminal.Gui {
 		/// <param name="text">String to display, the underscore before a letter flags the next letter as the hotkey.</param>
 		/// <param name="focused">If set to <see langword="true"/> this uses the focused colors from the color scheme, otherwise the regular ones.</param>
 		/// <param name="scheme">The color scheme to use.</param>
-		public void DrawHotString (ustring text, bool focused, ColorScheme scheme)
+		public void DrawHotString (string text, bool focused, ColorScheme scheme)
 		{
 			if (focused)
 				DrawHotString (text, scheme.HotFocus, scheme.Focus);
@@ -295,7 +293,9 @@ namespace Terminal.Gui {
 
 		// TODO: Make this cancelable
 		/// <summary>
-		/// 
+		/// Prepares <see cref="View.LineCanvas"/>. If <see cref="SuperViewRendersLineCanvas"/> is true, only the <see cref="LineCanvas"/> of 
+		/// this view's subviews will be rendered. If <see cref="SuperViewRendersLineCanvas"/> is false (the default), this 
+		/// method will cause the <see cref="LineCanvas"/> be prepared to be rendered.
 		/// </summary>
 		/// <returns></returns>
 		public virtual bool OnDrawFrames ()
@@ -315,9 +315,9 @@ namespace Terminal.Gui {
 
 			// Each of these renders lines to either this View's LineCanvas 
 			// Those lines will be finally rendered in OnRenderLineCanvas
-			Margin?.Redraw (Margin.Frame);
-			Border?.Redraw (Border.Frame);
-			Padding?.Redraw (Padding.Frame);
+			Margin?.OnDrawContent (Bounds);
+			Border?.OnDrawContent (Bounds);
+			Padding?.OnDrawContent (Bounds);
 
 			Driver.Clip = prevClip;
 
@@ -325,23 +325,23 @@ namespace Terminal.Gui {
 		}
 
 		/// <summary>
-		/// Redraws this view and its subviews; only redraws the views that have been flagged for a re-display.
+		/// Draws the view. Causes the following virtual methods to be called (along with their related events): 
+		/// <see cref="OnDrawContent"/>, <see cref="OnDrawContentComplete"/>.
 		/// </summary>
-		/// <param name="bounds">The bounds (view-relative region) to redraw.</param>
 		/// <remarks>
 		/// <para>
-		///    Always use <see cref="Bounds"/> (view-relative) when calling <see cref="Redraw(Rect)"/>, NOT <see cref="Frame"/> (superview-relative).
+		///    Always use <see cref="Bounds"/> (view-relative) when calling <see cref="OnDrawContent(Rect)"/>, NOT <see cref="Frame"/> (superview-relative).
 		/// </para>
 		/// <para>
 		///    Views should set the color that they want to use on entry, as otherwise this will inherit
 		///    the last color that was set globally on the driver.
 		/// </para>
 		/// <para>
-		///    Overrides of <see cref="Redraw"/> must ensure they do not set <c>Driver.Clip</c> to a clip region
-		///    larger than the <ref name="bounds"/> parameter, as this will cause the driver to clip the entire region.
+		///    Overrides of <see cref="OnDrawContent(Rect)"/> must ensure they do not set <c>Driver.Clip</c> to a clip region
+		///    larger than the <ref name="Bounds"/> property, as this will cause the driver to clip the entire region.
 		/// </para>
 		/// </remarks>
-		public virtual void Redraw (Rect bounds)
+		public void Draw ()
 		{
 			if (!CanBeVisible (this)) {
 				return;
@@ -356,32 +356,12 @@ namespace Terminal.Gui {
 				Driver.SetAttribute (GetNormalColor ());
 			}
 
-			if (SuperView != null) {
-				Clear (ViewToScreen (bounds));
-			}
-
 			// Invoke DrawContentEvent
-			OnDrawContent (bounds);
+			var dev = new DrawEventArgs (Bounds);
+			DrawContent?.Invoke (this, dev);
 
-			// Draw subviews
-			// TODO: Implement OnDrawSubviews (cancelable);
-			if (_subviews != null) {
-				foreach (var view in _subviews) {
-					if (view.Visible) { //!view._needsDisplay.IsEmpty || view._childNeedsDisplay || view.LayoutNeeded) {
-						if (true) { //view.Frame.IntersectsWith (bounds)) { // && (view.Frame.IntersectsWith (bounds) || bounds.X < 0 || bounds.Y < 0)) {
-							if (view.LayoutNeeded) {
-								view.LayoutSubviews ();
-							}
-
-							// Draw the subview
-							// Use the view's bounds (view-relative; Location will always be (0,0)
-							//if (view.Visible && view.Frame.Width > 0 && view.Frame.Height > 0) {
-							view.Redraw (view.Bounds);
-							//}
-						}
-						view.ClearNeedsDisplay ();
-					}
-				}
+			if (!dev.Cancel) {
+				OnDrawContent (Bounds);
 			}
 
 			Driver.Clip = prevClip;
@@ -389,15 +369,26 @@ namespace Terminal.Gui {
 			OnRenderLineCanvas ();
 
 			// Invoke DrawContentCompleteEvent
-			OnDrawContentComplete (bounds);
+			OnDrawContentComplete (Bounds);
 
 			// BUGBUG: v2 - We should be able to use View.SetClip here and not have to resort to knowing Driver details.
 			ClearLayoutNeeded ();
 			ClearNeedsDisplay ();
 		}
 
-		internal void OnRenderLineCanvas ()
+		// TODO: Make this cancelable
+		/// <summary>
+		/// Renders <see cref="View.LineCanvas"/>. If <see cref="SuperViewRendersLineCanvas"/> is true, only the <see cref="LineCanvas"/> of 
+		/// this view's subviews will be rendered. If <see cref="SuperViewRendersLineCanvas"/> is false (the default), this 
+		/// method will cause the <see cref="LineCanvas"/> to be rendered.
+		/// </summary>
+		/// <returns></returns>
+		public virtual bool OnRenderLineCanvas ()
 		{
+			if (!IsInitialized) {
+				return false;
+			}
+
 			//Driver.SetAttribute (new Attribute(Color.White, Color.Black));
 
 			// If we have a SuperView, it'll render our frames.
@@ -410,8 +401,8 @@ namespace Terminal.Gui {
 				LineCanvas.Clear ();
 			}
 
-			if (Subviews.Select (s => s.SuperViewRendersLineCanvas).Count () > 0) {
-				foreach (var subview in Subviews.Where (s => s.SuperViewRendersLineCanvas)) {
+			if (Subviews.Where (s => s.SuperViewRendersLineCanvas).Count () > 0) {
+				foreach (var subview in Subviews.Where (s => s.SuperViewRendersLineCanvas == true)) {
 					// Combine the LineCavas'
 					LineCanvas.Merge (subview.LineCanvas);
 					subview.LineCanvas.Clear ();
@@ -424,6 +415,8 @@ namespace Terminal.Gui {
 				}
 				LineCanvas.Clear ();
 			}
+
+			return true;
 		}
 
 		/// <summary>
@@ -448,19 +441,39 @@ namespace Terminal.Gui {
 		/// </remarks>
 		public virtual void OnDrawContent (Rect contentArea)
 		{
-			// TODO: Make DrawContent a cancelable event
-			// if (!DrawContent?.Invoke(this, new DrawEventArgs (viewport)) {
-			DrawContent?.Invoke (this, new DrawEventArgs (contentArea));
+			if (SuperView != null) {
+				Clear (ViewToScreen (Bounds));
+			}
 
-			if (!ustring.IsNullOrEmpty (TextFormatter.Text)) {
+			if (!string.IsNullOrEmpty (TextFormatter.Text)) {
 				if (TextFormatter != null) {
 					TextFormatter.NeedsFormat = true;
 				}
 				// This should NOT clear 
-				TextFormatter?.Draw (ViewToScreen (contentArea), HasFocus ? GetFocusColor () : GetNormalColor (),
+				TextFormatter?.Draw (ViewToScreen (Bounds), HasFocus ? GetFocusColor () : GetNormalColor (),
 				    HasFocus ? ColorScheme.HotFocus : GetHotNormalColor (),
 				    Rect.Empty, false);
 				SetSubViewNeedsDisplay ();
+			}
+
+			// Draw subviews
+			// TODO: Implement OnDrawSubviews (cancelable);
+			if (_subviews != null) {
+				foreach (var view in _subviews) {
+					if (view.Visible) { //!view._needsDisplay.IsEmpty || view._childNeedsDisplay || view.LayoutNeeded) {
+						if (true) { //view.Frame.IntersectsWith (bounds)) { // && (view.Frame.IntersectsWith (bounds) || bounds.X < 0 || bounds.Y < 0)) {
+							if (view.LayoutNeeded) {
+								view.LayoutSubviews ();
+							}
+
+							// Draw the subview
+							// Use the view's bounds (view-relative; Location will always be (0,0)
+							//if (view.Visible && view.Frame.Width > 0 && view.Frame.Height > 0) {
+							view.Draw ();
+							//}
+						}
+					}
+				}
 			}
 		}
 
@@ -480,13 +493,13 @@ namespace Terminal.Gui {
 		/// <summary>
 		/// Enables overrides after completed drawing infinitely scrolled content and/or a background behind removed controls.
 		/// </summary>
-		/// <param name="viewport">The view-relative rectangle describing the currently visible viewport into the <see cref="View"/></param>
+		/// <param name="contentArea">The view-relative rectangle describing the currently visible viewport into the <see cref="View"/></param>
 		/// <remarks>
 		/// This method will be called after any subviews removed with <see cref="Remove(View)"/> have been completed drawing.
 		/// </remarks>
-		public virtual void OnDrawContentComplete (Rect viewport)
+		public virtual void OnDrawContentComplete (Rect contentArea)
 		{
-			DrawContentComplete?.Invoke (this, new DrawEventArgs (viewport));
+			DrawContentComplete?.Invoke (this, new DrawEventArgs (contentArea));
 		}
 
 	}

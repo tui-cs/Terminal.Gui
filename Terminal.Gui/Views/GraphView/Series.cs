@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
+using System.Text;
 
 namespace Terminal.Gui {
 	/// <summary>
@@ -32,9 +33,9 @@ namespace Terminal.Gui {
 		/// <summary>
 		/// The color and character that will be rendered in the console
 		/// when there are point(s) in the corresponding graph space.
-		/// Defaults to uncolored 'x'
+		/// Defaults to uncolored 'dot'
 		/// </summary>
-		public GraphCellToRender Fill { get; set; } = new GraphCellToRender ('x');
+		public GraphCellToRender Fill { get; set; } = new GraphCellToRender (CM.Glyphs.Dot);
 
 		/// <summary>
 		/// Draws all points directly onto the graph
@@ -118,7 +119,7 @@ namespace Terminal.Gui {
 			}
 
 			for (int i = 0; i < values.Length; i++) {
-				subSeries [i].Bars.Add (new BarSeries.Bar (label,
+				subSeries [i].Bars.Add (new BarSeriesBar (label,
 					new GraphCellToRender (fill), values [i]));
 			}
 		}
@@ -146,7 +147,7 @@ namespace Terminal.Gui {
 		/// <summary>
 		/// Ordered collection of graph bars to position along axis
 		/// </summary>
-		public List<Bar> Bars { get; set; } = new List<Bar> ();
+		public List<BarSeriesBar> Bars { get; set; } = new List<BarSeriesBar> ();
 
 		/// <summary>
 		/// Determines the spacing of bars along the axis. Defaults to 1 i.e. 
@@ -168,12 +169,12 @@ namespace Terminal.Gui {
 		public float Offset { get; set; } = 0;
 
 		/// <summary>
-		/// Overrides the <see cref="Bar.Fill"/> with a fixed color
+		/// Overrides the <see cref="BarSeriesBar.Fill"/> with a fixed color
 		/// </summary>
 		public Attribute? OverrideBarColor { get; set; }
 
 		/// <summary>
-		/// True to draw <see cref="Bar.Text"/> along the axis under the bar.  Defaults
+		/// True to draw <see cref="BarSeriesBar.Text"/> along the axis under the bar.  Defaults
 		/// to true.
 		/// </summary>
 		public bool DrawLabels { get; set; } = true;
@@ -267,7 +268,7 @@ namespace Terminal.Gui {
 		/// <param name="start">Screen position of the start of the bar</param>
 		/// <param name="end">Screen position of the end of the bar</param>
 		/// <param name="beingDrawn">The Bar that occupies this space and is being drawn</param>
-		protected virtual void DrawBarLine (GraphView graph, Point start, Point end, Bar beingDrawn)
+		protected virtual void DrawBarLine (GraphView graph, Point start, Point end, BarSeriesBar beingDrawn)
 		{
 			var adjusted = AdjustColor (beingDrawn.Fill);
 
@@ -278,43 +279,6 @@ namespace Terminal.Gui {
 			graph.DrawLine (start, end, adjusted.Rune);
 
 			graph.SetDriverColorToGraphColor ();
-		}
-
-		/// <summary>
-		/// A single bar in a <see cref="BarSeries"/>
-		/// </summary>
-		public class Bar {
-
-			/// <summary>
-			/// Optional text that describes the bar.  This will be rendered on the corresponding
-			/// <see cref="Axis"/> unless <see cref="DrawLabels"/> is false
-			/// </summary>
-			public string Text { get; set; }
-
-			/// <summary>
-			/// The color and character that will be rendered in the console
-			/// when the bar extends over it
-			/// </summary>
-			public GraphCellToRender Fill { get; set; }
-
-			/// <summary>
-			/// The value in graph space X/Y (depending on <see cref="Orientation"/>) to which the bar extends.
-			/// </summary>
-			public float Value { get; }
-
-			/// <summary>
-			/// Creates a new instance of a single bar rendered in the given <paramref name="fill"/> that extends
-			/// out <paramref name="value"/> graph space units in the default <see cref="Orientation"/>
-			/// </summary>
-			/// <param name="text"></param>
-			/// <param name="fill"></param>
-			/// <param name="value"></param>
-			public Bar (string text, GraphCellToRender fill, float value)
-			{
-				Text = text;
-				Fill = fill;
-				Value = value;
-			}
 		}
 	}
 }

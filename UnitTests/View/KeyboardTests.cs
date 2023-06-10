@@ -1,7 +1,7 @@
 ﻿using System;
 using Xunit;
 using Xunit.Abstractions;
-using NStack;
+using System.Text;
 
 // Alias Console to MockConsole so we don't accidentally use Console
 using Console = Terminal.Gui.FakeConsole;
@@ -104,7 +104,7 @@ namespace Terminal.Gui.ViewTests {
 			public bool IsKeyDown { get; set; }
 			public bool IsKeyPress { get; set; }
 			public bool IsKeyUp { get; set; }
-			public override ustring Text { get; set; }
+			public override string Text { get; set; }
 
 			public override bool OnKeyDown (KeyEvent keyEvent)
 			{

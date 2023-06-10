@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
-using NStack;
+using System.Text;
 
 namespace Terminal.Gui {
 	public partial class View  {

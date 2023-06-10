@@ -106,14 +106,14 @@ namespace Terminal.Gui.ViewsTests {
 			});
 			Application.Top.Add (sb);
 
-			sb.Redraw (sb.Bounds);
+			sb.OnDrawContent (sb.Bounds);
 
 			string expected = @$"
-^O Open {Application.Driver.VLine} Q, CtrlMask to Quit!
+^O Open {CM.Glyphs.VLine} Q, CtrlMask to Quit!
 ";
 			TestHelpers.AssertDriverContentsAre (expected, output);
 		}
-		
+
 		[Fact]
 		[AutoInitShutdown]
 		public void Redraw_Output_CTRLQ ()
@@ -123,10 +123,10 @@ namespace Terminal.Gui.ViewsTests {
 				new StatusItem (Key.CtrlMask | Key.Q, "~CTRL-Q~ Quit", null)
 			});
 			Application.Top.Add (sb);
-			sb.Redraw (sb.Bounds);
+			sb.OnDrawContent (sb.Bounds);
 
 			string expected = @$"
-CTRL-O Open {Application.Driver.VLine} CTRL-Q Quit
+CTRL-O Open {CM.Glyphs.VLine} CTRL-Q Quit
 ";
 
 			TestHelpers.AssertDriverContentsAre (expected, output);

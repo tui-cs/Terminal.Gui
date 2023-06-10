@@ -11,7 +11,7 @@ namespace Terminal.Gui {
 		/// The current table to which the new indexes refer.  May be null e.g. if selection change is the result of clearing the table from the view
 		/// </summary>
 		/// <value></value>
-		public DataTable Table { get; }
+		public ITableSource Table { get; }
 
 		/// <summary>
 		/// The column index of the <see cref="Table"/> cell that is being activated
@@ -31,7 +31,7 @@ namespace Terminal.Gui {
 		/// <param name="t"></param>
 		/// <param name="col"></param>
 		/// <param name="row"></param>
-		public CellActivatedEventArgs (DataTable t, int col, int row)
+		public CellActivatedEventArgs (ITableSource t, int col, int row)
 		{
 			Table = t;
 			Col = col;

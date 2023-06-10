@@ -6,7 +6,7 @@
 //
 
 using System;
-using NStack;
+using System.Text;
 
 namespace Terminal.Gui {
 	/// <summary>
@@ -58,7 +58,7 @@ namespace Terminal.Gui {
 		///   If <c>true</c>, a special decoration is used, and the user pressing the enter key 
 		///   in a <see cref="Dialog"/> will implicitly activate this button.
 		/// </param>
-		public Button (ustring text, bool is_default = false) : base (text)
+		public Button (string text, bool is_default = false) : base (text)
 		{
 			SetInitialProperties (text, is_default);
 		}
@@ -73,7 +73,7 @@ namespace Terminal.Gui {
 		/// <param name="x">X position where the button will be shown.</param>
 		/// <param name="y">Y position where the button will be shown.</param>
 		/// <param name="text">The button's text</param>
-		public Button (int x, int y, ustring text) : this (x, y, text, false) { }
+		public Button (int x, int y, string text) : this (x, y, text, false) { }
 
 		/// <summary>
 		///   Initializes a new instance of <see cref="Button"/> using <see cref="LayoutStyle.Absolute"/> layout, based on the given text.
@@ -89,8 +89,8 @@ namespace Terminal.Gui {
 		///   If <c>true</c>, a special decoration is used, and the user pressing the enter key 
 		///   in a <see cref="Dialog"/> will implicitly activate this button.
 		/// </param>
-		public Button (int x, int y, ustring text, bool is_default)
-		    : base (new Rect (x, y, text.RuneCount + 4 + (is_default ? 2 : 0), 1), text)
+		public Button (int x, int y, string text, bool is_default)
+		    : base (new Rect (x, y, text.GetRuneCount () + 4 + (is_default ? 2 : 0), 1), text)
 		{
 			SetInitialProperties (text, is_default);
 		}
@@ -100,17 +100,17 @@ namespace Terminal.Gui {
 		/// </summary>
 		/// <param name="text"></param>
 		/// <param name="is_default"></param>
-		void SetInitialProperties (ustring text, bool is_default)
+		void SetInitialProperties (string text, bool is_default)
 		{
 			TextAlignment = TextAlignment.Centered;
 			VerticalTextAlignment = VerticalTextAlignment.Middle;
 
 			HotKeySpecifier = new Rune ('_');
 
-			_leftBracket = new Rune (Driver != null ? Driver.LeftBracket : '[');
-			_rightBracket = new Rune (Driver != null ? Driver.RightBracket : ']');
-			_leftDefault = new Rune (Driver != null ? Driver.LeftDefaultIndicator : '<');
-			_rightDefault = new Rune (Driver != null ? Driver.RightDefaultIndicator : '>');
+			_leftBracket = CM.Glyphs.LeftBracket;
+			_rightBracket = CM.Glyphs.RightBracket;
+			_leftDefault = CM.Glyphs.LeftDefaultIndicator;
+			_rightDefault = CM.Glyphs.RightDefaultIndicator;
 
 			CanFocus = true;
 			AutoSize = true;
@@ -151,7 +151,7 @@ namespace Terminal.Gui {
 					var v = value == Key.Unknown ? Key.Null : value;
 					if (base.HotKey != Key.Null && ContainsKeyBinding (Key.Space | base.HotKey)) {
 						if (v == Key.Null) {
-							ClearKeybinding (Key.Space | base.HotKey);
+							ClearKeyBinding (Key.Space | base.HotKey);
 						} else {
 							ReplaceKeyBinding (Key.Space | base.HotKey, Key.Space | v);
 						}
@@ -166,35 +166,28 @@ namespace Terminal.Gui {
 		/// <summary>
 		/// 
 		/// </summary>
-		public bool NoDecorations {get;set;}
+		public bool NoDecorations { get; set; }
 
 		/// <summary>
 		/// 
 		/// </summary>
-		public bool NoPadding {get;set;}
+		public bool NoPadding { get; set; }
 
 		/// <inheritdoc/>
 		protected override void UpdateTextFormatterText ()
 		{
-			if(NoDecorations)
-			{
+			if (NoDecorations) {
 				TextFormatter.Text = Text;
-			}
-			else
+			} else
 			if (IsDefault)
-				TextFormatter.Text = ustring.Make (_leftBracket) + ustring.Make (_leftDefault) + " " + Text + " " + ustring.Make (_rightDefault) + ustring.Make (_rightBracket);
-			else
-			{
-				if(NoPadding)
-				{
-					TextFormatter.Text = ustring.Make (_leftBracket) + Text + ustring.Make (_rightBracket);
-				}
-				else
-				{
-					TextFormatter.Text = ustring.Make (_leftBracket) + " " + Text + " " + ustring.Make (_rightBracket);
+				TextFormatter.Text = $"{_leftBracket}{_leftDefault} {Text} {_rightDefault}{_rightBracket}";
+			else {
+				if (NoPadding) {
+					TextFormatter.Text = $"{_leftBracket}{Text}{_rightBracket}";
+				} else {
+					TextFormatter.Text = $"{_leftBracket} {Text} {_rightBracket}";
 				}
 			}
-				
 		}
 
 		///<inheritdoc/>
@@ -283,7 +276,7 @@ namespace Terminal.Gui {
 					if (!HasFocus) {
 						SetFocus ();
 						SetNeedsDisplay ();
-						Redraw (Bounds);
+						Draw ();
 					}
 					OnClicked ();
 				}
@@ -297,7 +290,7 @@ namespace Terminal.Gui {
 		public override void PositionCursor ()
 		{
 			if (HotKey == Key.Unknown && Text != "") {
-				for (int i = 0; i < TextFormatter.Text.RuneCount; i++) {
+				for (int i = 0; i < TextFormatter.Text.GetRuneCount (); i++) {
 					if (TextFormatter.Text [i] == Text [0]) {
 						Move (i, 0);
 						return;

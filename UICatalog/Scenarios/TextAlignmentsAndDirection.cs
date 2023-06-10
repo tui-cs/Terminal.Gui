@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 using Terminal.Gui;
 
 namespace UICatalog.Scenarios {
@@ -164,12 +165,12 @@ namespace UICatalog.Scenarios {
 
 			var directionsEnum = Enum.GetValues (typeof (Terminal.Gui.TextDirection)).Cast<Terminal.Gui.TextDirection> ().ToList ();
 
-			var directionOptions = new RadioGroup (directionsEnum.Select (e => NStack.ustring.Make (e.ToString ())).ToArray ()) {
+			var directionOptions = new RadioGroup (directionsEnum.Select (e => e.ToString ()).ToArray ()) {
 				X = Pos.Right (container) + 1,
 				Y = Pos.Bottom (justifyCheckbox) + 1,
 				Width = Dim.Fill (10),
 				Height = Dim.Fill (1),
-				HotKeySpecifier = '\xffff'
+				HotKeySpecifier = (Rune)'\xffff'
 			};
 
 			directionOptions.SelectedItemChanged += (s, ev) => {

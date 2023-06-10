@@ -1,7 +1,7 @@
 ﻿//
 // ConsoleDriver.cs: Base class for Terminal.Gui ConsoleDriver implementations.
 //
-using NStack;
+using System.Text;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -345,6 +345,26 @@ namespace Terminal.Gui {
 		internal string schemeBeingSet = "";
 
 		/// <summary>
+		/// Creates a new instance.
+		/// </summary>
+		public ColorScheme () { }
+
+		/// <summary>
+		/// Creates a new instance, initialized with the values from <paramref name="scheme"/>.
+		/// </summary>
+		/// <param name="scheme">The scheme to initlize the new instance with.</param>
+		public ColorScheme (ColorScheme scheme) : base ()
+		{
+			if (scheme != null) {
+				_normal = scheme.Normal;
+				_focus = scheme.Focus;
+				_hotNormal = scheme.HotNormal;
+				_disabled = scheme.Disabled;
+				_hotFocus = scheme.HotFocus;
+			}
+		}
+
+		/// <summary>
 		/// The foreground and background color for text when the view is not focused, hot, or disabled.
 		/// </summary>
 		public Attribute Normal {
@@ -597,8 +617,8 @@ namespace Terminal.Gui {
 		/// <summary>
 		/// Provides the defined <see cref="ColorScheme"/>s.
 		/// </summary>
-		[SerializableConfigurationProperty (Scope = typeof(ThemeScope), OmitClassName = true)]
-		[JsonConverter(typeof(DictionaryJsonConverter<ColorScheme>))]
+		[SerializableConfigurationProperty (Scope = typeof (ThemeScope), OmitClassName = true)]
+		[JsonConverter (typeof (DictionaryJsonConverter<ColorScheme>))]
 		public static Dictionary<string, ColorScheme> ColorSchemes { get; private set; }
 	}
 
@@ -659,12 +679,13 @@ namespace Terminal.Gui {
 		/// <remarks>Works under Xterm-like terminal otherwise this is equivalent to <see ref="Block"/></remarks>
 		BoxFix = 0x02020164,
 	}
-	
+
 	/// <summary>
 	/// ConsoleDriver is an abstract class that defines the requirements for a console driver.  
 	/// There are currently three implementations: <see cref="CursesDriver"/> (for Unix and Mac), <see cref="WindowsDriver"/>, and <see cref="NetDriver"/> that uses the .NET Console API.
 	/// </summary>
 	public abstract class ConsoleDriver {
+
 		/// <summary>
 		/// The handler fired when the terminal is resized.
 		/// </summary>
@@ -731,28 +752,25 @@ namespace Terminal.Gui {
 		public abstract void Move (int col, int row);
 
 		/// <summary>
+		/// Tests if the specified rune is supported by the driver.
+		/// </summary>
+		/// <param name="rune"></param>
+		/// <returns><see langword="true"/> if the rune can be properly presented; <see langword="false"/> if the driver
+		/// does not support displaying this rune.</returns>
+		public virtual bool IsRuneSupported (Rune rune)
+		{
+			if (rune.Value > RuneExtensions.MaxUnicodeCodePoint) {
+				return false;
+			}
+			return true;
+		}
+		
+		/// <summary>
 		/// Adds the specified rune to the display at the current cursor position.
 		/// </summary>
 		/// <param name="rune">Rune to add.</param>
 		public abstract void AddRune (Rune rune);
-
-		/// <summary>
-		/// Ensures a Rune is not a control character and can be displayed by translating characters below 0x20
-		/// to equivalent, printable, Unicode chars.
-		/// </summary>
-		/// <param name="c">Rune to translate</param>
-		/// <returns></returns>
-		public static Rune MakePrintable (Rune c)
-		{
-			if (c <= 0x1F || (c >= 0X7F && c <= 0x9F)) {
-				// ASCII (C0) control characters.
-				// C1 control characters (https://www.aivosto.com/articles/control-characters.html#c1)
-				return new Rune (c + 0x2400);
-			}
-
-			return c;
-		}
-
+		
 		/// <summary>
 		/// Ensures that the column and line are in a valid range from the size of the driver.
 		/// </summary>
@@ -767,7 +785,7 @@ namespace Terminal.Gui {
 		/// Adds the <paramref name="str"/> to the display at the cursor position.
 		/// </summary>
 		/// <param name="str">String.</param>
-		public abstract void AddStr (ustring str);
+		public abstract void AddStr (string str);
 
 		/// <summary>
 		/// Prepare the driver and set the key and mouse events handlers.
@@ -907,12 +925,12 @@ namespace Terminal.Gui {
 		/// </summary>
 		/// <param name="rect"></param>
 		/// <param name="rune"></param>
-		public virtual void FillRect (Rect rect, System.Rune rune = default)
+		public virtual void FillRect (Rect rect, Rune rune = default)
 		{
 			for (var r = rect.Y; r < rect.Y + rect.Height; r++) {
 				for (var c = rect.X; c < rect.X + rect.Width; c++) {
 					Application.Driver.Move (c, r);
-					Application.Driver.AddRune (rune == default ? ' ' : rune);
+					Application.Driver.AddRune ((Rune)(rune == default ? ' ' : rune.Value));
 				}
 			}
 		}
@@ -979,341 +997,6 @@ namespace Terminal.Gui {
 		/// Enables the cooked event processing from the mouse driver. Not implemented by any driver: See Issue #2300.
 		/// </summary>
 		public abstract void CookMouse ();
-
-		/// <summary>
-		/// Horizontal line character.
-		/// </summary>
-		public Rune HLine = '\u2500';
-
-		/// <summary>
-		/// Vertical line character.
-		/// </summary>
-		public Rune VLine = '\u2502';
-
-		/// <summary>
-		/// Stipple pattern
-		/// </summary>
-		public Rune Stipple = '\u2591';
-
-		/// <summary>
-		/// Diamond character
-		/// </summary>
-		public Rune Diamond = '\u25ca';
-
-		/// <summary>
-		/// Upper left corner
-		/// </summary>
-		public Rune ULCorner = '\u250C';
-
-		/// <summary>
-		/// Lower left corner
-		/// </summary>
-		public Rune LLCorner = '\u2514';
-
-		/// <summary>
-		/// Upper right corner
-		/// </summary>
-		public Rune URCorner = '\u2510';
-
-		/// <summary>
-		/// Lower right corner
-		/// </summary>
-		public Rune LRCorner = '\u2518';
-
-		/// <summary>
-		/// Left tee
-		/// </summary>
-		public Rune LeftTee = '\u251c';
-
-		/// <summary>
-		/// Right tee
-		/// </summary>
-		public Rune RightTee = '\u2524';
-
-		/// <summary>
-		/// Top tee
-		/// </summary>
-		public Rune TopTee = '\u252c';
-
-		/// <summary>
-		/// The bottom tee.
-		/// </summary>
-		public Rune BottomTee = '\u2534';
-
-		/// <summary>
-		/// Checkmark.
-		/// </summary>
-		public Rune Checked = '\u221a';
-
-		/// <summary>
-		/// Un-checked checkmark.
-		/// </summary>
-		public Rune UnChecked = '\u2574';
-
-		/// <summary>
-		/// Null-checked checkmark.
-		/// </summary>
-		public Rune NullChecked = '\u2370';
-
-		/// <summary>
-		/// Selected mark.
-		/// </summary>
-		public Rune Selected = '\u25cf';
-
-		/// <summary>
-		/// Un-selected selected mark.
-		/// </summary>
-		public Rune UnSelected = '\u25cc';
-
-		/// <summary>
-		/// Right Arrow.
-		/// </summary>
-		public Rune RightArrow = '\u25ba';
-
-		/// <summary>
-		/// Left Arrow.
-		/// </summary>
-		public Rune LeftArrow = '\u25c4';
-
-		/// <summary>
-		/// Down Arrow.
-		/// </summary>
-		public Rune DownArrow = '\u25bc';
-
-		/// <summary>
-		/// Up Arrow.
-		/// </summary>
-		public Rune UpArrow = '\u25b2';
-
-		/// <summary>
-		/// Left indicator for default action (e.g. for <see cref="Button"/>).
-		/// </summary>
-		public Rune LeftDefaultIndicator = '\u25e6';
-
-		/// <summary>
-		/// Right indicator for default action (e.g. for <see cref="Button"/>).
-		/// </summary>
-		public Rune RightDefaultIndicator = '\u25e6';
-
-		/// <summary>
-		/// Left frame/bracket (e.g. '[' for <see cref="Button"/>).
-		/// </summary>
-		public Rune LeftBracket = '[';
-
-		/// <summary>
-		/// Right frame/bracket (e.g. ']' for <see cref="Button"/>).
-		/// </summary>
-		public Rune RightBracket = ']';
-
-		/// <summary>
-		/// Blocks Segment indicator for meter views (e.g. <see cref="ProgressBar"/>.
-		/// </summary>
-		public Rune BlocksMeterSegment = '\u258c';
-
-		/// <summary>
-		/// Continuous Segment indicator for meter views (e.g. <see cref="ProgressBar"/>.
-		/// </summary>
-		public Rune ContinuousMeterSegment = '\u2588';
-
-		/// <summary>
-		/// Horizontal double line character.
-		/// </summary>
-		public Rune HDbLine = '\u2550';
-
-		/// <summary>
-		/// Vertical double line character.
-		/// </summary>
-		public Rune VDbLine = '\u2551';
-
-		/// <summary>
-		/// Upper left double corner
-		/// </summary>
-		public Rune ULDbCorner = '\u2554';
-
-		/// <summary>
-		/// Lower left double corner
-		/// </summary>
-		public Rune LLDbCorner = '\u255a';
-
-		/// <summary>
-		/// Upper right double corner
-		/// </summary>
-		public Rune URDbCorner = '\u2557';
-
-		/// <summary>
-		/// Lower right double corner
-		/// </summary>
-		public Rune LRDbCorner = '\u255d';
-
-		/// <summary>
-		/// Upper left rounded corner
-		/// </summary>
-		public Rune ULRCorner = '\u256d';
-
-		/// <summary>
-		/// Lower left rounded corner
-		/// </summary>
-		public Rune LLRCorner = '\u2570';
-
-		/// <summary>
-		/// Upper right rounded corner
-		/// </summary>
-		public Rune URRCorner = '\u256e';
-
-		/// <summary>
-		/// Lower right rounded corner
-		/// </summary>
-		public Rune LRRCorner = '\u256f';
-
-		/// <summary>
-		/// Horizontal double dashed line character.
-		/// </summary>
-		public Rune HDsLine = '\u254c';
-
-		/// <summary>
-		/// Vertical triple dashed line character.
-		/// </summary>
-		public Rune VDsLine = '\u2506';
-
-		/// <summary>
-		/// Horizontal triple dashed line character.
-		/// </summary>
-		public Rune HDtLine = '\u2504';
-
-		/// <summary>
-		/// Horizontal quadruple dashed line character.
-		/// </summary>
-		public Rune HD4Line = '\u2508';
-
-		/// <summary>
-		/// Vertical double dashed line character.
-		/// </summary>
-		public Rune VD2Line = '\u254e';
-
-		/// <summary>
-		/// Vertical quadruple dashed line character.
-		/// </summary>
-		public Rune VDtLine = '\u250a';
-
-		/// <summary>
-		/// Horizontal heavy line character.
-		/// </summary>
-		public Rune HThLine = '\u2501';
-
-		/// <summary>
-		/// Vertical heavy line character.
-		/// </summary>
-		public Rune VThLine = '\u2503';
-
-		/// <summary>
-		/// Upper left heavy corner
-		/// </summary>
-		public Rune ULThCorner = '\u250f';
-
-		/// <summary>
-		/// Lower left heavy corner
-		/// </summary>
-		public Rune LLThCorner = '\u2517';
-
-		/// <summary>
-		/// Upper right heavy corner
-		/// </summary>
-		public Rune URThCorner = '\u2513';
-
-		/// <summary>
-		/// Lower right heavy corner
-		/// </summary>
-		public Rune LRThCorner = '\u251b';
-
-		/// <summary>
-		/// Horizontal heavy double dashed line character.
-		/// </summary>
-		public Rune HThDsLine = '\u254d';
-
-		/// <summary>
-		/// Vertical heavy triple dashed line character.
-		/// </summary>
-		public Rune VThDsLine = '\u2507';
-
-		/// <summary>
-		/// Horizontal heavy triple dashed line character.
-		/// </summary>
-		public Rune HThDtLine = '\u2505';
-
-		/// <summary>
-		/// Horizontal heavy quadruple dashed line character.
-		/// </summary>
-		public Rune HThD4Line = '\u2509';
-
-		/// <summary>
-		/// Vertical heavy double dashed line character.
-		/// </summary>
-		public Rune VThD2Line = '\u254f';
-
-		/// <summary>
-		/// Vertical heavy quadruple dashed line character.
-		/// </summary>
-		public Rune VThDtLine = '\u250b';
-
-		/// <summary>
-		/// The left half line.
-		/// </summary>
-		public Rune HalfLeftLine = '\u2574';
-
-		/// <summary>
-		/// The up half line.
-		/// </summary>
-		public Rune HalfTopLine = '\u2575';
-
-		/// <summary>
-		/// The right half line.
-		/// </summary>
-		public Rune HalfRightLine = '\u2576';
-
-		/// <summary>
-		/// The down half line.
-		/// </summary>
-		public Rune HalfBottomLine = '\u2577';
-
-		/// <summary>
-		/// The heavy left half line.
-		/// </summary>
-		public Rune ThHalfLeftLine = '\u2578';
-
-		/// <summary>
-		/// The heavy up half line.
-		/// </summary>
-		public Rune ThHalfTopLine = '\u2579';
-
-		/// <summary>
-		/// The heavy right half line.
-		/// </summary>
-		public Rune ThHalfRightLine = '\u257a';
-
-		/// <summary>
-		/// The heavy light down half line.
-		/// </summary>
-		public Rune ThHalfBottomLine = '\u257b';
-
-		/// <summary>
-		/// The light left and heavy right line.
-		/// </summary>
-		public Rune ThRightSideLine = '\u257c';
-
-		/// <summary>
-		/// The light up and heavy down line.
-		/// </summary>
-		public Rune ThBottomSideLine = '\u257d';
-
-		/// <summary>
-		/// The heavy left and light right line.
-		/// </summary>
-		public Rune ThLeftSideLine = '\u257e';
-
-		/// <summary>
-		/// The heavy up and light down line.
-		/// </summary>
-		public Rune ThTopSideLine = '\u257f';
 
 		private Attribute currentAttribute;
 

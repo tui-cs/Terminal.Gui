@@ -1,10 +1,10 @@
-﻿using NStack;
+﻿using System.Text;
 using System;
 
 namespace Terminal.Gui {
 
 	public partial class View {
-		ustring _text;
+		string _text;
 
 		/// <summary>
 		///   The text displayed by the <see cref="View"/>.
@@ -26,7 +26,7 @@ namespace Terminal.Gui {
 		///  <c>(Rune)0xffff</c>.
 		/// </para>
 		/// </remarks>
-		public virtual ustring Text {
+		public virtual string Text {
 			get => _text;
 			set {
 				_text = value;
@@ -37,7 +37,7 @@ namespace Terminal.Gui {
 
 #if DEBUG
 				if (_text != null && string.IsNullOrEmpty (Id)) {
-					Id = _text.ToString ();
+					Id = _text;
 				}
 #endif
 			}
@@ -154,12 +154,12 @@ namespace Terminal.Gui {
 		{
 			if (isWidth) {
 				return TextFormatter.IsHorizontalDirection (TextDirection) &&
-				    TextFormatter.Text?.Contains (HotKeySpecifier) == true
-				    ? Math.Max (Rune.ColumnWidth (HotKeySpecifier), 0) : 0;
+				    TextFormatter.Text?.Contains ((char)HotKeySpecifier.Value) == true
+				    ? Math.Max (HotKeySpecifier.GetColumns (), 0) : 0;
 			} else {
 				return TextFormatter.IsVerticalDirection (TextDirection) &&
-				    TextFormatter.Text?.Contains (HotKeySpecifier) == true
-				    ? Math.Max (Rune.ColumnWidth (HotKeySpecifier), 0) : 0;
+				    TextFormatter.Text?.Contains ((char)HotKeySpecifier.Value) == true
+				    ? Math.Max (HotKeySpecifier.GetColumns(), 0) : 0;
 			}
 		}
 
@@ -179,7 +179,7 @@ namespace Terminal.Gui {
 		/// <returns></returns>
 		public Size GetSizeNeededForTextAndHotKey ()
 		{
-			if (ustring.IsNullOrEmpty (TextFormatter.Text)) {
+			if (string.IsNullOrEmpty (TextFormatter.Text)) {
 
 				if (!IsInitialized) return Size.Empty;
 

@@ -78,7 +78,7 @@ namespace UICatalog.Scenarios {
 					ColorScheme = Colors.Error,
 				};
 				pressMeButton.Clicked += (s,e) =>
-					MessageBox.ErrorQuery (win.Title.ToString (), "Neat?", "Yes", "No");
+					MessageBox.ErrorQuery (win.Title, "Neat?", "Yes", "No");
 				win.Add (pressMeButton);
 				var subWin = new Window () {
 					Title = "Sub Window",
@@ -89,7 +89,7 @@ namespace UICatalog.Scenarios {
 					ColorScheme = Colors.Base,
 					Text = "The Text in the Window",
 				};
-				subWin.Add (new TextField ("Edit me! " + win.Title.ToString ()) {
+				subWin.Add (new TextField ("Edit me! " + win.Title) {
 					Y = 1,
 					ColorScheme = Colors.Error
 				});
@@ -136,7 +136,7 @@ namespace UICatalog.Scenarios {
 				X = Pos.Center (),
 				Y = 0,
 				ColorScheme = Colors.Error,
-				//Clicked = () => MessageBox.ErrorQuery (frame.Title.ToString (), "Neat?", "Yes", "No")
+				//Clicked = () => MessageBox.ErrorQuery (frame.Title, "Neat?", "Yes", "No")
 			});
 			var subWinofFV = new Window () {
 				Title = "This is a Sub-Window",

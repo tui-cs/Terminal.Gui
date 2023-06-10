@@ -1,4 +1,4 @@
-﻿using NStack;
+﻿using System.Text;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -40,10 +40,10 @@ namespace UICatalog.Scenarios {
 			};
 			Win.Add (swapButton);
 
-			static void DoMessage (Button button, ustring txt)
+			static void DoMessage (Button button, string txt)
 			{
 				button.Clicked += (s,e) => {
-					var btnText = button.Text.ToString ();
+					var btnText = button.Text;
 					MessageBox.Query ("Message", $"Did you click {txt}?", "Yes", "No");
 				};
 			}
@@ -178,7 +178,7 @@ namespace UICatalog.Scenarios {
 			};
 			Win.Add (label);
 
-			var radioGroup = new RadioGroup (new ustring [] { "Left", "Right", "Centered", "Justified" }) {
+			var radioGroup = new RadioGroup (new string [] { "Left", "Right", "Centered", "Justified" }) {
 				X = 4,
 				Y = Pos.Bottom (label) + 1,
 				SelectedItem = 2,
@@ -186,17 +186,17 @@ namespace UICatalog.Scenarios {
 			Win.Add (radioGroup);
 
 			// Demo changing hotkey
-			ustring MoveHotkey (ustring txt)
+			string MoveHotkey (string txt)
 			{
 				// Remove the '_'
 				var runes = txt.ToRuneList ();
 
-				var i = runes.IndexOf ('_');
-				ustring start = "";
+				var i = runes.IndexOf ((Rune)'_');
+				string start = "";
 				if (i > -1) {
-					start = ustring.Make (runes.GetRange (0, i));
+					start = StringExtensions.ToString (runes.GetRange (0, i));
 				}
-				txt = start + ustring.Make (runes.GetRange (i + 1, runes.Count - (i + 1)));
+				txt = start + StringExtensions.ToString (runes.GetRange (i + 1, runes.Count - (i + 1)));
 
 				runes = txt.ToRuneList ();
 
@@ -207,8 +207,8 @@ namespace UICatalog.Scenarios {
 				}
 
 				// Slip in the '_'
-				start = ustring.Make (runes.GetRange (0, i));
-				return start + ustring.Make ('_') + ustring.Make (runes.GetRange (i, runes.Count - i));
+				start = StringExtensions.ToString (runes.GetRange (0, i));
+				return start + '_' + StringExtensions.ToString (runes.GetRange (i, runes.Count - i));
 			}
 
 			var mhkb = "Click to Change th_is Button's Hotkey";
@@ -223,7 +223,7 @@ namespace UICatalog.Scenarios {
 			};
 			Win.Add (moveHotKeyBtn);
 
-			var muhkb = ustring.Make (" ~  s  gui.cs   master ↑10 = Сохранить");
+			var muhkb = " ~  s  gui.cs   master ↑10 = Сохранить";
 			var moveUnicodeHotKeyBtn = new Button (muhkb) {
 				X = Pos.Left (absoluteFrame) + 1,
 				Y = Pos.Bottom (radioGroup) + 1,

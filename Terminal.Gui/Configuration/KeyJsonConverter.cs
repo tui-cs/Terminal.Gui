@@ -4,11 +4,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 
 namespace Terminal.Gui {
-	/// <summary>
-	/// Json converter for the <see cref="Key"/> class.
-	/// </summary>
-	public class KeyJsonConverter : JsonConverter<Key> {
-		/// <inheritdoc/>
+	class KeyJsonConverter : JsonConverter<Key> {
 		public override Key Read (ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
 		{
 			if (reader.TokenType == JsonTokenType.StartObject) {
@@ -91,7 +87,6 @@ namespace Terminal.Gui {
 			throw new JsonException ($"Unexpected StartObject token when parsing Key: {reader.TokenType}.");
 		}
 
-		/// <inheritdoc/>
 		public override void Write (Utf8JsonWriter writer, Key value, JsonSerializerOptions options)
 		{
 			writer.WriteStartObject ();

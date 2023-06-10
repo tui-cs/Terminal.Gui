@@ -3,7 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using Rune = System.Rune;
+
 
 namespace Terminal.Gui {
 
@@ -16,7 +16,7 @@ namespace Terminal.Gui {
 		/// </summary>
 		None,
 		/// <summary>
-		/// The border is drawn using thin line glyphs.
+		/// The border is drawn using thin line CM.Glyphs.
 		/// </summary>
 		Single,
 		/// <summary>
@@ -28,11 +28,11 @@ namespace Terminal.Gui {
 		/// </summary>
 		Dotted,
 		/// <summary>
-		/// The border is drawn using thin double line glyphs.
+		/// The border is drawn using thin double line CM.Glyphs.
 		/// </summary>
 		Double,
 		/// <summary>
-		/// The border is drawn using heavy line glyphs.
+		/// The border is drawn using heavy line CM.Glyphs.
 		/// </summary>
 		Heavy,
 		/// <summary>
@@ -67,6 +67,21 @@ namespace Terminal.Gui {
 	/// and rendering.  Does not support diagonal lines.
 	/// </summary>
 	public class LineCanvas {
+		/// <summary>
+		/// Creates a new instance.
+		/// </summary>
+		public LineCanvas()
+		{
+			ConfigurationManager.Applied += ConfigurationManager_Applied;
+		}
+
+		private void ConfigurationManager_Applied (object sender, ConfigurationManagerEventArgs e)
+		{
+			foreach (var irr in runeResolvers) {
+				irr.Value.SetGlyphs ();
+			}
+		}
+
 		private List<StraightLine> _lines = new List<StraightLine> ();
 
 		Dictionary<IntersectionRuneType, IntersectionRuneResolver> runeResolvers = new Dictionary<IntersectionRuneType, IntersectionRuneResolver> {
@@ -80,7 +95,7 @@ namespace Terminal.Gui {
 			{IntersectionRuneType.RightTee,new RightTeeIntersectionRuneResolver()},
 			{IntersectionRuneType.BottomTee,new BottomTeeIntersectionRuneResolver()},
 
-			{IntersectionRuneType.Crosshair,new CrosshairIntersectionRuneResolver()},
+			{IntersectionRuneType.Cross,new CrossIntersectionRuneResolver()},
 			// TODO: Add other resolvers
 		};
 
@@ -272,26 +287,25 @@ namespace Terminal.Gui {
 		}
 
 		private abstract class IntersectionRuneResolver {
-			readonly Rune round;
-			readonly Rune doubleH;
-			readonly Rune doubleV;
-			readonly Rune doubleBoth;
-			readonly Rune thickH;
-			readonly Rune thickV;
-			readonly Rune thickBoth;
-			readonly Rune normal;
+			internal Rune _round;
+			internal Rune _doubleH;
+			internal Rune _doubleV;
+			internal Rune _doubleBoth;
+			internal Rune _thickH;
+			internal Rune _thickV;
+			internal Rune _thickBoth;
+			internal Rune _normal;
 
-			public IntersectionRuneResolver (Rune round, Rune doubleH, Rune doubleV, Rune doubleBoth, Rune thickH, Rune thickV, Rune thickBoth, Rune normal)
+			public IntersectionRuneResolver()
 			{
-				this.round = round;
-				this.doubleH = doubleH;
-				this.doubleV = doubleV;
-				this.doubleBoth = doubleBoth;
-				this.thickH = thickH;
-				this.thickV = thickV;
-				this.thickBoth = thickBoth;
-				this.normal = normal;
+				SetGlyphs ();
 			}
+			
+			/// <summary>
+			/// Sets the glyphs used. Call this method after construction and any time 
+			/// ConfigurationManager has updated the settings.
+			/// </summary>
+			public abstract void SetGlyphs ();
 
 			public Rune? GetRuneForIntersects (ConsoleDriver driver, IntersectionDefinition [] intersects)
 			{
@@ -309,87 +323,140 @@ namespace Terminal.Gui {
 					l.Line.Style == LineStyle.Heavy || l.Line.Style == LineStyle.HeavyDashed || l.Line.Style == LineStyle.HeavyDotted));
 
 				if (doubleHorizontal) {
-					return doubleVertical ? doubleBoth : doubleH;
+					return doubleVertical ? _doubleBoth : _doubleH;
 				}
 				if (doubleVertical) {
-					return doubleV;
+					return _doubleV;
 				}
 
 				if (thickHorizontal) {
-					return thickVertical ? thickBoth : thickH;
+					return thickVertical ? _thickBoth : _thickH;
 				}
 				if (thickVertical) {
-					return thickV;
+					return _thickV;
 				}
 
-				return useRounded ? round : normal;
+				return useRounded ? _round : _normal;
 			}
 		}
 
 		private class ULIntersectionRuneResolver : IntersectionRuneResolver {
-			public ULIntersectionRuneResolver () :
-				base ('╭', '╒', '╓', '╔', '┍', '┎', '┏', '┌')
+			public override void SetGlyphs ()
 			{
-
+				_round = CM.Glyphs.ULCornerR;
+				_doubleH = CM.Glyphs.ULCornerSingleDbl;
+				_doubleV = CM.Glyphs.ULCornerDblSingle;
+				_doubleBoth = CM.Glyphs.ULCornerDbl;
+				_thickH = CM.Glyphs.ULCornerLtHv;
+				_thickV = CM.Glyphs.ULCornerHvLt;
+				_thickBoth = CM.Glyphs.ULCornerHv;
+				_normal = CM.Glyphs.ULCorner;
 			}
 		}
 		private class URIntersectionRuneResolver : IntersectionRuneResolver {
-
-			public URIntersectionRuneResolver () :
-				base ('╮', '╕', '╖', '╗', '┑', '┒', '┓', '┐')
+			public override void SetGlyphs ()
 			{
-
+				_round = CM.Glyphs.URCornerR;
+				_doubleH = CM.Glyphs.URCornerSingleDbl;
+				_doubleV = CM.Glyphs.URCornerDblSingle;
+				_doubleBoth = CM.Glyphs.URCornerDbl;
+				_thickH = CM.Glyphs.URCornerHvLt;
+				_thickV = CM.Glyphs.URCornerLtHv;
+				_thickBoth = CM.Glyphs.URCornerHv;
+				_normal = CM.Glyphs.URCorner;
 			}
 		}
 		private class LLIntersectionRuneResolver : IntersectionRuneResolver {
-
-			public LLIntersectionRuneResolver () :
-				base ('╰', '╘', '╙', '╚', '┕', '┖', '┗', '└')
+			public override void SetGlyphs ()
 			{
-
+				_round = CM.Glyphs.LLCornerR;
+				_doubleH = CM.Glyphs.LLCornerSingleDbl;
+				_doubleV = CM.Glyphs.LLCornerDblSingle;
+				_doubleBoth = CM.Glyphs.LLCornerDbl;
+				_thickH = CM.Glyphs.LLCornerLtHv;
+				_thickV = CM.Glyphs.LLCornerHvLt;
+				_thickBoth = CM.Glyphs.LLCornerHv;
+				_normal = CM.Glyphs.LLCorner;
 			}
+
 		}
 		private class LRIntersectionRuneResolver : IntersectionRuneResolver {
-			public LRIntersectionRuneResolver () :
-				base ('╯', '╛', '╜', '╝', '┙', '┚', '┛', '┘')
+			public override void SetGlyphs ()
 			{
-
+				_round = CM.Glyphs.LRCornerR;
+				_doubleH = CM.Glyphs.LRCornerSingleDbl;
+				_doubleV = CM.Glyphs.LRCornerDblSingle;
+				_doubleBoth = CM.Glyphs.LRCornerDbl;
+				_thickH = CM.Glyphs.LRCornerLtHv;
+				_thickV = CM.Glyphs.LRCornerHvLt;
+				_thickBoth = CM.Glyphs.LRCornerHv;
+				_normal = CM.Glyphs.LRCorner;
 			}
 		}
 
 		private class TopTeeIntersectionRuneResolver : IntersectionRuneResolver {
-			public TopTeeIntersectionRuneResolver () :
-				base ('┬', '╤', '╥', '╦', '┯', '┰', '┳', '┬')
+			public override void SetGlyphs ()
 			{
-
+				_round = CM.Glyphs.TopTee;
+				_doubleH = CM.Glyphs.TopTeeDblH;
+				_doubleV = CM.Glyphs.TopTeeDblV;
+				_doubleBoth = CM.Glyphs.TopTeeDbl;
+				_thickH = CM.Glyphs.TopTeeHvH;
+				_thickV = CM.Glyphs.TopTeeHvV;
+				_thickBoth = CM.Glyphs.TopTeeHvDblH;
+				_normal = CM.Glyphs.TopTee;
 			}
 		}
 		private class LeftTeeIntersectionRuneResolver : IntersectionRuneResolver {
-			public LeftTeeIntersectionRuneResolver () :
-				base ('├', '╞', '╟', '╠', '┝', '┠', '┣', '├')
+			public override void SetGlyphs ()
 			{
-
+				_round = CM.Glyphs.LeftTee;
+				_doubleH = CM.Glyphs.LeftTeeDblH;
+				_doubleV = CM.Glyphs.LeftTeeDblV;
+				_doubleBoth = CM.Glyphs.LeftTeeDbl;
+				_thickH = CM.Glyphs.LeftTeeHvH;
+				_thickV = CM.Glyphs.LeftTeeHvV;
+				_thickBoth = CM.Glyphs.LeftTeeHvDblH;
+				_normal = CM.Glyphs.LeftTee;
 			}
 		}
 		private class RightTeeIntersectionRuneResolver : IntersectionRuneResolver {
-			public RightTeeIntersectionRuneResolver () :
-				base ('┤', '╡', '╢', '╣', '┥', '┨', '┫', '┤')
+			public override void SetGlyphs ()
 			{
-
+				_round = CM.Glyphs.RightTee;
+				_doubleH = CM.Glyphs.RightTeeDblH;
+				_doubleV = CM.Glyphs.RightTeeDblV;
+				_doubleBoth = CM.Glyphs.RightTeeDbl;
+				_thickH = CM.Glyphs.RightTeeHvH;
+				_thickV = CM.Glyphs.RightTeeHvV;
+				_thickBoth = CM.Glyphs.RightTeeHvDblH;
+				_normal = CM.Glyphs.RightTee;
 			}
 		}
 		private class BottomTeeIntersectionRuneResolver : IntersectionRuneResolver {
-			public BottomTeeIntersectionRuneResolver () :
-				base ('┴', '╧', '╨', '╩', '┷', '┸', '┻', '┴')
+			public override void SetGlyphs ()
 			{
-
+				_round = CM.Glyphs.BottomTee;
+				_doubleH = CM.Glyphs.BottomTeeDblH;
+				_doubleV = CM.Glyphs.BottomTeeDblV;
+				_doubleBoth = CM.Glyphs.BottomTeeDbl;
+				_thickH = CM.Glyphs.BottomTeeHvH;
+				_thickV = CM.Glyphs.BottomTeeHvV;
+				_thickBoth = CM.Glyphs.BottomTeeHvDblH;
+				_normal = CM.Glyphs.BottomTee;
 			}
 		}
-		private class CrosshairIntersectionRuneResolver : IntersectionRuneResolver {
-			public CrosshairIntersectionRuneResolver () :
-				base ('┼', '╪', '╫', '╬', '┿', '╂', '╋', '┼')
+		private class CrossIntersectionRuneResolver : IntersectionRuneResolver {
+			public override void SetGlyphs ()
 			{
-
+				_round = CM.Glyphs.Cross;
+				_doubleH = CM.Glyphs.CrossDblH;
+				_doubleV = CM.Glyphs.CrossDblV;
+				_doubleBoth = CM.Glyphs.CrossDbl;
+				_thickH = CM.Glyphs.CrossHvH;
+				_thickV = CM.Glyphs.CrossHvV;
+				_thickBoth = CM.Glyphs.CrossHv;
+				_normal = CM.Glyphs.Cross;
 			}
 		}
 
@@ -421,29 +488,29 @@ namespace Terminal.Gui {
 			case IntersectionRuneType.None:
 				return null;
 			case IntersectionRuneType.Dot:
-				return (Rune)'.';
+				return (Rune)CM.Glyphs.Dot;
 			case IntersectionRuneType.HLine:
 				if (useDouble) {
-					return driver.HDbLine;
+					return CM.Glyphs.HLineDbl;
 				}
 				if (useDashed) {
-					return driver.HDsLine;
+					return CM.Glyphs.HLineDa2;
 				}
 				if (useDotted) {
-					return driver.HDtLine;
+					return CM.Glyphs.HLineDa3;
 				}
-				return useThick ? driver.HThLine : (useThickDashed ? driver.HThDsLine : (useThickDotted ? driver.HThDtLine : driver.HLine));
+				return useThick ? CM.Glyphs.HLineHv : (useThickDashed ? CM.Glyphs.HLineHvDa2 : (useThickDotted ? CM.Glyphs.HLineHvDa3 : CM.Glyphs.HLine));
 			case IntersectionRuneType.VLine:
 				if (useDouble) {
-					return driver.VDbLine;
+					return CM.Glyphs.VLineDbl;
 				}
 				if (useDashed) {
-					return driver.VDsLine;
+					return CM.Glyphs.VLineDa3;
 				}
 				if (useDotted) {
-					return driver.VDtLine;
+					return CM.Glyphs.VLineDa4;
 				}
-				return useThick ? driver.VThLine : (useThickDashed ? driver.VThDsLine : (useThickDotted ? driver.VThDtLine : driver.VLine));
+				return useThick ? CM.Glyphs.VLineHv : (useThickDashed ? CM.Glyphs.VLineHvDa3 : (useThickDotted ? CM.Glyphs.VLineHvDa4 : CM.Glyphs.VLine));
 
 			default: throw new Exception ("Could not find resolver or switch case for " + nameof (runeType) + ":" + runeType);
 			}
@@ -458,23 +525,6 @@ namespace Terminal.Gui {
 			}
 
 			return set [0].Line.Attribute;
-
-		}
-
-		/// <summary>
-		/// Represents a single row/column within the <see cref="LineCanvas"/>. Includes the glyph and the foreground/background colors.
-		/// </summary>
-		public class Cell
-		{
-			/// <summary>
-			/// The glyph to draw.
-			/// </summary>
-			public Rune? Rune { get; set; }
-
-			/// <summary>
-			/// The foreground color to draw the glyph with.
-			/// </summary>
-			public Attribute? Attribute { get; set; }
 
 		}
 
@@ -494,12 +544,12 @@ namespace Terminal.Gui {
 		{
 			var set = new HashSet<IntersectionType> (intersects.Select (i => i.Type));
 
-			#region Crosshair Conditions
+			#region Cross Conditions
 			if (Has (set,
 				IntersectionType.PassOverHorizontal,
 				IntersectionType.PassOverVertical
 				)) {
-				return IntersectionRuneType.Crosshair;
+				return IntersectionRuneType.Cross;
 			}
 
 			if (Has (set,
@@ -507,7 +557,7 @@ namespace Terminal.Gui {
 				IntersectionType.StartLeft,
 				IntersectionType.StartRight
 				)) {
-				return IntersectionRuneType.Crosshair;
+				return IntersectionRuneType.Cross;
 			}
 
 			if (Has (set,
@@ -515,7 +565,7 @@ namespace Terminal.Gui {
 				IntersectionType.StartUp,
 				IntersectionType.StartDown
 				)) {
-				return IntersectionRuneType.Crosshair;
+				return IntersectionRuneType.Cross;
 			}
 
 			if (Has (set,
@@ -523,7 +573,7 @@ namespace Terminal.Gui {
 				IntersectionType.StartRight,
 				IntersectionType.StartUp,
 				IntersectionType.StartDown)) {
-				return IntersectionRuneType.Crosshair;
+				return IntersectionRuneType.Cross;
 			}
 			#endregion
 
@@ -694,7 +744,7 @@ namespace Terminal.Gui {
 			BottomTee,
 			RightTee,
 			LeftTee,
-			Crosshair,
+			Cross,
 			HLine,
 			VLine,
 		}

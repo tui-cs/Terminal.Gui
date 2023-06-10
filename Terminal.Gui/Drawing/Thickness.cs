@@ -1,5 +1,4 @@
-﻿using NStack;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Text;
 using System.Text.Json.Serialization;
@@ -82,7 +81,7 @@ namespace Terminal.Gui {
 		}
 
 		/// <summary>
-		/// Gets the total width of the left and right sides of the rectangle. Sets the height of the left and right sides of the rectangle to half the specified value.
+		/// Gets the total height of the top and bottom sides of the rectangle. Sets the height of the top and bottom sides of the rectangle to half the specified value.
 		/// </summary>
 		public int Vertical {
 			get {
@@ -94,7 +93,7 @@ namespace Terminal.Gui {
 		}
 
 		/// <summary>
-		/// Gets the total width of the top and bottom sides of the rectangle. Sets the width of the top and bottom sides of the rectangle to half the specified value.
+		/// Gets the total width of the left and right sides of the rectangle. Sets the width of the left and rigth sides of the rectangle to half the specified value.
 		/// </summary>
 		public int Horizontal {
 			get {
@@ -143,19 +142,19 @@ namespace Terminal.Gui {
 				return Rect.Empty;
 			}
 
-			System.Rune clearChar = ' ';
-			System.Rune leftChar = clearChar;
-			System.Rune rightChar = clearChar;
-			System.Rune topChar = clearChar;
-			System.Rune bottomChar = clearChar;
+			Rune clearChar = (Rune)' ';
+			Rune leftChar = clearChar;
+			Rune rightChar = clearChar;
+			Rune topChar = clearChar;
+			Rune bottomChar = clearChar;
 
 			if ((ConsoleDriver.Diagnostics & ConsoleDriver.DiagnosticFlags.FramePadding) == ConsoleDriver.DiagnosticFlags.FramePadding) {
-				leftChar = 'L';
-				rightChar = 'R';
-				topChar = 'T';
-				bottomChar = 'B';
+				leftChar = (Rune)'L';
+				rightChar = (Rune)'R';
+				topChar = (Rune)'T';
+				bottomChar = (Rune)'B';
 				if (!string.IsNullOrEmpty (label)) {
-					leftChar = rightChar = bottomChar = topChar = label [0];
+					leftChar = rightChar = bottomChar = topChar = (Rune)label [0];
 				}
 			}
 
@@ -224,7 +223,9 @@ namespace Terminal.Gui {
 		/// </summary>
 		public static Thickness Empty => new Thickness (0);
 
-		/// <inheritdoc/>
+		/// <summary>Determines whether the specified object is equal to the current object.</summary>
+		/// <param name="obj">The object to compare with the current object.</param>
+		/// <returns><c>true</c> if the specified object is equal to the current object; otherwise, <c>false</c>.</returns>
 		public override bool Equals (object obj)
 		{
 			//Check for null and compare run-time types.
@@ -243,7 +244,11 @@ namespace Terminal.Gui {
 		}
 
 		// IEquitable
-		/// <inheritdoc/>
+		/// <summary>
+		/// Indicates whether the current object is equal to another object of the same type.
+		/// </summary>
+		/// <param name="other"></param>
+		/// <returns>true if the current object is equal to the other parameter; otherwise, false.</returns>
 		public bool Equals (Thickness other)
 		{
 			return other is not null &&

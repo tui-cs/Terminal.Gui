@@ -83,7 +83,7 @@ namespace Terminal.Gui.TextTests {
 			var g = (SingleWordSuggestionGenerator)tv.Autocomplete.SuggestionGenerator;
 
 			Assert.Empty (g.AllSuggestions);
-			g.AllSuggestions = Regex.Matches (tv.Text.ToString (), "\\w+")
+			g.AllSuggestions = Regex.Matches (tv.Text, "\\w+")
 				.Select (s => s.Value)
 				.Distinct ().ToList ();
 			Assert.Equal (3, g.AllSuggestions.Count);
@@ -93,7 +93,7 @@ namespace Terminal.Gui.TextTests {
 			Assert.Equal (0, tv.Autocomplete.SelectedIdx);
 			Assert.Empty (tv.Autocomplete.Suggestions);
 			Assert.True (tv.ProcessKey (new KeyEvent (Key.F, new KeyModifiers ())));
-			top.Redraw (tv.Bounds);
+			top.Draw ();
 			Assert.Equal ($"F Fortunately super feature.", tv.Text);
 			Assert.Equal (new Point (1, 0), tv.CursorPosition);
 			Assert.Equal (2, tv.Autocomplete.Suggestions.Count);
@@ -102,7 +102,7 @@ namespace Terminal.Gui.TextTests {
 			Assert.Equal (0, tv.Autocomplete.SelectedIdx);
 			Assert.Equal ("Fortunately", tv.Autocomplete.Suggestions[tv.Autocomplete.SelectedIdx].Replacement);
 			Assert.True (tv.ProcessKey (new KeyEvent (Key.CursorDown, new KeyModifiers ())));
-			top.Redraw (tv.Bounds);
+			top.Draw ();
 			Assert.Equal ($"F Fortunately super feature.", tv.Text);
 			Assert.Equal (new Point (1, 0), tv.CursorPosition);
 			Assert.Equal (2, tv.Autocomplete.Suggestions.Count);
@@ -111,7 +111,7 @@ namespace Terminal.Gui.TextTests {
 			Assert.Equal (1, tv.Autocomplete.SelectedIdx);
 			Assert.Equal ("feature", tv.Autocomplete.Suggestions[tv.Autocomplete.SelectedIdx].Replacement);
 			Assert.True (tv.ProcessKey (new KeyEvent (Key.CursorDown, new KeyModifiers ())));
-			top.Redraw (tv.Bounds);
+			top.Draw ();
 			Assert.Equal ($"F Fortunately super feature.", tv.Text);
 			Assert.Equal (new Point (1, 0), tv.CursorPosition);
 			Assert.Equal (2, tv.Autocomplete.Suggestions.Count);
@@ -120,7 +120,7 @@ namespace Terminal.Gui.TextTests {
 			Assert.Equal (0, tv.Autocomplete.SelectedIdx);
 			Assert.Equal ("Fortunately", tv.Autocomplete.Suggestions[tv.Autocomplete.SelectedIdx].Replacement);
 			Assert.True (tv.ProcessKey (new KeyEvent (Key.CursorUp, new KeyModifiers ())));
-			top.Redraw (tv.Bounds);
+			top.Draw ();
 			Assert.Equal ($"F Fortunately super feature.", tv.Text);
 			Assert.Equal (new Point (1, 0), tv.CursorPosition);
 			Assert.Equal (2, tv.Autocomplete.Suggestions.Count);
@@ -129,7 +129,7 @@ namespace Terminal.Gui.TextTests {
 			Assert.Equal (1, tv.Autocomplete.SelectedIdx);
 			Assert.Equal ("feature", tv.Autocomplete.Suggestions[tv.Autocomplete.SelectedIdx].Replacement);
 			Assert.True (tv.ProcessKey (new KeyEvent (Key.CursorUp, new KeyModifiers ())));
-			top.Redraw (tv.Bounds);
+			top.Draw ();
 			Assert.Equal ($"F Fortunately super feature.", tv.Text);
 			Assert.Equal (new Point (1, 0), tv.CursorPosition);
 			Assert.Equal (2, tv.Autocomplete.Suggestions.Count);
@@ -138,14 +138,14 @@ namespace Terminal.Gui.TextTests {
 			Assert.Equal (0, tv.Autocomplete.SelectedIdx);
 			Assert.Equal ("Fortunately", tv.Autocomplete.Suggestions[tv.Autocomplete.SelectedIdx].Replacement);
 			Assert.True (tv.Autocomplete.Visible);
-			top.Redraw (tv.Bounds);
+			top.Draw ();
 			Assert.True (tv.ProcessKey (new KeyEvent (tv.Autocomplete.CloseKey, new KeyModifiers ())));
 			Assert.Equal ($"F Fortunately super feature.", tv.Text);
 			Assert.Equal (new Point (1, 0), tv.CursorPosition);
 			Assert.Empty (tv.Autocomplete.Suggestions);
 			Assert.Equal (3, g.AllSuggestions.Count);
 			Assert.False (tv.Autocomplete.Visible);
-			top.Redraw (tv.Bounds);
+			top.Draw ();
 			Assert.True (tv.ProcessKey (new KeyEvent (tv.Autocomplete.Reopen, new KeyModifiers ())));
 			Assert.Equal ($"F Fortunately super feature.", tv.Text);
 			Assert.Equal (new Point (1, 0), tv.CursorPosition);
@@ -176,7 +176,7 @@ namespace Terminal.Gui.TextTests {
 			};
 
 			var g = (SingleWordSuggestionGenerator)tv.Autocomplete.SuggestionGenerator;
-			g.AllSuggestions = Regex.Matches (tv.Text.ToString (), "\\w+")
+			g.AllSuggestions = Regex.Matches (tv.Text, "\\w+")
 					.Select (s => s.Value)
 					.Distinct ().ToList ();
 			var top = Application.Top;

@@ -17,7 +17,7 @@ namespace Terminal.Gui {
 	}
 
 	/// <summary>
-	/// Event arguments for the <see cref="ConfigurationManager.ThemeManager"/> events.
+	/// Event arguments for the <see cref="ThemeManager"/> events.
 	/// </summary>
 	public class ThemeManagerEventArgs : EventArgs {
 		/// <summary>

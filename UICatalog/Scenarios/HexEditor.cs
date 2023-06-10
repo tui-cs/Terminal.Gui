@@ -14,9 +14,9 @@ namespace UICatalog.Scenarios {
 		private string _fileName = "demo.bin";
 		private HexView _hexView;
 		private bool _saved = true;
-		private MenuItem miAllowEdits;
-		private StatusItem siPositionChanged;
-		private StatusBar statusBar;
+		private MenuItem _miAllowEdits;
+		private StatusItem _siPositionChanged;
+		private StatusBar _statusBar;
 
 		public override void Setup ()
 		{
@@ -49,30 +49,30 @@ namespace UICatalog.Scenarios {
 					new MenuItem ("_Paste", "", () => Paste())
 				}),
 				new MenuBarItem ("_Options", new MenuItem [] {
-					miAllowEdits = new MenuItem ("_AllowEdits", "", () => ToggleAllowEdits ()){Checked = _hexView.AllowEdits, CheckType = MenuItemCheckStyle.Checked}
+					_miAllowEdits = new MenuItem ("_AllowEdits", "", () => ToggleAllowEdits ()){Checked = _hexView.AllowEdits, CheckType = MenuItemCheckStyle.Checked}
 				})
 			});
 			Application.Top.Add (menu);
 
-			statusBar = new StatusBar (new StatusItem [] {
+			_statusBar = new StatusBar (new StatusItem [] {
 				new StatusItem(Key.F2, "~F2~ Open", () => Open()),
 				new StatusItem(Key.F3, "~F3~ Save", () => Save()),
 				new StatusItem(Application.QuitKey, $"{Application.QuitKey} to Quit", () => Quit()),
-				siPositionChanged = new StatusItem(Key.Null,
+				_siPositionChanged = new StatusItem(Key.Null,
 					$"Position: {_hexView.Position} Line: {_hexView.CursorPosition.Y} Col: {_hexView.CursorPosition.X} Line length: {_hexView.BytesPerLine}", () => {})
 			});
-			Application.Top.Add (statusBar);
+			Application.Top.Add (_statusBar);
 		}
 
 		private void _hexView_PositionChanged (object sender, HexViewEventArgs obj)
 		{
-			siPositionChanged.Title = $"Position: {obj.Position} Line: {obj.CursorPosition.Y} Col: {obj.CursorPosition.X} Line length: {obj.BytesPerLine}";
-			statusBar.SetNeedsDisplay ();
+			_siPositionChanged.Title = $"Position: {obj.Position} Line: {obj.CursorPosition.Y} Col: {obj.CursorPosition.X} Line length: {obj.BytesPerLine}";
+			_statusBar.SetNeedsDisplay ();
 		}
 
 		private void ToggleAllowEdits ()
 		{
-			_hexView.AllowEdits = (bool)(miAllowEdits.Checked = !miAllowEdits.Checked);
+			_hexView.AllowEdits = (bool)(_miAllowEdits.Checked = !_miAllowEdits.Checked);
 		}
 
 		private void _hexView_Edited (object sender, HexViewEditEventArgs e)

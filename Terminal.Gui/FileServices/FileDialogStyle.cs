@@ -15,6 +15,7 @@ namespace Terminal.Gui {
 	/// Stores style settings for <see cref="FileDialog"/>.
 	/// </summary>
 	public class FileDialogStyle {
+		readonly IFileSystem _fileSystem;
 
 		/// <summary>
 		/// Gets or sets the default value to use for <see cref="UseColors"/>.
@@ -35,12 +36,12 @@ namespace Terminal.Gui {
 		/// should be used for different file types/directories.  Defaults
 		/// to false.
 		/// </summary>
-		public bool UseColors { get; set; }
+		public bool UseColors { get; set; } = DefaultUseColors;
 
 		/// <summary>
 		/// Gets or sets the culture to use (e.g. for number formatting).
 		/// Defaults to <see cref="CultureInfo.CurrentUICulture"/>.
-		/// <summary>
+		/// </summary>
 		public CultureInfo Culture {get;set;} = CultureInfo.CurrentUICulture;
 
 		/// <summary>
@@ -141,7 +142,7 @@ namespace Terminal.Gui {
 		/// <summary>
 		/// Gets the style settings for the table of files (in currently selected directory).
 		/// </summary>
-		public TableView.TableStyle TableStyle { get; internal set; }
+		public TableStyle TableStyle { get; internal set; }
 
 		/// <summary>
 		/// Gets the style settings for the collapse-able directory/places tree
@@ -155,7 +156,7 @@ namespace Terminal.Gui {
 		/// <see cref="Environment.SpecialFolder"/>.
 		/// </summary>
 		/// <remarks>Must be configured before showing the dialog.</remarks>
-		public FileDialogTreeRootGetter TreeRootGetter { get; set; } = DefaultTreeRootGetter;
+		public FileDialogTreeRootGetter TreeRootGetter { get; set; }
 
 		/// <summary>
 		/// Gets or sets whether to use advanced unicode characters which might not be installed
@@ -167,7 +168,7 @@ namespace Terminal.Gui {
 		/// User defined delegate for picking which character(s)/unicode
 		/// symbol(s) to use as an 'icon' for files/folders. 
 		/// </summary>
-		public Func<IFileSystemInfo, string> IconGetter { get; set; }
+		public Func<FileDialogIconGetterArgs, string> IconGetter { get; set; }
 
 		/// <summary>
 		/// Gets or sets the format to use for date/times in the Modified column.
@@ -179,9 +180,17 @@ namespace Terminal.Gui {
 		/// <summary>
 		/// Creates a new instance of the <see cref="FileDialogStyle"/> class.
 		/// </summary>
-		public FileDialogStyle ()
+		public FileDialogStyle (IFileSystem fileSystem)
 		{
+			_fileSystem = fileSystem;
 			IconGetter = DefaultIconGetter;
+			TreeRootGetter = DefaultTreeRootGetter;
+
+			if(NerdFonts.Enable)
+			{
+				UseNerdForIcons();
+			}
+
 			DateFormat = CultureInfo.CurrentCulture.DateTimeFormat.SortableDateTimePattern;
 
 			ColorSchemeDirectory = new ColorScheme {
@@ -210,25 +219,39 @@ namespace Terminal.Gui {
 				Focus = Application.Driver.MakeAttribute (Color.Black, Color.White),
 				HotFocus = Application.Driver.MakeAttribute (Color.Black, Color.White),
 			};
-
 		}
 
-		private string DefaultIconGetter (IFileSystemInfo arg)
+		/// <summary>
+		/// Changes <see cref="IconGetter"/> to serve diverse icon set using
+		/// the Nerd fonts. This option requires users to have specific font(s)
+		/// installed.
+		/// </summary>
+		public void UseNerdForIcons ()
 		{
-			if (arg is IDirectoryInfo) {
-				return UseUnicodeCharacters ? "\ua909 " : "\\";
+			var nerd = new NerdFonts();
+			IconGetter = nerd.GetNerdIcon;
+		}
+
+		private string DefaultIconGetter (FileDialogIconGetterArgs args)
+		{
+			var file = args.File;
+
+			if (file is IDirectoryInfo) {
+				return UseUnicodeCharacters ? ConfigurationManager.Glyphs.Folder + " " : Path.DirectorySeparatorChar.ToString();
 			}
 
-			return UseUnicodeCharacters ? "\u2630 " : "";
+			return UseUnicodeCharacters ?  ConfigurationManager.Glyphs.File + " " : "";
 
 		}
 
-		private static IEnumerable<FileDialogRootTreeNode> DefaultTreeRootGetter ()
+		private IEnumerable<FileDialogRootTreeNode> DefaultTreeRootGetter ()
 		{
 			var roots = new List<FileDialogRootTreeNode> ();
 			try {
 				foreach (var d in Environment.GetLogicalDrives ()) {
-					roots.Add (new FileDialogRootTreeNode (d, new DirectoryInfo (d)));
+
+					
+					roots.Add (new FileDialogRootTreeNode (d, _fileSystem.DirectoryInfo.New(d)));
 				}
 
 			} catch (Exception) {
@@ -246,7 +269,8 @@ namespace Terminal.Gui {
 
 							roots.Add (new FileDialogRootTreeNode (
 							special.ToString (),
-							new DirectoryInfo (Environment.GetFolderPath (special))));
+							_fileSystem.DirectoryInfo.New(Environment.GetFolderPath (special))
+							));
 						}
 					} catch (Exception) {
 						// Special file exists but contents are unreadable (permissions?)

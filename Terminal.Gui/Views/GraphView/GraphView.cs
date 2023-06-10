@@ -1,4 +1,4 @@
-﻿using NStack;
+﻿using System.Text;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -79,13 +79,13 @@ namespace Terminal.Gui {
 			AddCommand (Command.ScrollRight, () => { Scroll (CellSize.X, 0); return true; });
 			AddCommand (Command.ScrollLeft, () => { Scroll (-CellSize.X, 0); return true; });
 			AddCommand (Command.PageUp, () => { PageUp (); return true; });
-			AddCommand (Command.PageDown, () => { PageDown(); return true; });
+			AddCommand (Command.PageDown, () => { PageDown (); return true; });
 
 			AddKeyBinding (Key.CursorRight, Command.ScrollRight);
 			AddKeyBinding (Key.CursorLeft, Command.ScrollLeft);
 			AddKeyBinding (Key.CursorUp, Command.ScrollUp);
 			AddKeyBinding (Key.CursorDown, Command.ScrollDown);
-			
+
 			// Not bound by default (preserves backwards compatibility)
 			//AddKeyBinding (Key.PageUp, Command.PageUp);
 			//AddKeyBinding (Key.PageDown, Command.PageDown);
@@ -108,10 +108,10 @@ namespace Terminal.Gui {
 		}
 
 		///<inheritdoc/>
-		public override void Redraw (Rect bounds)
+		public override void OnDrawContent (Rect contentArea)
 		{
-			if(CellSize.X == 0 || CellSize.Y == 0) {
-				throw new Exception ($"{nameof(CellSize)} cannot be 0");
+			if (CellSize.X == 0 || CellSize.Y == 0) {
+				throw new Exception ($"{nameof (CellSize)} cannot be 0");
 			}
 
 			SetDriverColorToGraphColor ();
@@ -139,7 +139,7 @@ namespace Terminal.Gui {
 			}
 
 			// Draw 'before' annotations
-			foreach (var a in Annotations.ToArray().Where (a => a.BeforeSeries)) {
+			foreach (var a in Annotations.ToArray ().Where (a => a.BeforeSeries)) {
 				a.Render (this);
 			}
 
@@ -152,17 +152,17 @@ namespace Terminal.Gui {
 			AxisX.DrawAxisLabels (this);
 
 			// Draw a cross where the two axis cross
-			var axisIntersection = new Point(AxisY.GetAxisXPosition(this),AxisX.GetAxisYPosition(this));
+			var axisIntersection = new Point (AxisY.GetAxisXPosition (this), AxisX.GetAxisYPosition (this));
 
 			if (AxisX.Visible && AxisY.Visible) {
 				Move (axisIntersection.X, axisIntersection.Y);
-				AddRune (axisIntersection.X, axisIntersection.Y, '\u253C');
+				AddRune (axisIntersection.X, axisIntersection.Y, (Rune)'\u253C');
 			}
 
 			SetDriverColorToGraphColor ();
 
-			Rect drawBounds = new Rect((int)MarginLeft,0, graphScreenWidth, graphScreenHeight);
-			
+			Rect drawBounds = new Rect ((int)MarginLeft, 0, graphScreenWidth, graphScreenHeight);
+
 			RectangleF graphSpace = ScreenToGraphSpace (drawBounds);
 
 			foreach (var s in Series.ToArray ()) {
@@ -179,7 +179,6 @@ namespace Terminal.Gui {
 			foreach (var a in Annotations.ToArray ().Where (a => !a.BeforeSeries)) {
 				a.Render (this);
 			}
-
 		}
 
 		/// <summary>
@@ -214,7 +213,7 @@ namespace Terminal.Gui {
 		public RectangleF ScreenToGraphSpace (Rect screenArea)
 		{
 			// get position of the bottom left
-			var pos = ScreenToGraphSpace (screenArea.Left, screenArea.Bottom-1);
+			var pos = ScreenToGraphSpace (screenArea.Left, screenArea.Bottom - 1);
 
 			return new RectangleF (pos.X, pos.Y, screenArea.Width * CellSize.X, screenArea.Height * CellSize.Y);
 		}
@@ -248,7 +247,7 @@ namespace Terminal.Gui {
 		public override bool ProcessKey (KeyEvent keyEvent)
 		{
 			if (HasFocus && CanFocus) {
-				var result =  InvokeKeybindings (keyEvent);
+				var result = InvokeKeybindings (keyEvent);
 				if (result != null)
 					return (bool)result;
 			}
@@ -259,7 +258,7 @@ namespace Terminal.Gui {
 		/// <summary>
 		/// Scrolls the graph up 1 page
 		/// </summary>
-		public void PageUp()
+		public void PageUp ()
 		{
 			Scroll (0, CellSize.Y * Bounds.Height);
 		}
@@ -267,9 +266,9 @@ namespace Terminal.Gui {
 		/// <summary>
 		/// Scrolls the graph down 1 page
 		/// </summary>
-		public void PageDown()
+		public void PageDown ()
 		{
-			Scroll(0, -1 * CellSize.Y * Bounds.Height);
+			Scroll (0, -1 * CellSize.Y * Bounds.Height);
 		}
 		/// <summary>
 		/// Scrolls the view by a given number of units in graph space.

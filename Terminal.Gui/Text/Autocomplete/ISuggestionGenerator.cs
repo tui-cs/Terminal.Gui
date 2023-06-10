@@ -1,5 +1,5 @@
 ﻿using System.Collections.Generic;
-using Rune = System.Rune;
+using System.Text;
 
 namespace Terminal.Gui {
 	/// <summary>

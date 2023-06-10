@@ -33,7 +33,7 @@ namespace Terminal.Gui {
 		public ContextMenu () : this (0, 0, new MenuBarItem ()) { }
 
 		/// <summary>
-		/// Initializes a context menu, with a <see cref="View"/> specifiying the parent/hose of the menu.
+		/// Initializes a context menu, with a <see cref="View"/> specifying the parent/host of the menu.
 		/// </summary>
 		/// <param name="host">The host view.</param>
 		/// <param name="menuItems">The menu items for the context menu.</param>
@@ -79,7 +79,6 @@ namespace Terminal.Gui {
 			}
 			if (container != null) {
 				container.Closing -= Container_Closing;
-				container.TerminalResized -= Container_Resized;
 			}
 		}
 
@@ -91,13 +90,12 @@ namespace Terminal.Gui {
 			if (menuBar != null) {
 				Hide ();
 			}
-			container = Application.Top;
+			container = Application.Current;
 			container.Closing += Container_Closing;
-			container.TerminalResized += Container_Resized;
-			var frame = container.Frame;
+			var frame = new Rect (0, 0, View.Driver.Cols, View.Driver.Rows);
 			var position = Position;
 			if (Host != null) {
-				Host.ViewToScreen (container.Frame.X, container.Frame.Y, out int x, out int y);
+				Host.ViewToScreen (frame.X, frame.Y, out int x, out int y);
 				var pos = new Point (x, y);
 				pos.Y += Host.Frame.Height - 1;
 				if (position != pos) {
@@ -119,7 +117,7 @@ namespace Terminal.Gui {
 					if (Host == null) {
 						position.Y = frame.Bottom - rect.Height - 1;
 					} else {
-						Host.ViewToScreen (container.Frame.X, container.Frame.Y, out int x, out int y);
+						Host.ViewToScreen (frame.X, frame.Y, out int x, out int y);
 						var pos = new Point (x, y);
 						position.Y = pos.Y - rect.Height - 1;
 					}
@@ -143,13 +141,6 @@ namespace Terminal.Gui {
 			menuBar.MenuAllClosed += MenuBar_MenuAllClosed;
 			IsShow = true;
 			menuBar.OpenMenu ();
-		}
-
-		private void Container_Resized (object sender, SizeChangedEventArgs e)
-		{
-			if (IsShow) {
-				Show ();
-			}
 		}
 
 		private void Container_Closing (object sender, ToplevelClosingEventArgs obj)

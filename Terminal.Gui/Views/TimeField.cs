@@ -7,7 +7,7 @@
 using System;
 using System.Globalization;
 using System.Linq;
-using NStack;
+using System.Text;
 
 namespace Terminal.Gui {
 	/// <summary>
@@ -109,7 +109,7 @@ namespace Terminal.Gui {
 		void TextField_TextChanged (object sender, TextChangedEventArgs e)
 		{
 			try {
-				if (!TimeSpan.TryParseExact (Text.ToString ().Trim (), format.Trim (), CultureInfo.CurrentCulture, TimeSpanStyles.None, out TimeSpan result))
+				if (!TimeSpan.TryParseExact (Text.Trim (), format.Trim (), CultureInfo.CurrentCulture, TimeSpanStyles.None, out TimeSpan result))
 					Text = e.OldValue;
 			} catch (Exception) {
 				Text = e.OldValue;
@@ -174,19 +174,19 @@ namespace Terminal.Gui {
 			newText.Add (key);
 			if (CursorPosition < fieldLen)
 				newText = newText.Concat (text.GetRange (CursorPosition + 1, text.Count - (CursorPosition + 1))).ToList ();
-			return SetText (ustring.Make (newText));
+			return SetText (StringExtensions.ToString (newText));
 		}
 
-		bool SetText (ustring text)
+		bool SetText (string text)
 		{
-			if (text.IsEmpty) {
+			if (string.IsNullOrEmpty (text)) {
 				return false;
 			}
 
-			ustring [] vals = text.Split (ustring.Make (sepChar));
+			string [] vals = text.Split (sepChar);
 			bool isValidTime = true;
-			int hour = Int32.Parse (vals [0].ToString ());
-			int minute = Int32.Parse (vals [1].ToString ());
+			int hour = Int32.Parse (vals [0]);
+			int minute = Int32.Parse (vals [1]);
 			int second = isShort ? 0 : vals.Length > 2 ? Int32.Parse (vals [2].ToString ()) : 0;
 			if (hour < 0) {
 				isValidTime = false;
@@ -260,7 +260,7 @@ namespace Terminal.Gui {
 			if (ReadOnly)
 				return true;
 
-			if (SetText (TextModel.ToRunes (ustring.Make ((uint)kb.Key)).First ()))
+			if (SetText (TextModel.ToRunes (((Rune)(uint)kb.Key).ToString ()).First ()))
 				IncCursorPosition ();
 
 			return true;
@@ -297,7 +297,7 @@ namespace Terminal.Gui {
 			if (ReadOnly)
 				return;
 
-			SetText ('0');
+			SetText ((Rune)'0');
 			DecCursorPosition ();
 			return;
 		}
@@ -308,7 +308,7 @@ namespace Terminal.Gui {
 			if (ReadOnly)
 				return;
 
-			SetText ('0');
+			SetText ((Rune)'0');
 			return;
 		}
 
@@ -336,7 +336,7 @@ namespace Terminal.Gui {
 		/// <param name="args">The event arguments</param>
 		public virtual void OnTimeChanged (DateTimeEventArgs<TimeSpan> args)
 		{
-			TimeChanged?.Invoke (this,args);
+			TimeChanged?.Invoke (this, args);
 		}
 	}
 }

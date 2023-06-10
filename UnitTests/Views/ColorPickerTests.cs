@@ -14,19 +14,11 @@ namespace Terminal.Gui.ViewsTests {
 			Assert.Equal (Color.Black, colorPicker.SelectedColor);
 			Assert.Equal (new Point (0, 0), colorPicker.Cursor);
 			Assert.True (colorPicker.CanFocus);
-			Assert.Equal (new Rect (0, 0, 32, 5), colorPicker.Frame);
 
-			colorPicker = new ColorPicker (5, 10, "Title");
-			Assert.Equal (Color.Black, colorPicker.SelectedColor);
-			Assert.Equal (new Point (0, 0), colorPicker.Cursor);
-			Assert.True (colorPicker.CanFocus);
-			Assert.Equal (new Rect (5, 10, 32, 5), colorPicker.Frame);
-
-			colorPicker = new ColorPicker (new Point (10, 15), "Title");
-			Assert.Equal (Color.Black, colorPicker.SelectedColor);
-			Assert.Equal (new Point (0, 0), colorPicker.Cursor);
-			Assert.True (colorPicker.CanFocus);
-			Assert.Equal (new Rect (10, 15, 32, 5), colorPicker.Frame);
+			colorPicker.BeginInit ();
+			colorPicker.EndInit ();
+			colorPicker.LayoutSubviews ();
+			Assert.Equal (new Rect (0, 0, 32, 4), colorPicker.Frame);
 		}
 
 		[Fact]

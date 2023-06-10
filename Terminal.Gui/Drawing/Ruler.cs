@@ -1,5 +1,4 @@
-﻿using NStack;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Text;
@@ -58,7 +57,7 @@ namespace Terminal.Gui {
 				var vrule = _vTemplate.Repeat ((int)Math.Ceiling ((double)(Length + 2) / (double)_vTemplate.Length)) [start..(Length + start)];
 				for (var r = location.Y; r < location.Y + Length; r++) {
 					Application.Driver.Move (location.X, r);
-					Application.Driver.AddRune (vrule [r - location.Y]);
+					Application.Driver.AddRune ((Rune)vrule [r - location.Y]);
 				}
 			}
 		}

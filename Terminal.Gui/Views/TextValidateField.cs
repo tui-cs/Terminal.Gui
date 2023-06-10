@@ -5,7 +5,7 @@
 //	José Miguel Perricone (jmperricone@hotmail.com)
 //
 
-using NStack;
+using System.Text;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -83,12 +83,12 @@ namespace Terminal.Gui {
 			/// <summary>
 			/// Set the input text and get the current value.
 			/// </summary>
-			ustring Text { get; set; }
+			string Text { get; set; }
 
 			/// <summary>
 			/// Gets the formatted string for display.
 			/// </summary>
-			ustring DisplayText { get; }
+			string DisplayText { get; }
 		}
 
 		//////////////////////////////////////////////////////////////////////////////
@@ -117,13 +117,13 @@ namespace Terminal.Gui {
 			/// <summary>
 			/// Mask property
 			/// </summary>
-			public ustring Mask {
+			public string Mask {
 				get {
 					return provider?.Mask;
 				}
 				set {
 					var current = provider != null ? provider.ToString (false, false) : string.Empty;
-					provider = new MaskedTextProvider (value == ustring.Empty ? "&&&&&&" : value.ToString ());
+					provider = new MaskedTextProvider (value == string.Empty ? "&&&&&&" : value);
 					if (string.IsNullOrEmpty (current) == false) {
 						provider.Set (current);
 					}
@@ -131,12 +131,12 @@ namespace Terminal.Gui {
 			}
 
 			///<inheritdoc/>
-			public ustring Text {
+			public string Text {
 				get {
 					return provider.ToString ();
 				}
 				set {
-					provider.Set (value.ToString ());
+					provider.Set (value);
 				}
 			}
 
@@ -147,7 +147,7 @@ namespace Terminal.Gui {
 			public bool Fixed => true;
 
 			///<inheritdoc/>
-			public ustring DisplayText => provider.ToDisplayString ();
+			public string DisplayText => provider.ToDisplayString ();
 
 			///<inheritdoc/>
 			public int Cursor (int pos)
@@ -230,9 +230,9 @@ namespace Terminal.Gui {
 			/// <summary>
 			/// Regex pattern property.
 			/// </summary>
-			public ustring Pattern {
+			public string Pattern {
 				get {
-					return ustring.Make (pattern);
+					return StringExtensions.ToString (pattern);
 				}
 				set {
 					pattern = value.ToRuneList ();
@@ -242,18 +242,18 @@ namespace Terminal.Gui {
 			}
 
 			///<inheritdoc/>
-			public ustring Text {
+			public string Text {
 				get {
-					return ustring.Make (text);
+					return StringExtensions.ToString (text);
 				}
 				set {
-					text = value != ustring.Empty ? value.ToRuneList () : null;
+					text = value != string.Empty ? value.ToRuneList () : null;
 					SetupText ();
 				}
 			}
 
 			///<inheritdoc/>
-			public ustring DisplayText => Text;
+			public string DisplayText => Text;
 
 			///<inheritdoc/>
 			public bool IsValid {
@@ -272,7 +272,7 @@ namespace Terminal.Gui {
 
 			bool Validate (List<Rune> text)
 			{
-				var match = regex.Match (ustring.Make (text).ToString ());
+				var match = regex.Match (StringExtensions.ToString (text));
 				return match.Success;
 			}
 
@@ -331,9 +331,9 @@ namespace Terminal.Gui {
 			public bool InsertAt (char ch, int pos)
 			{
 				var aux = text.ToList ();
-				aux.Insert (pos, ch);
+				aux.Insert (pos, (Rune)ch);
 				if (Validate (aux) || ValidateOnInput == false) {
-					text.Insert (pos, ch);
+					text.Insert (pos, (Rune)ch);
 					return true;
 				}
 				return false;
@@ -353,7 +353,7 @@ namespace Terminal.Gui {
 			/// </summary>
 			private void CompileMask ()
 			{
-				regex = new Regex (ustring.Make (pattern).ToString (), RegexOptions.Compiled);
+				regex = new Regex (StringExtensions.ToString (pattern), RegexOptions.Compiled);
 			}
 		}
 		#endregion
@@ -419,7 +419,7 @@ namespace Terminal.Gui {
 			set {
 				provider = value;
 				if (provider.Fixed == true) {
-					this.Width = provider.DisplayText == ustring.Empty ? 10 : Text.Length;
+					this.Width = provider.DisplayText == string.Empty ? 10 : Text.Length;
 				}
 				HomeKeyHandler ();
 				SetNeedsDisplay ();
@@ -446,10 +446,10 @@ namespace Terminal.Gui {
 		/// <summary>
 		/// Text
 		/// </summary>
-		public new ustring Text {
+		public new string Text {
 			get {
 				if (provider == null) {
-					return ustring.Empty;
+					return string.Empty;
 				}
 
 				return provider.Text;
@@ -501,7 +501,7 @@ namespace Terminal.Gui {
 		}
 
 		///<inheritdoc/>
-		public override void Redraw (Rect bounds)
+		public override void OnDrawContent (Rect contentArea)
 		{
 			if (provider == null) {
 				Move (0, 0);
@@ -512,27 +512,27 @@ namespace Terminal.Gui {
 			var bgcolor = !IsValid ? Color.BrightRed : ColorScheme.Focus.Background;
 			var textColor = new Attribute (ColorScheme.Focus.Foreground, bgcolor);
 
-			var (margin_left, margin_right) = GetMargins (bounds.Width);
+			var (margin_left, margin_right) = GetMargins (Bounds.Width);
 
 			Move (0, 0);
 
 			// Left Margin
 			Driver.SetAttribute (textColor);
 			for (int i = 0; i < margin_left; i++) {
-				Driver.AddRune (' ');
+				Driver.AddRune ((Rune)' ');
 			}
 
 			// Content
 			Driver.SetAttribute (textColor);
 			// Content
 			for (int i = 0; i < provider.DisplayText.Length; i++) {
-				Driver.AddRune (provider.DisplayText [i]);
+				Driver.AddRune ((Rune)provider.DisplayText [i]);
 			}
 
 			// Right Margin
 			Driver.SetAttribute (textColor);
 			for (int i = 0; i < margin_right; i++) {
-				Driver.AddRune (' ');
+				Driver.AddRune ((Rune)' ');
 			}
 		}
 
@@ -627,7 +627,7 @@ namespace Terminal.Gui {
 
 			var key = new Rune ((uint)kb.KeyValue);
 
-			var inserted = provider.InsertAt ((char)key, cursorPosition);
+			var inserted = provider.InsertAt ((char)key.Value, cursorPosition);
 
 			if (inserted) {
 				CursorRight ();

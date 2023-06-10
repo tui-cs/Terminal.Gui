@@ -41,7 +41,7 @@ namespace Terminal.Gui.DriverTests {
 			var scheme = new ColorScheme ();
 			var lbl = new Label ();
 			lbl.ColorScheme = scheme;
-			lbl.Redraw (lbl.Bounds);
+			lbl.Draw ();
 		}
 
 		[Fact]

@@ -5,7 +5,7 @@
 //   Miguel de Icaza (miguel@gnome.org)
 //
 using System;
-using NStack;
+using System.Text;
 
 namespace Terminal.Gui {
 
@@ -47,7 +47,7 @@ namespace Terminal.Gui {
 		/// </summary>
 		/// <param name="s">S.</param>
 		/// <param name="is_checked">If set to <c>true</c> is checked.</param>
-		public CheckBox (ustring s, bool is_checked = false) : base ()
+		public CheckBox (string s, bool is_checked = false) : base ()
 		{
 			SetInitialProperties (s, is_checked);
 		}
@@ -59,7 +59,7 @@ namespace Terminal.Gui {
 		///   The size of <see cref="CheckBox"/> is computed based on the
 		///   text length. This <see cref="CheckBox"/> is not toggled.
 		/// </remarks>
-		public CheckBox (int x, int y, ustring s) : this (x, y, s, false)
+		public CheckBox (int x, int y, string s) : this (x, y, s, false)
 		{
 		}
 
@@ -70,7 +70,7 @@ namespace Terminal.Gui {
 		///   The size of <see cref="CheckBox"/> is computed based on the
 		///   text length. 
 		/// </remarks>
-		public CheckBox (int x, int y, ustring s, bool is_checked) : base (new Rect (x, y, s.Length, 1))
+		public CheckBox (int x, int y, string s, bool is_checked) : base (new Rect (x, y, s.Length, 1))
 		{
 			SetInitialProperties (s, is_checked);
 		}
@@ -81,17 +81,17 @@ namespace Terminal.Gui {
 		/// </summary>
 		/// <param name="s"></param>
 		/// <param name="is_checked"></param>
-		void SetInitialProperties (ustring s, bool is_checked)
+		void SetInitialProperties (string s, bool is_checked)
 		{
-			charNullChecked = new Rune (Driver != null ? Driver.NullChecked : '?');
-			charChecked = new Rune (Driver != null ? Driver.Checked : '√');
-			charUnChecked = new Rune (Driver != null ? Driver.UnChecked : '╴');
+			charNullChecked = CM.Glyphs.NullChecked;
+			charChecked = CM.Glyphs.Checked;
+			charUnChecked = CM.Glyphs.UnChecked;
 			Checked = is_checked;
-			HotKeySpecifier = new Rune ('_');
+			HotKeySpecifier = (Rune)'_';
 			CanFocus = true;
 			AutoSize = true;
 			Text = s;
-			
+
 			OnResizeNeeded ();
 
 			// Things this view knows how to do
@@ -109,10 +109,10 @@ namespace Terminal.Gui {
 			case TextAlignment.Left:
 			case TextAlignment.Centered:
 			case TextAlignment.Justified:
-				TextFormatter.Text = ustring.Make (GetCheckedState ()) + " " + GetFormatterText ();
+				TextFormatter.Text = $"{GetCheckedState ()} {GetFormatterText ()}";
 				break;
 			case TextAlignment.Right:
-				TextFormatter.Text = GetFormatterText () + " " + ustring.Make (GetCheckedState ());
+				TextFormatter.Text = $"{GetFormatterText ()} {GetCheckedState ()}";
 				break;
 			}
 		}
@@ -126,12 +126,12 @@ namespace Terminal.Gui {
 			}
 		}
 
-		ustring GetFormatterText ()
+		string GetFormatterText ()
 		{
-			if (AutoSize || ustring.IsNullOrEmpty (Text) || Frame.Width <= 2) {
+			if (AutoSize || string.IsNullOrEmpty (Text) || Frame.Width <= 2) {
 				return Text;
 			}
-			return Text.RuneSubstring (0, Math.Min (Frame.Width - 2, Text.RuneCount));
+			return Text [..Math.Min (Frame.Width - 2, Text.GetRuneCount ())];
 		}
 
 		/// <summary>
@@ -209,7 +209,7 @@ namespace Terminal.Gui {
 			} else {
 				Checked = !Checked;
 			}
-			
+
 			OnToggled (new ToggleEventArgs (previousChecked, Checked));
 			SetNeedsDisplay ();
 			return true;

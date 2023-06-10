@@ -10,19 +10,19 @@ namespace Terminal.Gui {
 		/// <summary>
 		/// The previously selected tab. May be null
 		/// </summary>
-		public TabView.Tab OldTab { get; }
+		public Tab OldTab { get; }
 
 		/// <summary>
 		/// The currently selected tab. May be null
 		/// </summary>
-		public TabView.Tab NewTab { get; }
+		public Tab NewTab { get; }
 
 		/// <summary>
 		/// Documents a tab change
 		/// </summary>
 		/// <param name="oldTab"></param>
 		/// <param name="newTab"></param>
-		public TabChangedEventArgs (TabView.Tab oldTab, TabView.Tab newTab)
+		public TabChangedEventArgs (Tab oldTab, Tab newTab)
 		{
 			OldTab = oldTab;
 			NewTab = newTab;

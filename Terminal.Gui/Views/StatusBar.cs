@@ -8,7 +8,7 @@
 //   Add mouse support
 using System;
 using System.Collections.Generic;
-using NStack;
+using System.Text;
 
 namespace Terminal.Gui {
 	/// <summary>
@@ -27,7 +27,7 @@ namespace Terminal.Gui {
 		/// <param name="shortcut">Shortcut to activate the <see cref="StatusItem"/>.</param>
 		/// <param name="title">Title for the <see cref="StatusItem"/>.</param>
 		/// <param name="action">Action to invoke when the <see cref="StatusItem"/> is activated.</param>
-		public StatusItem (Key shortcut, ustring title, Action action)
+		public StatusItem (Key shortcut, string title, Action action)
 		{
 			Title = title ?? "";
 			Shortcut = shortcut;
@@ -48,7 +48,7 @@ namespace Terminal.Gui {
 		/// A <see cref="StatusItem.Title"/> set to `~F1~ Help` will render as *F1* using <see cref="ColorScheme.HotNormal"/> and
 		/// *Help* as <see cref="ColorScheme.HotNormal"/>.
 		/// </remarks>
-		public ustring Title { get; set; }
+		public string Title { get; set; }
 
 		/// <summary>
 		/// Gets or sets the action to be invoked when the statusbar item is triggered
@@ -96,15 +96,15 @@ namespace Terminal.Gui {
 			Height = 1;
 		}
 
-		static ustring shortcutDelimiter = "-";
+		static string shortcutDelimiter = "-";
 		/// <summary>
 		/// Used for change the shortcut delimiter separator.
 		/// </summary>
-		public static ustring ShortcutDelimiter {
+		public static string ShortcutDelimiter {
 			get => shortcutDelimiter;
 			set {
 				if (shortcutDelimiter != value) {
-					shortcutDelimiter = value == ustring.Empty ? " " : value;
+					shortcutDelimiter = value == string.Empty ? " " : value;
 				}
 			}
 		}
@@ -117,29 +117,29 @@ namespace Terminal.Gui {
 		}
 
 		///<inheritdoc/>
-		public override void Redraw (Rect bounds)
+		public override void OnDrawContent (Rect contentArea)
 		{
 			Move (0, 0);
 			Driver.SetAttribute (GetNormalColor ());
 			for (int i = 0; i < Frame.Width; i++)
-				Driver.AddRune (' ');
+				Driver.AddRune ((Rune)' ');
 
 			Move (1, 0);
 			var scheme = GetNormalColor ();
 			Driver.SetAttribute (scheme);
 			for (int i = 0; i < Items.Length; i++) {
-				var title = Items [i].Title.ToString ();
-				for (int n = 0; n < Items [i].Title.RuneCount; n++) {
+				var title = Items [i].Title;
+				for (int n = 0; n < Items [i].Title.GetRuneCount (); n++) {
 					if (title [n] == '~') {
 						scheme = ToggleScheme (scheme);
 						continue;
 					}
-					Driver.AddRune (title [n]);
+					Driver.AddRune ((Rune)title [n]);
 				}
 				if (i + 1 < Items.Length) {
-					Driver.AddRune (' ');
-					Driver.AddRune (Driver.VLine);
-					Driver.AddRune (' ');
+					Driver.AddRune ((Rune)' ');
+					Driver.AddRune (CM.Glyphs.VLine);
+					Driver.AddRune ((Rune)' ');
 				}
 			}
 		}
@@ -173,7 +173,7 @@ namespace Terminal.Gui {
 			return true;
 		}
 
-		int GetItemTitleLength (ustring title)
+		int GetItemTitleLength (string title)
 		{
 			int len = 0;
 			foreach (var ch in title) {

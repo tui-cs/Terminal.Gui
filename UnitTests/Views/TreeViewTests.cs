@@ -131,7 +131,7 @@ namespace Terminal.Gui.ViewsTests {
 		{
 			var tree = CreateTree (out Factory f, out Car car1, out Car car2);
 			tree.BeginInit (); tree.EndInit ();
-			
+
 			// control only allows 1 row to be viewed at once
 			tree.Bounds = new Rect (0, 0, 20, 1);
 
@@ -740,7 +740,7 @@ namespace Terminal.Gui.ViewsTests {
 
 			tv.ColorScheme = new ColorScheme ();
 			tv.LayoutSubviews ();
-			tv.Redraw (tv.Bounds);
+			tv.Draw ();
 
 			TestHelpers.AssertDriverContentsAre (
 @"├-normal
@@ -757,7 +757,7 @@ namespace Terminal.Gui.ViewsTests {
 
 			tv.Collapse (n1);
 
-			tv.Redraw (tv.Bounds);
+			tv.Draw ();
 
 			TestHelpers.AssertDriverContentsAre (
 @"├+normal
@@ -789,7 +789,7 @@ namespace Terminal.Gui.ViewsTests {
 
 			tv.ColorScheme = new ColorScheme ();
 			tv.LayoutSubviews ();
-			tv.Redraw (tv.Bounds);
+			tv.Draw ();
 
 			TestHelpers.AssertDriverContentsAre (
 @"├-normal
@@ -806,7 +806,7 @@ namespace Terminal.Gui.ViewsTests {
 			tv.Collapse (n1);
 
 			tv.LayoutSubviews ();
-			tv.Redraw (tv.Bounds);
+			tv.Draw ();
 
 			TestHelpers.AssertDriverContentsAre (
 @"├+normal
@@ -821,7 +821,7 @@ namespace Terminal.Gui.ViewsTests {
 			tv.ScrollOffsetVertical = 1;
 
 			tv.LayoutSubviews ();
-			tv.Redraw (tv.Bounds);
+			tv.Draw ();
 
 			TestHelpers.AssertDriverContentsAre (
 @"└─pink
@@ -852,7 +852,7 @@ namespace Terminal.Gui.ViewsTests {
 
 			tv.ColorScheme = new ColorScheme ();
 			tv.LayoutSubviews ();
-			tv.Redraw (tv.Bounds);
+			tv.Draw ();
 
 			// Normal drawing of the tree view
 			TestHelpers.AssertDriverContentsAre (
@@ -882,7 +882,7 @@ namespace Terminal.Gui.ViewsTests {
 
 			// redraw now that the custom color
 			// delegate is registered
-			tv.Redraw (tv.Bounds);
+			tv.Draw ();
 
 			// Same text
 			TestHelpers.AssertDriverContentsAre (
@@ -900,6 +900,168 @@ namespace Terminal.Gui.ViewsTests {
 001111
 ",
 				new [] { tv.ColorScheme.Normal, pink });
+		}
+
+		[Fact, AutoInitShutdown]
+		public void TestBottomlessTreeView_MaxDepth_5 ()
+		{
+			var tv = new TreeView<string> () { Width = 20, Height = 10 };
+
+			tv.TreeBuilder = new DelegateTreeBuilder<string> (
+				(s) => new [] { (int.Parse (s) + 1).ToString () }
+				);
+
+			tv.AddObject ("1");
+			tv.ColorScheme = new ColorScheme ();
+
+			tv.LayoutSubviews ();
+			tv.Draw ();
+
+			// Nothing expanded
+			TestHelpers.AssertDriverContentsAre (
+@"└+1
+", output);
+			tv.MaxDepth = 5;
+			tv.ExpandAll ();
+
+			tv.Draw ();
+
+			// Normal drawing of the tree view
+			TestHelpers.AssertDriverContentsAre (
+@"    
+└-1
+  └-2
+    └-3
+      └-4
+        └-5
+          └─6
+", output);
+			Assert.False (tv.CanExpand ("6"));
+			Assert.False (tv.IsExpanded ("6"));
+
+			tv.Collapse("6");
+
+			Assert.False (tv.CanExpand ("6"));
+			Assert.False (tv.IsExpanded ("6"));
+
+			tv.Collapse ("5");
+
+			Assert.True (tv.CanExpand ("5"));
+			Assert.False (tv.IsExpanded ("5"));
+
+			tv.Draw ();
+
+			// Normal drawing of the tree view
+			TestHelpers.AssertDriverContentsAre (
+@"    
+└-1
+  └-2
+    └-3
+      └-4
+        └+5
+", output);
+		}
+
+		[Fact, AutoInitShutdown]
+		public void TestBottomlessTreeView_MaxDepth_3 ()
+		{
+			var tv = new TreeView<string> () { Width = 20, Height = 10 };
+
+			tv.TreeBuilder = new DelegateTreeBuilder<string> (
+				(s) => new [] { (int.Parse (s) + 1).ToString () }
+				);
+
+			tv.AddObject ("1");
+			tv.ColorScheme = new ColorScheme ();
+
+			tv.LayoutSubviews ();
+			tv.Draw ();
+
+			// Nothing expanded
+			TestHelpers.AssertDriverContentsAre (
+@"└+1
+", output);
+			tv.MaxDepth = 3;
+			tv.ExpandAll ();
+			tv.Draw ();
+
+			// Normal drawing of the tree view
+			TestHelpers.AssertDriverContentsAre (
+@"    
+└-1
+  └-2
+    └-3
+      └─4
+", output);
+		}
+
+		[Fact, AutoInitShutdown]
+		public void TestTreeView_Filter ()
+		{
+			var tv = new TreeView { Width = 20, Height = 10 };
+
+			var n1 = new TreeNode ("root one");
+			var n1_1 = new TreeNode ("leaf 1");
+			var n1_2 = new TreeNode ("leaf 2");
+			n1.Children.Add (n1_1);
+			n1.Children.Add (n1_2);
+
+			var n2 = new TreeNode ("root two");
+			tv.AddObject (n1);
+			tv.AddObject (n2);
+			tv.Expand (n1);
+
+			tv.ColorScheme = new ColorScheme ();
+			tv.LayoutSubviews ();
+			tv.Draw ();
+
+			// Normal drawing of the tree view
+			TestHelpers.AssertDriverContentsAre (
+@"
+├-root one
+│ ├─leaf 1
+│ └─leaf 2
+└─root two
+", output);
+			var filter = new TreeViewTextFilter<ITreeNode> (tv);
+			tv.Filter = filter;
+
+			// matches nothing
+			filter.Text = "asdfjhasdf";
+			tv.Draw ();
+			// Normal drawing of the tree view
+			TestHelpers.AssertDriverContentsAre (
+@"", output);
+
+
+			// Matches everything
+			filter.Text = "root";
+			tv.Draw ();
+			TestHelpers.AssertDriverContentsAre (
+@"
+├-root one
+│ ├─leaf 1
+│ └─leaf 2
+└─root two
+", output);
+			// Matches 2 leaf nodes
+			filter.Text = "leaf";
+			tv.Draw ();
+			TestHelpers.AssertDriverContentsAre (
+@"
+├-root one
+│ ├─leaf 1
+│ └─leaf 2
+", output);
+
+			// Matches 1 leaf nodes
+			filter.Text = "leaf 1";
+			tv.Draw ();
+			TestHelpers.AssertDriverContentsAre (
+@"
+├-root one
+│ ├─leaf 1
+", output);
 		}
 
 		[Fact, AutoInitShutdown]

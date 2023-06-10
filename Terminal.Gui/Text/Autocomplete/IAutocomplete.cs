@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using Rune = System.Rune;
+
 
 namespace Terminal.Gui {
 

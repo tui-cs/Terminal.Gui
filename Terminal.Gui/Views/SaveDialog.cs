@@ -11,7 +11,7 @@
 
 using System;
 using System.Collections.Generic;
-using NStack;
+using System.Text;
 using Terminal.Gui.Resources;
 
 namespace Terminal.Gui {
@@ -38,7 +38,7 @@ namespace Terminal.Gui {
 		/// </summary>
 		/// <param name="title">The title.</param>
 		/// <param name="allowedTypes">The allowed types.</param>
-		public SaveDialog (ustring title, List<IAllowedType> allowedTypes = null)
+		public SaveDialog (string title, List<IAllowedType> allowedTypes = null)
 		{
 			//: base (title, prompt: Strings.fdSave, nameFieldLabel: $"{Strings.fdSaveAs}:", message: message, allowedTypes) { }
 			Title = title;
@@ -54,7 +54,7 @@ namespace Terminal.Gui {
 		/// if the user canceled the <see cref="SaveDialog"/>.
 		/// </summary>
 		/// <value>The name of the file.</value>
-		public ustring FileName {
+		public string FileName {
 			get {
 				if (Canceled)
 					return null;

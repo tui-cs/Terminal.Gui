@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Text;
 
 namespace Terminal.Gui {
 
@@ -167,7 +168,7 @@ namespace Terminal.Gui {
 		protected override void DrawAxisLine (GraphView graph, int x, int y)
 		{
 			graph.Move (x, y);
-			Application.Driver.AddRune (Application.Driver.HLine);
+			Application.Driver.AddRune (CM.Glyphs.HLine);
 		}
 
 		/// <summary>
@@ -215,9 +216,9 @@ namespace Terminal.Gui {
 			var y = GetAxisYPosition (graph);
 
 			graph.Move (screenPosition, y);
-			
+
 			// draw the tick on the axis
-			driver.AddRune (driver.TopTee);
+			Application.Driver.AddRune (CM.Glyphs.TopTee);
 
 			// and the label text
 			if (!string.IsNullOrWhiteSpace (text)) {
@@ -282,7 +283,7 @@ namespace Terminal.Gui {
 
 				// Label or no label definetly render it
 				yield return toRender;
-				
+
 
 				current.X += Increment;
 			}
@@ -352,7 +353,7 @@ namespace Terminal.Gui {
 		protected override void DrawAxisLine (GraphView graph, int x, int y)
 		{
 			graph.Move (x, y);
-			Application.Driver.AddRune (Application.Driver.VLine);
+			Application.Driver.AddRune (CM.Glyphs.VLine);
 		}
 
 		private int GetAxisYEnd (GraphView graph)
@@ -402,7 +403,7 @@ namespace Terminal.Gui {
 				for (int i = 0; i < toRender.Length; i++) {
 
 					graph.Move (0, startDrawingAtY + i);
-					Application.Driver.AddRune (toRender [i]);
+					Application.Driver.AddRune ((Rune)toRender [i]);
 				}
 
 			}
@@ -448,7 +449,7 @@ namespace Terminal.Gui {
 
 				// draw the axis symbol (and label if it has one)
 				yield return toRender;
-				
+
 
 				current.Y += Increment;
 			}
@@ -470,7 +471,7 @@ namespace Terminal.Gui {
 			graph.Move (x, screenPosition);
 
 			// draw the tick on the axis
-			Application.Driver.AddRune (Application.Driver.RightTee);
+			Application.Driver.AddRune (CM.Glyphs.RightTee);
 
 			// and the label text
 			if (!string.IsNullOrWhiteSpace (text)) {

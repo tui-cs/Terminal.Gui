@@ -109,7 +109,7 @@ namespace UICatalog {
 						if(supported.Contains(kvp.Key))
 						{
 							// if the key was bound to any other commands clear that
-							view.ClearKeybinding (kvp.Key);
+							view.ClearKeyBinding (kvp.Key);
 							view.AddKeyBinding (kvp.Value,kvp.Key);
 						}
 

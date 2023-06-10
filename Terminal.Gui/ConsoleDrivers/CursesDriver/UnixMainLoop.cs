@@ -82,6 +82,7 @@ namespace Terminal.Gui {
 		bool poll_dirty = true;
 		int [] wakeupPipes = new int [2];
 		static IntPtr ignore = Marshal.AllocHGlobal (1);
+		static IntPtr readHandle = Marshal.AllocHGlobal (1);
 		MainLoop mainLoop;
 		bool winChanged;
 
@@ -97,7 +98,7 @@ namespace Terminal.Gui {
 			this.mainLoop = mainLoop;
 			pipe (wakeupPipes);
 			AddWatch (wakeupPipes [0], Condition.PollIn, ml => {
-				read (wakeupPipes [0], ignore, (IntPtr)1);
+				read (wakeupPipes [0], ignore, readHandle);
 				return true;
 			});
 		}

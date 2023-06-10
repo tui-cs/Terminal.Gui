@@ -1,4 +1,4 @@
-﻿using NStack;
+﻿using System.Text;
 using System;
 namespace Terminal.Gui {
 	/// <summary>
@@ -124,16 +124,16 @@ namespace Terminal.Gui {
 				progressBarStyle = value;
 				switch (value) {
 				case ProgressBarStyle.Blocks:
-					SegmentCharacter = Driver.BlocksMeterSegment;
+					SegmentCharacter = CM.Glyphs.BlocksMeterSegment;
 					break;
 				case ProgressBarStyle.Continuous:
-					SegmentCharacter = Driver.ContinuousMeterSegment;
+					SegmentCharacter = CM.Glyphs.ContinuousMeterSegment;
 					break;
 				case ProgressBarStyle.MarqueeBlocks:
-					SegmentCharacter = Driver.BlocksMeterSegment;
+					SegmentCharacter = CM.Glyphs.BlocksMeterSegment;
 					break;
 				case ProgressBarStyle.MarqueeContinuous:
-					SegmentCharacter = Driver.ContinuousMeterSegment;
+					SegmentCharacter = CM.Glyphs.ContinuousMeterSegment;
 					break;
 				}
 				SetNeedsDisplay ();
@@ -170,7 +170,7 @@ namespace Terminal.Gui {
 			}
 		}
 
-		private Rune segmentCharacter = Driver.BlocksMeterSegment;
+		private Rune segmentCharacter = CM.Glyphs.BlocksMeterSegment;
 
 		/// <summary>
 		/// Segment indicator for meter views.
@@ -184,7 +184,7 @@ namespace Terminal.Gui {
 		}
 
 		///<inheritdoc/>
-		public override ustring Text {
+		public override string Text {
 			get => GetPercentageText ();
 			set {
 				base.Text = SetPercentageText (value);
@@ -206,7 +206,7 @@ namespace Terminal.Gui {
 			}
 		}
 
-		ustring GetPercentageText ()
+		string GetPercentageText ()
 		{
 			switch (progressBarStyle) {
 			case ProgressBarStyle.Blocks:
@@ -220,7 +220,7 @@ namespace Terminal.Gui {
 			return base.Text;
 		}
 
-		ustring SetPercentageText (ustring value)
+		string SetPercentageText (string value)
 		{
 			switch (progressBarStyle) {
 			case ProgressBarStyle.Blocks:
@@ -275,7 +275,7 @@ namespace Terminal.Gui {
 		}
 
 		///<inheritdoc/>
-		public override void Redraw (Rect region)
+		public override void OnDrawContent (Rect contentArea)
 		{
 			DrawFrame ();
 
@@ -288,7 +288,7 @@ namespace Terminal.Gui {
 					if (Array.IndexOf (activityPos, i) != -1)
 						Driver.AddRune (SegmentCharacter);
 					else
-						Driver.AddRune (' ');
+						Driver.AddRune ((Rune)' ');
 			} else {
 				Move (padding, padding);
 				int mid = (int)(fraction * fWidth);
@@ -296,7 +296,7 @@ namespace Terminal.Gui {
 				for (i = 0; i < mid & i < fWidth; i++)
 					Driver.AddRune (SegmentCharacter);
 				for (; i < fWidth; i++)
-					Driver.AddRune (' ');
+					Driver.AddRune ((Rune)' ');
 			}
 
 			DrawText (fWidth);
@@ -357,7 +357,7 @@ namespace Terminal.Gui {
 			case ProgressBarFormat.FramedProgressPadded:
 				padding = 2;
 				Border.DrawFrame (Bounds, false);
-				Border.DrawFrame (new Rect (Bounds.X + padding/2, Bounds.Y + padding/2, Bounds.Width - (padding), Bounds.Height - padding - 1), false);
+				Border.DrawFrame (new Rect (Bounds.X + padding / 2, Bounds.Y + padding / 2, Bounds.Width - (padding), Bounds.Height - padding - 1), false);
 				break;
 			}
 		}

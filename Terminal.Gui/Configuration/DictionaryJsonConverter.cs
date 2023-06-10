@@ -4,10 +4,13 @@ using System.Text.Json.Serialization;
 using System.Text.Json;
 
 namespace Terminal.Gui {
-
 	class DictionaryJsonConverter<T> : JsonConverter<Dictionary<string, T>> {
 		public override Dictionary<string, T> Read (ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
 		{
+			if (reader.TokenType != JsonTokenType.StartArray) {
+				throw new JsonException ($"Expected a JSON array (\"[ {{ ... }} ]\"), but got \"{reader.TokenType}\".");
+			}
+
 			var dictionary = new Dictionary<string, T> ();
 			while (reader.Read ()) {
 				if (reader.TokenType == JsonTokenType.StartObject) {

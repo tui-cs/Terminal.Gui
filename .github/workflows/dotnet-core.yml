@@ -7,17 +7,18 @@ on:
     branches: [ main, develop, v2_develop ]
 
 jobs:
-  build:
+  build_and_test:
 
     runs-on: ubuntu-latest
 
     steps:
     - uses: actions/checkout@v3
-
-    - name: Setup .NET Core
-      uses: actions/setup-dotnet@v3.0.3
+    
+    - name: Setup dotnet
+      uses: actions/setup-dotnet@v3
       with:
-        dotnet-version: 6.0.100
+        dotnet-version: 7.0
+        dotnet-quality: 'ga'
 
     - name: Install dependencies
       run: |

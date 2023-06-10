@@ -8,7 +8,7 @@
 using System;
 using System.Globalization;
 using System.Linq;
-using NStack;
+using System.Text;
 
 namespace Terminal.Gui {
 	/// <summary>
@@ -109,7 +109,7 @@ namespace Terminal.Gui {
 		void DateField_Changed (object sender, TextChangedEventArgs e)
 		{
 			try {
-				if (!DateTime.TryParseExact (GetDate (Text).ToString (), GetInvarianteFormat (), CultureInfo.CurrentCulture, DateTimeStyles.None, out DateTime result))
+				if (!DateTime.TryParseExact (GetDate (Text), GetInvarianteFormat (), CultureInfo.CurrentCulture, DateTimeStyles.None, out DateTime result))
 					Text = e.OldValue;
 			} catch (Exception) {
 				Text = e.OldValue;
@@ -123,13 +123,13 @@ namespace Terminal.Gui {
 
 		string GetLongFormat (string lf)
 		{
-			ustring [] frm = ustring.Make (lf).Split (ustring.Make (sepChar));
+			string [] frm = lf.Split (sepChar);
 			for (int i = 0; i < frm.Length; i++) {
-				if (frm [i].Contains ("M") && frm [i].RuneCount < 2)
+				if (frm [i].Contains ("M") && frm [i].GetRuneCount () < 2)
 					lf = lf.Replace ("M", "MM");
-				if (frm [i].Contains ("d") && frm [i].RuneCount < 2)
+				if (frm [i].Contains ("d") && frm [i].GetRuneCount () < 2)
 					lf = lf.Replace ("d", "dd");
-				if (frm [i].Contains ("y") && frm [i].RuneCount < 4)
+				if (frm [i].Contains ("y") && frm [i].GetRuneCount () < 4)
 					lf = lf.Replace ("yy", "yyyy");
 			}
 			return $" {lf}";
@@ -198,44 +198,44 @@ namespace Terminal.Gui {
 			newText.Add (key);
 			if (CursorPosition < fieldLen)
 				newText = newText.Concat (text.GetRange (CursorPosition + 1, text.Count - (CursorPosition + 1))).ToList ();
-			return SetText (ustring.Make (newText));
+			return SetText (StringExtensions.ToString (newText));
 		}
 
-		bool SetText (ustring text)
+		bool SetText (string text)
 		{
-			if (text.IsEmpty) {
+			if (string.IsNullOrEmpty (text)) {
 				return false;
 			}
 
-			ustring [] vals = text.Split (ustring.Make (sepChar));
-			ustring [] frm = ustring.Make (format).Split (ustring.Make (sepChar));
+			string [] vals = text.Split (sepChar);
+			string [] frm = format.Split (sepChar);
 			bool isValidDate = true;
 			int idx = GetFormatIndex (frm, "y");
-			int year = Int32.Parse (vals [idx].ToString ());
+			int year = Int32.Parse (vals [idx]);
 			int month;
 			int day;
 			idx = GetFormatIndex (frm, "M");
-			if (Int32.Parse (vals [idx].ToString ()) < 1) {
+			if (Int32.Parse (vals [idx]) < 1) {
 				isValidDate = false;
 				month = 1;
 				vals [idx] = "1";
-			} else if (Int32.Parse (vals [idx].ToString ()) > 12) {
+			} else if (Int32.Parse (vals [idx]) > 12) {
 				isValidDate = false;
 				month = 12;
 				vals [idx] = "12";
 			} else
-				month = Int32.Parse (vals [idx].ToString ());
+				month = Int32.Parse (vals [idx]);
 			idx = GetFormatIndex (frm, "d");
-			if (Int32.Parse (vals [idx].ToString ()) < 1) {
+			if (Int32.Parse (vals [idx]) < 1) {
 				isValidDate = false;
 				day = 1;
 				vals [idx] = "1";
-			} else if (Int32.Parse (vals [idx].ToString ()) > 31) {
+			} else if (Int32.Parse (vals [idx]) > 31) {
 				isValidDate = false;
 				day = DateTime.DaysInMonth (year, month);
 				vals [idx] = day.ToString ();
 			} else
-				day = Int32.Parse (vals [idx].ToString ());
+				day = Int32.Parse (vals [idx]);
 			string d = GetDate (month, day, year, frm);
 
 			if (!DateTime.TryParseExact (d, format, CultureInfo.CurrentCulture, DateTimeStyles.None, out DateTime result) ||
@@ -245,7 +245,7 @@ namespace Terminal.Gui {
 			return true;
 		}
 
-		string GetDate (int month, int day, int year, ustring [] fm)
+		string GetDate (int month, int day, int year, string [] fm)
 		{
 			string date = " ";
 			for (int i = 0; i < fm.Length; i++) {
@@ -269,32 +269,31 @@ namespace Terminal.Gui {
 			return date;
 		}
 
-		ustring GetDate (ustring text)
+		string GetDate (string text)
 		{
-			ustring [] vals = text.Split (ustring.Make (sepChar));
-			ustring [] frm = ustring.Make (format).Split (ustring.Make (sepChar));
-			ustring [] date = { null, null, null };
+			string [] vals = text.Split (sepChar);
+			string [] frm = format.Split (sepChar);
+			string [] date = { null, null, null };
 
 			for (int i = 0; i < frm.Length; i++) {
 				if (frm [i].Contains ("M")) {
-					date [0] = vals [i].TrimSpace ();
+					date [0] = vals [i].Trim ();
 				} else if (frm [i].Contains ("d")) {
-					date [1] = vals [i].TrimSpace ();
+					date [1] = vals [i].Trim ();
 				} else {
-					var year = vals [i].TrimSpace ();
-					if (year.RuneCount == 2) {
+					var year = vals [i].Trim ();
+					if (year.GetRuneCount () == 2) {
 						var y = DateTime.Now.Year.ToString ();
 						date [2] = y.Substring (0, 2) + year.ToString ();
 					} else {
-						date [2] = vals [i].TrimSpace ();
+						date [2] = vals [i].Trim ();
 					}
 				}
 			}
-			return date [0] + ustring.Make (sepChar) + date [1] + ustring.Make (sepChar) + date [2];
-
+			return date [0] + sepChar + date [1] + sepChar + date [2];
 		}
 
-		int GetFormatIndex (ustring [] fm, string t)
+		int GetFormatIndex (string [] fm, string t)
 		{
 			int idx = -1;
 			for (int i = 0; i < fm.Length; i++) {
@@ -332,18 +331,22 @@ namespace Terminal.Gui {
 		public override bool ProcessKey (KeyEvent kb)
 		{
 			var result = InvokeKeybindings (kb);
-			if (result != null)
+			if (result != null) {
 				return (bool)result;
-
+			}
 			// Ignore non-numeric characters.
-			if (kb.Key < (Key)((int)'0') || kb.Key > (Key)((int)'9'))
+			if (kb.Key < (Key)((int)'0') || kb.Key > (Key)((int)'9')) {
 				return false;
+			}
 
-			if (ReadOnly)
+			if (ReadOnly) {
 				return true;
+			}
 
-			if (SetText (TextModel.ToRunes (ustring.Make ((uint)kb.Key)).First ()))
+			// BUGBUG: This is a hack, we should be able to just use ((Rune)(uint)kb.Key) directly.
+			if (SetText (TextModel.ToRunes (((Rune)(uint)kb.Key).ToString ()).First ())) {
 				IncCursorPosition ();
+			}
 
 			return true;
 		}
@@ -376,10 +379,11 @@ namespace Terminal.Gui {
 		/// <inheritdoc/>
 		public override void DeleteCharLeft (bool useOldCursorPos = true)
 		{
-			if (ReadOnly)
+			if (ReadOnly) {
 				return;
+			}
 
-			SetText ('0');
+			SetText ((Rune)'0');
 			DecCursorPosition ();
 			return;
 		}
@@ -390,7 +394,7 @@ namespace Terminal.Gui {
 			if (ReadOnly)
 				return;
 
-			SetText ('0');
+			SetText ((Rune)'0');
 			return;
 		}
 
@@ -418,7 +422,7 @@ namespace Terminal.Gui {
 		/// <param name="args">Event arguments</param>
 		public virtual void OnDateChanged (DateTimeEventArgs<DateTime> args)
 		{
-			DateChanged?.Invoke (this,args);
+			DateChanged?.Invoke (this, args);
 		}
 	}
 }

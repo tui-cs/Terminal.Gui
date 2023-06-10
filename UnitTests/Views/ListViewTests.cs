@@ -217,7 +217,7 @@ namespace Terminal.Gui.ViewsTests {
 			Assert.False (rendered);
 
 			lv.SetSource (source);
-			lv.Redraw (lv.Bounds);
+			lv.Draw ();
 			Assert.True (rendered);
 		}
 
@@ -235,7 +235,7 @@ namespace Terminal.Gui.ViewsTests {
 			Assert.Equal (new (' ', 7), GetContents (1));
 
 			lv.MoveUp ();
-			lv.Redraw (lv.Bounds);
+			lv.Draw ();
 
 			Assert.Equal ("First  ", GetContents (0));
 			Assert.Equal (new (' ', 7), GetContents (1));
@@ -282,7 +282,7 @@ namespace Terminal.Gui.ViewsTests {
 └──────────┘", output);
 
 			Assert.True (lv.ScrollDown (10));
-			lv.Redraw (lv.Bounds);
+			lv.Draw ();
 			Assert.Equal (-1, lv.SelectedItem);
 			TestHelpers.AssertDriverContentsWithFrameAre (@"
 ┌──────────┐
@@ -299,7 +299,7 @@ namespace Terminal.Gui.ViewsTests {
 └──────────┘", output);
 
 			Assert.True (lv.MoveDown ());
-			lv.Redraw (lv.Bounds);
+			lv.Draw ();
 			Assert.Equal (0, lv.SelectedItem);
 			TestHelpers.AssertDriverContentsWithFrameAre (@"
 ┌──────────┐
@@ -316,7 +316,7 @@ namespace Terminal.Gui.ViewsTests {
 └──────────┘", output);
 
 			Assert.True (lv.MoveEnd ());
-			lv.Redraw (lv.Bounds);
+			lv.Draw ();
 			Assert.Equal (19, lv.SelectedItem);
 			TestHelpers.AssertDriverContentsWithFrameAre (@"
 ┌──────────┐
@@ -333,7 +333,7 @@ namespace Terminal.Gui.ViewsTests {
 └──────────┘", output);
 
 			Assert.True (lv.ScrollUp (20));
-			lv.Redraw (lv.Bounds);
+			lv.Draw ();
 			Assert.Equal (19, lv.SelectedItem);
 			TestHelpers.AssertDriverContentsWithFrameAre (@"
 ┌──────────┐
@@ -350,7 +350,7 @@ namespace Terminal.Gui.ViewsTests {
 └──────────┘", output);
 
 			Assert.True (lv.MoveDown ());
-			lv.Redraw (lv.Bounds);
+			lv.Draw ();
 			Assert.Equal (19, lv.SelectedItem);
 			TestHelpers.AssertDriverContentsWithFrameAre (@"
 ┌──────────┐
@@ -367,7 +367,7 @@ namespace Terminal.Gui.ViewsTests {
 └──────────┘", output);
 
 			Assert.True (lv.ScrollUp (20));
-			lv.Redraw (lv.Bounds);
+			lv.Draw ();
 			Assert.Equal (19, lv.SelectedItem);
 			TestHelpers.AssertDriverContentsWithFrameAre (@"
 ┌──────────┐
@@ -384,7 +384,7 @@ namespace Terminal.Gui.ViewsTests {
 └──────────┘", output);
 
 			Assert.True (lv.MoveDown ());
-			lv.Redraw (lv.Bounds);
+			lv.Draw ();
 			Assert.Equal (19, lv.SelectedItem);
 			TestHelpers.AssertDriverContentsWithFrameAre (@"
 ┌──────────┐
@@ -401,7 +401,7 @@ namespace Terminal.Gui.ViewsTests {
 └──────────┘", output);
 
 			Assert.True (lv.MoveHome ());
-			lv.Redraw (lv.Bounds);
+			lv.Draw ();
 			Assert.Equal (0, lv.SelectedItem);
 			TestHelpers.AssertDriverContentsWithFrameAre (@"
 ┌──────────┐
@@ -418,7 +418,7 @@ namespace Terminal.Gui.ViewsTests {
 └──────────┘", output);
 
 			Assert.True (lv.ScrollDown (20));
-			lv.Redraw (lv.Bounds);
+			lv.Draw ();
 			Assert.Equal (0, lv.SelectedItem);
 			TestHelpers.AssertDriverContentsWithFrameAre (@"
 ┌──────────┐
@@ -435,7 +435,7 @@ namespace Terminal.Gui.ViewsTests {
 └──────────┘", output);
 
 			Assert.True (lv.MoveUp ());
-			lv.Redraw (lv.Bounds);
+			lv.Draw ();
 			Assert.Equal (0, lv.SelectedItem);
 			TestHelpers.AssertDriverContentsWithFrameAre (@"
 ┌──────────┐
@@ -484,7 +484,7 @@ namespace Terminal.Gui.ViewsTests {
 			Assert.Equal (1, lw.StartsWith ("TW"));
 			Assert.Equal (2, lw.StartsWith ("TH"));
 
-			lw = new ListWrapper (new List<NStack.ustring> { "One", "Two", "Three" });
+			lw = new ListWrapper (new List<string> { "One", "Two", "Three" });
 
 			Assert.Equal (1, lw.StartsWith ("t"));
 			Assert.Equal (1, lw.StartsWith ("tw"));

@@ -371,5 +371,43 @@ namespace Terminal.Gui.TypeTests {
 			Assert.Equal (new Rect (-2, -2, 9, 9), result);
 		}
 
+		[Fact]
+		public void Rect_Contains ()
+		{
+			var rect = new Rect (0, 0, 3, 3);
+			Assert.True (rect.Contains (new Point (1, 1)));
+			Assert.True (rect.Contains (new Point (1, 2)));
+			Assert.True (rect.Contains (new Point (2, 1)));
+			Assert.True (rect.Contains (new Point (2, 2)));
+
+			Assert.False (rect.Contains (new Point (-1, 1)));
+			Assert.False (rect.Contains (new Point (1, -1)));
+			Assert.False (rect.Contains (new Point (3, 2)));
+			Assert.False (rect.Contains (new Point (2, 3)));
+			Assert.False (rect.Contains (new Point (3, 3)));
+
+			Assert.True (rect.Contains (new Rect (1, 1, 2, 2)));
+			Assert.True (rect.Contains (new Rect (1, 2, 2, 1)));
+			Assert.True (rect.Contains (new Rect (2, 1, 1, 2)));
+			Assert.True (rect.Contains (new Rect (2, 2, 1, 1)));
+			Assert.True (rect.Contains (new Rect (0, 0, 3, 3)));
+
+			Assert.False (rect.Contains (new Rect (-1, 1, 3, 3)));
+			Assert.False (rect.Contains (new Rect (1, -1, 3, 3)));
+			Assert.False (rect.Contains (new Rect (3, 2, 3, 3)));
+			Assert.False (rect.Contains (new Rect (2, 3, 3, 3)));
+			Assert.False (rect.Contains (new Rect (3, 3, 3, 3)));
+
+			Assert.True (rect.Contains (1, 1));
+			Assert.True (rect.Contains (1, 2));
+			Assert.True (rect.Contains (2, 1));
+			Assert.True (rect.Contains (2, 2));
+
+			Assert.False (rect.Contains (-1, 1));
+			Assert.False (rect.Contains (1, -1));
+			Assert.False (rect.Contains (3, 2));
+			Assert.False (rect.Contains (2, 3));
+			Assert.False (rect.Contains (3, 3));
+		}
 	}
 }

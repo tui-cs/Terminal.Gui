@@ -6,7 +6,7 @@ namespace Terminal.Gui {
 	/// <summary>
 	/// Implements a JSON converter for <see cref="ColorScheme"/>. 
 	/// </summary>
-	public class ColorSchemeJsonConverter : JsonConverter<ColorScheme> {
+	class ColorSchemeJsonConverter : JsonConverter<ColorScheme> {
 		private static ColorSchemeJsonConverter instance;
 
 		/// <summary>

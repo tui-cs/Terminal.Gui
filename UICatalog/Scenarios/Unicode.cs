@@ -1,5 +1,4 @@
-﻿using NStack;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Text;
 using Terminal.Gui;
 
@@ -50,7 +49,7 @@ namespace UICatalog.Scenarios {
 
 			label = new Label ("Label (CanFocus):") { X = Pos.X (label), Y = Pos.Bottom (label) + 1 };
 			Win.Add (label);
-			testlabel = new Label ("Стоял &он, дум великих полн") { X = 20, Y = Pos.Y (label), Width = Dim.Percent (50), CanFocus = true, HotKeySpecifier = new System.Rune ('&') };
+			testlabel = new Label ("Стоял &он, дум великих полн") { X = 20, Y = Pos.Y (label), Width = Dim.Percent (50), CanFocus = true, HotKeySpecifier = new Rune ('&') };
 			Win.Add (testlabel);
 
 			label = new Label ("Button:") { X = Pos.X (label), Y = Pos.Bottom (label) + 1 };
@@ -99,7 +98,7 @@ namespace UICatalog.Scenarios {
 
 			label = new Label ("RadioGroup:") { X = Pos.X (label), Y = Pos.Bottom (listView) + 1 };
 			Win.Add (label);
-			var radioGroup = new RadioGroup (new ustring [] { "item #1", gitString, "Со_хранить", "𝔽𝕆𝕆𝔹𝔸ℝ" }, selected: 0) {
+			var radioGroup = new RadioGroup (new string [] { "item #1", gitString, "Со_хранить", "𝔽𝕆𝕆𝔹𝔸ℝ" }, selected: 0) {
 				X = 20,
 				Y = Pos.Y (label),
 				Width = Dim.Percent (60),

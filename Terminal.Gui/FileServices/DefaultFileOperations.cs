@@ -82,7 +82,7 @@ namespace Terminal.Gui {
 
 			Application.Run (dlg);
 
-			result = tf.Text?.ToString ();
+			result = tf.Text;
 
 			return confirm;
 		}

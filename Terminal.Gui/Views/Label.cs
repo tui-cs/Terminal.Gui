@@ -6,7 +6,7 @@
 //
 
 using System;
-using NStack;
+using System.Text;
 
 namespace Terminal.Gui {
 	/// <summary>
@@ -30,25 +30,25 @@ namespace Terminal.Gui {
 		}
 
 		/// <inheritdoc/>
-		public Label (ustring text, bool autosize = true) : base (text)
+		public Label (string text, bool autosize = true) : base (text)
 		{
 			SetInitialProperties (autosize);
 		}
 
 		/// <inheritdoc/>
-		public Label (Rect rect, ustring text, bool autosize = false) : base (rect, text)
+		public Label (Rect rect, string text, bool autosize = false) : base (rect, text)
 		{
 			SetInitialProperties (autosize);
 		}
 
 		/// <inheritdoc/>
-		public Label (int x, int y, ustring text, bool autosize = true) : base (x, y, text)
+		public Label (int x, int y, string text, bool autosize = true) : base (x, y, text)
 		{
 			SetInitialProperties (autosize);
 		}
 
 		/// <inheritdoc/>
-		public Label (ustring text, TextDirection direction, bool autosize = true)
+		public Label (string text, TextDirection direction, bool autosize = true)
 			: base (text, direction)
 		{
 			SetInitialProperties (autosize);

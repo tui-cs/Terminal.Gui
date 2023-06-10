@@ -11,7 +11,7 @@
 
 using System;
 using System.Collections.Generic;
-using NStack;
+using System.Text;
 using System.IO;
 using System.Linq;
 using Terminal.Gui.Resources;
@@ -68,7 +68,7 @@ namespace Terminal.Gui {
 		/// <param name="title">The title.</param>
 		/// <param name="allowedTypes">The allowed types.</param>
 		/// <param name="openMode">The open mode.</param>
-		public OpenDialog (ustring title, List<IAllowedType> allowedTypes = null, OpenMode openMode = OpenMode.File)
+		public OpenDialog (string title, List<IAllowedType> allowedTypes = null, OpenMode openMode = OpenMode.File)
 		{
 			this.OpenMode = openMode;
 			Title = title;

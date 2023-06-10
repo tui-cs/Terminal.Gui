@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Linq;
 using System.Text.Json.Serialization;
-using NStack;
+using System.Text;
 using static Terminal.Gui.ConfigurationManager;
 
 namespace Terminal.Gui {
@@ -16,7 +16,7 @@ namespace Terminal.Gui {
 		/// <param name="frame">Frame.</param>
 		/// <param name="title">Title.</param>
 		/// <param name="views">Views.</param>
-		public FrameView (Rect frame, ustring title = null, View [] views = null) : base (frame)
+		public FrameView (Rect frame, string title = null, View [] views = null) : base (frame)
 		{
 			SetInitialProperties (frame, title, views);
 		}
@@ -25,7 +25,7 @@ namespace Terminal.Gui {
 		/// Initializes a new instance of the <see cref="Gui.FrameView"/> class using <see cref="LayoutStyle.Computed"/> layout.
 		/// </summary>
 		/// <param name="title">Title.</param>
-		public FrameView (ustring title)
+		public FrameView (string title)
 		{
 			SetInitialProperties (Rect.Empty, title, null);
 		}
@@ -46,7 +46,7 @@ namespace Terminal.Gui {
 		[SerializableConfigurationProperty (Scope = typeof (ThemeScope)), JsonConverter (typeof (JsonStringEnumConverter))]
 		public static LineStyle DefaultBorderStyle { get; set; } = LineStyle.Single;
 
-		void SetInitialProperties (Rect frame, ustring title, View [] views = null)
+		void SetInitialProperties (Rect frame, string title, View [] views = null)
 		{
 			this.Title = title;
 			Border.Thickness = new Thickness (1);

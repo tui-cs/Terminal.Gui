@@ -1,4 +1,4 @@
-﻿using NStack;
+﻿using System.Text;
 using System;
 using System.Collections.Generic;
 using System.Xml.Linq;
@@ -22,7 +22,7 @@ namespace Terminal.Gui.ViewTests {
 		public void Set_Title_Fires_TitleChanging ()
 		{
 			var r = new View ();
-			Assert.Equal (ustring.Empty, r.Title);
+			Assert.Equal (string.Empty, r.Title);
 
 			string expectedOld = null;
 			string expectedDuring = null;
@@ -36,17 +36,17 @@ namespace Terminal.Gui.ViewTests {
 
 			expectedOld = string.Empty;
 			r.Title = expectedDuring = expectedAfter = "title";
-			Assert.Equal (expectedAfter, r.Title.ToString ());
+			Assert.Equal (expectedAfter, r.Title);
 
-			expectedOld = r.Title.ToString ();
+			expectedOld = r.Title;
 			r.Title = expectedDuring = expectedAfter = "a different title";
-			Assert.Equal (expectedAfter, r.Title.ToString ());
+			Assert.Equal (expectedAfter, r.Title);
 
 			// Now setup cancelling the change and change it back to "title"
 			cancel = true;
-			expectedOld = r.Title.ToString ();
+			expectedOld = r.Title;
 			r.Title = expectedDuring = "title";
-			Assert.Equal (expectedAfter, r.Title.ToString ());
+			Assert.Equal (expectedAfter, r.Title);
 			r.Dispose ();
 
 		}
@@ -55,7 +55,7 @@ namespace Terminal.Gui.ViewTests {
 		public void Set_Title_Fires_TitleChanged ()
 		{
 			var r = new View ();
-			Assert.Equal (ustring.Empty, r.Title);
+			Assert.Equal (string.Empty, r.Title);
 
 			string expectedOld = null;
 			string expected = null;
@@ -65,9 +65,9 @@ namespace Terminal.Gui.ViewTests {
 			};
 
 			expected = "title";
-			expectedOld = r.Title.ToString ();
+			expectedOld = r.Title;
 			r.Title = expected;
-			Assert.Equal (expected, r.Title.ToString ());
+			Assert.Equal (expected, r.Title);
 		}
 
 	}

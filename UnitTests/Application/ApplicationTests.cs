@@ -15,7 +15,7 @@ namespace Terminal.Gui.ApplicationTests {
 		{
 #if DEBUG_IDISPOSABLE
 			Responder.Instances.Clear ();
-			Application.RunState.Instances.Clear ();
+			RunState.Instances.Clear ();
 #endif
 		}
 
@@ -142,7 +142,7 @@ namespace Terminal.Gui.ApplicationTests {
 				Application.RequestStop ();
 			};
 
-			Application.RunState runstate = null;
+			RunState runstate = null;
 			EventHandler<RunStateEventArgs> NewRunStateFn = (s, e) => {
 				Assert.NotNull (e.State);
 				runstate = e.State;
@@ -187,7 +187,7 @@ namespace Terminal.Gui.ApplicationTests {
 			Toplevel topLevel = null;
 			Application.InternalInit (() => topLevel = new TestToplevel (), new FakeDriver ());
 
-			Application.RunState runstate = null;
+			RunState runstate = null;
 			EventHandler<RunStateEventArgs> NewRunStateFn = (s, e) => {
 				Assert.NotNull (e.State);
 				runstate = e.State;
@@ -420,9 +420,9 @@ namespace Terminal.Gui.ApplicationTests {
 			Init ();
 			var top = Application.Top;
 			var count = 0;
-			top.Loaded += (s,e) => count++;
-			top.Ready += (s,e) => count++;
-			top.Unloaded += (s,e) => count++;
+			top.Loaded += (s, e) => count++;
+			top.Ready += (s, e) => count++;
+			top.Unloaded += (s, e) => count++;
 			Application.Iteration = () => Application.RequestStop ();
 			Application.Run ();
 			Application.Shutdown ();
@@ -461,7 +461,7 @@ namespace Terminal.Gui.ApplicationTests {
 		#endregion
 
 		[Fact, AutoInitShutdown]
-		public void Begin_Sets_Application_Top_To_Console_Size()
+		public void Begin_Sets_Application_Top_To_Console_Size ()
 		{
 			Assert.Equal (new Rect (0, 0, 80, 25), Application.Top.Frame);
 
@@ -485,15 +485,15 @@ namespace Terminal.Gui.ApplicationTests {
 			// t1, t2, t3, d, t4
 			var iterations = 5;
 
-			t1.Ready += (s,e) => {
+			t1.Ready += (s, e) => {
 				Assert.Equal (t1, Application.Top);
 				Application.Run (t2);
 			};
-			t2.Ready += (s,e) => {
+			t2.Ready += (s, e) => {
 				Assert.Equal (t2, Application.Top);
 				Application.Run (t3);
 			};
-			t3.Ready += (s,e) => {
+			t3.Ready += (s, e) => {
 				Assert.Equal (t3, Application.Top);
 				Application.Run (d);
 			};
@@ -509,7 +509,7 @@ namespace Terminal.Gui.ApplicationTests {
 				t2.RequestStop ();
 			};
 			// Now this will close the OverlappedContainer when all OverlappedChildren was closed
-			t2.Closed += (s,_) => {
+			t2.Closed += (s, _) => {
 				t1.RequestStop ();
 			};
 			Application.Iteration += () => {
@@ -741,7 +741,7 @@ namespace Terminal.Gui.ApplicationTests {
 			var top = Application.Top;
 			var isQuiting = false;
 
-			top.Closing += (s,e) => {
+			top.Closing += (s, e) => {
 				isQuiting = true;
 				e.Cancel = true;
 			};
@@ -902,7 +902,9 @@ namespace Terminal.Gui.ApplicationTests {
 
 					Assert.Null (Application.MouseGrabView);
 				} else if (iterations == 1) {
-					Assert.Equal (sv, Application.MouseGrabView);
+					// Application.MouseGrabView is null because
+					// another toplevel (Dialog) was opened
+					Assert.Null (Application.MouseGrabView);
 
 					ReflectionTools.InvokePrivate (
 						typeof (Application),
@@ -913,7 +915,7 @@ namespace Terminal.Gui.ApplicationTests {
 							Flags = MouseFlags.ReportMousePosition
 						});
 
-					Assert.Equal (sv, Application.MouseGrabView);
+					Assert.Null (Application.MouseGrabView);
 
 					ReflectionTools.InvokePrivate (
 						typeof (Application),

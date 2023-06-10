@@ -7,7 +7,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
-using NStack;
+using System.Text;
 using Unix.Terminal;
 
 namespace Terminal.Gui {
@@ -48,10 +48,21 @@ namespace Terminal.Gui {
 		}
 
 		static bool sync = false;
+
+		public override bool IsRuneSupported (Rune rune)
+		{
+			// See Issue #2615 - CursesDriver is broken with non-BMP characters
+			return base.IsRuneSupported (rune) && rune.IsBmp;
+		}
+
 		public override void AddRune (Rune rune)
 		{
-			rune = MakePrintable (rune);
-			var runeWidth = Rune.ColumnWidth (rune);
+			if (!IsRuneSupported (rune)) {
+				rune = Rune.ReplacementChar;
+			}
+
+			rune = rune.MakePrintable ();
+			var runeWidth = rune.GetColumns ();
 			var validClip = IsValidContent (ccol, crow, Clip);
 
 			if (validClip) {
@@ -61,7 +72,7 @@ namespace Terminal.Gui {
 				}
 				if (runeWidth == 0 && ccol > 0) {
 					var r = contents [crow, ccol - 1, 0];
-					var s = new string (new char [] { (char)r, (char)rune });
+					var s = new string (new char [] { (char)r, (char)rune.Value });
 					string sn;
 					if (!s.IsNormalized ()) {
 						sn = s.Normalize ();
@@ -76,7 +87,7 @@ namespace Terminal.Gui {
 
 				} else {
 					if (runeWidth < 2 && ccol > 0
-						&& Rune.ColumnWidth ((char)contents [crow, ccol - 1, 0]) > 1) {
+						&& ((Rune)(char)contents [crow, ccol - 1, 0]).GetColumns () > 1) {
 
 						var curAtttib = CurrentAttribute;
 						Curses.attrset (contents [crow, ccol - 1, 1]);
@@ -86,7 +97,7 @@ namespace Terminal.Gui {
 						Curses.attrset (curAtttib);
 
 					} else if (runeWidth < 2 && ccol <= Clip.Right - 1
-						&& Rune.ColumnWidth ((char)contents [crow, ccol, 0]) > 1) {
+						&& ((Rune)(char)contents [crow, ccol, 0]).GetColumns () > 1) {
 
 						var curAtttib = CurrentAttribute;
 						Curses.attrset (contents [crow, ccol + 1, 1]);
@@ -100,8 +111,8 @@ namespace Terminal.Gui {
 						Curses.addch ((int)(uint)' ');
 						contents [crow, ccol, 0] = (int)(uint)' ';
 					} else {
-						Curses.addch ((int)(uint)rune);
-						contents [crow, ccol, 0] = (int)(uint)rune;
+						Curses.addch ((int)(uint)rune.Value);
+						contents [crow, ccol, 0] = (int)(uint)rune.Value;
 					}
 					contents [crow, ccol, 1] = CurrentAttribute;
 					contents [crow, ccol, 2] = 1;
@@ -127,10 +138,10 @@ namespace Terminal.Gui {
 			}
 		}
 
-		public override void AddStr (ustring str)
+		public override void AddStr (string str)
 		{
 			// TODO; optimize this to determine if the str fits in the clip region, and if so, use Curses.addstr directly
-			foreach (var rune in str)
+			foreach (var rune in str.EnumerateRunes ())
 				AddRune (rune);
 		}
 

@@ -1,7 +1,7 @@
 ﻿using System;
 using Xunit;
 using Xunit.Abstractions;
-using NStack;
+using System.Text;
 
 // Alias Console to MockConsole so we don't accidentally use Console
 using Console = Terminal.Gui.FakeConsole;
@@ -46,7 +46,7 @@ namespace Terminal.Gui.ViewTests {
 			top.ProcessKey (new KeyEvent (Key.BackTab | Key.ShiftMask, new KeyModifiers ()));
 			Assert.Equal ($"WindowSubview", top.MostFocused.Text);
 		}
-		
+
 
 		[Fact]
 		public void Subviews_TabIndexes_AreEqual ()
@@ -949,7 +949,7 @@ namespace Terminal.Gui.ViewTests {
 			// Assert does Not throw NullReferenceException
 			top.SetFocus ();
 		}
-		
+
 		[Fact, AutoInitShutdown]
 		public void SetHasFocus_Do_Not_Throws_If_OnLeave_Remove_Focused_Changing_To_Null ()
 		{
@@ -982,7 +982,7 @@ namespace Terminal.Gui.ViewTests {
 			Assert.True (subView1Leave);
 			Assert.False (subView1subView1Leave);
 		}
-		
+
 		[Fact, AutoInitShutdown]
 		public void Remove_Does_Not_Change_Focus ()
 		{
@@ -1077,6 +1077,257 @@ namespace Terminal.Gui.ViewTests {
 			Assert.Null (exception);
 			Assert.True (removed);
 			Assert.Null (view3);
+		}
+
+		[Fact, AutoInitShutdown]
+		public void ScreenToView_ViewToScreen_FindDeepestView_Full_Top ()
+		{
+			var top = Application.Current;
+			top.BorderStyle = LineStyle.Single;
+			var view = new View () { X = 3, Y = 2, Width = 10, Height = 1, Text = "0123456789" };
+			top.Add (view);
+
+			Application.Begin (top);
+
+			Assert.Equal (Application.Current, top);
+			Assert.Equal (new Rect (0, 0, 80, 25), new Rect (0, 0, View.Driver.Cols, View.Driver.Rows));
+			Assert.Equal (new Rect (0, 0, View.Driver.Cols, View.Driver.Rows), top.Frame);
+			Assert.Equal (new Rect (0, 0, 80, 25), top.Frame);
+
+			((FakeDriver)Application.Driver).SetBufferSize (20, 10);
+			Assert.Equal (new Rect (0, 0, View.Driver.Cols, View.Driver.Rows), top.Frame);
+			Assert.Equal (new Rect (0, 0, 20, 10), top.Frame);
+			_ = TestHelpers.AssertDriverContentsWithFrameAre (@"
+┌──────────────────┐
+│                  │
+│                  │
+│   0123456789     │
+│                  │
+│                  │
+│                  │
+│                  │
+│                  │
+└──────────────────┘", output);
+
+			// top
+			Assert.Equal (Point.Empty, top.ScreenToView (0, 0));
+			top.Margin.ViewToScreen (0, 0, out int col, out int row);
+			Assert.Equal (0, col);
+			Assert.Equal (0, row);
+			top.Border.ViewToScreen (0, 0, out col, out row);
+			Assert.Equal (0, col);
+			Assert.Equal (0, row);
+			top.Padding.ViewToScreen (0, 0, out col, out row);
+			Assert.Equal (0, col);
+			Assert.Equal (0, row);
+			top.ViewToScreen (0, 0, out col, out row);
+			Assert.Equal (1, col);
+			Assert.Equal (1, row);
+			top.ViewToScreen (-1, -1, out col, out row);
+			Assert.Equal (0, col);
+			Assert.Equal (0, row);
+			Assert.Equal (top, View.FindDeepestView (top, 0, 0, out int rx, out int ry));
+			Assert.Equal (0, rx);
+			Assert.Equal (0, ry);
+			Assert.Equal (new Point (3, 2), top.ScreenToView (3, 2));
+			top.ViewToScreen (3, 2, out col, out row);
+			Assert.Equal (4, col);
+			Assert.Equal (3, row);
+			Assert.Equal (view, View.FindDeepestView (top, col, row, out rx, out ry));
+			Assert.Equal (0, rx);
+			Assert.Equal (0, ry);
+			Assert.Equal (top, View.FindDeepestView (top, 3, 2, out rx, out ry));
+			Assert.Equal (3, rx);
+			Assert.Equal (2, ry);
+			Assert.Equal (new Point (13, 2), top.ScreenToView (13, 2));
+			top.ViewToScreen (12, 2, out col, out row);
+			Assert.Equal (13, col);
+			Assert.Equal (3, row);
+			Assert.Equal (view, View.FindDeepestView (top, col, row, out rx, out ry));
+			Assert.Equal (9, rx);
+			Assert.Equal (0, ry);
+			top.ViewToScreen (13, 2, out col, out row);
+			Assert.Equal (14, col);
+			Assert.Equal (3, row);
+			Assert.Equal (top, View.FindDeepestView (top, 13, 2, out rx, out ry));
+			Assert.Equal (13, rx);
+			Assert.Equal (2, ry);
+			Assert.Equal (new Point (14, 3), top.ScreenToView (14, 3));
+			top.ViewToScreen (14, 3, out col, out row);
+			Assert.Equal (15, col);
+			Assert.Equal (4, row);
+			Assert.Equal (top, View.FindDeepestView (top, 14, 3, out rx, out ry));
+			Assert.Equal (14, rx);
+			Assert.Equal (3, ry);
+			// view
+			Assert.Equal (new Point (-4, -3), view.ScreenToView (0, 0));
+			view.Margin.ViewToScreen (-3, -2, out col, out row);
+			Assert.Equal (1, col);
+			Assert.Equal (1, row);
+			view.Border.ViewToScreen (-3, -2, out col, out row);
+			Assert.Equal (1, col);
+			Assert.Equal (1, row);
+			view.Padding.ViewToScreen (-3, -2, out col, out row);
+			Assert.Equal (1, col);
+			Assert.Equal (1, row);
+			view.ViewToScreen (-3, -2, out col, out row);
+			Assert.Equal (1, col);
+			Assert.Equal (1, row);
+			view.ViewToScreen (-4, -3, out col, out row);
+			Assert.Equal (0, col);
+			Assert.Equal (0, row);
+			Assert.Equal (top, View.FindDeepestView (top, 0, 0, out rx, out ry));
+			Assert.Equal (0, rx);
+			Assert.Equal (0, ry);
+			Assert.Equal (new Point (-1, -1), view.ScreenToView (3, 2));
+			view.ViewToScreen (0, 0, out col, out row);
+			Assert.Equal (4, col);
+			Assert.Equal (3, row);
+			Assert.Equal (view, View.FindDeepestView (top, 4, 3, out rx, out ry));
+			Assert.Equal (0, rx);
+			Assert.Equal (0, ry);
+			Assert.Equal (new Point (9, -1), view.ScreenToView (13, 2));
+			view.ViewToScreen (10, 0, out col, out row);
+			Assert.Equal (14, col);
+			Assert.Equal (3, row);
+			Assert.Equal (top, View.FindDeepestView (top, 14, 3, out rx, out ry));
+			Assert.Equal (14, rx);
+			Assert.Equal (3, ry);
+			Assert.Equal (new Point (10, 0), view.ScreenToView (14, 3));
+			view.ViewToScreen (11, 1, out col, out row);
+			Assert.Equal (15, col);
+			Assert.Equal (4, row);
+			Assert.Equal (top, View.FindDeepestView (top, 15, 4, out rx, out ry));
+			Assert.Equal (15, rx);
+			Assert.Equal (4, ry);
+		}
+
+		[Fact, AutoInitShutdown]
+		public void ScreenToView_ViewToScreen_FindDeepestView_Smaller_Top ()
+		{
+			var top = new Toplevel () { X = 3, Y = 2, Width = 20, Height = 10, BorderStyle = LineStyle.Single };
+			var view = new View () { X = 3, Y = 2, Width = 10, Height = 1, Text = "0123456789" };
+			top.Add (view);
+
+			Application.Begin (top);
+
+			Assert.Equal (Application.Current, top);
+			Assert.Equal (new Rect (0, 0, 80, 25), new Rect (0, 0, View.Driver.Cols, View.Driver.Rows));
+			Assert.NotEqual (new Rect (0, 0, View.Driver.Cols, View.Driver.Rows), top.Frame);
+			Assert.Equal (new Rect (3, 2, 20, 10), top.Frame);
+
+			((FakeDriver)Application.Driver).SetBufferSize (30, 20);
+			Assert.Equal (new Rect (0, 0, 30, 20), new Rect (0, 0, View.Driver.Cols, View.Driver.Rows));
+			Assert.NotEqual (new Rect (0, 0, View.Driver.Cols, View.Driver.Rows), top.Frame);
+			Assert.Equal (new Rect (3, 2, 20, 10), top.Frame);
+			var frame = TestHelpers.AssertDriverContentsWithFrameAre (@"
+   ┌──────────────────┐
+   │                  │
+   │                  │
+   │   0123456789     │
+   │                  │
+   │                  │
+   │                  │
+   │                  │
+   │                  │
+   └──────────────────┘", output);
+			// mean the output started at col 3 and line 2
+			// which result with a width of 23 and a height of 10 on the output
+			Assert.Equal (new Rect (3, 2, 23, 10), frame);
+
+			// top
+			Assert.Equal (new Point (-3, -2), top.ScreenToView (0, 0));
+			top.Margin.ViewToScreen (-3, -2, out int col, out int row);
+			Assert.Equal (0, col);
+			Assert.Equal (0, row);
+			top.Border.ViewToScreen (-3, -2, out col, out row);
+			Assert.Equal (0, col);
+			Assert.Equal (0, row);
+			top.Padding.ViewToScreen (-3, -2, out col, out row);
+			Assert.Equal (0, col);
+			Assert.Equal (0, row);
+			top.ViewToScreen (-3, -2, out col, out row);
+			Assert.Equal (1, col);
+			Assert.Equal (1, row);
+			top.ViewToScreen (-4, -3, out col, out row);
+			Assert.Equal (0, col);
+			Assert.Equal (0, row);
+			Assert.Null (View.FindDeepestView (top, -4, -3, out int rx, out int ry));
+			Assert.Equal (0, rx);
+			Assert.Equal (0, ry);
+			Assert.Equal (Point.Empty, top.ScreenToView (3, 2));
+			top.ViewToScreen (0, 0, out col, out row);
+			Assert.Equal (4, col);
+			Assert.Equal (3, row);
+			Assert.Equal (top, View.FindDeepestView (top, 3, 2, out rx, out ry));
+			Assert.Equal (0, rx);
+			Assert.Equal (0, ry);
+			Assert.Equal (new Point (10, 0), top.ScreenToView (13, 2));
+			top.ViewToScreen (10, 0, out col, out row);
+			Assert.Equal (14, col);
+			Assert.Equal (3, row);
+			Assert.Equal (top, View.FindDeepestView (top, 13, 2, out rx, out ry));
+			Assert.Equal (10, rx);
+			Assert.Equal (0, ry);
+			Assert.Equal (new Point (11, 1), top.ScreenToView (14, 3));
+			top.ViewToScreen (11, 1, out col, out row);
+			Assert.Equal (15, col);
+			Assert.Equal (4, row);
+			Assert.Equal (top, View.FindDeepestView (top, 14, 3, out rx, out ry));
+			Assert.Equal (11, rx);
+			Assert.Equal (1, ry);
+			// view
+			Assert.Equal (new Point (-7, -5), view.ScreenToView (0, 0));
+			view.Margin.ViewToScreen (-6, -4, out col, out row);
+			Assert.Equal (1, col);
+			Assert.Equal (1, row);
+			view.Border.ViewToScreen (-6, -4, out col, out row);
+			Assert.Equal (1, col);
+			Assert.Equal (1, row);
+			view.Padding.ViewToScreen (-6, -4, out col, out row);
+			Assert.Equal (1, col);
+			Assert.Equal (1, row);
+			view.ViewToScreen (-6, -4, out col, out row);
+			Assert.Equal (1, col);
+			Assert.Equal (1, row);
+			Assert.Null (View.FindDeepestView (top, 1, 1, out rx, out ry));
+			Assert.Equal (0, rx);
+			Assert.Equal (0, ry);
+			Assert.Equal (new Point (-4, -3), view.ScreenToView (3, 2));
+			view.ViewToScreen (-3, -2, out col, out row);
+			Assert.Equal (4, col);
+			Assert.Equal (3, row);
+			Assert.Equal (top, View.FindDeepestView (top, 4, 3, out rx, out ry));
+			Assert.Equal (1, rx);
+			Assert.Equal (1, ry);
+			Assert.Equal (new Point (-1, -1), view.ScreenToView (6, 4));
+			view.ViewToScreen (0, 0, out col, out row);
+			Assert.Equal (7, col);
+			Assert.Equal (5, row);
+			Assert.Equal (view, View.FindDeepestView (top, 7, 5, out rx, out ry));
+			Assert.Equal (0, rx);
+			Assert.Equal (0, ry);
+			Assert.Equal (new Point (6, -1), view.ScreenToView (13, 4));
+			view.ViewToScreen (7, 0, out col, out row);
+			Assert.Equal (14, col);
+			Assert.Equal (5, row);
+			Assert.Equal (view, View.FindDeepestView (top, 14, 5, out rx, out ry));
+			Assert.Equal (7, rx);
+			Assert.Equal (0, ry);
+			Assert.Equal (new Point (7, -2), view.ScreenToView (14, 3));
+			view.ViewToScreen (8, -1, out col, out row);
+			Assert.Equal (15, col);
+			Assert.Equal (4, row);
+			Assert.Equal (top, View.FindDeepestView (top, 15, 4, out rx, out ry));
+			Assert.Equal (12, rx);
+			Assert.Equal (2, ry);
+			Assert.Equal (new Point (16, -2), view.ScreenToView (23, 3));
+			view.ViewToScreen (17, -1, out col, out row);
+			Assert.Equal (24, col);
+			Assert.Equal (4, row);
+			Assert.Null (View.FindDeepestView (top, 24, 4, out rx, out ry));
+			Assert.Equal (0, rx);
+			Assert.Equal (0, ry);
 		}
 	}
 }

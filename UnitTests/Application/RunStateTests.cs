@@ -18,25 +18,25 @@ namespace Terminal.Gui.ApplicationTests {
 		{
 #if DEBUG_IDISPOSABLE
 			Responder.Instances.Clear ();
-			Application.RunState.Instances.Clear ();
+			RunState.Instances.Clear ();
 #endif
 		}
 
 		[Fact]
 		public void New_Creates_RunState ()
 		{
-			var rs = new Application.RunState (null);
+			var rs = new RunState (null);
 			Assert.Null (rs.Toplevel);
 
 			var top = new Toplevel ();
-			rs = new Application.RunState (top);
+			rs = new RunState (top);
 			Assert.Equal (top, rs.Toplevel);
 		}
 
 		[Fact]
 		public void Dispose_Cleans_Up_RunState ()
 		{
-			var rs = new Application.RunState (null);
+			var rs = new RunState (null);
 			Assert.NotNull (rs);
 
 			// Should not throw because Toplevel was null
@@ -45,7 +45,7 @@ namespace Terminal.Gui.ApplicationTests {
 			Assert.True (rs.WasDisposed);
 #endif
 			var top = new Toplevel ();
-			rs = new Application.RunState (top);
+			rs = new RunState (top);
 			Assert.NotNull (rs);
 
 			// Should throw because Toplevel was not cleaned up
@@ -73,7 +73,7 @@ namespace Terminal.Gui.ApplicationTests {
 			Application.Shutdown ();
 #if DEBUG_IDISPOSABLE
 			// Validate there are no outstanding RunState-based instances left
-			foreach (var inst in Application.RunState.Instances) 				Assert.True (inst.WasDisposed);
+			foreach (var inst in RunState.Instances) 				Assert.True (inst.WasDisposed);
 #endif
 		}
 

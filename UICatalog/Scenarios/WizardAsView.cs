@@ -1,5 +1,4 @@
-﻿using NStack;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -60,13 +59,13 @@ namespace UICatalog.Scenarios {
 			};
 
 			// Add 1st step
-			var firstStep = new Wizard.WizardStep () { Title = "End User License Agreement" };
+			var firstStep = new WizardStep () { Title = "End User License Agreement" };
 			wizard.AddStep (firstStep);
 			firstStep.NextButtonText = "Accept!";
 			firstStep.HelpText = "This is the End User License Agreement.\n\n\n\n\n\nThis is a test of the emergency broadcast system. This is a test of the emergency broadcast system.\nThis is a test of the emergency broadcast system.\n\n\nThis is a test of the emergency broadcast system.\n\nThis is a test of the emergency broadcast system.\n\n\n\nThe end of the EULA.";
 
 			// Add 2nd step
-			var secondStep = new Wizard.WizardStep () { Title = "Second Step" };
+			var secondStep = new WizardStep () { Title = "Second Step" };
 			wizard.AddStep (secondStep);
 			secondStep.HelpText = "This is the help text for the Second Step.\n\nPress the button to change the Title.\n\nIf First Name is empty the step will prevent moving to the next step.";
 
@@ -89,7 +88,7 @@ namespace UICatalog.Scenarios {
 			secondStep.Add (lbl, lastNameField);
 
 			// Add last step
-			var lastStep = new Wizard.WizardStep () { Title = "The last step" };
+			var lastStep = new WizardStep () { Title = "The last step" };
 			wizard.AddStep (lastStep);
 			lastStep.HelpText = "The wizard is complete!\n\nPress the Finish button to continue.\n\nPressing Esc will cancel.";
 

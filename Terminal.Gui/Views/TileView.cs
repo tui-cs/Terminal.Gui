@@ -1,4 +1,4 @@
-﻿using NStack;
+﻿using System.Text;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -17,97 +17,6 @@ namespace Terminal.Gui {
 		/// of splitter lines.  Mouse drag splitting is always enabled.
 		/// </summary>
 		public Key ToggleResizable { get; set; } = Key.CtrlMask | Key.F10;
-
-		/// <summary>
-		/// A single <see cref="ContentView"/> presented in a <see cref="TileView"/>. To create
-		/// new instances use <see cref="TileView.RebuildForTileCount(int)"/> 
-		/// or <see cref="TileView.InsertTile(int)"/>.
-		/// </summary>
-		public class Tile {
-			/// <summary>
-			/// The <see cref="ContentView"/> that is contained in this <see cref="TileView"/>.
-			/// Add new child views to this member for multiple 
-			/// <see cref="ContentView"/>s within the <see cref="Tile"/>.
-			/// </summary>
-			public View ContentView { get; internal set; }
-
-			/// <summary>
-			/// Gets or Sets the minimum size you to allow when splitter resizing along
-			/// parent <see cref="TileView.Orientation"/> direction.
-			/// </summary>
-			public int MinSize { get; set; }
-
-			/// <summary>
-			/// The text that should be displayed above the <see cref="ContentView"/>. This 
-			/// will appear over the splitter line or border (above the view client area).
-			/// </summary>
-			/// <remarks>
-			/// Title are not rendered for root level tiles 
-			/// <see cref="Gui.LineStyle"/> is <see cref="LineStyle.None"/>.
-			///</remarks>
-			public string Title {
-				get => _title;
-				set {
-					if (!OnTitleChanging (_title, value)) {
-						var old = _title;
-						_title = value;
-						OnTitleChanged (old, _title);
-						return;
-					}
-					_title = value;
-				}
-			}
-
-			private string _title = string.Empty;
-
-			/// <summary>
-			/// Called before the <see cref="Title"/> changes. Invokes the <see cref="TitleChanging"/> event, which can be cancelled.
-			/// </summary>
-			/// <param name="oldTitle">The <see cref="Title"/> that is/has been replaced.</param>
-			/// <param name="newTitle">The new <see cref="Title"/> to be replaced.</param>
-			/// <returns><c>true</c> if an event handler cancelled the Title change.</returns>
-			public virtual bool OnTitleChanging (ustring oldTitle, ustring newTitle)
-			{
-				var args = new TitleEventArgs (oldTitle, newTitle);
-				TitleChanging?.Invoke (this, args);
-				return args.Cancel;
-			}
-
-			/// <summary>
-			/// Event fired when the <see cref="Title"/> is changing. Set <see cref="TitleEventArgs.Cancel"/> to 
-			/// <c>true</c> to cancel the Title change.
-			/// </summary>
-			public event EventHandler<TitleEventArgs> TitleChanging;
-
-			/// <summary>
-			/// Called when the <see cref="Title"/> has been changed. Invokes the <see cref="TitleChanged"/> event.
-			/// </summary>
-			/// <param name="oldTitle">The <see cref="Title"/> that is/has been replaced.</param>
-			/// <param name="newTitle">The new <see cref="Title"/> to be replaced.</param>
-			public virtual void OnTitleChanged (ustring oldTitle, ustring newTitle)
-			{
-				var args = new TitleEventArgs (oldTitle, newTitle);
-				TitleChanged?.Invoke (this, args);
-			}
-
-			/// <summary>
-			/// Event fired after the <see cref="Title"/> has been changed. 
-			/// </summary>
-			public event EventHandler<TitleEventArgs> TitleChanged;
-
-			/// <summary>
-			/// Creates a new instance of the <see cref="Tile"/> class.
-			/// </summary>
-			public Tile ()
-			{
-				ContentView = new View () { Width = Dim.Fill (), Height = Dim.Fill () };
-#if DEBUG_IDISPOSABLE
-				ContentView.Data = "Tile.ContentView";
-#endif
-				Title = string.Empty;
-				MinSize = 0;
-			}
-		}
 
 		List<Tile> tiles;
 		private List<Pos> splitterDistances;
@@ -197,10 +106,12 @@ namespace Terminal.Gui {
 				var tile = new Tile ();
 				tiles.Add (tile);
 				Add (tile.ContentView);
-				tile.TitleChanged += (s,e) => SetNeedsDisplay ();
+				tile.TitleChanged += (s, e) => SetNeedsDisplay ();
 			}
 
-			LayoutSubviews ();
+			if (IsInitialized) {
+				LayoutSubviews ();
+			}
 		}
 
 		/// <summary>
@@ -233,7 +144,9 @@ namespace Terminal.Gui {
 				}
 			}
 			SetNeedsDisplay ();
-			LayoutSubviews ();
+			if (IsInitialized) {
+				LayoutSubviews ();
+			}
 
 			return toReturn;
 		}
@@ -326,12 +239,18 @@ namespace Terminal.Gui {
 			get { return orientation; }
 			set {
 				orientation = value;
-				LayoutSubviews ();
+				if (IsInitialized) {
+					LayoutSubviews ();
+				}
 			}
 		}
 		/// <inheritdoc/>
 		public override void LayoutSubviews ()
 		{
+			if (!IsInitialized) {
+				return;
+			}
+
 			var contentArea = Bounds;
 
 			if (HasBorder ()) {
@@ -387,12 +306,12 @@ namespace Terminal.Gui {
 		}
 
 		/// <inheritdoc/>
-		public override void Redraw (Rect bounds)
+		public override void OnDrawContent (Rect contentArea)
 		{
 			Driver.SetAttribute (ColorScheme.Normal);
 			Clear ();
 
-			base.Redraw (bounds);
+			base.OnDrawContent (contentArea);
 
 			var lc = new LineCanvas ();
 
@@ -402,11 +321,11 @@ namespace Terminal.Gui {
 			if (IsRootTileView ()) {
 				if (HasBorder ()) {
 
-					lc.AddLine (new Point (0, 0), bounds.Width - 1, Orientation.Horizontal, LineStyle);
-					lc.AddLine (new Point (0, 0), bounds.Height - 1, Orientation.Vertical, LineStyle);
+					lc.AddLine (new Point (0, 0), Bounds.Width - 1, Orientation.Horizontal, LineStyle);
+					lc.AddLine (new Point (0, 0), Bounds.Height - 1, Orientation.Vertical, LineStyle);
 
-					lc.AddLine (new Point (bounds.Width - 1, bounds.Height - 1), -bounds.Width + 1, Orientation.Horizontal, LineStyle);
-					lc.AddLine (new Point (bounds.Width - 1, bounds.Height - 1), -bounds.Height + 1, Orientation.Vertical, LineStyle);
+					lc.AddLine (new Point (Bounds.Width - 1, Bounds.Height - 1), -Bounds.Width + 1, Orientation.Horizontal, LineStyle);
+					lc.AddLine (new Point (Bounds.Width - 1, Bounds.Height - 1), -Bounds.Height + 1, Orientation.Vertical, LineStyle);
 				}
 
 				foreach (var line in allLines) {
@@ -432,10 +351,10 @@ namespace Terminal.Gui {
 			}
 
 			Driver.SetAttribute (ColorScheme.Normal);
-			foreach (var p in lc.GetMap (bounds)) {
+			foreach (var p in lc.GetMap (Bounds)) {
 				this.AddRune (p.Key.X, p.Key.Y, p.Value);
 			}
-			
+
 			// Redraw the lines so that focus/drag symbol renders
 			foreach (var line in allLines) {
 				line.DrawSplitterSymbol ();
@@ -457,7 +376,7 @@ namespace Terminal.Gui {
 				var title = titleToRender.GetTrimmedTitle ();
 
 				for (int i = 0; i < title.Length; i++) {
-					AddRune (renderAt.X + i, renderAt.Y, title [i]);
+					AddRune (renderAt.X + i, renderAt.Y, (Rune)title [i]);
 				}
 			}
 		}
@@ -528,8 +447,8 @@ namespace Terminal.Gui {
 		{
 			bool focusMoved = false;
 
-			if(keyEvent.Key == ToggleResizable) {
-				foreach(var l in splitterLines) {
+			if (keyEvent.Key == ToggleResizable) {
+				foreach (var l in splitterLines) {
 
 					var iniBefore = l.IsInitialized;
 					l.IsInitialized = false;
@@ -719,7 +638,7 @@ namespace Terminal.Gui {
 				line.Height = orientation == Orientation.Vertical
 					? Dim.Fill () : 1;
 				line.LineRune = orientation == Orientation.Vertical ?
-					Driver.VLine : Driver.HLine;
+					CM.Glyphs.VLine : CM.Glyphs.HLine;
 
 				if (orientation == Orientation.Vertical) {
 					line.X = splitterDistances [i];
@@ -915,9 +834,9 @@ namespace Terminal.Gui {
 				return base.OnEnter (view);
 			}
 
-			public override void Redraw (Rect bounds)
+			public override void OnDrawContent (Rect contentArea)
 			{
-				base.Redraw (bounds);
+				base.OnDrawContent (contentArea);
 
 				DrawSplitterSymbol ();
 			}
@@ -928,7 +847,7 @@ namespace Terminal.Gui {
 					var location = moveRuneRenderLocation ??
 						new Point (Bounds.Width / 2, Bounds.Height / 2);
 
-					AddRune (location.X, location.Y, Driver.Diamond);
+					AddRune (location.X, location.Y, CM.Glyphs.Diamond);
 				}
 			}
 

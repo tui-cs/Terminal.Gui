@@ -1,7 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Reflection.Metadata.Ecma335;
+using System.Text;
 using Terminal.Gui;
+using Attribute = Terminal.Gui.Attribute;
 
 namespace UICatalog.Scenarios {
 
@@ -12,214 +15,127 @@ namespace UICatalog.Scenarios {
 
 		public override void Setup ()
 		{
-			var toolsWidth = 12;
-
 			var canvas = new DrawingArea {
-				Width = Dim.Fill (toolsWidth + 1),
-				Height = Dim.Fill (),
-				BorderStyle = LineStyle.Single
+				X = 0,
+				Y = 0,
+				Width = Dim.Fill (),
+				Height = Dim.Fill ()
 			};
 
-			var tools = new ToolsView (toolsWidth) {
-				Y = 1,
-				X = Pos.AnchorEnd (toolsWidth + 1),
-				Height = Dim.Fill (),
-				Width = Dim.Fill ()
+			var tools = new ToolsView () {
+				Title = "Tools",
+				X = Pos.Right(canvas) - 20,
+				Y = 2
 			};
 
 			tools.ColorChanged += (c) => canvas.SetColor (c);
 			tools.SetStyle += (b) => canvas.LineStyle = b;
+			tools.AddLayer += () => canvas.AddLayer ();
 
 			Win.Add (canvas);
 			Win.Add (tools);
-			Win.Add (new Label (" -Tools-") { X = Pos.AnchorEnd (toolsWidth + 1) });
 		}
 
-		class ToolsView : View {
-
-			LineCanvas grid;
+		class ToolsView : Window {
 			public event Action<Color> ColorChanged;
 			public event Action<LineStyle> SetStyle;
+			public event Action AddLayer;
 
-			Dictionary<Point, Color> swatches = new Dictionary<Point, Color> {
-				{ new Point(1,1),Color.Red},
-				{ new Point(3,1),Color.Green},
-				{ new Point(5,1),Color.BrightBlue},
-				{ new Point(7,1),Color.Black},
-				{ new Point(9,1),Color.DarkGray},
-				{ new Point(11,1),Color.White},
-			};
+			private RadioGroup _stylePicker;
+			private ColorPicker _colorPicker;
+			private Button _addLayerBtn;
 
-			public ToolsView (int width)
+			public ToolsView ()
 			{
-				grid = new LineCanvas ();
-
-				grid.AddLine (new Point (0, 0), 7, Orientation.Vertical, LineStyle.Single);
-				grid.AddLine (new Point (0, 0), width + 1, Orientation.Horizontal, LineStyle.Single);
-				grid.AddLine (new Point (width, 0), 7, Orientation.Vertical, LineStyle.Single);
-				grid.AddLine (new Point (0, 6), width + 1, Orientation.Horizontal, LineStyle.Single);
-
-				grid.AddLine (new Point (2, 0), 7, Orientation.Vertical, LineStyle.Single);
-				grid.AddLine (new Point (4, 0), 7, Orientation.Vertical, LineStyle.Single);
-				grid.AddLine (new Point (6, 0), 7, Orientation.Vertical, LineStyle.Single);
-				grid.AddLine (new Point (8, 0), 7, Orientation.Vertical, LineStyle.Single);
-				grid.AddLine (new Point (10, 0), 7, Orientation.Vertical, LineStyle.Single);
-
-				grid.AddLine (new Point (0, 2), width + 1, Orientation.Horizontal, LineStyle.Single);
-				grid.AddLine (new Point (0, 4), width + 1, Orientation.Horizontal, LineStyle.Single);
-			}
-			public override void Redraw (Rect bounds)
-			{
-				base.Redraw (bounds);
-
-				Driver.SetAttribute (new Terminal.Gui.Attribute (Color.DarkGray, ColorScheme.Normal.Background));
-				
-				
-				foreach(var p in grid.GetMap(bounds))
-				{
-					this.AddRune(p.Key.X,p.Key.Y,p.Value);
-				}
-
-				foreach (var swatch in swatches) {
-					Driver.SetAttribute (new Terminal.Gui.Attribute (swatch.Value, ColorScheme.Normal.Background));
-					AddRune (swatch.Key.X, swatch.Key.Y, '█');
-				}
-
-				Driver.SetAttribute (new Terminal.Gui.Attribute (ColorScheme.Normal.Foreground, ColorScheme.Normal.Background));
-				AddRune (1, 3, Application.Driver.HLine);
-				AddRune (3, 3, Application.Driver.HDsLine);
-				AddRune (5, 3, Application.Driver.HDtLine);
-				AddRune (7, 3, Application.Driver.ULRCorner);
-				AddRune (9, 3, Application.Driver.HDsLine);
-				AddRune (11, 3, Application.Driver.HDtLine);
-				AddRune (1, 5, Application.Driver.HThLine);
-				AddRune (3, 5, Application.Driver.HThDsLine);
-				AddRune (5, 5, Application.Driver.HThDtLine);
-				AddRune (7, 5, Application.Driver.HDbLine);
+				BorderStyle = LineStyle.Dotted;
+				Border.Thickness = new Thickness (1, 2, 1, 1);
+				Initialized += ToolsView_Initialized;
 			}
 
-			public override bool OnMouseEvent (MouseEvent mouseEvent)
+			private void ToolsView_Initialized (object sender, EventArgs e)
 			{
-				if (mouseEvent.Flags.HasFlag (MouseFlags.Button1Clicked)) {
-					foreach (var swatch in swatches) {
-						if (mouseEvent.X == swatch.Key.X && mouseEvent.Y == swatch.Key.Y) {
+				LayoutSubviews ();
+				Width = Math.Max (_colorPicker.Frame.Width, _stylePicker.Frame.Width) + GetFramesThickness().Horizontal;
+				Height = _colorPicker.Frame.Height + _stylePicker.Frame.Height + _addLayerBtn.Frame.Height + GetFramesThickness ().Vertical;
+				SuperView.LayoutSubviews ();
+			}
 
-							ColorChanged?.Invoke (swatch.Value);
-							return true;
-						}
-					}
+			public override void BeginInit ()
+			{
+				base.BeginInit ();
 
-					if (mouseEvent.X == 1 && mouseEvent.Y == 3) {
+				_colorPicker = new ColorPicker () {
+					X = 0,
+					Y = 0,
+					BoxHeight = 1,
+					BoxWidth = 2
+				};
 
-						SetStyle?.Invoke (LineStyle.Single);
-						return true;
-					}
-					if (mouseEvent.X == 3 && mouseEvent.Y == 3) {
+				_colorPicker.ColorChanged += (s, a) => ColorChanged?.Invoke (a.Color);
 
-						SetStyle?.Invoke (LineStyle.Dashed);
-						return true;
-					}
-					if (mouseEvent.X == 5 && mouseEvent.Y == 3) {
+				_stylePicker = new RadioGroup (Enum.GetNames (typeof (LineStyle)).ToArray ()) {
+					X = 0,
+					Y = Pos.Bottom (_colorPicker)
+				};
 
-						SetStyle?.Invoke (LineStyle.Dotted);
-						return true;
-					}
-					if (mouseEvent.X == 7 && mouseEvent.Y == 3) {
+				_stylePicker.SelectedItemChanged += (s, a) => {
+					SetStyle?.Invoke ((LineStyle)a.SelectedItem);
+				};
 
-						SetStyle?.Invoke (LineStyle.Rounded);
-						return true;
-					}
-					if (mouseEvent.X == 9 && mouseEvent.Y == 3) {
+				_addLayerBtn = new Button () {
+					Text = "New Layer",
+					X = Pos.Center (),
+					Y = Pos.Bottom (_stylePicker),
+				};
 
-						SetStyle?.Invoke (LineStyle.RoundedDashed);
-						return true;
-					}
-					if (mouseEvent.X == 11 && mouseEvent.Y == 3) {
-
-						SetStyle?.Invoke (LineStyle.RoundedDotted);
-						return true;
-					}
-					if (mouseEvent.X == 1 && mouseEvent.Y == 5) {
-
-						SetStyle?.Invoke (LineStyle.Heavy);
-						return true;
-					}
-					if (mouseEvent.X == 3 && mouseEvent.Y == 5) {
-
-						SetStyle?.Invoke (LineStyle.HeavyDashed);
-						return true;
-					}
-					if (mouseEvent.X == 5 && mouseEvent.Y == 5) {
-
-						SetStyle?.Invoke (LineStyle.HeavyDotted);
-						return true;
-					}
-					if (mouseEvent.X == 7 && mouseEvent.Y == 5) {
-
-						SetStyle?.Invoke (LineStyle.Double);
-						return true;
-					}
-				}
-
-				return base.OnMouseEvent (mouseEvent);
+				_addLayerBtn.Clicked += (s, a) => AddLayer?.Invoke ();
+				Add (_colorPicker, _stylePicker, _addLayerBtn);
 			}
 		}
 
 		class DrawingArea : View {
-			/// <summary>
-			/// Index into <see cref="canvases"/> by color.
-			/// </summary>
-			Dictionary<Color, int> colorLayers = new Dictionary<Color, int> ();
-			List<LineCanvas> canvases = new List<LineCanvas> ();
-			int currentColor;
+			List<LineCanvas> _layers = new List<LineCanvas> ();
+			LineCanvas _currentLayer;
+			Color _currentColor = Color.White;
+			Point? _currentLineStart = null;
 
-			Point? currentLineStart = null;
 			public LineStyle LineStyle { get; set; }
 
 			public DrawingArea ()
 			{
-				AddCanvas (Color.White);
+				AddLayer ();
 			}
 
-			private void AddCanvas (Color c)
+			internal void AddLayer ()
 			{
-				if (colorLayers.ContainsKey (c)) {
-					return;
-				}
-
-				canvases.Add (new LineCanvas ());
-				colorLayers.Add (c, canvases.Count - 1);
-				currentColor = canvases.Count - 1;
+				_currentLayer = new LineCanvas ();
+				_layers.Add (_currentLayer);
 			}
 
-			public override void Redraw (Rect bounds)
+			public override void OnDrawContent (Rect contentArea)
 			{
-				base.Redraw (bounds);
+				base.OnDrawContent (contentArea);
 
-				foreach (var kvp in colorLayers) {
-
-					Driver.SetAttribute (new Terminal.Gui.Attribute (kvp.Key, ColorScheme.Normal.Background));
-
-					var canvas = canvases [kvp.Value];
-
-					foreach(var p in canvas.GetMap(bounds))
-					{
-						this.AddRune(p.Key.X,p.Key.Y,p.Value);
+				foreach (var canvas in _layers) {
+					
+					foreach (var c in canvas.GetCellMap ()) {
+						Driver.SetAttribute (c.Value.Attribute?.Value ?? ColorScheme.Normal);
+						this.AddRune (c.Key.X, c.Key.Y, c.Value.Rune.Value);
 					}
 				}
 			}
+
 			public override bool OnMouseEvent (MouseEvent mouseEvent)
 			{
-
 				if (mouseEvent.Flags.HasFlag (MouseFlags.Button1Pressed)) {
-					if (currentLineStart == null) {
-						currentLineStart = new Point (mouseEvent.X - 1, mouseEvent.Y - 1);
+					if (_currentLineStart == null) {
+						_currentLineStart = new Point (mouseEvent.X - GetBoundsOffset().X, mouseEvent.Y - GetBoundsOffset ().X);
 					}
 				} else {
-					if (currentLineStart != null) {
+					if (_currentLineStart != null) {
 
-						var start = currentLineStart.Value;
-						var end = new Point (mouseEvent.X - 1, mouseEvent.Y - 1);
+						var start = _currentLineStart.Value;
+						var end = new Point (mouseEvent.X - GetBoundsOffset ().X, mouseEvent.Y - GetBoundsOffset ().X);
 						var orientation = Orientation.Vertical;
 						var length = end.Y - start.Y;
 
@@ -229,21 +145,20 @@ namespace UICatalog.Scenarios {
 							length = end.X - start.X;
 						}
 
-						if(length > 0) {
+						if (length > 0) {
 							length++;
-						}
-						else {
+						} else {
 							length--;
 						}
-						
 
-						canvases [currentColor].AddLine (
+						_currentLayer.AddLine (
 							start,
 							length,
 							orientation,
-							LineStyle);
+							LineStyle,
+							new Attribute (_currentColor, GetNormalColor().Background));
 
-						currentLineStart = null;
+						_currentLineStart = null;
 						SetNeedsDisplay ();
 					}
 				}
@@ -253,10 +168,8 @@ namespace UICatalog.Scenarios {
 
 			internal void SetColor (Color c)
 			{
-				AddCanvas (c);
-				currentColor = colorLayers [c];
+				_currentColor = c;
 			}
-
 		}
 	}
 }

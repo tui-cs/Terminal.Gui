@@ -23,15 +23,15 @@ namespace Terminal.Gui.ViewsTests {
 			return GetTabView (out _, out _);
 		}
 
-		private TabView GetTabView (out TabView.Tab tab1, out TabView.Tab tab2, bool initFakeDriver = true)
+		private TabView GetTabView (out Tab tab1, out Tab tab2, bool initFakeDriver = true)
 		{
 			if (initFakeDriver)
 				InitFakeDriver ();
 
 			var tv = new TabView ();
 			tv.ColorScheme = new ColorScheme ();
-			tv.AddTab (tab1 = new TabView.Tab ("Tab1", new TextField ("hi")), false);
-			tv.AddTab (tab2 = new TabView.Tab ("Tab2", new Label ("hi2")), false);
+			tv.AddTab (tab1 = new Tab ("Tab1", new TextField ("hi")), false);
+			tv.AddTab (tab2 = new Tab ("Tab2", new Label ("hi2")), false);
 			return tv;
 		}
 
@@ -41,10 +41,10 @@ namespace Terminal.Gui.ViewsTests {
 			InitFakeDriver ();
 
 			var tv = new TabView ();
-			TabView.Tab tab1;
-			TabView.Tab tab2;
-			tv.AddTab (tab1 = new TabView.Tab ("Tab1", new TextField ("hi")), false);
-			tv.AddTab (tab2 = new TabView.Tab ("Tab1", new Label ("hi2")), true);
+			Tab tab1;
+			Tab tab2;
+			tv.AddTab (tab1 = new Tab ("Tab1", new TextField ("hi")), false);
+			tv.AddTab (tab2 = new Tab ("Tab1", new Label ("hi2")), true);
 
 			Assert.Equal (2, tv.Tabs.Count);
 			Assert.Equal (tab2, tv.SelectedTab);
@@ -98,8 +98,8 @@ namespace Terminal.Gui.ViewsTests {
 
 			tv.SelectedTab = tab1;
 
-			TabView.Tab oldTab = null;
-			TabView.Tab newTab = null;
+			Tab oldTab = null;
+			Tab newTab = null;
 			int called = 0;
 
 			tv.SelectedTabChanged += (s, e) => {
@@ -172,13 +172,13 @@ namespace Terminal.Gui.ViewsTests {
 		{
 			var tv = GetTabView (out var tab1, out var tab2);
 
-			TabView.Tab tab3;
-			TabView.Tab tab4;
-			TabView.Tab tab5;
+			Tab tab3;
+			Tab tab4;
+			Tab tab5;
 
-			tv.AddTab (tab3 = new TabView.Tab (), false);
-			tv.AddTab (tab4 = new TabView.Tab (), false);
-			tv.AddTab (tab5 = new TabView.Tab (), false);
+			tv.AddTab (tab3 = new Tab (), false);
+			tv.AddTab (tab4 = new Tab (), false);
+			tv.AddTab (tab5 = new Tab (), false);
 
 			tv.SelectedTab = tab1;
 
@@ -255,7 +255,7 @@ namespace Terminal.Gui.ViewsTests {
 			tab1.Text = "12";
 			tab2.Text = "13";
 
-			tv.Redraw (tv.Bounds);
+			tv.Draw ();
 
 			TestHelpers.AssertDriverContentsWithFrameAre (@"
 ┌──┐      
@@ -266,7 +266,7 @@ namespace Terminal.Gui.ViewsTests {
 
 			tv.SelectedTab = tab2;
 
-			tv.Redraw (tv.Bounds);
+			tv.Draw ();
 
 			TestHelpers.AssertDriverContentsWithFrameAre (@"
    ┌──┐   
@@ -280,7 +280,7 @@ namespace Terminal.Gui.ViewsTests {
 			tab1.Text = "12345678910";
 			tab2.Text = "13";
 
-			tv.Redraw (tv.Bounds);
+			tv.Draw ();
 
 			TestHelpers.AssertDriverContentsWithFrameAre (@"
 ┌───────┐ 
@@ -291,7 +291,7 @@ namespace Terminal.Gui.ViewsTests {
 
 			//switch to tab2
 			tv.SelectedTab = tab2;
-			tv.Redraw (tv.Bounds);
+			tv.Draw ();
 
 			TestHelpers.AssertDriverContentsWithFrameAre (@"
 ┌──┐      
@@ -304,7 +304,7 @@ namespace Terminal.Gui.ViewsTests {
 			tab1.Text = "12345678910";
 			tab2.Text = "abcdefghijklmnopq";
 
-			tv.Redraw (tv.Bounds);
+			tv.Draw ();
 
 			TestHelpers.AssertDriverContentsWithFrameAre (@"
 ┌───────┐ 
@@ -320,7 +320,7 @@ namespace Terminal.Gui.ViewsTests {
 			var tv = GetTabView (out var tab1, out var tab2, false);
 			tv.Width = 10;
 			tv.Height = 5;
-			tv.Style = new TabView.TabStyle { ShowTopLine = false };
+			tv.Style = new TabStyle { ShowTopLine = false };
 			tv.ApplyStyleChanges ();
 
 			// Ensures that the tab bar subview gets the bounds of the parent TabView
@@ -330,7 +330,7 @@ namespace Terminal.Gui.ViewsTests {
 			tab1.Text = "12";
 			tab2.Text = "13";
 
-			tv.Redraw (tv.Bounds);
+			tv.Draw ();
 
 			TestHelpers.AssertDriverContentsWithFrameAre (@"
 │12│13    
@@ -341,7 +341,7 @@ namespace Terminal.Gui.ViewsTests {
 
 			tv.SelectedTab = tab2;
 
-			tv.Redraw (tv.Bounds);
+			tv.Draw ();
 
 			TestHelpers.AssertDriverContentsWithFrameAre (@"
  12│13│   
@@ -356,7 +356,7 @@ namespace Terminal.Gui.ViewsTests {
 			tab1.Text = "12345678910";
 			tab2.Text = "13";
 
-			tv.Redraw (tv.Bounds);
+			tv.Draw ();
 
 			TestHelpers.AssertDriverContentsWithFrameAre (@"
 │1234567│ 
@@ -367,7 +367,7 @@ namespace Terminal.Gui.ViewsTests {
 
 			//switch to tab2
 			tv.SelectedTab = tab2;
-			tv.Redraw (tv.Bounds);
+			tv.Draw ();
 
 			TestHelpers.AssertDriverContentsWithFrameAre (@"
 │13│      
@@ -380,7 +380,7 @@ namespace Terminal.Gui.ViewsTests {
 			tab1.Text = "12345678910";
 			tab2.Text = "abcdefghijklmnopq";
 
-			tv.Redraw (tv.Bounds);
+			tv.Draw ();
 
 			TestHelpers.AssertDriverContentsWithFrameAre (@"
 │abcdefg│ 
@@ -398,7 +398,7 @@ namespace Terminal.Gui.ViewsTests {
 			tv.Height = 5;
 			tv.LayoutSubviews ();
 
-			tv.Redraw (tv.Bounds);
+			tv.Draw ();
 
 			TestHelpers.AssertDriverContentsWithFrameAre (@"
 ┌─┐ 
@@ -414,11 +414,11 @@ namespace Terminal.Gui.ViewsTests {
 			var tv = GetTabView (out _, out _, false);
 			tv.Width = 4;
 			tv.Height = 5;
-			tv.Style = new TabView.TabStyle { ShowTopLine = false };
+			tv.Style = new TabStyle { ShowTopLine = false };
 			tv.ApplyStyleChanges ();
 			tv.LayoutSubviews ();
 
-			tv.Redraw (tv.Bounds);
+			tv.Draw ();
 
 			TestHelpers.AssertDriverContentsWithFrameAre (@"
 │T│ 
@@ -436,7 +436,7 @@ namespace Terminal.Gui.ViewsTests {
 			tv.Height = 5;
 			tv.LayoutSubviews ();
 
-			tv.Redraw (tv.Bounds);
+			tv.Draw ();
 
 			TestHelpers.AssertDriverContentsWithFrameAre (@"
 ┌┐ 
@@ -452,11 +452,11 @@ namespace Terminal.Gui.ViewsTests {
 			var tv = GetTabView (out _, out _, false);
 			tv.Width = 3;
 			tv.Height = 5;
-			tv.Style = new TabView.TabStyle { ShowTopLine = false };
+			tv.Style = new TabStyle { ShowTopLine = false };
 			tv.ApplyStyleChanges ();
 			tv.LayoutSubviews ();
 
-			tv.Redraw (tv.Bounds);
+			tv.Draw ();
 
 			TestHelpers.AssertDriverContentsWithFrameAre (@"
 ││ 
@@ -472,7 +472,7 @@ namespace Terminal.Gui.ViewsTests {
 			var tv = GetTabView (out var tab1, out var tab2, false);
 			tv.Width = 10;
 			tv.Height = 5;
-			tv.Style = new TabView.TabStyle { TabsOnBottom = true };
+			tv.Style = new TabStyle { TabsOnBottom = true };
 			tv.ApplyStyleChanges ();
 
 			// Ensures that the tab bar subview gets the bounds of the parent TabView
@@ -482,7 +482,7 @@ namespace Terminal.Gui.ViewsTests {
 			tab1.Text = "12";
 			tab2.Text = "13";
 
-			tv.Redraw (tv.Bounds);
+			tv.Draw ();
 
 			TestHelpers.AssertDriverContentsWithFrameAre (@"
 ┌────────┐
@@ -495,7 +495,7 @@ namespace Terminal.Gui.ViewsTests {
 			tab1.Text = "12345678910";
 			tab2.Text = "13";
 
-			tv.Redraw (tv.Bounds);
+			tv.Draw ();
 
 			TestHelpers.AssertDriverContentsWithFrameAre (@"
 ┌────────┐
@@ -506,7 +506,7 @@ namespace Terminal.Gui.ViewsTests {
 
 			//switch to tab2
 			tv.SelectedTab = tab2;
-			tv.Redraw (tv.Bounds);
+			tv.Draw ();
 
 			TestHelpers.AssertDriverContentsWithFrameAre (@"
 ┌────────┐
@@ -519,7 +519,7 @@ namespace Terminal.Gui.ViewsTests {
 			tab1.Text = "12345678910";
 			tab2.Text = "abcdefghijklmnopq";
 
-			tv.Redraw (tv.Bounds);
+			tv.Draw ();
 
 			TestHelpers.AssertDriverContentsWithFrameAre (@"
 ┌────────┐
@@ -535,7 +535,7 @@ namespace Terminal.Gui.ViewsTests {
 			var tv = GetTabView (out var tab1, out var tab2, false);
 			tv.Width = 10;
 			tv.Height = 5;
-			tv.Style = new TabView.TabStyle { ShowTopLine = false, TabsOnBottom = true };
+			tv.Style = new TabStyle { ShowTopLine = false, TabsOnBottom = true };
 			tv.ApplyStyleChanges ();
 
 			// Ensures that the tab bar subview gets the bounds of the parent TabView
@@ -545,7 +545,7 @@ namespace Terminal.Gui.ViewsTests {
 			tab1.Text = "12";
 			tab2.Text = "13";
 
-			tv.Redraw (tv.Bounds);
+			tv.Draw ();
 
 			TestHelpers.AssertDriverContentsWithFrameAre (@"
 ┌────────┐
@@ -556,7 +556,7 @@ namespace Terminal.Gui.ViewsTests {
 
 			tv.SelectedTab = tab2;
 
-			tv.Redraw (tv.Bounds);
+			tv.Draw ();
 
 			TestHelpers.AssertDriverContentsWithFrameAre (@"
 ┌────────┐
@@ -571,7 +571,7 @@ namespace Terminal.Gui.ViewsTests {
 			tab1.Text = "12345678910";
 			tab2.Text = "13";
 
-			tv.Redraw (tv.Bounds);
+			tv.Draw ();
 
 			TestHelpers.AssertDriverContentsWithFrameAre (@"
 ┌────────┐
@@ -582,7 +582,7 @@ namespace Terminal.Gui.ViewsTests {
 
 			//switch to tab2
 			tv.SelectedTab = tab2;
-			tv.Redraw (tv.Bounds);
+			tv.Draw ();
 
 			TestHelpers.AssertDriverContentsWithFrameAre (@"
 ┌────────┐
@@ -595,7 +595,7 @@ namespace Terminal.Gui.ViewsTests {
 			tab1.Text = "12345678910";
 			tab2.Text = "abcdefghijklmnopq";
 
-			tv.Redraw (tv.Bounds);
+			tv.Draw ();
 
 			TestHelpers.AssertDriverContentsWithFrameAre (@"
 ┌────────┐
@@ -611,11 +611,11 @@ namespace Terminal.Gui.ViewsTests {
 			var tv = GetTabView (out _, out _, false);
 			tv.Width = 4;
 			tv.Height = 5;
-			tv.Style = new TabView.TabStyle { TabsOnBottom = true };
+			tv.Style = new TabStyle { TabsOnBottom = true };
 			tv.ApplyStyleChanges ();
 			tv.LayoutSubviews ();
 
-			tv.Redraw (tv.Bounds);
+			tv.Draw ();
 
 			TestHelpers.AssertDriverContentsWithFrameAre (@"
 ┌──┐
@@ -631,11 +631,11 @@ namespace Terminal.Gui.ViewsTests {
 			var tv = GetTabView (out _, out _, false);
 			tv.Width = 4;
 			tv.Height = 5;
-			tv.Style = new TabView.TabStyle { ShowTopLine = false, TabsOnBottom = true };
+			tv.Style = new TabStyle { ShowTopLine = false, TabsOnBottom = true };
 			tv.ApplyStyleChanges ();
 			tv.LayoutSubviews ();
 
-			tv.Redraw (tv.Bounds);
+			tv.Draw ();
 
 			TestHelpers.AssertDriverContentsWithFrameAre (@"
 ┌──┐
@@ -651,11 +651,11 @@ namespace Terminal.Gui.ViewsTests {
 			var tv = GetTabView (out _, out _, false);
 			tv.Width = 3;
 			tv.Height = 5;
-			tv.Style = new TabView.TabStyle { TabsOnBottom = true };
+			tv.Style = new TabStyle { TabsOnBottom = true };
 			tv.ApplyStyleChanges ();
 			tv.LayoutSubviews ();
 
-			tv.Redraw (tv.Bounds);
+			tv.Draw ();
 
 			TestHelpers.AssertDriverContentsWithFrameAre (@"
 ┌─┐
@@ -671,11 +671,11 @@ namespace Terminal.Gui.ViewsTests {
 			var tv = GetTabView (out _, out _, false);
 			tv.Width = 3;
 			tv.Height = 5;
-			tv.Style = new TabView.TabStyle { ShowTopLine = false, TabsOnBottom = true };
+			tv.Style = new TabStyle { ShowTopLine = false, TabsOnBottom = true };
 			tv.ApplyStyleChanges ();
 			tv.LayoutSubviews ();
 
-			tv.Redraw (tv.Bounds);
+			tv.Draw ();
 
 			TestHelpers.AssertDriverContentsWithFrameAre (@"
 ┌─┐
@@ -697,7 +697,7 @@ namespace Terminal.Gui.ViewsTests {
 			tab1.Text = "Tab0";
 			tab2.Text = "Les Mise" + Char.ConvertFromUtf32 (Int32.Parse ("0301", NumberStyles.HexNumber)) + "rables";
 
-			tv.Redraw (tv.Bounds);
+			tv.Draw ();
 
 			TestHelpers.AssertDriverContentsWithFrameAre (@"
 ┌────┐              
@@ -708,7 +708,7 @@ namespace Terminal.Gui.ViewsTests {
 
 			tv.SelectedTab = tab2;
 
-			tv.Redraw (tv.Bounds);
+			tv.Draw ();
 
 			TestHelpers.AssertDriverContentsWithFrameAre (@"
 ┌──────────────┐    
@@ -724,7 +724,7 @@ namespace Terminal.Gui.ViewsTests {
 			var tv = GetTabView (out var tab1, out var tab2, false);
 			tv.Width = 20;
 			tv.Height = 5;
-			tv.Style = new TabView.TabStyle { TabsOnBottom = true };
+			tv.Style = new TabStyle { TabsOnBottom = true };
 			tv.ApplyStyleChanges ();
 
 			tv.LayoutSubviews ();
@@ -732,7 +732,7 @@ namespace Terminal.Gui.ViewsTests {
 			tab1.Text = "Tab0";
 			tab2.Text = "Les Mise" + Char.ConvertFromUtf32 (Int32.Parse ("0301", NumberStyles.HexNumber)) + "rables";
 
-			tv.Redraw (tv.Bounds);
+			tv.Draw ();
 
 			TestHelpers.AssertDriverContentsWithFrameAre (@"
 ┌──────────────────┐
@@ -743,7 +743,7 @@ namespace Terminal.Gui.ViewsTests {
 
 			tv.SelectedTab = tab2;
 
-			tv.Redraw (tv.Bounds);
+			tv.Draw ();
 
 			TestHelpers.AssertDriverContentsWithFrameAre (@"
 ┌──────────────────┐
@@ -763,7 +763,7 @@ namespace Terminal.Gui.ViewsTests {
 
 			tv.LayoutSubviews ();
 
-			tv.Redraw (tv.Bounds);
+			tv.Draw ();
 
 			var tabRow = tv.Subviews[0];
 			Assert.Equal("TabRowView",tabRow.GetType().Name);
@@ -776,7 +776,7 @@ namespace Terminal.Gui.ViewsTests {
 └──────────────────┘
 ", output);
 
-			TabView.Tab clicked = null;
+			Tab clicked = null;
 			
 
 			tv.TabClicked += (s,e)=>{

@@ -225,7 +225,7 @@ namespace UICatalog.Scenarios {
 
 		private int GetNumberOfViews ()
 		{
-			if (int.TryParse (textField.Text.ToString (), out var views) && views >= 0) {
+			if (int.TryParse (textField.Text, out var views) && views >= 0) {
 
 				return views;
 			} else {

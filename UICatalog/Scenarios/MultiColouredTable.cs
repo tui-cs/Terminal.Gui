@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Data;
+using System.Text;
 using Terminal.Gui;
 
 namespace UICatalog.Scenarios {
@@ -10,6 +11,7 @@ namespace UICatalog.Scenarios {
 	[ScenarioCategory ("TableView")]
 	public class MultiColouredTable : Scenario {
 		TableViewColors tableView;
+		private DataTable table;
 
 		public override void Setup ()
 		{
@@ -60,9 +62,9 @@ namespace UICatalog.Scenarios {
 				Normal = Application.Driver.MakeAttribute (Color.DarkGray, Color.Black)
 			};
 
-			tableView.Table = dt;
+			tableView.Table = new DataTableSource (this.table = dt);
 		}
-				
+
 		private void Quit ()
 		{
 			Application.RequestStop ();
@@ -72,9 +74,9 @@ namespace UICatalog.Scenarios {
 			bool okPressed = false;
 
 			var ok = new Button ("Ok", is_default: true);
-			ok.Clicked += (s,e) => { okPressed = true; Application.RequestStop (); };
+			ok.Clicked += (s, e) => { okPressed = true; Application.RequestStop (); };
 			var cancel = new Button ("Cancel");
-			cancel.Clicked += (s,e) => { Application.RequestStop (); };
+			cancel.Clicked += (s, e) => { Application.RequestStop (); };
 			var d = new Dialog (ok, cancel) { Title = title };
 
 			var lbl = new Label () {
@@ -95,7 +97,7 @@ namespace UICatalog.Scenarios {
 
 			Application.Run (d);
 
-			enteredText = okPressed ? tf.Text.ToString () : null;
+			enteredText = okPressed ? tf.Text : null;
 			return okPressed;
 		}
 		private void EditCurrentCell (object sender, CellActivatedEventArgs e)
@@ -103,11 +105,11 @@ namespace UICatalog.Scenarios {
 			if (e.Table == null)
 				return;
 
-			var oldValue = e.Table.Rows [e.Row] [e.Col].ToString ();
+			var oldValue = e.Table [e.Row, e.Col].ToString ();
 
-			if (GetText ("Enter new value", e.Table.Columns [e.Col].ColumnName, oldValue, out string newText)) {
+			if (GetText ("Enter new value", e.Table.ColumnNames [e.Col], oldValue, out string newText)) {
 				try {
-					e.Table.Rows [e.Row] [e.Col] = string.IsNullOrWhiteSpace (newText) ? DBNull.Value : (object)newText;
+					table.Rows [e.Row] [e.Col] = string.IsNullOrWhiteSpace (newText) ? DBNull.Value : (object)newText;
 				} catch (Exception ex) {
 					MessageBox.ErrorQuery (60, 20, "Failed to set text", ex.Message, "Ok");
 				}
@@ -119,49 +121,49 @@ namespace UICatalog.Scenarios {
 		class TableViewColors : TableView {
 			protected override void RenderCell (Terminal.Gui.Attribute cellColor, string render, bool isPrimaryCell)
 			{
-				int unicorns = render.IndexOf ("unicorns",StringComparison.CurrentCultureIgnoreCase);
+				int unicorns = render.IndexOf ("unicorns", StringComparison.CurrentCultureIgnoreCase);
 				int rainbows = render.IndexOf ("rainbows", StringComparison.CurrentCultureIgnoreCase);
 
-				for (int i=0;i<render.Length;i++) {
+				for (int i = 0; i < render.Length; i++) {
 
-					if(unicorns != -1 && i >= unicorns && i <= unicorns + 8) {
+					if (unicorns != -1 && i >= unicorns && i <= unicorns + 8) {
 						Driver.SetAttribute (Driver.MakeAttribute (Color.White, cellColor.Background));
 					}
-					
+
 					if (rainbows != -1 && i >= rainbows && i <= rainbows + 8) {
 
 						var letterOfWord = i - rainbows;
-						switch(letterOfWord) {
-						case 0 :
+						switch (letterOfWord) {
+						case 0:
 							Driver.SetAttribute (Driver.MakeAttribute (Color.Red, cellColor.Background));
-								break;
+							break;
 						case 1:
 							Driver.SetAttribute (Driver.MakeAttribute (Color.BrightRed, cellColor.Background));
-								break;
+							break;
 						case 2:
 							Driver.SetAttribute (Driver.MakeAttribute (Color.BrightYellow, cellColor.Background));
-								break;
+							break;
 						case 3:
 							Driver.SetAttribute (Driver.MakeAttribute (Color.Green, cellColor.Background));
-								break;
+							break;
 						case 4:
 							Driver.SetAttribute (Driver.MakeAttribute (Color.BrightGreen, cellColor.Background));
-								break;
+							break;
 						case 5:
 							Driver.SetAttribute (Driver.MakeAttribute (Color.BrightBlue, cellColor.Background));
-								break;
+							break;
 						case 6:
 							Driver.SetAttribute (Driver.MakeAttribute (Color.BrightCyan, cellColor.Background));
-								break;
+							break;
 						case 7:
 							Driver.SetAttribute (Driver.MakeAttribute (Color.Cyan, cellColor.Background));
-								break;
+							break;
 						}
-					} 
-					
-					Driver.AddRune (render [i]);
+					}
+
+					Driver.AddRune ((Rune)render [i]);
 					Driver.SetAttribute (cellColor);
-				}				
+				}
 			}
 		}
 	}

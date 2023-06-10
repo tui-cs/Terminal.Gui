@@ -8,8 +8,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Linq;
-using NStack;
+using System.Text;
 
 namespace Terminal.Gui {
 	/// <summary>
@@ -116,7 +115,7 @@ namespace Terminal.Gui {
 				return base.MoveUp ();
 			}
 
-			public override void Redraw (Rect bounds)
+			public override void OnDrawContent (Rect contentArea)
 			{
 				var currentColor = ColorScheme.Focus;
 				Driver.SetAttribute (currentColor);
@@ -153,7 +152,7 @@ namespace Terminal.Gui {
 					Move (0, row);
 					if (Source == null || item >= Source.Count) {
 						for (int c = 0; c < f.Width; c++)
-							Driver.AddRune (' ');
+							Driver.AddRune ((Rune)' ');
 					} else {
 						var rowEventArgs = new ListViewRowEventArgs (item);
 						OnRowRender (rowEventArgs);
@@ -162,8 +161,8 @@ namespace Terminal.Gui {
 							Driver.SetAttribute (currentColor);
 						}
 						if (AllowsMarking) {
-							Driver.AddRune (Source.IsMarked (item) ? (AllowsMultipleSelection ? Driver.Checked : Driver.Selected) : (AllowsMultipleSelection ? Driver.UnChecked : Driver.UnSelected));
-							Driver.AddRune (' ');
+							Driver.AddRune (Source.IsMarked (item) ? (AllowsMultipleSelection ? CM.Glyphs.Checked : CM.Glyphs.Selected) : (AllowsMultipleSelection ? CM.Glyphs.UnChecked : CM.Glyphs.UnSelected));
+							Driver.AddRune ((Rune)' ');
 						}
 						Source.Render (this, Driver, isSelected, item, col, row, f.Width - col, start);
 					}
@@ -291,13 +290,13 @@ namespace Terminal.Gui {
 		public event EventHandler<TextChangedEventArgs> TextChanged;
 
 		readonly IList _searchset = new List<object> ();
-		ustring _text = "";
+		string _text = "";
 		readonly TextField _search;
 		ComboListView _listView;
 		bool _autoHide = true;
 		int _minimumHeight = 1;
 
-		ustring _savedText = "";
+		string _savedText = "";
 
 		/// <summary>
 		/// Public constructor
@@ -310,7 +309,7 @@ namespace Terminal.Gui {
 		/// Public constructor
 		/// </summary>
 		/// <param name="text"></param>
-		public ComboBox (ustring text) : base ()
+		public ComboBox (string text) : base ()
 		{
 			_search = new TextField ("");
 
@@ -651,15 +650,15 @@ namespace Terminal.Gui {
 		/// Virtual method that invoke the <see cref="TextChanged"/> event if it's subscribed.
 		/// </summary>
 		/// <param name="oldValue">The old text replaced.</param>
-		public virtual void OnTextChanged (ustring oldValue)
+		public virtual void OnTextChanged (string oldValue)
 		{
 			TextChanged?.Invoke (this, new TextChangedEventArgs (oldValue));
 		}
 
 		///<inheritdoc/>
-		public override void Redraw (Rect bounds)
+		public override void OnDrawContent (Rect contentArea)
 		{
-			base.Redraw (bounds);
+			base.OnDrawContent (contentArea);
 
 			if (!_autoHide) {
 				return;
@@ -667,7 +666,7 @@ namespace Terminal.Gui {
 
 			Driver.SetAttribute (ColorScheme.Focus);
 			Move (Bounds.Right - 1, 0);
-			Driver.AddRune (Driver.DownArrow);
+			Driver.AddRune (CM.Glyphs.DownArrow);
 		}
 
 		///<inheritdoc/>
@@ -715,7 +714,7 @@ namespace Terminal.Gui {
 
 		bool IsDirty ()
 		{
-			//return _isShow && _search.Text != _savedText || (_lastSelectedItem >= -1 && !ustring.IsNullOrEmpty (_search.Text)
+			//return _isShow && _search.Text != _savedText || (_lastSelectedItem >= -1 && !string.IsNullOrEmpty (_search.Text)
 			//	&& _selectedItem != _lastSelectedItem);
 			//return _isShow && _search.Text != _savedText;
 			return _search.Text != _savedText;
@@ -867,7 +866,7 @@ namespace Terminal.Gui {
 		/// <summary>
 		/// The currently selected list item
 		/// </summary>
-		public new ustring Text {
+		public new string Text {
 			get {
 				return _text;
 			}
@@ -930,7 +929,7 @@ namespace Terminal.Gui {
 
 		private void ValidateSelection ()
 		{
-			//if (!IsValidSelection (out ustring text)) {
+			//if (!IsValidSelection (out string text)) {
 			if (!IsValidSelection ()) {
 				if (ReadOnly) {
 					SelectedItem = _lastSelectedItem;
@@ -951,7 +950,7 @@ namespace Terminal.Gui {
 
 		private bool IsValidSelection ()
 		{
-			if (_source?.Count > 0 && _selectedItem > -1 && !ustring.IsNullOrEmpty (_savedText)) {
+			if (_source?.Count > 0 && _selectedItem > -1 && !string.IsNullOrEmpty (_savedText)) {
 				var srcList = _source.ToList ();
 				var scrText = srcList [_selectedItem].ToString ();
 				if (string.Equals (scrText, _savedText.ToString (), StringComparison.InvariantCultureIgnoreCase)) {
@@ -963,7 +962,7 @@ namespace Terminal.Gui {
 
 		//private bool IsValidSelection ()
 		//{
-		//	if (_source?.Count > 0 && _searchset?.Count > 0 && !ustring.IsNullOrEmpty (_search.Text) && _listview.SelectedItem > -1) {
+		//	if (_source?.Count > 0 && _searchset?.Count > 0 && !string.IsNullOrEmpty (_search.Text) && _listview.SelectedItem > -1) {
 		//		var srcList = _source.ToList ();
 		//		var srcItem = GetSelectedItemFromSource (_searchset [_listview.SelectedItem].ToString ());
 		//		if (srcItem == -1) {
@@ -977,10 +976,10 @@ namespace Terminal.Gui {
 		//	return false;
 		//}
 
-		//private bool IsValidSelection (out ustring text)
+		//private bool IsValidSelection (out string text)
 		//{
 		//	text = string.Empty;
-		//	if (_source?.Count > 0 && _searchset?.Count > 0 && (!ustring.IsNullOrEmpty (_search.Text) || _listview.SelectedItem > -1)) {
+		//	if (_source?.Count > 0 && _searchset?.Count > 0 && (!string.IsNullOrEmpty (_search.Text) || _listview.SelectedItem > -1)) {
 		//		var srcList = _source.ToList ();
 		//		text = _listview.SelectedItem > -1 ? _searchset [_listview.SelectedItem].ToString () : _search.Text;
 		//		var srcItem = GetSelectedItemFromSource (text);
@@ -1006,7 +1005,7 @@ namespace Terminal.Gui {
 			}
 		}
 
-		private int GetSelectedItemFromSource (ustring value)
+		private int GetSelectedItemFromSource (string value)
 		{
 			if (_source == null) {
 				return -1;
@@ -1082,7 +1081,7 @@ namespace Terminal.Gui {
 				return;
 			}
 
-			if (ustring.IsNullOrEmpty (_search.Text) && ustring.IsNullOrEmpty (e.OldValue)) {
+			if (string.IsNullOrEmpty (_search.Text) && string.IsNullOrEmpty (e.OldValue)) {
 				_isShow = true;
 				ResetSearchSet ();
 			} else if (_search.Text != e.OldValue) {
@@ -1276,7 +1275,7 @@ namespace Terminal.Gui {
 		/// Consider making public
 		private void HideList ()
 		{
-			//if (_autoHide && IsDirty () && IsValidSelection (out ustring text)) {
+			//if (_autoHide && IsDirty () && IsValidSelection (out string text)) {
 			//if (_autoHide && IsDirty () && IsValidSelection () && _text != _savedText) {
 			//	_text = _search.Text = _savedText;
 			//	_selectedItem = _lastSelectedItem;

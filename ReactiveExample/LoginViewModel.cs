@@ -3,7 +3,7 @@ using System.Reactive;
 using System.Reactive.Linq;
 using System.Runtime.Serialization;
 using System.Threading.Tasks;
-using NStack;
+using System.Text;
 using ReactiveUI;
 using ReactiveUI.Fody.Helpers;
 
@@ -30,8 +30,8 @@ namespace ReactiveExample {
 				x => x.Username, 
 				x => x.Password,
 				(username, password) =>
-					!ustring.IsNullOrEmpty (username) &&
-					!ustring.IsNullOrEmpty (password));
+					!string.IsNullOrEmpty (username) &&
+					!string.IsNullOrEmpty (password));
 			
 			_isValid = canLogin.ToProperty (this, x => x.IsValid);
 			Login = ReactiveCommand.CreateFromTask (
@@ -49,16 +49,16 @@ namespace ReactiveExample {
 			
 			Clear = ReactiveCommand.Create (() => { });
 			Clear.Subscribe (unit => {
-				Username = ustring.Empty;
-				Password = ustring.Empty;
+				Username = string.Empty;
+				Password = string.Empty;
 			});
 		}
 		
 		[Reactive, DataMember]
-		public ustring Username { get; set; } = ustring.Empty;
+		public string Username { get; set; } = string.Empty;
 		
 		[Reactive, DataMember]
-		public ustring Password { get; set; } = ustring.Empty;
+		public string Password { get; set; } = string.Empty;
 		
 		[IgnoreDataMember]
 		public int UsernameLength => _usernameLength.Value;

@@ -1,4 +1,4 @@
-using NStack;
+using System.Text;
 using System;
 using System.Collections.Generic;
 using System.Data;
@@ -9,7 +9,7 @@ namespace Terminal.Gui {
 	/// <summary>
 	/// Control that hosts multiple sub views, presenting a single one at once
 	/// </summary>
-	public partial class TabView : View {
+	public class TabView : View {
 		private Tab selectedTab;
 
 		/// <summary>
@@ -54,7 +54,7 @@ namespace Terminal.Gui {
 		public event EventHandler<TabChangedEventArgs> SelectedTabChanged;
 
 		/// <summary>
-		/// Event fired when a <see cref="TabView.Tab"/> is clicked.  Can be used to cancel navigation,
+		/// Event fired when a <see cref="Tab"/> is clicked.  Can be used to cancel navigation,
 		/// show context menu (e.g. on right click) etc.
 		/// </summary>
 		public event EventHandler<TabMouseEventArgs> TabClicked;
@@ -177,26 +177,26 @@ namespace Terminal.Gui {
 
 
 		///<inheritdoc/>
-		public override void Redraw (Rect bounds)
+		public override void OnDrawContent (Rect contentArea)
 		{
 			Move (0, 0);
 			Driver.SetAttribute (GetNormalColor ());
 
 			if (Style.ShowBorder) {
-				
+
 				// How much space do we need to leave at the bottom to show the tabs
 				int spaceAtBottom = Math.Max (0, GetTabHeight (false) - 1);
 				int startAtY = Math.Max (0, GetTabHeight (true) - 1);
 
-				Border.DrawFrame (new Rect (0, startAtY, bounds.Width,
-				Math.Max (bounds.Height - spaceAtBottom - startAtY, 0)), false);
+				Border.DrawFrame (new Rect (0, startAtY, Bounds.Width,
+				Math.Max (Bounds.Height - spaceAtBottom - startAtY, 0)), false);
 			}
 
 			if (Tabs.Any ()) {
-				tabsBar.Redraw (tabsBar.Bounds);
+				tabsBar.OnDrawContent (contentArea);
 				contentView.SetNeedsDisplay ();
 				var savedClip = contentView.ClipToBounds ();
-				contentView.Redraw (contentView.Bounds);
+				contentView.Draw ();
 				Driver.Clip = savedClip;
 			}
 		}
@@ -336,9 +336,9 @@ namespace Terminal.Gui {
 			foreach (var tab in Tabs.Skip (TabScrollOffset)) {
 
 				// while there is space for the tab
-				var tabTextWidth = tab.Text.Sum (c => Rune.ColumnWidth (c));
+				var tabTextWidth = tab.Text.EnumerateRunes ().Sum (c => c.GetColumns ());
 
-				string text = tab.Text.ToString ();
+				string text = tab.Text;
 
 				// The maximum number of characters to use for the tab name as specified
 				// by the user (MaxTabTextWidth).  But not more than the width of the view
@@ -352,7 +352,7 @@ namespace Terminal.Gui {
 				}
 
 				if (tabTextWidth > maxWidth) {
-					text = tab.Text.ToString ().Substring (0, (int)maxWidth);
+					text = tab.Text.Substring (0, (int)maxWidth);
 					tabTextWidth = (int)maxWidth;
 				}
 
@@ -425,8 +425,6 @@ namespace Terminal.Gui {
 			SetNeedsDisplay ();
 		}
 
-		#region Nested Types
-
 		private class TabToRender {
 			public int X { get; set; }
 			public Tab Tab { get; set; }
@@ -468,10 +466,10 @@ namespace Terminal.Gui {
 				return base.OnEnter (view);
 			}
 
-			public override void Redraw (Rect bounds)
+			public override void OnDrawContent (Rect contentArea)
 			{
-				var tabLocations = host.CalculateViewport (bounds).ToArray ();
-				var width = bounds.Width;
+				var tabLocations = host.CalculateViewport (Bounds).ToArray ();
+				var width = Bounds.Width;
 				Driver.SetAttribute (GetNormalColor ());
 
 				if (host.Style.ShowTopLine) {
@@ -482,7 +480,6 @@ namespace Terminal.Gui {
 
 				RenderUnderline (tabLocations, width);
 				Driver.SetAttribute (GetNormalColor ());
-
 			}
 
 			/// <summary>
@@ -508,7 +505,7 @@ namespace Terminal.Gui {
 				}
 
 				Move (selected.X - 1, y);
-				Driver.AddRune (host.Style.TabsOnBottom ? Driver.LLCorner : Driver.ULCorner);
+				Driver.AddRune (host.Style.TabsOnBottom ? CM.Glyphs.LLCorner : CM.Glyphs.ULCorner);
 
 				for (int i = 0; i < selected.Width; i++) {
 
@@ -517,11 +514,11 @@ namespace Terminal.Gui {
 						return;
 					}
 
-					Driver.AddRune (Driver.HLine);
+					Driver.AddRune (CM.Glyphs.HLine);
 				}
 
 				// Add the end of the selected tab
-				Driver.AddRune (host.Style.TabsOnBottom ? Driver.LRCorner : Driver.URCorner);
+				Driver.AddRune (host.Style.TabsOnBottom ? CM.Glyphs.LRCorner : CM.Glyphs.URCorner);
 
 			}
 
@@ -550,7 +547,7 @@ namespace Terminal.Gui {
 
 					if (toRender.IsSelected) {
 						Move (toRender.X - 1, y);
-						Driver.AddRune (Driver.VLine);
+						Driver.AddRune (CM.Glyphs.VLine);
 					}
 
 					Move (toRender.X, y);
@@ -574,7 +571,7 @@ namespace Terminal.Gui {
 					Driver.SetAttribute (GetNormalColor ());
 
 					if (toRender.IsSelected) {
-						Driver.AddRune (Driver.VLine);
+						Driver.AddRune (CM.Glyphs.VLine);
 					}
 				}
 			}
@@ -594,7 +591,7 @@ namespace Terminal.Gui {
 				if (!host.Style.ShowBorder) {
 
 					for (int x = 0; x < width; x++) {
-						Driver.AddRune (Driver.HLine);
+						Driver.AddRune (CM.Glyphs.HLine);
 					}
 
 				}
@@ -606,14 +603,14 @@ namespace Terminal.Gui {
 
 				Move (selected.X - 1, y);
 
-				Driver.AddRune (selected.X == 1 ? Driver.VLine :
-			(host.Style.TabsOnBottom ? Driver.URCorner : Driver.LRCorner));
+				Driver.AddRune (selected.X == 1 ? CM.Glyphs.VLine :
+					(host.Style.TabsOnBottom ? CM.Glyphs.URCorner : CM.Glyphs.LRCorner));
 
 				Driver.AddStr (new string (' ', selected.Width));
 
 				Driver.AddRune (selected.X + selected.Width == width - 1 ?
-		     Driver.VLine :
-				(host.Style.TabsOnBottom ? Driver.ULCorner : Driver.LLCorner));
+				     CM.Glyphs.VLine :
+					(host.Style.TabsOnBottom ? CM.Glyphs.ULCorner : CM.Glyphs.LLCorner));
 
 				// draw scroll indicators
 
@@ -622,7 +619,7 @@ namespace Terminal.Gui {
 					Move (0, y);
 
 					// indicate that
-					Driver.AddRune (Driver.LeftArrow);
+					Driver.AddRune (CM.Glyphs.LeftArrow);
 				}
 
 				// if there are more tabs to the right not visible
@@ -630,7 +627,7 @@ namespace Terminal.Gui {
 					Move (width - 1, y);
 
 					// indicate that
-					Driver.AddRune (Driver.RightArrow);
+					Driver.AddRune (CM.Glyphs.RightArrow);
 				}
 			}
 
@@ -746,71 +743,5 @@ namespace Terminal.Gui {
 		{
 			TabClicked?.Invoke (this, tabMouseEventArgs);
 		}
-
-		/// <summary>
-		/// A single tab in a <see cref="TabView"/>
-		/// </summary>
-		public class Tab {
-			private ustring text;
-
-			/// <summary>
-			/// The text to display in a <see cref="TabView"/>
-			/// </summary>
-			/// <value></value>
-			public ustring Text { get => text ?? "Unamed"; set => text = value; }
-
-			/// <summary>
-			/// The control to display when the tab is selected
-			/// </summary>
-			/// <value></value>
-			public View View { get; set; }
-
-			/// <summary>
-			/// Creates a new unamed tab with no controls inside
-			/// </summary>
-			public Tab ()
-			{
-
-			}
-
-			/// <summary>
-			/// Creates a new tab with the given text hosting a view
-			/// </summary>
-			/// <param name="text"></param>
-			/// <param name="view"></param>
-			public Tab (string text, View view)
-			{
-				this.Text = text;
-				this.View = view;
-			}
-		}
-
-		/// <summary>
-		/// Describes render stylistic selections of a <see cref="TabView"/>
-		/// </summary>
-		public class TabStyle {
-
-			/// <summary>
-			/// True to show the top lip of tabs.  False to directly begin with tab text during 
-			/// rendering.  When true header line occupies 3 rows, when false only 2.
-			/// Defaults to true.
-			/// 
-			/// <para>When <see cref="TabsOnBottom"/> is enabled this instead applies to the
-			///  bottommost line of the control</para>
-			/// </summary> 
-			public bool ShowTopLine { get; set; } = true;
-
-			/// <summary>
-			/// True to show a solid box around the edge of the control.  Defaults to true.
-			/// </summary>
-			public bool ShowBorder { get; set; } = true;
-
-			/// <summary>
-			/// True to render tabs at the bottom of the view instead of the top
-			/// </summary>
-			public bool TabsOnBottom { get; set; } = false;
-
-		}
-		#endregion
 	}
 }

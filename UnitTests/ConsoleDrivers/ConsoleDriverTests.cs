@@ -251,7 +251,7 @@ namespace Terminal.Gui.DriverTests {
 				System.Threading.Tasks.Task.Delay (500).Wait ();
 				Application.MainLoop.Invoke (() => {
 					var lbl = new Label ("Hello World") { X = Pos.Center () };
-					var dlg = new Dialog (new Button ("Ok"));
+					var dlg = new Dialog ();
 					dlg.Add (lbl);
 					Application.Begin (dlg);
 
@@ -261,7 +261,7 @@ namespace Terminal.Gui.DriverTests {
 ││  Hello World  │ │
 ││               │ │
 ││               │ │
-││     [ Ok ]    │ │
+││               │ │
 │└───────────────┘ │
 └──────────────────┘
 ";
@@ -270,7 +270,7 @@ namespace Terminal.Gui.DriverTests {
 					Assert.Equal (new Rect (0, 0, 20, 8), pos);
 
 					Assert.True (dlg.ProcessKey (new KeyEvent (Key.Tab, new KeyModifiers ())));
-					dlg.Redraw (dlg.Bounds);
+					dlg.Draw ();
 
 					expected = @"
 ┌──────────────────┐
@@ -278,7 +278,7 @@ namespace Terminal.Gui.DriverTests {
 ││  Hello World  │ │
 ││               │ │
 ││               │ │
-││     [ Ok ]    │ │
+││               │ │
 │└───────────────┘ │
 └──────────────────┘
 ";

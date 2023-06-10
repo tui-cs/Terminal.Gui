@@ -909,9 +909,9 @@ Three     ", output);
 			}));
 			Assert.Equal ("", selected);
 			Assert.True (cb.IsShow);
-			Assert.Equal (0, cb.SelectedItem);
-			Assert.Equal ("One", cb.Text);
-			Application.Top.Redraw (Application.Top.Bounds);
+			Assert.Equal (-1, cb.SelectedItem);
+			Assert.Equal ("", cb.Text);
+			cb.Draw ();
 			TestHelpers.AssertDriverContentsWithFrameAre (@"
 One  ▼
 One   
@@ -938,9 +938,9 @@ Three ", output);
 			Assert.True (Application.Current.Subviews [1].ProcessKey (new KeyEvent (Key.CursorDown, new KeyModifiers ())));
 			Assert.Equal ("", selected);
 			Assert.True (cb.IsShow);
-			Assert.Equal (1, cb.SelectedItem);
-			Assert.Equal ("Two", cb.Text);
-			Application.Top.Redraw (Application.Top.Bounds);
+			Assert.Equal (-1, cb.SelectedItem);
+			Assert.Equal ("", cb.Text);
+			cb.Draw ();
 			TestHelpers.AssertDriverColorsAre (@"
 000000
 000002
@@ -950,9 +950,9 @@ Three ", output);
 			Assert.True (Application.Current.Subviews [1].ProcessKey (new KeyEvent (Key.CursorDown, new KeyModifiers ())));
 			Assert.Equal ("", selected);
 			Assert.True (cb.IsShow);
-			Assert.Equal (2, cb.SelectedItem);
-			Assert.Equal ("Three", cb.Text);
-			Application.Top.Redraw (Application.Top.Bounds);
+			Assert.Equal (-1, cb.SelectedItem);
+			Assert.Equal ("", cb.Text);
+			cb.Draw ();
 			TestHelpers.AssertDriverColorsAre (@"
 000000
 000002
@@ -970,7 +970,7 @@ Three ", output);
 			Assert.True (cb.IsShow);
 			Assert.Equal (2, cb.SelectedItem);
 			Assert.Equal ("Three", cb.Text);
-			Application.Top.Redraw (Application.Top.Bounds);
+			cb.Draw ();
 			TestHelpers.AssertDriverColorsAre (@"
 000000
 000002
@@ -980,9 +980,9 @@ Three ", output);
 			Assert.True (Application.Current.Subviews [1].ProcessKey (new KeyEvent (Key.CursorUp, new KeyModifiers ())));
 			Assert.Equal ("Three", selected);
 			Assert.True (cb.IsShow);
-			Assert.Equal (1, cb.SelectedItem);
-			Assert.Equal ("Two", cb.Text);
-			Application.Top.Redraw (Application.Top.Bounds);
+			Assert.Equal (2, cb.SelectedItem);
+			Assert.Equal ("Three", cb.Text);
+			cb.Draw ();
 			TestHelpers.AssertDriverColorsAre (@"
 000000
 000002
@@ -992,9 +992,9 @@ Three ", output);
 			Assert.True (Application.Current.Subviews [1].ProcessKey (new KeyEvent (Key.CursorUp, new KeyModifiers ())));
 			Assert.Equal ("Three", selected);
 			Assert.True (cb.IsShow);
-			Assert.Equal (0, cb.SelectedItem);
-			Assert.Equal ("One", cb.Text);
-			Application.Top.Redraw (Application.Top.Bounds);
+			Assert.Equal (2, cb.SelectedItem);
+			Assert.Equal ("Three", cb.Text);
+			cb.Draw ();
 			TestHelpers.AssertDriverColorsAre (@"
 000000
 111112

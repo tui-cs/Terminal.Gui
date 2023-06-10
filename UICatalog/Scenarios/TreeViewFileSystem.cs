@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text;
 using Terminal.Gui;
 
 namespace UICatalog.Scenarios {
@@ -15,20 +16,20 @@ namespace UICatalog.Scenarios {
 		TreeView<FileSystemInfo> treeViewFiles;
 
 		MenuItem miShowLines;
-		private MenuItem miPlusMinus;
-		private MenuItem miArrowSymbols;
-		private MenuItem miNoSymbols;
-		private MenuItem miColoredSymbols;
-		private MenuItem miInvertSymbols;
-		private MenuItem miUnicodeSymbols;
-		private MenuItem miFullPaths;
-		private MenuItem miLeaveLastRow;
-		private MenuItem miHighlightModelTextOnly;
-		private MenuItem miCustomColors;
-		private MenuItem miCursor;
-		private MenuItem miMultiSelect;
+		private MenuItem _miPlusMinus;
+		private MenuItem _miArrowSymbols;
+		private MenuItem _miNoSymbols;
+		private MenuItem _miColoredSymbols;
+		private MenuItem _miInvertSymbols;
+		private MenuItem _miUnicodeSymbols;
+		private MenuItem _miFullPaths;
+		private MenuItem _miLeaveLastRow;
+		private MenuItem _miHighlightModelTextOnly;
+		private MenuItem _miCustomColors;
+		private MenuItem _miCursor;
+		private MenuItem _miMultiSelect;
 
-		private DetailsFrame detailsFrame;
+		private DetailsFrame _detailsFrame;
 
 		public override void Setup ()
 		{
@@ -42,28 +43,28 @@ namespace UICatalog.Scenarios {
 					new MenuItem ("_Quit", $"{Application.QuitKey}", () => Quit()),
 				}),
 				new MenuBarItem ("_View", new MenuItem [] {
-					miFullPaths = new MenuItem ("_Full Paths", "", () => SetFullName()){Checked = false, CheckType = MenuItemCheckStyle.Checked},
-					miMultiSelect = new MenuItem ("_Multi Select", "", () => SetMultiSelect()){Checked = true, CheckType = MenuItemCheckStyle.Checked},
+					_miFullPaths = new MenuItem ("_Full Paths", "", () => SetFullName()){Checked = false, CheckType = MenuItemCheckStyle.Checked},
+					_miMultiSelect = new MenuItem ("_Multi Select", "", () => SetMultiSelect()){Checked = true, CheckType = MenuItemCheckStyle.Checked},
 				}),
 				new MenuBarItem ("_Style", new MenuItem [] {
 					miShowLines = new MenuItem ("_Show Lines", "", () => ShowLines()){
 					Checked = true, CheckType = MenuItemCheckStyle.Checked
 						},
 					null /*separator*/,
-					miPlusMinus = new MenuItem ("_Plus Minus Symbols", "+ -", () => SetExpandableSymbols('+','-')){Checked = true, CheckType = MenuItemCheckStyle.Radio},
-					miArrowSymbols = new MenuItem ("_Arrow Symbols", "> v", () => SetExpandableSymbols('>','v')){Checked = false, CheckType = MenuItemCheckStyle.Radio},
-					miNoSymbols = new MenuItem ("_No Symbols", "", () => SetExpandableSymbols(null,null)){Checked = false, CheckType = MenuItemCheckStyle.Radio},
-					miUnicodeSymbols = new MenuItem ("_Unicode", "ஹ ﷽", () => SetExpandableSymbols('ஹ','﷽')){Checked = false, CheckType = MenuItemCheckStyle.Radio},
+					_miPlusMinus = new MenuItem ("_Plus Minus Symbols", "+ -", () => SetExpandableSymbols((Rune)'+',(Rune)'-')){Checked = true, CheckType = MenuItemCheckStyle.Radio},
+					_miArrowSymbols = new MenuItem ("_Arrow Symbols", "> v", () => SetExpandableSymbols((Rune)'>',(Rune)'v')){Checked = false, CheckType = MenuItemCheckStyle.Radio},
+					_miNoSymbols = new MenuItem ("_No Symbols", "", () => SetExpandableSymbols(default,null)){Checked = false, CheckType = MenuItemCheckStyle.Radio},
+					_miUnicodeSymbols = new MenuItem ("_Unicode", "ஹ ﷽", () => SetExpandableSymbols((Rune)'ஹ',(Rune)'﷽')){Checked = false, CheckType = MenuItemCheckStyle.Radio},
 					null /*separator*/,
-					miColoredSymbols = new MenuItem ("_Colored Symbols", "", () => ShowColoredExpandableSymbols()){Checked = false, CheckType = MenuItemCheckStyle.Checked},
-					miInvertSymbols = new MenuItem ("_Invert Symbols", "", () => InvertExpandableSymbols()){Checked = false, CheckType = MenuItemCheckStyle.Checked},
+					_miColoredSymbols = new MenuItem ("_Colored Symbols", "", () => ShowColoredExpandableSymbols()){Checked = false, CheckType = MenuItemCheckStyle.Checked},
+					_miInvertSymbols = new MenuItem ("_Invert Symbols", "", () => InvertExpandableSymbols()){Checked = false, CheckType = MenuItemCheckStyle.Checked},
 					null /*separator*/,
-					miLeaveLastRow = new MenuItem ("_Leave Last Row", "", () => SetLeaveLastRow()){Checked = true, CheckType = MenuItemCheckStyle.Checked},
-					miHighlightModelTextOnly = new MenuItem ("_Highlight Model Text Only", "", () => SetCheckHighlightModelTextOnly()){Checked = false, CheckType = MenuItemCheckStyle.Checked},
+					_miLeaveLastRow = new MenuItem ("_Leave Last Row", "", () => SetLeaveLastRow()){Checked = true, CheckType = MenuItemCheckStyle.Checked},
+					_miHighlightModelTextOnly = new MenuItem ("_Highlight Model Text Only", "", () => SetCheckHighlightModelTextOnly()){Checked = false, CheckType = MenuItemCheckStyle.Checked},
 					null /*separator*/,
-					miCustomColors = new MenuItem ("C_ustom Colors Hidden Files", "Yellow/Red", () => SetCustomColors()){Checked = false, CheckType = MenuItemCheckStyle.Checked},
+					_miCustomColors = new MenuItem ("C_ustom Colors Hidden Files", "Yellow/Red", () => SetCustomColors()){Checked = false, CheckType = MenuItemCheckStyle.Checked},
 					null /*separator*/,
-					miCursor = new MenuItem ("Curs_or (MultiSelect only)", "", () => SetCursor()){Checked = false, CheckType = MenuItemCheckStyle.Checked},
+					_miCursor = new MenuItem ("Curs_or (MultiSelect only)", "", () => SetCursor()){Checked = false, CheckType = MenuItemCheckStyle.Checked},
 				}),
 			});
 			Application.Top.Add (menu);
@@ -75,14 +76,14 @@ namespace UICatalog.Scenarios {
 				Height = Dim.Fill (),
 			};
 
-			detailsFrame = new DetailsFrame () {
+			_detailsFrame = new DetailsFrame () {
 				X = Pos.Right (treeViewFiles),
 				Y = 0,
 				Width = Dim.Fill (),
 				Height = Dim.Fill (),
 			};
 
-			Win.Add (detailsFrame);
+			Win.Add (_detailsFrame);
 			treeViewFiles.MouseClick += TreeViewFiles_MouseClick;
 			treeViewFiles.KeyPress += TreeViewFiles_KeyPress;
 			treeViewFiles.SelectionChanged += TreeViewFiles_SelectionChanged;
@@ -192,7 +193,7 @@ namespace UICatalog.Scenarios {
 
 		private void ShowPropertiesOf (FileSystemInfo fileSystemInfo)
 		{
-			detailsFrame.FileInfo = fileSystemInfo;
+			_detailsFrame.FileInfo = fileSystemInfo;
 		}
 
 		private void SetupScrollBar ()
@@ -200,30 +201,30 @@ namespace UICatalog.Scenarios {
 			// When using scroll bar leave the last row of the control free (for over-rendering with scroll bar)
 			treeViewFiles.Style.LeaveLastRow = true;
 
-			var _scrollBar = new ScrollBarView (treeViewFiles, true);
+			var scrollBar = new ScrollBarView (treeViewFiles, true);
 
-			_scrollBar.ChangedPosition += (s,e) => {
-				treeViewFiles.ScrollOffsetVertical = _scrollBar.Position;
-				if (treeViewFiles.ScrollOffsetVertical != _scrollBar.Position) {
-					_scrollBar.Position = treeViewFiles.ScrollOffsetVertical;
+			scrollBar.ChangedPosition += (s,e) => {
+				treeViewFiles.ScrollOffsetVertical = scrollBar.Position;
+				if (treeViewFiles.ScrollOffsetVertical != scrollBar.Position) {
+					scrollBar.Position = treeViewFiles.ScrollOffsetVertical;
 				}
 				treeViewFiles.SetNeedsDisplay ();
 			};
 
-			_scrollBar.OtherScrollBarView.ChangedPosition += (s,e) => {
-				treeViewFiles.ScrollOffsetHorizontal = _scrollBar.OtherScrollBarView.Position;
-				if (treeViewFiles.ScrollOffsetHorizontal != _scrollBar.OtherScrollBarView.Position) {
-					_scrollBar.OtherScrollBarView.Position = treeViewFiles.ScrollOffsetHorizontal;
+			scrollBar.OtherScrollBarView.ChangedPosition += (s,e) => {
+				treeViewFiles.ScrollOffsetHorizontal = scrollBar.OtherScrollBarView.Position;
+				if (treeViewFiles.ScrollOffsetHorizontal != scrollBar.OtherScrollBarView.Position) {
+					scrollBar.OtherScrollBarView.Position = treeViewFiles.ScrollOffsetHorizontal;
 				}
 				treeViewFiles.SetNeedsDisplay ();
 			};
 
 			treeViewFiles.DrawContent += (s,e) => {
-				_scrollBar.Size = treeViewFiles.ContentHeight;
-				_scrollBar.Position = treeViewFiles.ScrollOffsetVertical;
-				_scrollBar.OtherScrollBarView.Size = treeViewFiles.GetContentWidth (true);
-				_scrollBar.OtherScrollBarView.Position = treeViewFiles.ScrollOffsetHorizontal;
-				_scrollBar.Refresh ();
+				scrollBar.Size = treeViewFiles.ContentHeight;
+				scrollBar.Position = treeViewFiles.ScrollOffsetVertical;
+				scrollBar.OtherScrollBarView.Size = treeViewFiles.GetContentWidth (true);
+				scrollBar.OtherScrollBarView.Position = treeViewFiles.ScrollOffsetHorizontal;
+				scrollBar.Refresh ();
 			};
 		}
 
@@ -253,12 +254,12 @@ namespace UICatalog.Scenarios {
 			treeViewFiles.SetNeedsDisplay ();
 		}
 
-		private void SetExpandableSymbols (Rune? expand, Rune? collapse)
+		private void SetExpandableSymbols (Rune expand, Rune? collapse)
 		{
-			miPlusMinus.Checked = expand == '+';
-			miArrowSymbols.Checked = expand == '>';
-			miNoSymbols.Checked = expand == null;
-			miUnicodeSymbols.Checked = expand == 'ஹ';
+			_miPlusMinus.Checked = expand.Value == '+';
+			_miArrowSymbols.Checked = expand.Value == '>';
+			_miNoSymbols.Checked = expand.Value == default;
+			_miUnicodeSymbols.Checked = expand.Value == 'ஹ';
 
 			treeViewFiles.Style.ExpandableSymbol = expand;
 			treeViewFiles.Style.CollapseableSymbol = collapse;
@@ -266,24 +267,24 @@ namespace UICatalog.Scenarios {
 		}
 		private void ShowColoredExpandableSymbols ()
 		{
-			miColoredSymbols.Checked = !miColoredSymbols.Checked;
+			_miColoredSymbols.Checked = !_miColoredSymbols.Checked;
 
-			treeViewFiles.Style.ColorExpandSymbol = (bool)miColoredSymbols.Checked;
+			treeViewFiles.Style.ColorExpandSymbol = (bool)_miColoredSymbols.Checked;
 			treeViewFiles.SetNeedsDisplay ();
 		}
 		private void InvertExpandableSymbols ()
 		{
-			miInvertSymbols.Checked = !miInvertSymbols.Checked;
+			_miInvertSymbols.Checked = !_miInvertSymbols.Checked;
 
-			treeViewFiles.Style.InvertExpandSymbolColors = (bool)miInvertSymbols.Checked;
+			treeViewFiles.Style.InvertExpandSymbolColors = (bool)_miInvertSymbols.Checked;
 			treeViewFiles.SetNeedsDisplay ();
 		}
 
 		private void SetFullName ()
 		{
-			miFullPaths.Checked = !miFullPaths.Checked;
+			_miFullPaths.Checked = !_miFullPaths.Checked;
 
-			if (miFullPaths.Checked == true) {
+			if (_miFullPaths.Checked == true) {
 				treeViewFiles.AspectGetter = (f) => f.FullName;
 			} else {
 				treeViewFiles.AspectGetter = (f) => f.Name;
@@ -293,18 +294,18 @@ namespace UICatalog.Scenarios {
 
 		private void SetLeaveLastRow ()
 		{
-			miLeaveLastRow.Checked = !miLeaveLastRow.Checked;
-			treeViewFiles.Style.LeaveLastRow = (bool)miLeaveLastRow.Checked;
+			_miLeaveLastRow.Checked = !_miLeaveLastRow.Checked;
+			treeViewFiles.Style.LeaveLastRow = (bool)_miLeaveLastRow.Checked;
 		}
 		private void SetCursor ()
 		{
-			miCursor.Checked = !miCursor.Checked;
-			treeViewFiles.DesiredCursorVisibility = miCursor.Checked == true ? CursorVisibility.Default : CursorVisibility.Invisible;
+			_miCursor.Checked = !_miCursor.Checked;
+			treeViewFiles.DesiredCursorVisibility = _miCursor.Checked == true ? CursorVisibility.Default : CursorVisibility.Invisible;
 		}
 		private void SetMultiSelect ()
 		{
-			miMultiSelect.Checked = !miMultiSelect.Checked;
-			treeViewFiles.MultiSelect = (bool)miMultiSelect.Checked;
+			_miMultiSelect.Checked = !_miMultiSelect.Checked;
+			treeViewFiles.MultiSelect = (bool)_miMultiSelect.Checked;
 		}
 
 		private void SetCustomColors ()
@@ -314,9 +315,9 @@ namespace UICatalog.Scenarios {
 				Normal = new Terminal.Gui.Attribute (Color.BrightYellow, treeViewFiles.ColorScheme.Normal.Background),
 			};
 
-			miCustomColors.Checked = !miCustomColors.Checked;
+			_miCustomColors.Checked = !_miCustomColors.Checked;
 
-			if (miCustomColors.Checked == true) {
+			if (_miCustomColors.Checked == true) {
 				treeViewFiles.ColorGetter = (m) => {
 					if (m is DirectoryInfo && m.Attributes.HasFlag (FileAttributes.Hidden)) return hidden;
 					if (m is FileInfo && m.Attributes.HasFlag (FileAttributes.Hidden)) return hidden;
@@ -331,7 +332,7 @@ namespace UICatalog.Scenarios {
 		private void SetCheckHighlightModelTextOnly ()
 		{
 			treeViewFiles.Style.HighlightModelTextOnly = !treeViewFiles.Style.HighlightModelTextOnly;
-			miHighlightModelTextOnly.Checked = treeViewFiles.Style.HighlightModelTextOnly;
+			_miHighlightModelTextOnly.Checked = treeViewFiles.Style.HighlightModelTextOnly;
 			treeViewFiles.SetNeedsDisplay ();
 		}
 

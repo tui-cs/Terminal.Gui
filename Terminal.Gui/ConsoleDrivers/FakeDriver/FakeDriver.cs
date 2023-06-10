@@ -7,7 +7,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Threading;
-using NStack;
+using System.Text;
 
 // Alias Console to MockConsole so we don't accidentally use Console
 using Console = Terminal.Gui.FakeConsole;
@@ -118,8 +118,8 @@ namespace Terminal.Gui {
 
 		public override void AddRune (Rune rune)
 		{
-			rune = MakePrintable (rune);
-			var runeWidth = Rune.ColumnWidth (rune);
+			rune = rune.MakePrintable ();
+			var runeWidth = rune.GetColumns ();
 			var validClip = IsValidContent (ccol, crow, Clip);
 
 			if (validClip) {
@@ -130,7 +130,7 @@ namespace Terminal.Gui {
 				}
 				if (runeWidth == 0 && ccol > 0) {
 					var r = contents [crow, ccol - 1, 0];
-					var s = new string (new char [] { (char)r, (char)rune });
+					var s = new string (new char [] { (char)r, (char)rune.Value });
 					string sn;
 					if (!s.IsNormalized ()) {
 						sn = s.Normalize ();
@@ -144,12 +144,12 @@ namespace Terminal.Gui {
 
 				} else {
 					if (runeWidth < 2 && ccol > 0
-					&& Rune.ColumnWidth ((Rune)contents [crow, ccol - 1, 0]) > 1) {
+					&& ((Rune)contents [crow, ccol - 1, 0]).GetColumns () > 1) {
 
 						contents [crow, ccol - 1, 0] = (int)(uint)' ';
 
 					} else if (runeWidth < 2 && ccol <= Clip.Right - 1
-						&& Rune.ColumnWidth ((Rune)contents [crow, ccol, 0]) > 1) {
+						&& ((Rune)contents [crow, ccol, 0]).GetColumns () > 1) {
 
 						contents [crow, ccol + 1, 0] = (int)(uint)' ';
 						contents [crow, ccol + 1, 2] = 1;
@@ -158,7 +158,7 @@ namespace Terminal.Gui {
 					if (runeWidth > 1 && ccol == Clip.Right - 1) {
 						contents [crow, ccol, 0] = (int)(uint)' ';
 					} else {
-						contents [crow, ccol, 0] = (int)(uint)rune;
+						contents [crow, ccol, 0] = (int)(uint)rune.Value;
 					}
 					contents [crow, ccol, 1] = CurrentAttribute;
 					contents [crow, ccol, 2] = 1;
@@ -191,9 +191,9 @@ namespace Terminal.Gui {
 			}
 		}
 
-		public override void AddStr (ustring str)
+		public override void AddStr (string str)
 		{
-			foreach (var rune in str)
+			foreach (var rune in str.EnumerateRunes ())
 				AddRune (rune);
 		}
 
@@ -281,11 +281,11 @@ namespace Terminal.Gui {
 						if (color != redrawColor)
 							SetColor (color);
 
-						Rune rune = contents [row, col, 0];
-						if (Rune.DecodeSurrogatePair (rune, out char [] spair)) {
+						Rune rune = (Rune)contents [row, col, 0];
+						if (rune.DecodeSurrogatePair (out char [] spair)) {
 							FakeConsole.Write (spair);
 						} else {
-							FakeConsole.Write ((char)rune);
+							FakeConsole.Write ((char)rune.Value);
 						}
 						contents [row, col, 2] = 0;
 					}

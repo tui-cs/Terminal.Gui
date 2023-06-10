@@ -215,6 +215,7 @@ namespace Terminal.Gui.DialogTests {
 			aboutMessage.AppendLine (@"0123456789012345678901234567890123456789");
 			aboutMessage.AppendLine (@"https://github.com/gui-cs/Terminal.Gui");
 			var message = aboutMessage.ToString ();
+			var btn = $"{CM.Glyphs.LeftBracket}{CM.Glyphs.LeftDefaultIndicator} Ok {CM.Glyphs.RightDefaultIndicator}{CM.Glyphs.RightBracket}";
 
 			((FakeDriver)Application.Driver).SetBufferSize (40 + 4, 8);
 
@@ -228,13 +229,13 @@ namespace Terminal.Gui.DialogTests {
 					Application.RequestStop ();
 				} else if (iterations == 1) {
 					Application.Refresh ();
-					TestHelpers.AssertDriverContentsWithFrameAre (@"
+					TestHelpers.AssertDriverContentsWithFrameAre (@$"
 ╔══════════════════════════════════════════╗
 ║┌────────────────────────────────────────┐║
 ║│0123456789012345678901234567890123456789│║
 ║│ https://github.com/gui-cs/Terminal.Gui │║
 ║│                                        │║
-║│                [◦ Ok ◦]                │║
+║│                {btn}                │║
 ║└────────────────────────────────────────┘║
 ╚══════════════════════════════════════════╝
 ", output);
@@ -264,11 +265,11 @@ namespace Terminal.Gui.DialogTests {
 
 					Assert.Equal (new Size (7, 5), Application.Current.Frame.Size);
 
-					TestHelpers.AssertDriverContentsWithFrameAre (@"
+					TestHelpers.AssertDriverContentsWithFrameAre (@$"
                                     ┌─────┐
                                     │Messa│
                                     │ ge  │
-                                    │ Ok ◦│
+                                    │ Ok {CM.Glyphs.RightDefaultIndicator}│
                                     └─────┘
 ", output);
 
@@ -284,6 +285,7 @@ namespace Terminal.Gui.DialogTests {
 		{
 			var iterations = -1;
 			Application.Begin (Application.Top);
+			var btn = $"{CM.Glyphs.LeftBracket}{CM.Glyphs.LeftDefaultIndicator} Ok {CM.Glyphs.RightDefaultIndicator}{CM.Glyphs.RightBracket}";
 
 			Application.Iteration += () => {
 				iterations++;
@@ -294,11 +296,11 @@ namespace Terminal.Gui.DialogTests {
 					Application.RequestStop ();
 				} else if (iterations == 1) {
 					Application.Refresh ();
-					TestHelpers.AssertDriverContentsWithFrameAre (@"
+					TestHelpers.AssertDriverContentsWithFrameAre (@$"
                                   ┌─────────┐
                                   │ Message │
                                   │         │
-                                  │[◦ Ok ◦] │
+                                  │{btn} │
                                   └─────────┘
 ", output);
 
@@ -317,6 +319,7 @@ namespace Terminal.Gui.DialogTests {
 			Application.Top.BorderStyle = LineStyle.Double;
 			((FakeDriver)Application.Driver).SetBufferSize (20, 10);
 
+			var btn = $"{CM.Glyphs.LeftBracket}{CM.Glyphs.LeftDefaultIndicator} btn {CM.Glyphs.RightDefaultIndicator}{CM.Glyphs.RightBracket}";
 			Application.Iteration += () => {
 				iterations++;
 
@@ -328,7 +331,7 @@ namespace Terminal.Gui.DialogTests {
 				} else if (iterations == 1) {
 					Application.Refresh ();
 
-					TestHelpers.AssertDriverContentsWithFrameAre (@"
+					TestHelpers.AssertDriverContentsWithFrameAre (@$"
 ╔══════════════════╗
 ║┌────────────────┐║
 ║│ffffffffffffffff│║
@@ -336,7 +339,7 @@ namespace Terminal.Gui.DialogTests {
 ║│ffffffffffffffff│║
 ║│       ff       │║
 ║│                │║
-║│    [◦ btn ◦]   │║
+║│    {btn}   │║
 ║└────────────────┘║
 ╚══════════════════╝", output);
 					Assert.Equal (new Size (20 - 2, 10 - 2), Application.Current.Frame.Size);
@@ -346,7 +349,7 @@ namespace Terminal.Gui.DialogTests {
 					MessageBox.Query (string.Empty, new string ('f', 500), defaultButton: 0, wrapMessage: true, "btn");
 				} else if (iterations == 2) {
 					Application.Refresh ();
-					TestHelpers.AssertDriverContentsWithFrameAre (@"
+					TestHelpers.AssertDriverContentsWithFrameAre (@$"
 ╔┌────────────────┐╗
 ║│ffffffffffffffff│║
 ║│ffffffffffffffff│║
@@ -355,7 +358,7 @@ namespace Terminal.Gui.DialogTests {
 ║│ffffffffffffffff│║
 ║│ffffffffffffffff│║
 ║│ffffffffffffffff│║
-║│    [◦ btn ◦]   │║
+║│    {btn}   │║
 ╚└────────────────┘╝", output);
 					Application.RequestStop ();
 				}
@@ -372,6 +375,8 @@ namespace Terminal.Gui.DialogTests {
 			Application.Top.BorderStyle = LineStyle.Double;
 			((FakeDriver)Application.Driver).SetBufferSize (20, 10);
 
+			var btn = $"{CM.Glyphs.LeftBracket}{CM.Glyphs.LeftDefaultIndicator} btn {CM.Glyphs.RightDefaultIndicator}{CM.Glyphs.RightBracket}";
+
 			Application.Iteration += () => {
 				iterations++;
 
@@ -385,7 +390,7 @@ namespace Terminal.Gui.DialogTests {
 					Application.RequestStop ();
 				} else if (iterations == 1) {
 					Application.Refresh ();
-					TestHelpers.AssertDriverContentsWithFrameAre (@"
+					TestHelpers.AssertDriverContentsWithFrameAre (@$"
 ╔══════════════════╗
 ║ ┌──────────────┐ ║
 ║ │ff ff ff ff ff│ ║
@@ -393,7 +398,7 @@ namespace Terminal.Gui.DialogTests {
 ║ │ff ff ff ff ff│ ║
 ║ │    ff ff     │ ║
 ║ │              │ ║
-║ │   [◦ btn ◦]  │ ║
+║ │   {btn}  │ ║
 ║ └──────────────┘ ║
 ╚══════════════════╝", output);
 					Application.RequestStop ();
@@ -402,7 +407,7 @@ namespace Terminal.Gui.DialogTests {
 					MessageBox.Query (string.Empty, new string ('f', 500), defaultButton: 0, wrapMessage: true, "btn");
 				} else if (iterations == 2) {
 					Application.Refresh ();
-					TestHelpers.AssertDriverContentsWithFrameAre (@"
+					TestHelpers.AssertDriverContentsWithFrameAre (@$"
 ╔┌────────────────┐╗
 ║│ffffffffffffffff│║
 ║│ffffffffffffffff│║
@@ -411,7 +416,7 @@ namespace Terminal.Gui.DialogTests {
 ║│ffffffffffffffff│║
 ║│ffffffffffffffff│║
 ║│ffffffffffffffff│║
-║│    [◦ btn ◦]   │║
+║│    {btn}   │║
 ╚└────────────────┘╝", output);
 					Application.RequestStop ();
 				}
@@ -428,6 +433,8 @@ namespace Terminal.Gui.DialogTests {
 			Application.Top.BorderStyle = LineStyle.Double;
 			((FakeDriver)Application.Driver).SetBufferSize (20, 10);
 
+			var btn = $"{CM.Glyphs.LeftBracket}{CM.Glyphs.LeftDefaultIndicator} btn {CM.Glyphs.RightDefaultIndicator}{CM.Glyphs.RightBracket}";
+
 			Application.Iteration += () => {
 				iterations++;
 
@@ -437,7 +444,7 @@ namespace Terminal.Gui.DialogTests {
 					Application.RequestStop ();
 				} else if (iterations == 1) {
 					Application.Refresh ();
-					TestHelpers.AssertDriverContentsWithFrameAre (@"
+					TestHelpers.AssertDriverContentsWithFrameAre (@$"
 ╔══════════════════╗
 ║┌────────────────┐║
 ║│ffffffffffffffff│║
@@ -445,7 +452,7 @@ namespace Terminal.Gui.DialogTests {
 ║│ffffffffffffffff│║
 ║│       ff       │║
 ║│                │║
-║│    [◦ btn ◦]   │║
+║│    {btn}   │║
 ║└────────────────┘║
 ╚══════════════════╝", output);
 
@@ -455,7 +462,7 @@ namespace Terminal.Gui.DialogTests {
 					MessageBox.Query (string.Empty, new string ('f', 500), defaultButton: 0, wrapMessage: true, "btn");
 				} else if (iterations == 2) {
 					Application.Refresh ();
-					TestHelpers.AssertDriverContentsWithFrameAre (@"
+					TestHelpers.AssertDriverContentsWithFrameAre (@$"
 ╔┌────────────────┐╗
 ║│ffffffffffffffff│║
 ║│ffffffffffffffff│║
@@ -464,7 +471,7 @@ namespace Terminal.Gui.DialogTests {
 ║│ffffffffffffffff│║
 ║│ffffffffffffffff│║
 ║│ffffffffffffffff│║
-║│    [◦ btn ◦]   │║
+║│    {btn}   │║
 ╚└────────────────┘╝", output);
 
 					Application.RequestStop ();
@@ -481,6 +488,7 @@ namespace Terminal.Gui.DialogTests {
 			Application.Begin (Application.Top);
 			Application.Top.BorderStyle = LineStyle.Double;
 			((FakeDriver)Application.Driver).SetBufferSize (20, 10);
+			var btn = $"{CM.Glyphs.LeftBracket}{CM.Glyphs.LeftDefaultIndicator} btn {CM.Glyphs.RightDefaultIndicator}{CM.Glyphs.RightBracket}";
 
 			Application.Iteration += () => {
 				iterations++;
@@ -495,7 +503,7 @@ namespace Terminal.Gui.DialogTests {
 					Application.RequestStop ();
 				} else if (iterations == 1) {
 					Application.Refresh ();
-					TestHelpers.AssertDriverContentsWithFrameAre (@"
+					TestHelpers.AssertDriverContentsWithFrameAre (@$"
 ╔══════════════════╗
 ║ ┌──────────────┐ ║
 ║ │ff ff ff ff ff│ ║
@@ -503,7 +511,7 @@ namespace Terminal.Gui.DialogTests {
 ║ │ff ff ff ff ff│ ║
 ║ │    ff ff     │ ║
 ║ │              │ ║
-║ │   [◦ btn ◦]  │ ║
+║ │   {btn}  │ ║
 ║ └──────────────┘ ║
 ╚══════════════════╝", output);
 					Application.RequestStop ();
@@ -512,7 +520,7 @@ namespace Terminal.Gui.DialogTests {
 					MessageBox.Query (string.Empty, new string ('f', 500), defaultButton: 0, wrapMessage: false, "btn");
 				} else if (iterations == 2) {
 					Application.Refresh ();
-					TestHelpers.AssertDriverContentsWithFrameAre (@"
+					TestHelpers.AssertDriverContentsWithFrameAre (@$"
 ╔┌────────────────┐╗
 ║│ffffffffffffffff│║
 ║│ffffffffffffffff│║
@@ -521,7 +529,7 @@ namespace Terminal.Gui.DialogTests {
 ║│ffffffffffffffff│║
 ║│ffffffffffffffff│║
 ║│ffffffffffffffff│║
-║│    [◦ btn ◦]   │║
+║│    {btn}   │║
 ╚└────────────────┘╝", output);
 					Application.RequestStop ();
 				}
@@ -553,13 +561,12 @@ namespace Terminal.Gui.DialogTests {
 					Application.RequestStop ();
 				} else if (iterations == 1) {
 					Application.Refresh ();
-					TestHelpers.AssertDriverContentsWithFrameAre (@"
+					TestHelpers.AssertDriverContentsWithFrameAre (@$"
                 ┌──────────────────────────────────────────────┐
                 │                                              │
                 │                                              │
-                │                   [◦ ok ◦]                   │
+                │                   {CM.Glyphs.LeftBracket}{CM.Glyphs.LeftDefaultIndicator} ok {CM.Glyphs.RightDefaultIndicator}{CM.Glyphs.RightBracket}                   │
                 └──────────────────────────────────────────────┘", output);
-
 					Application.RequestStop ();
 				}
 			};

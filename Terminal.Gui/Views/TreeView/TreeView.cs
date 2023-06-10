@@ -2,7 +2,7 @@
 // by phillip.piper@gmail.com). Phillip has explicitly granted permission for his design
 // and code to be used in this library under the MIT license.
 
-using NStack;
+using System.Text;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -86,6 +86,11 @@ namespace Terminal.Gui {
 		public bool MultiSelect { get; set; } = true;
 
 		/// <summary>
+		/// Maximum number of nodes that can be expanded in any given branch.
+		/// </summary>
+		public int MaxDepth { get; set; } = 100;
+
+		/// <summary>
 		/// True makes a letter key press navigate to the next visible branch that begins with
 		/// that letter/digit.
 		/// </summary>
@@ -156,7 +161,7 @@ namespace Terminal.Gui {
 		/// Error message to display when the control is not properly initialized at draw time 
 		/// (nodes added but no tree builder set).
 		/// </summary>
-		public static ustring NoBuilderError = "ERROR: TreeBuilder Not Set";
+		public static string NoBuilderError = "ERROR: TreeBuilder Not Set";
 		private Key objectActivationKey = Key.Enter;
 
 		/// <summary>
@@ -213,6 +218,13 @@ namespace Terminal.Gui {
 		public AspectGetterDelegate<T> AspectGetter { get; set; } = (o) => o.ToString () ?? "";
 
 		CursorVisibility desiredCursorVisibility = CursorVisibility.Invisible;
+
+		/// <summary>
+		/// Interface for filtering which lines of the tree are displayed
+		///  e.g. to provide text searching.  Defaults to <see langword="null"/>
+		/// (no filtering).
+		/// </summary>
+		public ITreeViewFilter<T> Filter = null;
 
 		/// <summary>
 		/// Get / Set the wished cursor when the tree is focused.
@@ -440,7 +452,7 @@ namespace Terminal.Gui {
 		}
 
 		///<inheritdoc/>
-		public override void Redraw (Rect bounds)
+		public override void OnDrawContent (Rect contentArea)
 		{
 			if (roots == null) {
 				return;
@@ -454,20 +466,20 @@ namespace Terminal.Gui {
 
 			var map = BuildLineMap ();
 
-			for (int line = 0; line < bounds.Height; line++) {
+			for (int line = 0; line < Bounds.Height; line++) {
 
 				var idxToRender = ScrollOffsetVertical + line;
 
 				// Is there part of the tree view to render?
 				if (idxToRender < map.Count) {
 					// Render the line
-					map.ElementAt (idxToRender).Draw (Driver, ColorScheme, line, bounds.Width);
+					map.ElementAt (idxToRender).Draw (Driver, ColorScheme, line, Bounds.Width);
 				} else {
 
 					// Else clear the line to prevent stale symbols due to scrolling etc
 					Move (0, line);
 					Driver.SetAttribute (GetNormalColor ());
-					Driver.AddStr (new string (' ', bounds.Width));
+					Driver.AddStr (new string (' ', Bounds.Width));
 				}
 			}
 		}
@@ -545,7 +557,12 @@ namespace Terminal.Gui {
 			List<Branch<T>> toReturn = new List<Branch<T>> ();
 
 			foreach (var root in roots.Values) {
-				toReturn.AddRange (AddToLineMap (root));
+				
+				var toAdd = AddToLineMap (root, false, out var isMatch);
+				if(isMatch)
+				{
+					toReturn.AddRange (toAdd);
+				}
 			}
 
 			cachedLineMap = new ReadOnlyCollection<Branch<T>> (toReturn);
@@ -555,17 +572,44 @@ namespace Terminal.Gui {
 			return cachedLineMap;
 		}
 
-		private IEnumerable<Branch<T>> AddToLineMap (Branch<T> currentBranch)
+		private bool IsFilterMatch (Branch<T> branch)
 		{
-			yield return currentBranch;
+			return Filter?.IsMatch(branch.Model) ?? true;
+		}
+
+		private IEnumerable<Branch<T>> AddToLineMap (Branch<T> currentBranch,bool parentMatches, out bool match)
+		{
+			bool weMatch = IsFilterMatch(currentBranch);
+			bool anyChildMatches = false;
+			
+			var toReturn = new List<Branch<T>>();
+			var children = new List<Branch<T>>();
 
 			if (currentBranch.IsExpanded) {
 				foreach (var subBranch in currentBranch.ChildBranches.Values) {
-					foreach (var sub in AddToLineMap (subBranch)) {
-						yield return sub;
+
+					foreach (var sub in AddToLineMap (subBranch, weMatch, out var childMatch)) {
+						
+						if(childMatch)
+						{
+							children.Add(sub);
+							anyChildMatches = true;
+						}
 					}
 				}
 			}
+
+			if(parentMatches || weMatch || anyChildMatches)
+			{
+				match = true;
+				toReturn.Add(currentBranch);
+			}
+			else{
+				match = false;
+			}
+			
+			toReturn.AddRange(children);
+			return toReturn;
 		}
 
 		/// <summary>
@@ -1290,9 +1334,9 @@ namespace Terminal.Gui {
 		}
 
 		/// <summary>
-		/// Clears any cached results of <see cref="BuildLineMap"/>
+		/// Clears any cached results of the tree state.
 		/// </summary>
-		protected void InvalidateLineMap ()
+		public void InvalidateLineMap ()
 		{
 			cachedLineMap = null;
 		}

@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.IO;
+using System.IO.Abstractions;
 
 namespace Terminal.Gui {
 
@@ -22,7 +23,7 @@ namespace Terminal.Gui {
 		/// </summary>
 		/// <param name="displayName"></param>
 		/// <param name="path"></param>
-		public FileDialogRootTreeNode (string displayName, DirectoryInfo path)
+		public FileDialogRootTreeNode (string displayName, IDirectoryInfo path)
 		{
 			this.DisplayName = displayName;
 			this.Path = path;
@@ -37,9 +38,12 @@ namespace Terminal.Gui {
 		/// Gets the path that should be shown/explored when selecting this node
 		/// of the tree.
 		/// </summary>
-		public DirectoryInfo Path { get; }
+		public IDirectoryInfo Path { get; }
 
-		/// <inheritdoc/>
+		/// <summary>
+		/// Returns a string representation of this instance (<see cref="DisplayName"/>).
+		/// </summary>
+		/// <returns></returns>
 		public override string ToString ()
 		{
 			return this.DisplayName;

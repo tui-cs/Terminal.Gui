@@ -1,37 +1,80 @@
 ﻿using System;
-using NStack;
+using System.Text;
 
 namespace Terminal.Gui {
+
+	/// <summary>
+	/// Event arguments for the <see cref="Color"/> events.
+	/// </summary>
+	public class ColorEventArgs : EventArgs {
+
+		/// <summary>
+		/// Initializes a new instance of <see cref="ColorEventArgs"/>
+		/// </summary>
+		public ColorEventArgs ()
+		{
+		}
+
+		/// <summary>
+		/// The new Thickness.
+		/// </summary>
+		public Color Color { get; set; }
+
+		/// <summary>
+		/// The previous Thickness.
+		/// </summary>
+		public Color PreviousColor { get; set; }
+	}
 
 	/// <summary>
 	/// The <see cref="ColorPicker"/> <see cref="View"/> Color picker.
 	/// </summary>
 	public class ColorPicker : View {
-		/// <summary>
-		/// Number of colors on a line.
-		/// </summary>
-		private static readonly int colorsPerLine = 8;
+		private int _selectColorIndex = (int)Color.Black;
 
 		/// <summary>
-		/// Number of color lines.
+		/// Columns of color boxes
 		/// </summary>
-		private static readonly int lineCount = 2;
+		private int _cols = 8;
 
 		/// <summary>
-		/// Horizontal zoom.
+		/// Rows of color boxes
 		/// </summary>
-		private static readonly int horizontalZoom = 4;
+		private int _rows = 2;
 
 		/// <summary>
-		/// Vertical zoom.
+		/// Width of a color box
 		/// </summary>
-		private static readonly int verticalZoom = 2;
+		public int BoxWidth {
+			get => _boxWidth;
+			set {
+				if (_boxWidth != value) {
+					_boxWidth = value;
+					SetNeedsLayout ();
+				}
+			}
+		}
+		private int _boxWidth = 4;
+
+		/// <summary>
+		/// Height of a color box
+		/// </summary>
+		public int BoxHeight {
+			get => _boxHeight;
+			set {
+				if (_boxHeight != value) {
+					_boxHeight = value;
+					SetNeedsLayout ();
+				}
+			}
+		}
+		private int _boxHeight = 2;
 
 		// Cursor runes.
-		private static readonly Rune [] cursorRunes = new Rune []
+		private static readonly Rune [] _cursorRunes = new Rune []
 		{
-			0x250C, 0x2500, 0x2500, 0x2510,
-			0x2514, 0x2500, 0x2500, 0x2518
+			(Rune)0x250C, (Rune) 0x2500, (Rune) 0x2500, (Rune) 0x2510,
+			(Rune) 0x2514, (Rune) 0x2500, (Rune) 0x2500, (Rune) 0x2518
 		};
 
 		/// <summary>
@@ -39,11 +82,11 @@ namespace Terminal.Gui {
 		/// </summary>
 		public Point Cursor {
 			get {
-				return new Point (selectColorIndex % colorsPerLine, selectColorIndex / colorsPerLine);
+				return new Point (_selectColorIndex % _cols, _selectColorIndex / _cols);
 			}
 
 			set {
-				var colorIndex = value.Y * colorsPerLine + value.X;
+				var colorIndex = value.Y * _cols + value.X;
 				SelectedColor = (Color)colorIndex;
 			}
 		}
@@ -51,21 +94,23 @@ namespace Terminal.Gui {
 		/// <summary>
 		/// Fired when a color is picked.
 		/// </summary>
-		public event EventHandler ColorChanged;
-
-		private int selectColorIndex = (int)Color.Black;
+		public event EventHandler<ColorEventArgs> ColorChanged;
 
 		/// <summary>
 		/// Selected color.
 		/// </summary>
 		public Color SelectedColor {
 			get {
-				return (Color)selectColorIndex;
+				return (Color)_selectColorIndex;
 			}
 
 			set {
-				selectColorIndex = (int)value;
-				ColorChanged?.Invoke (this, EventArgs.Empty);
+				Color prev = (Color)_selectColorIndex;
+				_selectColorIndex = (int)value;
+				ColorChanged?.Invoke (this, new ColorEventArgs () {
+					PreviousColor = prev,
+					Color = value,
+				});
 				SetNeedsDisplay ();
 			}
 		}
@@ -73,48 +118,19 @@ namespace Terminal.Gui {
 		/// <summary>
 		/// Initializes a new instance of <see cref="ColorPicker"/>.
 		/// </summary>
-		public ColorPicker () : base ("Color Picker")
+		public ColorPicker ()
 		{
-			Initialize ();
+			SetInitialProperties ();
 		}
 
-		/// <summary>
-		/// Initializes a new instance of <see cref="ColorPicker"/>.
-		/// </summary>
-		/// <param name="title">Title.</param>
-		public ColorPicker (ustring title) : base (title)
-		{
-			Initialize ();
-		}
-
-		/// <summary>
-		/// Initializes a new instance of <see cref="ColorPicker"/>.
-		/// </summary>
-		/// <param name="point">Location point.</param>
-		/// <param name="title">Title.</param>
-		public ColorPicker (Point point, ustring title) : this (point.X, point.Y, title)
-		{
-		}
-
-		/// <summary>
-		/// Initializes a new instance of <see cref="ColorPicker"/>.
-		/// </summary>
-		/// <param name="x">X location.</param>
-		/// <param name="y">Y location.</param>
-		/// <param name="title">Title</param>
-		public ColorPicker (int x, int y, ustring title) : base (x, y, title)
-		{
-			Initialize ();
-		}
-
-		private void Initialize()
+		private void SetInitialProperties ()
 		{
 			CanFocus = true;
-			Width = colorsPerLine * horizontalZoom;
-			Height = lineCount * verticalZoom + 1;
-
 			AddCommands ();
 			AddKeyBindings ();
+			LayoutStarted += (o, a) => {
+				Bounds = new Rect (Bounds.Location, new Size (_cols * BoxWidth, _rows * BoxHeight));
+			};
 		}
 
 		/// <summary>
@@ -140,16 +156,16 @@ namespace Terminal.Gui {
 		}
 
 		///<inheritdoc/>
-		public override void Redraw (Rect bounds)
+		public override void OnDrawContent (Rect contentArea)
 		{
-			base.Redraw (bounds);
+			base.OnDrawContent (contentArea);
 
 			Driver.SetAttribute (HasFocus ? ColorScheme.Focus : GetNormalColor ());
 			var colorIndex = 0;
 
-			for (var y = 0; y < (Height.Anchor (0) - 1) / verticalZoom; y++) {
-				for (var x = 0; x < Width.Anchor (0) / horizontalZoom; x++) {
-					var foregroundColorIndex = y == 0 ? colorIndex + colorsPerLine : colorIndex - colorsPerLine;
+			for (var y = 0; y < (Bounds.Height / BoxHeight); y++) {
+				for (var x = 0; x < (Bounds.Width / BoxWidth); x++) {
+					var foregroundColorIndex = y == 0 ? colorIndex + _cols : colorIndex - _cols;
 					Driver.SetAttribute (Driver.MakeAttribute ((Color)foregroundColorIndex, (Color)colorIndex));
 					var selected = x == Cursor.X && y == Cursor.Y;
 					DrawColorBox (x, y, selected);
@@ -168,19 +184,35 @@ namespace Terminal.Gui {
 		{
 			var index = 0;
 
-			for (var zommedY = 0; zommedY < verticalZoom; zommedY++) {
-				for (var zommedX = 0; zommedX < horizontalZoom; zommedX++) {
-					Move (x * horizontalZoom + zommedX, y * verticalZoom + zommedY + 1);
-
-					if (selected) {
-						var character = cursorRunes [index];
-						Driver.AddRune (character);
-					} else {
-						Driver.AddRune (' ');
-					}
-
+			for (var zoomedY = 0; zoomedY < BoxHeight; zoomedY++) {
+				for (var zoomedX = 0; zoomedX < BoxWidth; zoomedX++) {
+					Move (x * BoxWidth + zoomedX, y * BoxHeight + zoomedY);
+					Driver.AddRune ((Rune)' ');
 					index++;
 				}
+			}
+
+			if (selected) {
+				DrawFocusRect (new Rect (x * BoxWidth, y * BoxHeight, BoxWidth, BoxHeight));
+			}
+		}
+
+		private void DrawFocusRect (Rect rect)
+		{
+			var lc = new LineCanvas ();
+			if (rect.Width == 1) {
+				lc.AddLine (rect.Location, rect.Height, Orientation.Vertical, LineStyle.Dotted);
+			} else if (rect.Height == 1) {
+				lc.AddLine (rect.Location, rect.Width, Orientation.Horizontal, LineStyle.Dotted);
+			} else {
+				lc.AddLine (rect.Location, rect.Width, Orientation.Horizontal, LineStyle.Dotted);
+				lc.AddLine (new Point (rect.Location.X, rect.Location.Y + rect.Height - 1), rect.Width, Orientation.Horizontal, LineStyle.Dotted);
+
+				lc.AddLine (rect.Location, rect.Height, Orientation.Vertical, LineStyle.Dotted);
+				lc.AddLine (new Point (rect.Location.X + rect.Width - 1, rect.Location.Y), rect.Height, Orientation.Vertical, LineStyle.Dotted);
+			}
+			foreach (var p in lc.GetMap ()) {
+				AddRune (p.Key.X, p.Key.Y, p.Value);
 			}
 		}
 
@@ -200,7 +232,7 @@ namespace Terminal.Gui {
 		/// <returns></returns>
 		public virtual bool MoveRight ()
 		{
-			if (Cursor.X < colorsPerLine - 1) SelectedColor++;
+			if (Cursor.X < _cols - 1) SelectedColor++;
 			return true;
 		}
 
@@ -210,7 +242,7 @@ namespace Terminal.Gui {
 		/// <returns></returns>
 		public virtual bool MoveUp ()
 		{
-			if (Cursor.Y > 0) SelectedColor -= colorsPerLine;
+			if (Cursor.Y > 0) SelectedColor -= _cols;
 			return true;
 		}
 
@@ -220,7 +252,7 @@ namespace Terminal.Gui {
 		/// <returns></returns>
 		public virtual bool MoveDown ()
 		{
-			if (Cursor.Y < lineCount - 1) SelectedColor += colorsPerLine;
+			if (Cursor.Y < _rows - 1) SelectedColor += _cols;
 			return true;
 		}
 
@@ -237,13 +269,22 @@ namespace Terminal.Gui {
 		///<inheritdoc/>
 		public override bool MouseEvent (MouseEvent me)
 		{
-			if (!me.Flags.HasFlag (MouseFlags.Button1Clicked) || !CanFocus)
+			if (!me.Flags.HasFlag (MouseFlags.Button1Clicked) || !CanFocus) {
 				return false;
+			}
 
 			SetFocus ();
-			Cursor = new Point (me.X / horizontalZoom, (me.Y - 1) / verticalZoom);
+			Cursor = new Point ((me.X - GetFramesThickness ().Left) / _boxWidth, (me.Y - GetFramesThickness ().Top) / _boxHeight);
 
 			return true;
+		}
+
+		///<inheritdoc/>
+		public override bool OnEnter (View view)
+		{
+			Application.Driver.SetCursorVisibility (CursorVisibility.Invisible);
+
+			return base.OnEnter (view);
 		}
 	}
 }

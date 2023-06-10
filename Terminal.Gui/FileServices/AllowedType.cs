@@ -33,7 +33,10 @@ namespace Terminal.Gui {
 			return true;
 		}
 
-		/// <inheritdoc/>
+		/// <summary>
+		/// Returns a string representation of this <see cref="AllowedTypeAny"/>.
+		/// </summary>
+		/// <returns></returns>
 		public override string ToString ()
 		{
 			return Strings.fdAnyFiles + "(*.*)";
@@ -91,14 +94,22 @@ namespace Terminal.Gui {
 		/// <inheritdoc/>
 		public bool IsAllowed(string path)
 		{
+			if(string.IsNullOrWhiteSpace(path)) {
+				return false;
+			}
+
 			var extension = Path.GetExtension (path);
+
+			if(this.Extensions.Any(e=>path.EndsWith(e, StringComparison.InvariantCultureIgnoreCase))) {
+				return true;
+			}
 
 			// There is a requirement to have a particular extension and we have none
 			if (string.IsNullOrEmpty (extension)) {
 				return false;
 			}
 
-			return this.Extensions.Any (e => e.Equals (extension));
+			return this.Extensions.Any (e => e.Equals (extension, StringComparison.InvariantCultureIgnoreCase));
 		}
 	}
 	

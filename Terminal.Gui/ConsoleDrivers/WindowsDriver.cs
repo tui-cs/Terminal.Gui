@@ -1,7 +1,7 @@
 //
 // WindowsDriver.cs: Windows specific driver
 //
-using NStack;
+using System.Text;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -742,7 +742,7 @@ namespace Terminal.Gui {
 
 			mLoop.ProcessInput = (e) => ProcessInput (e);
 
-			mLoop.WinChanged = (s,e) => {
+			mLoop.WinChanged = (s, e) => {
 				ChangeWin (e.Size);
 			};
 		}
@@ -902,6 +902,7 @@ namespace Terminal.Gui {
 				break;
 
 			case WindowsConsole.EventType.Focus:
+				keyModifiers = null;
 				break;
 			}
 		}
@@ -1518,17 +1519,27 @@ namespace Terminal.Gui {
 			return crow * Cols + ccol;
 		}
 
+		public override bool IsRuneSupported (Rune rune)
+		{
+			// See Issue #2610
+			return base.IsRuneSupported (rune) && rune.IsBmp;
+		}
+
 		public override void AddRune (Rune rune)
 		{
-			rune = MakePrintable (rune);
-			var runeWidth = Rune.ColumnWidth (rune);
+			if (!IsRuneSupported (rune)) {
+				rune = Rune.ReplacementChar;
+			}
+
+			rune = rune.MakePrintable ();
+			var runeWidth = rune.GetColumns ();
 			var position = GetOutputBufferPosition ();
 			var validClip = IsValidContent (ccol, crow, Clip);
 
 			if (validClip) {
 				if (runeWidth == 0 && ccol > 0) {
 					var r = contents [crow, ccol - 1, 0];
-					var s = new string (new char [] { (char)r, (char)rune });
+					var s = new string (new char [] { (char)r, (char)rune.Value });
 					string sn;
 					if (!s.IsNormalized ()) {
 						sn = s.Normalize ();
@@ -1545,14 +1556,14 @@ namespace Terminal.Gui {
 					WindowsConsole.SmallRect.Update (ref damageRegion, (short)(ccol - 1), (short)crow);
 				} else {
 					if (runeWidth < 2 && ccol > 0
-						&& Rune.ColumnWidth ((char)contents [crow, ccol - 1, 0]) > 1) {
+						&& ((Rune)(char)contents [crow, ccol - 1, 0]).GetColumns () > 1) {
 
 						var prevPosition = crow * Cols + (ccol - 1);
 						OutputBuffer [prevPosition].Char.UnicodeChar = ' ';
 						contents [crow, ccol - 1, 0] = (int)(uint)' ';
 
 					} else if (runeWidth < 2 && ccol <= Clip.Right - 1
-						&& Rune.ColumnWidth ((char)contents [crow, ccol, 0]) > 1) {
+						&& ((Rune)(char)contents [crow, ccol, 0]).GetColumns () > 1) {
 
 						var prevPosition = GetOutputBufferPosition () + 1;
 						OutputBuffer [prevPosition].Char.UnicodeChar = (char)' ';
@@ -1563,8 +1574,8 @@ namespace Terminal.Gui {
 						OutputBuffer [position].Char.UnicodeChar = (char)' ';
 						contents [crow, ccol, 0] = (int)(uint)' ';
 					} else {
-						OutputBuffer [position].Char.UnicodeChar = (char)rune;
-						contents [crow, ccol, 0] = (int)(uint)rune;
+						OutputBuffer [position].Char.UnicodeChar = (char)rune.Value;
+						contents [crow, ccol, 0] = (int)(uint)rune.Value;
 					}
 					OutputBuffer [position].Attributes = (ushort)CurrentAttribute;
 					contents [crow, ccol, 1] = CurrentAttribute;
@@ -1594,9 +1605,9 @@ namespace Terminal.Gui {
 			}
 		}
 
-		public override void AddStr (ustring str)
+		public override void AddStr (string str)
 		{
-			foreach (var rune in str)
+			foreach (var rune in str.EnumerateRunes ())
 				AddRune (rune);
 		}
 
@@ -1868,7 +1879,7 @@ namespace Terminal.Gui {
 		/// Invoked when the window is changed.
 		/// </summary>
 		public EventHandler<SizeChangedEventArgs> WinChanged;
-		
+
 		public WindowsMainLoop (ConsoleDriver consoleDriver = null)
 		{
 			this.consoleDriver = consoleDriver ?? throw new ArgumentNullException ("Console driver instance must be provided.");
@@ -1990,7 +2001,7 @@ namespace Terminal.Gui {
 			}
 			if (winChanged) {
 				winChanged = false;
-				WinChanged?.Invoke (this, new SizeChangedEventArgs(windowSize));
+				WinChanged?.Invoke (this, new SizeChangedEventArgs (windowSize));
 			}
 		}
 	}
@@ -2005,34 +2016,34 @@ namespace Terminal.Gui {
 
 		protected override string GetClipboardDataImpl ()
 		{
-			//if (!IsClipboardFormatAvailable (cfUnicodeText))
-			//	return null;
-
 			try {
-				if (!OpenClipboard (IntPtr.Zero))
-					return null;
+				if (!OpenClipboard (IntPtr.Zero)) {
+					return string.Empty;
+				}
 
 				IntPtr handle = GetClipboardData (cfUnicodeText);
-				if (handle == IntPtr.Zero)
-					return null;
+				if (handle == IntPtr.Zero) {
+					return string.Empty;
+				}
 
 				IntPtr pointer = IntPtr.Zero;
 
 				try {
 					pointer = GlobalLock (handle);
-					if (pointer == IntPtr.Zero)
-						return null;
+					if (pointer == IntPtr.Zero) {
+						return string.Empty;
+					}
 
 					int size = GlobalSize (handle);
 					byte [] buff = new byte [size];
 
 					Marshal.Copy (pointer, buff, 0, size);
 
-					return System.Text.Encoding.Unicode.GetString (buff)
-						.TrimEnd ('\0');
+					return Encoding.Unicode.GetString (buff).TrimEnd ('\0');
 				} finally {
-					if (pointer != IntPtr.Zero)
+					if (pointer != IntPtr.Zero) {
 						GlobalUnlock (handle);
+					}
 				}
 			} finally {
 				CloseClipboard ();

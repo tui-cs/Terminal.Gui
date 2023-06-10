@@ -2,7 +2,7 @@
 
 namespace Terminal.Gui {
 	/// <summary>
-	/// Event arguments for the <see cref="CollectionNavigator.SearchStringChanged"/> event.
+	/// Event arguments for the <see cref="CollectionNavigatorBase.SearchStringChanged"/> event.
 	/// </summary>
 	public class KeystrokeNavigatorEventArgs : EventArgs {
 		/// <summary>

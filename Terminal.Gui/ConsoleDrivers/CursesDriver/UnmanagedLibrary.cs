@@ -256,7 +256,6 @@ namespace Unix.Terminal {
 		/// to avoid the dependency on libc-dev Linux.
 		/// </summary>
 		static class CoreCLR {
-#if NET6_0
 			// Custom resolver to support true single-file apps
 			// (those which run directly from bundle; in-memory).
 			//	 -1 on Unix means self-referencing binary (libcoreclr.so)
@@ -265,7 +264,6 @@ namespace Unix.Terminal {
 			static CoreCLR() =>  NativeLibrary.SetDllImportResolver(typeof(CoreCLR).Assembly,
 				(string libraryName, Assembly assembly, DllImportSearchPath? searchPath) =>
 					libraryName == "libcoreclr.so" ? (IntPtr)(-1) : IntPtr.Zero);
-#endif
 
 			[DllImport ("libcoreclr.so")]
 			internal static extern IntPtr dlopen (string filename, int flags);

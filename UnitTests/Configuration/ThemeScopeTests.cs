@@ -21,15 +21,15 @@ namespace Terminal.Gui.ConfigurationTests {
 		public void ThemeManager_ClassMethodsWork ()
 		{
 			ConfigurationManager.Reset ();
-			Assert.Equal (ConfigurationManager.ThemeManager.Instance, ConfigurationManager.Themes);
-			Assert.NotEmpty (ConfigurationManager.ThemeManager.Themes);
+			Assert.Equal (ThemeManager.Instance, ConfigurationManager.Themes);
+			Assert.NotEmpty (ThemeManager.Themes);
 
-			ConfigurationManager.ThemeManager.SelectedTheme = "foo";
-			Assert.Equal ("foo", ConfigurationManager.ThemeManager.SelectedTheme);
-			ConfigurationManager.ThemeManager.Reset ();
-			Assert.Equal (string.Empty, ConfigurationManager.ThemeManager.SelectedTheme);
+			ThemeManager.SelectedTheme = "foo";
+			Assert.Equal ("foo", ThemeManager.SelectedTheme);
+			ThemeManager.Reset ();
+			Assert.Equal (string.Empty, ThemeManager.SelectedTheme);
 
-			Assert.Empty (ConfigurationManager.ThemeManager.Themes);
+			Assert.Empty (ThemeManager.Themes);
 		}
 
 		[Fact]
@@ -59,7 +59,7 @@ namespace Terminal.Gui.ConfigurationTests {
 
 			ConfigurationManager.Themes ["Default"] ["Dialog.DefaultButtonAlignment"].PropertyValue = Dialog.ButtonAlignments.Right;
 
-			ConfigurationManager.ThemeManager.Themes! [ThemeManager.SelectedTheme]!.Apply ();
+			ThemeManager.Themes! [ThemeManager.SelectedTheme]!.Apply ();
 			Assert.Equal (Dialog.ButtonAlignments.Right, Dialog.DefaultButtonAlignment);
 		}
 		
@@ -69,7 +69,7 @@ namespace Terminal.Gui.ConfigurationTests {
 		{
 			ConfigurationManager.Reset ();
 
-			var initial = ConfigurationManager.ThemeManager.Themes;
+			var initial = ThemeManager.Themes;
 			
 			var serialized = JsonSerializer.Serialize<IDictionary<string, ThemeScope>> (ConfigurationManager.Themes, _jsonOptions);
 			var deserialized = JsonSerializer.Deserialize<IDictionary<string, ThemeScope>> (serialized, _jsonOptions);

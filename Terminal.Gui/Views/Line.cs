@@ -17,13 +17,13 @@ namespace Terminal.Gui {
 		/// <summary>
 		/// Constructs a Line object.
 		/// </summary>
-		public Line () 
+		public Line ()
 		{
 
 		}
-		
+
 		/// <inheritdoc/>
-		public override bool OnDrawFrames()
+		public override bool OnDrawFrames ()
 		{
 			var screenBounds = ViewToScreen (Bounds);
 			LineCanvas lc;
@@ -34,17 +34,16 @@ namespace Terminal.Gui {
 			return true;
 		}
 
-		//public override void OnDrawContentComplete (Rect viewport)
+		//public override void OnDrawContentComplete (Rect contentArea)
 		//{
 		//	var screenBounds = ViewToScreen (Frame);
 
 		//}
 
 		/// <inheritdoc/>
-		public override void Redraw (Rect bounds)
+		public override void OnDrawContent (Rect contentArea)
 		{
 			OnDrawFrames ();
-
 		}
 	}
 }

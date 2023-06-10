@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using NStack;
+using System.Text;
 
 namespace Terminal.Gui {
 	/// <summary>
@@ -78,8 +78,8 @@ namespace Terminal.Gui {
 	/// </para>
 	/// <para>
 	///   <see cref="ListView"/> can display any object that implements the <see cref="IList"/> interface.
-	///   <see cref="string"/> values are converted into <see cref="NStack.ustring"/> values before rendering, and other values are
-	///   converted into <see cref="string"/> by calling <see cref="object.ToString"/> and then converting to <see cref="NStack.ustring"/> .
+	///   <see cref="string"/> values are converted into <see cref="string"/> values before rendering, and other values are
+	///   converted into <see cref="string"/> by calling <see cref="object.ToString"/> and then converting to <see cref="string"/> .
 	/// </para>
 	/// <para>
 	///   To change the contents of the ListView, set the <see cref="Source"/> property (when 
@@ -137,7 +137,7 @@ namespace Terminal.Gui {
 			get => source;
 			set {
 				source = value;
-				KeystrokeNavigator.Collection = source?.ToList ()?.Cast<object> ();
+				KeystrokeNavigator.Collection = source?.ToList ();
 				top = 0;
 				selected = -1;
 				lastSelectedItem = -1;
@@ -195,7 +195,7 @@ namespace Terminal.Gui {
 				if (allowsMarking) {
 					AddKeyBinding (Key.Space, Command.ToggleChecked);
 				} else {
-					ClearKeybinding (Key.Space);
+					ClearKeyBinding (Key.Space);
 				}
 
 				SetNeedsDisplay ();
@@ -530,7 +530,7 @@ namespace Terminal.Gui {
 		}
 
 		///<inheritdoc/>
-		public override void Redraw (Rect bounds)
+		public override void OnDrawContent (Rect contentArea)
 		{
 			if (scrollBar != null) {
 				scrollBar.Size = Source.Count - 1;
@@ -572,7 +572,7 @@ namespace Terminal.Gui {
 				Move (0, row);
 				if (source == null || item >= source.Count) {
 					for (int c = 0; c < f.Width; c++)
-						Driver.AddRune (' ');
+						Driver.AddRune ((Rune)' ');
 				} else {
 					var rowEventArgs = new ListViewRowEventArgs (item);
 					OnRowRender (rowEventArgs);
@@ -581,9 +581,9 @@ namespace Terminal.Gui {
 						Driver.SetAttribute (current);
 					}
 					if (allowsMarking) {
-						Driver.AddRune (source.IsMarked (item) ? (AllowsMultipleSelection ? Driver.Checked : Driver.Selected) :
-							(AllowsMultipleSelection ? Driver.UnChecked : Driver.UnSelected));
-						Driver.AddRune (' ');
+						Driver.AddRune (source.IsMarked (item) ? (AllowsMultipleSelection ? CM.Glyphs.Checked : CM.Glyphs.Selected) :
+							(AllowsMultipleSelection ? CM.Glyphs.UnChecked : CM.Glyphs.UnSelected));
+						Driver.AddRune ((Rune)' ');
 					}
 					Source.Render (this, Driver, isSelected, item, col, row, f.Width - col, start);
 				}
@@ -1299,13 +1299,13 @@ namespace Terminal.Gui {
 			}
 		}
 
-		void RenderUstr (ConsoleDriver driver, ustring ustr, int col, int line, int width, int start = 0)
+		void RenderUstr (ConsoleDriver driver, string ustr, int col, int line, int width, int start = 0)
 		{
 			var u = TextFormatter.ClipAndJustify (ustr, width, TextAlignment.Left);
 			driver.AddStr (u);
-			width -= TextFormatter.GetTextWidth (u);
+			width -= u.GetColumns ();
 			while (width-- > 0) {
-				driver.AddRune (' ');
+				driver.AddRune ((Rune)' ');
 			}
 		}
 
@@ -1703,7 +1703,7 @@ namespace Terminal.Gui {
 
 			for (int i = 0; i < src.Count; i++) {
 				var t = src [i];
-				if (t is ustring u) {
+				if (t is string u) {
 					if (u.ToUpper ().StartsWith (search.ToUpperInvariant ())) {
 						return i;
 					}

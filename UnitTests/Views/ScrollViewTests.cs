@@ -1,5 +1,5 @@
 ﻿using Microsoft.VisualStudio.TestPlatform.Utilities;
-using NStack;
+using System.Text;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -199,7 +199,7 @@ namespace Terminal.Gui.ViewsTests {
 			Assert.False (sv.AutoHideScrollBars);
 			Assert.True (sv.ShowHorizontalScrollIndicator);
 			Assert.True (sv.ShowVerticalScrollIndicator);
-			sv.Redraw (sv.Bounds);
+			sv.Draw ();
 			TestHelpers.AssertDriverContentsAre (@"
          ▲
          ┬
@@ -219,7 +219,7 @@ namespace Terminal.Gui.ViewsTests {
 			Assert.False (sv.AutoHideScrollBars);
 			Assert.False (sv.ShowHorizontalScrollIndicator);
 			Assert.True (sv.ShowVerticalScrollIndicator);
-			sv.Redraw (sv.Bounds);
+			sv.Draw ();
 			TestHelpers.AssertDriverContentsAre (@"
          ▲
          ┬
@@ -238,7 +238,7 @@ namespace Terminal.Gui.ViewsTests {
 			Assert.False (sv.AutoHideScrollBars);
 			Assert.True (sv.ShowHorizontalScrollIndicator);
 			Assert.False (sv.ShowVerticalScrollIndicator);
-			sv.Redraw (sv.Bounds);
+			sv.Draw ();
 			TestHelpers.AssertDriverContentsAre (@"
          
          
@@ -258,7 +258,7 @@ namespace Terminal.Gui.ViewsTests {
 			Assert.False (sv.AutoHideScrollBars);
 			Assert.False (sv.ShowHorizontalScrollIndicator);
 			Assert.False (sv.ShowVerticalScrollIndicator);
-			sv.Redraw (sv.Bounds);
+			sv.Draw ();
 			TestHelpers.AssertDriverContentsAre (@"
          
          
@@ -293,7 +293,7 @@ namespace Terminal.Gui.ViewsTests {
 			sv.ShowHorizontalScrollIndicator = true;
 			sv.ShowVerticalScrollIndicator = true;
 			sv.LayoutSubviews ();
-			sv.Redraw (sv.Bounds);
+			sv.Draw ();
 			TestHelpers.AssertDriverContentsWithFrameAre (@"
          ▲
          ┬
@@ -423,7 +423,7 @@ namespace Terminal.Gui.ViewsTests {
 		//	private Label labelFill;
 		//	private Label labelText;
 
-		//	public CustomButton (string fill, ustring text, int width, int height) : base ()
+		//	public CustomButton (string fill, string text, int width, int height) : base ()
 		//	{
 		//		Width = width;
 		//		Height = height;
@@ -438,7 +438,7 @@ namespace Terminal.Gui.ViewsTests {
 		//					fillText.Append (fill);
 		//				}
 		//			}
-		//			labelFill.Text = fillText.ToString ();
+		//			labelFill.Text = fillText;
 		//		};
 
 		//		labelText = new Label (text) { X = Pos.Center (), Y = Pos.Center () };
@@ -611,7 +611,7 @@ namespace Terminal.Gui.ViewsTests {
 			var view = new View (new Rect (Point.Empty, size));
 			view.Add (new Label (rule.Repeat (size.Width / rule.Length)) { AutoSize = false, Width = Dim.Fill () });
 			view.Add (new Label (rule.Repeat (size.Height / rule.Length), TextDirection.TopBottom_LeftRight) { Height = Dim.Fill (), AutoSize = false });
-			view.Add (new Button (1, 1, "Press me!"));
+			view.Add (new Label (1, 1, "[ Press me! ]"));
 			var scrollView = new ScrollView (new Rect (1, 1, 15, 10)) {
 				ContentSize = size,
 				ShowHorizontalScrollIndicator = true,
@@ -645,7 +645,7 @@ namespace Terminal.Gui.ViewsTests {
 			Assert.Equal (new Rect (1, 1, 21, 14), pos);
 
 			Assert.True (scrollView.ProcessKey (new KeyEvent (Key.CursorRight, new KeyModifiers ())));
-			Application.Top.Redraw (Application.Top.Bounds);
+			Application.Top.Draw ();
 
 			expected = @"
  ┌──────────────────┐
@@ -669,7 +669,7 @@ namespace Terminal.Gui.ViewsTests {
 			Assert.Equal (new Rect (1, 1, 21, 14), pos);
 
 			Assert.True (scrollView.ProcessKey (new KeyEvent (Key.CursorRight, new KeyModifiers ())));
-			Application.Top.Redraw (Application.Top.Bounds);
+			Application.Top.Draw ();
 
 			expected = @"
  ┌──────────────────┐
@@ -693,7 +693,7 @@ namespace Terminal.Gui.ViewsTests {
 			Assert.Equal (new Rect (1, 1, 21, 14), pos);
 
 			Assert.True (scrollView.ProcessKey (new KeyEvent (Key.CursorRight, new KeyModifiers ())));
-			Application.Top.Redraw (Application.Top.Bounds);
+			Application.Top.Draw ();
 
 			expected = @"
  ┌──────────────────┐
@@ -717,7 +717,7 @@ namespace Terminal.Gui.ViewsTests {
 			Assert.Equal (new Rect (1, 1, 21, 14), pos);
 
 			Assert.True (scrollView.ProcessKey (new KeyEvent (Key.CursorRight, new KeyModifiers ())));
-			Application.Top.Redraw (Application.Top.Bounds);
+			Application.Top.Draw ();
 
 			expected = @"
  ┌──────────────────┐
@@ -741,7 +741,7 @@ namespace Terminal.Gui.ViewsTests {
 			Assert.Equal (new Rect (1, 1, 21, 14), pos);
 
 			Assert.True (scrollView.ProcessKey (new KeyEvent (Key.CursorRight, new KeyModifiers ())));
-			Application.Top.Redraw (Application.Top.Bounds);
+			Application.Top.Draw ();
 
 			expected = @"
  ┌──────────────────┐
@@ -765,7 +765,7 @@ namespace Terminal.Gui.ViewsTests {
 			Assert.Equal (new Rect (1, 1, 21, 14), pos);
 
 			Assert.True (scrollView.ProcessKey (new KeyEvent (Key.CursorRight, new KeyModifiers ())));
-			Application.Top.Redraw (Application.Top.Bounds);
+			Application.Top.Draw ();
 
 			expected = @"
  ┌──────────────────┐
@@ -789,7 +789,7 @@ namespace Terminal.Gui.ViewsTests {
 			Assert.Equal (new Rect (1, 1, 21, 14), pos);
 
 			Assert.True (scrollView.ProcessKey (new KeyEvent (Key.CursorRight, new KeyModifiers ())));
-			Application.Top.Redraw (Application.Top.Bounds);
+			Application.Top.Draw ();
 
 			expected = @"
  ┌──────────────────┐
@@ -812,7 +812,7 @@ namespace Terminal.Gui.ViewsTests {
 			Assert.Equal (new Rect (1, 1, 21, 14), pos);
 
 			Assert.True (scrollView.ProcessKey (new KeyEvent (Key.CtrlMask | Key.End, new KeyModifiers ())));
-			Application.Top.Redraw (Application.Top.Bounds);
+			Application.Top.Draw ();
 
 			expected = @"
  ┌──────────────────┐
@@ -836,7 +836,7 @@ namespace Terminal.Gui.ViewsTests {
 
 			Assert.True (scrollView.ProcessKey (new KeyEvent (Key.CtrlMask | Key.Home, new KeyModifiers ())));
 			Assert.True (scrollView.ProcessKey (new KeyEvent (Key.CursorDown, new KeyModifiers ())));
-			Application.Top.Redraw (Application.Top.Bounds);
+			Application.Top.Draw ();
 
 			expected = @"
  ┌──────────────────┐
@@ -859,7 +859,7 @@ namespace Terminal.Gui.ViewsTests {
 			Assert.Equal (new Rect (1, 1, 21, 14), pos);
 
 			Assert.True (scrollView.ProcessKey (new KeyEvent (Key.CursorDown, new KeyModifiers ())));
-			Application.Top.Redraw (Application.Top.Bounds);
+			Application.Top.Draw ();
 
 			expected = @"
  ┌──────────────────┐
@@ -882,7 +882,7 @@ namespace Terminal.Gui.ViewsTests {
 			Assert.Equal (new Rect (1, 1, 21, 14), pos);
 
 			Assert.True (scrollView.ProcessKey (new KeyEvent (Key.CursorDown, new KeyModifiers ())));
-			Application.Top.Redraw (Application.Top.Bounds);
+			Application.Top.Draw ();
 
 			expected = @"
  ┌──────────────────┐
@@ -905,7 +905,7 @@ namespace Terminal.Gui.ViewsTests {
 			Assert.Equal (new Rect (1, 1, 21, 14), pos);
 
 			Assert.True (scrollView.ProcessKey (new KeyEvent (Key.End, new KeyModifiers ())));
-			Application.Top.Redraw (Application.Top.Bounds);
+			Application.Top.Draw ();
 
 			expected = @"
  ┌──────────────────┐

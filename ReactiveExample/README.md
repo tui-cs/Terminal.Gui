@@ -38,7 +38,7 @@ usernameInput
 	.BindTo (ViewModel, x => x.Username);
 ```
 
-If you combine `OneWay` and `OneWayToSource` data bindings, you get `TwoWay` data binding. Also be sure to use the `ustring` type instead of the `string` type. Invoking commands should be as simple as this:
+If you combine `OneWay` and `OneWayToSource` data bindings, you get `TwoWay` data binding. Also be sure to use the `string` type instead of the `string` type. Invoking commands should be as simple as this:
 ```cs
 // 'clearButton' is 'Button'
 clearButton

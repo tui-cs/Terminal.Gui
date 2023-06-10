@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 using System.Text.RegularExpressions;
 using Terminal.Gui;
 using Attribute = Terminal.Gui.Attribute;
@@ -150,7 +151,7 @@ namespace UICatalog.Scenarios {
 				Driver.SetAttribute (white);
 			}
 
-			protected override void SetNormalColor (List<System.Rune> line, int idx)
+			protected override void SetNormalColor (List<Rune> line, int idx)
 			{
 				if (IsInStringLiteral (line, idx)) {
 					Driver.SetAttribute (magenta);
@@ -162,9 +163,9 @@ namespace UICatalog.Scenarios {
 				}
 			}
 
-			private bool IsInStringLiteral (List<System.Rune> line, int idx)
+			private bool IsInStringLiteral (List<Rune> line, int idx)
 			{
-				string strLine = new string (line.Select (r => (char)r).ToArray ());
+				string strLine = new string (line.Select (r => (char)r.Value).ToArray ());
 
 				foreach (Match m in Regex.Matches (strLine, "'[^']*'")) {
 					if (idx >= m.Index && idx < m.Index + m.Length) {
@@ -175,7 +176,7 @@ namespace UICatalog.Scenarios {
 				return false;
 			}
 
-			private bool IsKeyword (List<System.Rune> line, int idx)
+			private bool IsKeyword (List<Rune> line, int idx)
 			{
 				var word = IdxToWord (line, idx);
 
@@ -186,10 +187,10 @@ namespace UICatalog.Scenarios {
 				return keywords.Contains (word, StringComparer.CurrentCultureIgnoreCase);
 			}
 
-			private string IdxToWord (List<System.Rune> line, int idx)
+			private string IdxToWord (List<Rune> line, int idx)
 			{
 				var words = Regex.Split (
-					new string (line.Select (r => (char)r).ToArray ()),
+					new string (line.Select (r => (char)r.Value).ToArray ()),
 					"\\b");
 
 				int count = 0;

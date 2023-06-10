@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
-using NStack;
+using System.Text;
 
 namespace Terminal.Gui {
 	#region API Docs
@@ -163,7 +163,7 @@ namespace Terminal.Gui {
 		/// <param name="x">column to locate the View.</param>
 		/// <param name="y">row to locate the View.</param>
 		/// <param name="text">text to initialize the <see cref="Text"/> property with.</param>
-		public View (int x, int y, ustring text) : this (TextFormatter.CalcRect (x, y, text), text) { }
+		public View (int x, int y, string text) : this (TextFormatter.CalcRect (x, y, text), text) { }
 
 		/// <summary>
 		///   Initializes a new instance of <see cref="View"/> using <see cref="Terminal.Gui.LayoutStyle.Absolute"/> layout.
@@ -180,7 +180,7 @@ namespace Terminal.Gui {
 		/// </remarks>
 		/// <param name="rect">Location.</param>
 		/// <param name="text">text to initialize the <see cref="Text"/> property with.</param>
-		public View (Rect rect, ustring text)
+		public View (Rect rect, string text)
 		{
 			SetInitialProperties (text, rect, LayoutStyle.Absolute, TextDirection.LeftRight_TopBottom);
 		}
@@ -200,7 +200,7 @@ namespace Terminal.Gui {
 		/// </remarks>
 		/// <param name="text">text to initialize the <see cref="Text"/> property with.</param>
 		/// <param name="direction">The text direction.</param>
-		public View (ustring text, TextDirection direction = TextDirection.LeftRight_TopBottom)
+		public View (string text, TextDirection direction = TextDirection.LeftRight_TopBottom)
 		{
 			SetInitialProperties (text, Rect.Empty, LayoutStyle.Computed, direction);
 		}
@@ -213,7 +213,7 @@ namespace Terminal.Gui {
 		/// <param name="rect"></param>
 		/// <param name="layoutStyle"></param>
 		/// <param name="direction"></param>
-		void SetInitialProperties (ustring text, Rect rect, LayoutStyle layoutStyle = LayoutStyle.Computed,
+		void SetInitialProperties (string text, Rect rect, LayoutStyle layoutStyle = LayoutStyle.Computed,
 		    TextDirection direction = TextDirection.LeftRight_TopBottom)
 		{
 			TextFormatter = new TextFormatter ();
@@ -226,7 +226,7 @@ namespace Terminal.Gui {
 			TabStop = false;
 			LayoutStyle = layoutStyle;
 
-			Text = text == null ? ustring.Empty : text;
+			Text = text == null ? string.Empty : text;
 			LayoutStyle = layoutStyle;
 			Frame = rect.IsEmpty ? TextFormatter.CalcRect (0, 0, text, direction) : rect;
 			OnResizeNeeded ();
@@ -334,13 +334,13 @@ namespace Terminal.Gui {
 		/// <remarks>The id should be unique across all Views that share a SuperView.</remarks>
 		public string Id { get; set; } = "";
 
-		ustring _title = ustring.Empty;
+		string _title = string.Empty;
 		/// <summary>
 		/// The title to be displayed for this <see cref="View"/>. The title will be displayed if <see cref="Border"/>.<see cref="Thickness.Top"/>
 		/// is greater than 0.
 		/// </summary>
 		/// <value>The title.</value>
-		public ustring Title {
+		public string Title {
 			get => _title;
 			set {
 				if (!OnTitleChanging (_title, value)) {
@@ -363,7 +363,7 @@ namespace Terminal.Gui {
 		/// <param name="oldTitle">The <see cref="View.Title"/> that is/has been replaced.</param>
 		/// <param name="newTitle">The new <see cref="View.Title"/> to be replaced.</param>
 		/// <returns>`true` if an event handler canceled the Title change.</returns>
-		public virtual bool OnTitleChanging (ustring oldTitle, ustring newTitle)
+		public virtual bool OnTitleChanging (string oldTitle, string newTitle)
 		{
 			var args = new TitleEventArgs (oldTitle, newTitle);
 			TitleChanging?.Invoke (this, args);
@@ -381,7 +381,7 @@ namespace Terminal.Gui {
 		/// </summary>
 		/// <param name="oldTitle">The <see cref="View.Title"/> that is/has been replaced.</param>
 		/// <param name="newTitle">The new <see cref="View.Title"/> to be replaced.</param>
-		public virtual void OnTitleChanged (ustring oldTitle, ustring newTitle)
+		public virtual void OnTitleChanged (string oldTitle, string newTitle)
 		{
 			var args = new TitleEventArgs (oldTitle, newTitle);
 			TitleChanged?.Invoke (this, args);
@@ -434,7 +434,7 @@ namespace Terminal.Gui {
 				}
 			}
 		}
-		
+
 		/// <summary>
 		/// Event fired when the <see cref="Visible"/> value is being changed.
 		/// </summary>
@@ -481,7 +481,7 @@ namespace Terminal.Gui {
 
 			return true;
 		}
-		
+
 		/// <summary>
 		/// Pretty prints the View
 		/// </summary>

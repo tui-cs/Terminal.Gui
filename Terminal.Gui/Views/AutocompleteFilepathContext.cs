@@ -1,4 +1,4 @@
-using NStack;
+using System.Text;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -10,8 +10,8 @@ namespace Terminal.Gui {
 	internal class AutocompleteFilepathContext : AutocompleteContext {
 		public FileDialogState State { get; set; }
 
-		public AutocompleteFilepathContext (ustring currentLine, int cursorPosition, FileDialogState state)
-			: base (currentLine.ToRuneList (), cursorPosition)
+		public AutocompleteFilepathContext (string currentLine, int cursorPosition, FileDialogState state)
+			: base (currentLine.EnumerateRunes ().ToList (), cursorPosition)
 		{
 			this.State = state;
 		}
@@ -30,18 +30,17 @@ namespace Terminal.Gui {
 				return Enumerable.Empty<Suggestion> ();
 			}
 
-			var path = ustring.Make (context.CurrentLine).ToString ();
+			var path = StringExtensions.ToString (context.CurrentLine);
 			var last = path.LastIndexOfAny (FileDialog.Separators);
-			
-			if(string.IsNullOrWhiteSpace(path) || !Path.IsPathRooted(path)) {
+
+			if (string.IsNullOrWhiteSpace (path) || !Path.IsPathRooted (path)) {
 				return Enumerable.Empty<Suggestion> ();
 			}
 
 			var term = path.Substring (last + 1);
-			
+
 			// If path is /tmp/ then don't just list everything in it
-			if(string.IsNullOrWhiteSpace(term))
-			{
+			if (string.IsNullOrWhiteSpace (term)) {
 				return Enumerable.Empty<Suggestion> ();
 			}
 
@@ -52,7 +51,7 @@ namespace Terminal.Gui {
 
 			bool isWindows = RuntimeInformation.IsOSPlatform (OSPlatform.Windows);
 
-			var suggestions = state.Children.Where(d=> !d.IsParent).Select (
+			var suggestions = state.Children.Where (d => !d.IsParent).Select (
 				e => e.FileSystemInfo is IDirectoryInfo d
 					? d.Name + System.IO.Path.DirectorySeparatorChar
 					: e.FileSystemInfo.Name)
@@ -76,7 +75,7 @@ namespace Terminal.Gui {
 
 		public bool IsWordChar (Rune rune)
 		{
-			if (rune == '\n') {
+			if (rune.Value == '\n') {
 				return false;
 			}
 

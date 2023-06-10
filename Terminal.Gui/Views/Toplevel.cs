@@ -31,9 +31,9 @@ namespace Terminal.Gui {
 		public bool Running { get; set; }
 
 		/// <summary>
-		/// Invoked when the <see cref="Toplevel"/> <see cref="Application.RunState"/> has begun to be loaded.
+		/// Invoked when the <see cref="Toplevel"/> <see cref="RunState"/> has begun to be loaded.
 		/// A Loaded event handler is a good place to finalize initialization before calling 
-		/// <see cref="Application.RunLoop(Application.RunState, bool)"/>.
+		/// <see cref="Application.RunLoop(RunState, bool)"/>.
 		/// </summary>
 		public event EventHandler Loaded;
 
@@ -47,51 +47,51 @@ namespace Terminal.Gui {
 		public event EventHandler Ready;
 
 		/// <summary>
-		/// Invoked when the Toplevel <see cref="Application.RunState"/> has been unloaded.
-		/// A Unloaded event handler is a good place to dispose objects after calling <see cref="Application.End(Application.RunState)"/>.
+		/// Invoked when the Toplevel <see cref="RunState"/> has been unloaded.
+		/// A Unloaded event handler is a good place to dispose objects after calling <see cref="Application.End(RunState)"/>.
 		/// </summary>
 		public event EventHandler Unloaded;
 
 		/// <summary>
-		/// Invoked when the Toplevel <see cref="Application.RunState"/> becomes the <see cref="Application.Current"/> Toplevel.
+		/// Invoked when the Toplevel <see cref="RunState"/> becomes the <see cref="Application.Current"/> Toplevel.
 		/// </summary>
 		public event EventHandler<ToplevelEventArgs> Activate;
 
 		/// <summary>
-		/// Invoked when the Toplevel<see cref="Application.RunState"/> ceases to be the <see cref="Application.Current"/> Toplevel.
+		/// Invoked when the Toplevel<see cref="RunState"/> ceases to be the <see cref="Application.Current"/> Toplevel.
 		/// </summary>
 		public event EventHandler<ToplevelEventArgs> Deactivate;
 
 		/// <summary>
-		/// Invoked when a child of the Toplevel <see cref="Application.RunState"/> is closed by  
-		/// <see cref="Application.End(Application.RunState)"/>.
+		/// Invoked when a child of the Toplevel <see cref="RunState"/> is closed by  
+		/// <see cref="Application.End(RunState)"/>.
 		/// </summary>
 		public event EventHandler<ToplevelEventArgs> ChildClosed;
 
 		/// <summary>
-		/// Invoked when the last child of the Toplevel <see cref="Application.RunState"/> is closed from 
-		/// by <see cref="Application.End(Application.RunState)"/>.
+		/// Invoked when the last child of the Toplevel <see cref="RunState"/> is closed from 
+		/// by <see cref="Application.End(RunState)"/>.
 		/// </summary>
 		public event EventHandler AllChildClosed;
 
 		/// <summary>
-		/// Invoked when the Toplevel's <see cref="Application.RunState"/> is being closed by  
+		/// Invoked when the Toplevel's <see cref="RunState"/> is being closed by  
 		/// <see cref="Application.RequestStop(Toplevel)"/>.
 		/// </summary>
 		public event EventHandler<ToplevelClosingEventArgs> Closing;
 
 		/// <summary>
-		/// Invoked when the Toplevel's <see cref="Application.RunState"/> is closed by <see cref="Application.End(Application.RunState)"/>.
+		/// Invoked when the Toplevel's <see cref="RunState"/> is closed by <see cref="Application.End(RunState)"/>.
 		/// </summary>
 		public event EventHandler<ToplevelEventArgs> Closed;
 
 		/// <summary>
-		/// Invoked when a child Toplevel's <see cref="Application.RunState"/> has been loaded.
+		/// Invoked when a child Toplevel's <see cref="RunState"/> has been loaded.
 		/// </summary>
 		public event EventHandler<ToplevelEventArgs> ChildLoaded;
 
 		/// <summary>
-		/// Invoked when a cjhild Toplevel's <see cref="Application.RunState"/> has been unloaded.
+		/// Invoked when a cjhild Toplevel's <see cref="RunState"/> has been unloaded.
 		/// </summary>
 		public event EventHandler<ToplevelEventArgs> ChildUnloaded;
 
@@ -174,7 +174,7 @@ namespace Terminal.Gui {
 		}
 
 		/// <summary>
-		/// Called from <see cref="Application.End(Application.RunState)"/> before the <see cref="Toplevel"/> is disposed.
+		/// Called from <see cref="Application.End(RunState)"/> before the <see cref="Toplevel"/> is disposed.
 		/// </summary>
 		internal virtual void OnUnloaded ()
 		{
@@ -633,14 +633,14 @@ namespace Terminal.Gui {
 				maxWidth = top.SuperView.Bounds.Width;
 				superView = top.SuperView;
 			}
-
-			// BUGBUG: v2 hack for now
-			var mfLength = top.Border?.Thickness.Top > 0 ? 2 : 1;
+			if (superView.Margin != null && superView == top.SuperView) {
+				maxWidth -= superView.GetFramesThickness ().Left + superView.GetFramesThickness ().Right;
+			}
 			if (top.Frame.Width <= maxWidth) {
 				nx = Math.Max (targetX, 0);
 				nx = nx + top.Frame.Width > maxWidth ? Math.Max (maxWidth - top.Frame.Width, 0) : nx;
-				if (nx + mfLength > top.Frame.X + top.Frame.Width) {
-					nx = Math.Max (top.Frame.Right - mfLength, 0);
+				if (nx > top.Frame.X + top.Frame.Width) {
+					nx = Math.Max (top.Frame.Right, 0);
 				}
 			} else {
 				nx = targetX;
@@ -680,11 +680,14 @@ namespace Terminal.Gui {
 			} else {
 				maxWidth = statusVisible ? top.SuperView.Frame.Height - 1 : top.SuperView.Frame.Height;
 			}
+			if (superView.Margin != null && superView == top.SuperView) {
+				maxWidth -= superView.GetFramesThickness ().Top + superView.GetFramesThickness ().Bottom;
+			}
 			ny = Math.Min (ny, maxWidth);
 			if (top.Frame.Height <= maxWidth) {
-				ny = ny + top.Frame.Height >= maxWidth ? Math.Max (maxWidth - top.Frame.Height, menuVisible ? 1 : 0) : ny;
-				if (ny + mfLength > top.Frame.Y + top.Frame.Height) {
-					ny = Math.Max (top.Frame.Bottom - mfLength, 0);
+				ny = ny + top.Frame.Height > maxWidth ? Math.Max (maxWidth - top.Frame.Height, menuVisible ? 1 : 0) : ny;
+				if (ny > top.Frame.Y + top.Frame.Height) {
+					ny = Math.Max (top.Frame.Bottom, 0);
 				}
 			}
 			//System.Diagnostics.Debug.WriteLine ($"ny:{ny}, rHeight:{rHeight}");
@@ -713,9 +716,13 @@ namespace Terminal.Gui {
 			var superView = GetLocationThatFits (top, top.Frame.X, top.Frame.Y,
 				out int nx, out int ny, out _, out StatusBar sb);
 			bool layoutSubviews = false;
+			var maxWidth = 0;
+			if (superView.Margin != null && superView == top.SuperView) {
+				maxWidth -= superView.GetFramesThickness ().Left + superView.GetFramesThickness ().Right;
+			}
 			if ((superView != top || top?.SuperView != null || (top != Application.Top && top.Modal)
 				|| (top?.SuperView == null && top.IsOverlapped))
-				&& (top.Frame.X + top.Frame.Width > Driver.Cols || ny > top.Frame.Y) && top.LayoutStyle == LayoutStyle.Computed) {
+				&& (top.Frame.X + top.Frame.Width > maxWidth || ny > top.Frame.Y) && top.LayoutStyle == LayoutStyle.Computed) {
 
 				if ((top.X == null || top.X is Pos.PosAbsolute) && top.Frame.X != nx) {
 					top.X = nx;
@@ -744,25 +751,25 @@ namespace Terminal.Gui {
 		}
 
 		///<inheritdoc/>
-		public override void Redraw (Rect bounds)
+		public override void OnDrawContent (Rect contentArea)
 		{
 			if (!Visible) {
 				return;
 			}
 
-			if (!_needsDisplay.IsEmpty || _childNeedsDisplay || LayoutNeeded) {
+			if (!_needsDisplay.IsEmpty || _subViewNeedsDisplay || LayoutNeeded) {
 				Driver.SetAttribute (GetNormalColor ());
-				Clear (ViewToScreen (bounds));
+				Clear (ViewToScreen (Bounds));
 				LayoutSubviews ();
 				PositionToplevels ();
 
 				if (this == Application.OverlappedTop) {
 					foreach (var top in Application.OverlappedChildren.AsEnumerable ().Reverse ()) {
-						if (top.Frame.IntersectsWith (bounds)) {
+						if (top.Frame.IntersectsWith (Bounds)) {
 							if (top != this && !top.IsCurrentTop && !OutsideTopFrame (top) && top.Visible) {
 								top.SetNeedsLayout ();
 								top.SetNeedsDisplay (top.Bounds);
-								top.Redraw (top.Bounds);
+								top.Draw ();
 								top.OnRenderLineCanvas ();
 							}
 						}
@@ -770,12 +777,14 @@ namespace Terminal.Gui {
 				}
 
 				foreach (var view in Subviews) {
-					if (view.Frame.IntersectsWith (bounds) && !OutsideTopFrame (this)) {
+					if (view.Frame.IntersectsWith (Bounds) && !OutsideTopFrame (this)) {
 						view.SetNeedsLayout ();
 						view.SetNeedsDisplay (view.Bounds);
+						view.SetSubViewNeedsDisplay ();
 					}
 				}
-				base.Redraw (Bounds);
+
+				base.OnDrawContent (contentArea);
 
 				// This is causing the menus drawn incorrectly if UseSubMenusSingleFrame is true
 				//if (this.MenuBar != null && this.MenuBar.IsMenuOpen && this.MenuBar.openMenu != null) {
@@ -992,7 +1001,7 @@ namespace Terminal.Gui {
 				throw new ArgumentNullException ();
 
 			int hCode = 0;
-			if (int.TryParse (obj.Id.ToString (), out int result)) {
+			if (int.TryParse (obj.Id, out int result)) {
 				hCode = result;
 			}
 			return hCode.GetHashCode ();
@@ -1020,7 +1029,7 @@ namespace Terminal.Gui {
 			else if (y == null)
 				return 1;
 			else
-				return string.Compare (x.Id.ToString (), y.Id.ToString ());
+				return string.Compare (x.Id, y.Id);
 		}
 	}
 }

@@ -28,7 +28,7 @@ namespace Terminal.Gui {
 
 		public IDirectoryInfo Directory { get; }
 
-		public FileSystemInfoStats [] Children { get; protected set; }
+		public FileSystemInfoStats [] Children { get; internal set; }
 
 		internal virtual void RefreshChildren ()
 		{

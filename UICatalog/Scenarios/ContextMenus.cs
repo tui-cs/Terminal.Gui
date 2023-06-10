@@ -7,13 +7,13 @@ namespace UICatalog.Scenarios {
 	[ScenarioMetadata (Name: "ContextMenus", Description: "Context Menu Sample.")]
 	[ScenarioCategory ("Menus")]
 	public class ContextMenus : Scenario {
-		private ContextMenu contextMenu = new ContextMenu ();
-		private readonly List<CultureInfo> cultureInfos = Application.SupportedCultures;
-		private MenuItem miForceMinimumPosToZero;
-		private bool forceMinimumPosToZero = true;
-		private TextField tfTopLeft, tfTopRight, tfMiddle, tfBottomLeft, tfBottomRight;
-		private MenuItem miUseSubMenusSingleFrame;
-		private bool useSubMenusSingleFrame;
+		private ContextMenu _contextMenu = new ContextMenu ();
+		private readonly List<CultureInfo> _cultureInfos = Application.SupportedCultures;
+		private MenuItem _miForceMinimumPosToZero;
+		private bool _forceMinimumPosToZero = true;
+		private TextField _tfTopLeft, _tfTopRight, _tfMiddle, _tfBottomLeft, _tfBottomRight;
+		private MenuItem _miUseSubMenusSingleFrame;
+		private bool _useSubMenusSingleFrame;
 
 		public override void Setup ()
 		{
@@ -25,36 +25,36 @@ namespace UICatalog.Scenarios {
 				Y = 1
 			});
 
-			tfTopLeft = new TextField (text) {
+			_tfTopLeft = new TextField (text) {
 				Width = width
 			};
-			Win.Add (tfTopLeft);
+			Win.Add (_tfTopLeft);
 
-			tfTopRight = new TextField (text) {
+			_tfTopRight = new TextField (text) {
 				X = Pos.AnchorEnd (width),
 				Width = width
 			};
-			Win.Add (tfTopRight);
+			Win.Add (_tfTopRight);
 
-			tfMiddle = new TextField (text) {
+			_tfMiddle = new TextField (text) {
 				X = Pos.Center (),
 				Y = Pos.Center (),
 				Width = width
 			};
-			Win.Add (tfMiddle);
+			Win.Add (_tfMiddle);
 
-			tfBottomLeft = new TextField (text) {
+			_tfBottomLeft = new TextField (text) {
 				Y = Pos.AnchorEnd (1),
 				Width = width
 			};
-			Win.Add (tfBottomLeft);
+			Win.Add (_tfBottomLeft);
 
-			tfBottomRight = new TextField (text) {
+			_tfBottomRight = new TextField (text) {
 				X = Pos.AnchorEnd (width),
 				Y = Pos.AnchorEnd (1),
 				Width = width
 			};
-			Win.Add (tfBottomRight);
+			Win.Add (_tfBottomRight);
 
 			Point mousePos = default;
 
@@ -66,7 +66,7 @@ namespace UICatalog.Scenarios {
 			};
 
 			Win.MouseClick += (s, e) => {
-				if (e.MouseEvent.Flags == contextMenu.MouseFlags) {
+				if (e.MouseEvent.Flags == _contextMenu.MouseFlags) {
 					ShowContextMenu (e.MouseEvent.X, e.MouseEvent.Y);
 					e.Handled = true;
 				}
@@ -89,7 +89,7 @@ namespace UICatalog.Scenarios {
 
 		private void ShowContextMenu (int x, int y)
 		{
-			contextMenu = new ContextMenu (x, y,
+			_contextMenu = new ContextMenu (x, y,
 				new MenuBarItem (new MenuItem [] {
 					new MenuItem ("_Configuration", "Show configuration", () => MessageBox.Query (50, 5, "Info", "This would open settings dialog", "Ok")),
 					new MenuBarItem ("More options", new MenuItem [] {
@@ -97,30 +97,30 @@ namespace UICatalog.Scenarios {
 						new MenuItem ("_Maintenance", "Maintenance mode", () => MessageBox.Query (50, 5, "Info", "This would open maintenance dialog", "Ok")),
 					}),
 					new MenuBarItem ("_Languages", GetSupportedCultures ()),
-					miForceMinimumPosToZero = new MenuItem ("ForceMinimumPosToZero", "", () => {
-						miForceMinimumPosToZero.Checked = forceMinimumPosToZero = !forceMinimumPosToZero;
-						tfTopLeft.ContextMenu.ForceMinimumPosToZero = forceMinimumPosToZero;
-						tfTopRight.ContextMenu.ForceMinimumPosToZero = forceMinimumPosToZero;
-						tfMiddle.ContextMenu.ForceMinimumPosToZero = forceMinimumPosToZero;
-						tfBottomLeft.ContextMenu.ForceMinimumPosToZero = forceMinimumPosToZero;
-						tfBottomRight.ContextMenu.ForceMinimumPosToZero = forceMinimumPosToZero;
-					}) { CheckType = MenuItemCheckStyle.Checked, Checked = forceMinimumPosToZero },
-					miUseSubMenusSingleFrame = new MenuItem ("Use_SubMenusSingleFrame", "",
-						() => contextMenu.UseSubMenusSingleFrame = (bool)(miUseSubMenusSingleFrame.Checked = useSubMenusSingleFrame = !useSubMenusSingleFrame)) {
-							CheckType = MenuItemCheckStyle.Checked, Checked = useSubMenusSingleFrame
+					_miForceMinimumPosToZero = new MenuItem ("ForceMinimumPosToZero", "", () => {
+						_miForceMinimumPosToZero.Checked = _forceMinimumPosToZero = !_forceMinimumPosToZero;
+						_tfTopLeft.ContextMenu.ForceMinimumPosToZero = _forceMinimumPosToZero;
+						_tfTopRight.ContextMenu.ForceMinimumPosToZero = _forceMinimumPosToZero;
+						_tfMiddle.ContextMenu.ForceMinimumPosToZero = _forceMinimumPosToZero;
+						_tfBottomLeft.ContextMenu.ForceMinimumPosToZero = _forceMinimumPosToZero;
+						_tfBottomRight.ContextMenu.ForceMinimumPosToZero = _forceMinimumPosToZero;
+					}) { CheckType = MenuItemCheckStyle.Checked, Checked = _forceMinimumPosToZero },
+					_miUseSubMenusSingleFrame = new MenuItem ("Use_SubMenusSingleFrame", "",
+						() => _contextMenu.UseSubMenusSingleFrame = (bool)(_miUseSubMenusSingleFrame.Checked = _useSubMenusSingleFrame = !_useSubMenusSingleFrame)) {
+							CheckType = MenuItemCheckStyle.Checked, Checked = _useSubMenusSingleFrame
 						},
 					null,
 					new MenuItem ("_Quit", "", () => Application.RequestStop ())
 				})
-			) { ForceMinimumPosToZero = forceMinimumPosToZero, UseSubMenusSingleFrame = useSubMenusSingleFrame };
+			) { ForceMinimumPosToZero = _forceMinimumPosToZero, UseSubMenusSingleFrame = _useSubMenusSingleFrame };
 
-			tfTopLeft.ContextMenu.ForceMinimumPosToZero = forceMinimumPosToZero;
-			tfTopRight.ContextMenu.ForceMinimumPosToZero = forceMinimumPosToZero;
-			tfMiddle.ContextMenu.ForceMinimumPosToZero = forceMinimumPosToZero;
-			tfBottomLeft.ContextMenu.ForceMinimumPosToZero = forceMinimumPosToZero;
-			tfBottomRight.ContextMenu.ForceMinimumPosToZero = forceMinimumPosToZero;
+			_tfTopLeft.ContextMenu.ForceMinimumPosToZero = _forceMinimumPosToZero;
+			_tfTopRight.ContextMenu.ForceMinimumPosToZero = _forceMinimumPosToZero;
+			_tfMiddle.ContextMenu.ForceMinimumPosToZero = _forceMinimumPosToZero;
+			_tfBottomLeft.ContextMenu.ForceMinimumPosToZero = _forceMinimumPosToZero;
+			_tfBottomRight.ContextMenu.ForceMinimumPosToZero = _forceMinimumPosToZero;
 
-			contextMenu.Show ();
+			_contextMenu.Show ();
 		}
 
 		private MenuItem [] GetSupportedCultures ()
@@ -128,7 +128,7 @@ namespace UICatalog.Scenarios {
 			List<MenuItem> supportedCultures = new List<MenuItem> ();
 			var index = -1;
 
-			foreach (var c in cultureInfos) {
+			foreach (var c in _cultureInfos) {
 				var culture = new MenuItem {
 					CheckType = MenuItemCheckStyle.Checked
 				};
@@ -154,10 +154,10 @@ namespace UICatalog.Scenarios {
 			void CreateAction (List<MenuItem> supportedCultures, MenuItem culture)
 			{
 				culture.Action += () => {
-					Thread.CurrentThread.CurrentUICulture = new CultureInfo (culture.Help.ToString ());
+					Thread.CurrentThread.CurrentUICulture = new CultureInfo (culture.Help);
 					culture.Checked = true;
 					foreach (var item in supportedCultures) {
-						item.Checked = item.Help.ToString () == Thread.CurrentThread.CurrentUICulture.Name;
+						item.Checked = item.Help == Thread.CurrentThread.CurrentUICulture.Name;
 					}
 				};
 			}

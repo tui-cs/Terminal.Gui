@@ -11,9 +11,9 @@ namespace UICatalog.Scenarios {
 	[ScenarioMetadata (Name: "Class Explorer", Description: "Tree view explorer for classes by namespace based on TreeView.")]
 	[ScenarioCategory ("Controls"), ScenarioCategory ("TreeView")]
 	public class ClassExplorer : Scenario {
-		private TreeView<object> treeView;
-		private TextView textView;
-		private MenuItem miShowPrivate;
+		private TreeView<object> _treeView;
+		private TextView _textView;
+		private MenuItem _miShowPrivate;
 
 		private enum Showable {
 			Properties,
@@ -66,12 +66,12 @@ namespace UICatalog.Scenarios {
 					new MenuItem ("_Quit", "", () => Quit()),
 				}),
 				new MenuBarItem ("_View", new MenuItem [] {
-					miShowPrivate = new MenuItem ("_Include Private", "", () => ShowPrivate()){
+					_miShowPrivate = new MenuItem ("_Include Private", "", () => ShowPrivate()){
 						Checked = false,
 						CheckType = MenuItemCheckStyle.Checked
 					},
-					new MenuItem ("_Expand All", "", () => treeView.ExpandAll()),
-					new MenuItem ("_Collapse All", "", () => treeView.CollapseAll())
+					new MenuItem ("_Expand All", "", () => _treeView.ExpandAll()),
+					new MenuItem ("_Collapse All", "", () => _treeView.CollapseAll())
 				}),
 				new MenuBarItem ("_Style", new MenuItem [] {
 					highlightModelTextOnly = new MenuItem ("_Highlight Model Text Only", "", () => OnCheckHighlightModelTextOnly()) {
@@ -81,47 +81,66 @@ namespace UICatalog.Scenarios {
 			});
 			Application.Top.Add (menu);
 
-			treeView = new TreeView<object> () {
+			_treeView = new TreeView<object> () {
 				X = 0,
-				Y = 0,
+				Y = 1,
 				Width = Dim.Percent (50),
 				Height = Dim.Fill (),
 			};
 
-			treeView.AddObjects (AppDomain.CurrentDomain.GetAssemblies ());
-			treeView.AspectGetter = GetRepresentation;
-			treeView.TreeBuilder = new DelegateTreeBuilder<object> (ChildGetter, CanExpand);
-			treeView.SelectionChanged += TreeView_SelectionChanged;
+			var lblSearch = new Label("Search");
+			var tfSearch = new TextField(){
+				Width = 20,
+				X = Pos.Right(lblSearch),
+			};
 
-			Win.Add (treeView);
+			Win.Add(lblSearch);
+			Win.Add(tfSearch);
 
-			textView = new TextView () {
-				X = Pos.Right (treeView),
+			var filter = new TreeViewTextFilter<object>(_treeView);
+			_treeView.Filter = filter;
+			tfSearch.TextChanged += (s,e)=>{
+				filter.Text = tfSearch.Text.ToString();
+				if(_treeView.SelectedObject != null)
+				{
+					_treeView.EnsureVisible(_treeView.SelectedObject);
+				}
+			};
+
+			_treeView.AddObjects (AppDomain.CurrentDomain.GetAssemblies ());
+			_treeView.AspectGetter = GetRepresentation;
+			_treeView.TreeBuilder = new DelegateTreeBuilder<object> (ChildGetter, CanExpand);
+			_treeView.SelectionChanged += TreeView_SelectionChanged;
+
+			Win.Add (_treeView);
+
+			_textView = new TextView () {
+				X = Pos.Right (_treeView),
 				Y = 0,
 				Width = Dim.Fill (),
 				Height = Dim.Fill ()
 			};
 
-			Win.Add (textView);
+			Win.Add (_textView);
 		}
 
 		private void OnCheckHighlightModelTextOnly ()
 		{
-			treeView.Style.HighlightModelTextOnly = !treeView.Style.HighlightModelTextOnly;
-			highlightModelTextOnly.Checked = treeView.Style.HighlightModelTextOnly;
-			treeView.SetNeedsDisplay ();
+			_treeView.Style.HighlightModelTextOnly = !_treeView.Style.HighlightModelTextOnly;
+			highlightModelTextOnly.Checked = _treeView.Style.HighlightModelTextOnly;
+			_treeView.SetNeedsDisplay ();
 		}
 
 		private void ShowPrivate ()
 		{
-			miShowPrivate.Checked = !miShowPrivate.Checked;
-			treeView.RebuildTree ();
-			treeView.SetFocus ();
+			_miShowPrivate.Checked = !_miShowPrivate.Checked;
+			_treeView.RebuildTree ();
+			_treeView.SetFocus ();
 		}
 
 		private BindingFlags GetFlags ()
 		{
-			if (miShowPrivate.Checked == true) {
+			if (_miShowPrivate.Checked == true) {
 				return BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic;
 			}
 
@@ -131,7 +150,7 @@ namespace UICatalog.Scenarios {
 		private void TreeView_SelectionChanged (object sender, SelectionChangedEventArgs<object> e)
 		{
 			var val = e.NewValue;
-			var all = treeView.GetAllSelectedObjects ().ToArray ();
+			var all = _treeView.GetAllSelectedObjects ().ToArray ();
 
 			if (val == null || val is ShowForType) {
 				return;
@@ -141,7 +160,7 @@ namespace UICatalog.Scenarios {
 
 				if (all.Length > 1) {
 
-					textView.Text = all.Length + " Objects";
+					_textView.Text = all.Length + " Objects";
 				} else {
 					StringBuilder sb = new StringBuilder ();
 
@@ -191,14 +210,14 @@ namespace UICatalog.Scenarios {
 						}
 					}
 
-					textView.Text = sb.ToString ().Replace ("\r\n", "\n");
+					_textView.Text = sb.ToString ().Replace ("\r\n", "\n");
 				}
 
 			} catch (Exception ex) {
 
-				textView.Text = ex.Message;
+				_textView.Text = ex.Message;
 			}
-			textView.SetNeedsDisplay ();
+			_textView.SetNeedsDisplay ();
 		}
 
 		private bool CanExpand (object arg)

@@ -52,13 +52,30 @@ tableView = new TableView () {
     Height = 10,
 };
 
-tableView.Table = yourDataTable;
+tableView.Table = new DataTableSource(yourDataTable);
+```
+
+## Object data
+If your data objects are not stored in a `System.Data.DataTable` then you can instead
+create a table using `EnumerableTableSource<T>` or implementing your own `ITableSource`
+class.
+
+For example to render data for the currently running processes:
+
+```csharp
+tableView.Table = new EnumerableTableDataSource<Process> (Process.GetProcesses (),
+				new Dictionary<string, Func<Process, object>>() {
+					{ "ID",(p)=>p.Id},
+					{ "Name",(p)=>p.ProcessName},
+					{ "Threads",(p)=>p.Threads.Count},
+					{ "Virtual Memory",(p)=>p.VirtualMemorySize64},
+					{ "Working Memory",(p)=>p.WorkingSet64},
+				});
 ```
 
 ## Table Rendering
-TableView supports any size of table (limited only by the RAM requirements of `System.DataTable`). You can have
-thousands of columns and/or millions of rows if you want. Horizontal and vertical scrolling can be done using
-the mouse or keyboard.
+TableView supports any size of table. You can have thousands of columns and/or millions of rows if you want.
+Horizontal and vertical scrolling can be done using the mouse or keyboard.
 
 TableView uses `ColumnOffset` and `RowOffset` to determine the first visible cell of the `System.DataTable`.
 Rendering then continues until the avaialble console space is exhausted. Updating the `ColumnOffset` and 

@@ -1,4 +1,4 @@
-﻿using NStack;
+﻿using System.Text;
 using System;
 using System.Collections.Generic;
 using Xunit;
@@ -259,7 +259,7 @@ namespace Terminal.Gui.ViewTests {
 			Assert.False (view.AutoSize);
 			Assert.Equal (new Rect (0, 0, 3, 1), view.Frame);
 			Assert.Equal (new Size (3, 1), view.TextFormatter.Size);
-			Assert.Equal (new List<ustring> () { "Vie" }, view.TextFormatter.Lines);
+			Assert.Equal (new List<string> () { "Vie" }, view.TextFormatter.Lines);
 			Assert.Equal (new Rect (0, 0, 10, 4), win.Frame);
 			Assert.Equal (new Rect (0, 0, 10, 4), Application.Top.Frame);
 			var expected = @"
@@ -279,7 +279,7 @@ namespace Terminal.Gui.ViewTests {
 
 			Assert.Equal (new Rect (0, 0, 0, 1), view.Frame);
 			Assert.Equal (new Size (0, 1), view.TextFormatter.Size);
-			Assert.Equal (new List<ustring> () { ustring.Empty }, view.TextFormatter.Lines);
+			Assert.Equal (new List<string> () { string.Empty }, view.TextFormatter.Lines);
 			expected = @"
 ┌────────┐
 │        │
@@ -332,7 +332,7 @@ namespace Terminal.Gui.ViewTests {
 
 			Assert.Equal (new Rect (0, 0, 0, 1), view.Frame);
 			Assert.Equal (new Size (0, 1), view.TextFormatter.Size);
-			var exception = Record.Exception (() => Assert.Equal (new List<ustring> () { ustring.Empty }, view.TextFormatter.Lines));
+			var exception = Record.Exception (() => Assert.Equal (new List<string> () { string.Empty }, view.TextFormatter.Lines));
 			Assert.Null (exception);
 			expected = @"
 ┌────────┐
@@ -367,7 +367,7 @@ namespace Terminal.Gui.ViewTests {
 			Assert.True (label.AutoSize);
 			Assert.Equal (new Rect (0, 0, 5, 1), label.Frame);
 			Assert.Equal (new Size (5, 1), label.TextFormatter.Size);
-			Assert.Equal (new List<ustring> () { "Label" }, label.TextFormatter.Lines);
+			Assert.Equal (new List<string> () { "Label" }, label.TextFormatter.Lines);
 			Assert.Equal (new Rect (0, 0, 10, 4), win.Frame);
 			Assert.Equal (new Rect (0, 0, 10, 4), Application.Top.Frame);
 			var expected = @"
@@ -423,7 +423,7 @@ namespace Terminal.Gui.ViewTests {
 			Assert.False (label.AutoSize);
 			Assert.Equal (new Rect (0, 0, 3, 1), label.Frame);
 			Assert.Equal (new Size (3, 1), label.TextFormatter.Size);
-			Assert.Equal (new List<ustring> () { "Lab" }, label.TextFormatter.Lines);
+			Assert.Equal (new List<string> () { "Lab" }, label.TextFormatter.Lines);
 			Assert.Equal (new Rect (0, 0, 10, 4), win.Frame);
 			Assert.Equal (new Rect (0, 0, 10, 4), Application.Top.Frame);
 			var expected = @"
@@ -444,7 +444,7 @@ namespace Terminal.Gui.ViewTests {
 			Assert.False (label.AutoSize);
 			Assert.Equal (new Rect (0, 0, 0, 1), label.Frame);
 			Assert.Equal (new Size (0, 1), label.TextFormatter.Size);
-			Assert.Equal (new List<ustring> { ustring.Empty }, label.TextFormatter.Lines);
+			Assert.Equal (new List<string> { string.Empty }, label.TextFormatter.Lines);
 			expected = @"
 ┌────────┐
 │        │
@@ -477,7 +477,7 @@ namespace Terminal.Gui.ViewTests {
 			Assert.True (label.AutoSize);
 			Assert.Equal (new Rect (0, 0, 5, 1), label.Frame);
 			Assert.Equal (new Size (5, 1), label.TextFormatter.Size);
-			Assert.Equal (new List<ustring> () { "Label" }, label.TextFormatter.Lines);
+			Assert.Equal (new List<string> () { "Label" }, label.TextFormatter.Lines);
 			Assert.Equal (new Rect (0, 0, 10, 4), win.Frame);
 			Assert.Equal (new Rect (0, 0, 10, 4), Application.Top.Frame);
 			var expected = @"
@@ -552,7 +552,7 @@ namespace Terminal.Gui.ViewTests {
 
 			Assert.Equal (new Rect (0, 0, 0, 1), label.Frame);
 			Assert.Equal (new Size (0, 1), label.TextFormatter.Size);
-			var exception = Record.Exception (() => Assert.Equal (new List<ustring> () { ustring.Empty }, label.TextFormatter.Lines));
+			var exception = Record.Exception (() => Assert.Equal (new List<string> () { string.Empty }, label.TextFormatter.Lines));
 			Assert.Null (exception);
 			expected = @"
 ┌────────┐
@@ -588,7 +588,7 @@ namespace Terminal.Gui.ViewTests {
 			Assert.True (view.AutoSize);
 			Assert.Equal (new Rect (0, 0, 1, 5), view.Frame);
 			Assert.Equal (new Size (1, 5), view.TextFormatter.Size);
-			Assert.Equal (new List<ustring> () { "Views" }, view.TextFormatter.Lines);
+			Assert.Equal (new List<string> () { "Views" }, view.TextFormatter.Lines);
 			Assert.Equal (new Rect (0, 0, 4, 10), win.Frame);
 			Assert.Equal (new Rect (0, 0, 4, 10), Application.Top.Frame);
 			var expected = @"
@@ -681,7 +681,7 @@ namespace Terminal.Gui.ViewTests {
 
 			Assert.Equal (new Rect (0, 0, 1, 0), view.Frame);
 			Assert.Equal (new Size (1, 0), view.TextFormatter.Size);
-			var exception = Record.Exception (() => Assert.Equal (new List<ustring> () { ustring.Empty }, view.TextFormatter.Lines));
+			var exception = Record.Exception (() => Assert.Equal (new List<string> () { string.Empty }, view.TextFormatter.Lines));
 			Assert.Null (exception);
 			expected = @"
 ┌──┐
@@ -723,7 +723,7 @@ namespace Terminal.Gui.ViewTests {
 			Assert.True (view.AutoSize);
 			Assert.Equal (new Rect (0, 0, 2, 5), view.Frame);
 			Assert.Equal (new Size (2, 5), view.TextFormatter.Size);
-			Assert.Equal (new List<ustring> () { "界View" }, view.TextFormatter.Lines);
+			Assert.Equal (new List<string> () { "界View" }, view.TextFormatter.Lines);
 			Assert.Equal (new Rect (0, 0, 4, 10), win.Frame);
 			Assert.Equal (new Rect (0, 0, 4, 10), Application.Top.Frame);
 			var expected = @"
@@ -749,7 +749,7 @@ namespace Terminal.Gui.ViewTests {
 
 			Assert.Equal (new Rect (0, 0, 2, 5), view.Frame);
 			Assert.Equal (new Size (2, 5), view.TextFormatter.Size);
-			var exception = Record.Exception (() => Assert.Equal (new List<ustring> () { "界View" }, view.TextFormatter.Lines));
+			var exception = Record.Exception (() => Assert.Equal (new List<string> () { "界View" }, view.TextFormatter.Lines));
 			Assert.Null (exception);
 			expected = @"
 ┌──┐
@@ -816,7 +816,7 @@ namespace Terminal.Gui.ViewTests {
 
 			Assert.Equal (new Rect (0, 0, 2, 0), view.Frame);
 			Assert.Equal (new Size (2, 0), view.TextFormatter.Size);
-			var exception = Record.Exception (() => Assert.Equal (new List<ustring> () { ustring.Empty }, view.TextFormatter.Lines));
+			var exception = Record.Exception (() => Assert.Equal (new List<string> () { string.Empty }, view.TextFormatter.Lines));
 			Assert.Null (exception);
 			expected = @"
 ┌──┐

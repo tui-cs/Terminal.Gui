@@ -103,7 +103,7 @@ namespace UICatalog.Scenarios {
 				IsAlt = false;
 				IsCtrl = false;
 				txtResult.SetFocus ();
-				foreach (var r in txtInput.Text.ToString ()) {
+				foreach (var r in txtInput.Text) {
 					var ck = char.IsLetter (r)
 						? (ConsoleKey)char.ToUpper (r) : (ConsoleKey)r;
 					Application.Driver.SendKeys (r, ck, (bool)ckbShift.Checked,

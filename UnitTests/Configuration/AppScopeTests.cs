@@ -63,7 +63,7 @@ namespace Terminal.Gui.ConfigurationTests {
 			Assert.True (AppSettingsTestClass.TestProperty);
 
 			// ConfigurationManager.Themes should NOT apply theme settings
-			ConfigurationManager.ThemeManager.Themes! [ThemeManager.SelectedTheme]!.Apply ();
+			ThemeManager.Themes! [ThemeManager.SelectedTheme]!.Apply ();
 			Assert.True (AppSettingsTestClass.TestProperty);
 
 			// ConfigurationManager.AppSettings should NOT apply theme settings

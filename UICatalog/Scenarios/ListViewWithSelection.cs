@@ -1,4 +1,4 @@
-﻿using NStack;
+﻿using System.Text;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -60,40 +60,40 @@ namespace UICatalog.Scenarios {
 			_listView.RowRender += ListView_RowRender;
 			Win.Add (_listView);
 
-			var _scrollBar = new ScrollBarView (_listView, true);
+			var scrollBar = new ScrollBarView (_listView, true);
 
-			_scrollBar.ChangedPosition += (s,e) => {
-				_listView.TopItem = _scrollBar.Position;
-				if (_listView.TopItem != _scrollBar.Position) {
-					_scrollBar.Position = _listView.TopItem;
+			scrollBar.ChangedPosition += (s,e) => {
+				_listView.TopItem = scrollBar.Position;
+				if (_listView.TopItem != scrollBar.Position) {
+					scrollBar.Position = _listView.TopItem;
 				}
 				_listView.SetNeedsDisplay ();
 			};
 
-			_scrollBar.OtherScrollBarView.ChangedPosition += (s,e) => {
-				_listView.LeftItem = _scrollBar.OtherScrollBarView.Position;
-				if (_listView.LeftItem != _scrollBar.OtherScrollBarView.Position) {
-					_scrollBar.OtherScrollBarView.Position = _listView.LeftItem;
+			scrollBar.OtherScrollBarView.ChangedPosition += (s,e) => {
+				_listView.LeftItem = scrollBar.OtherScrollBarView.Position;
+				if (_listView.LeftItem != scrollBar.OtherScrollBarView.Position) {
+					scrollBar.OtherScrollBarView.Position = _listView.LeftItem;
 				}
 				_listView.SetNeedsDisplay ();
 			};
 
 			_listView.DrawContent += (s,e) => {
-				_scrollBar.Size = _listView.Source.Count;
-				_scrollBar.Position = _listView.TopItem;
-				_scrollBar.OtherScrollBarView.Size = _listView.Maxlength;
-				_scrollBar.OtherScrollBarView.Position = _listView.LeftItem;
-				_scrollBar.Refresh ();
+				scrollBar.Size = _listView.Source.Count - 1;
+				scrollBar.Position = _listView.TopItem;
+				scrollBar.OtherScrollBarView.Size = _listView.Maxlength - 1;
+				scrollBar.OtherScrollBarView.Position = _listView.LeftItem;
+				scrollBar.Refresh ();
 			};
 
 			_listView.SetSource (_scenarios);
 
 			var k = "Keep Content Always In Viewport";
-			var keepCheckBox = new CheckBox (k, _scrollBar.AutoHideScrollBars) {
+			var keepCheckBox = new CheckBox (k, scrollBar.AutoHideScrollBars) {
 				X = Pos.AnchorEnd (k.Length + 3),
 				Y = 0,
 			};
-			keepCheckBox.Toggled += (s,e) => _scrollBar.KeepContentAlwaysInViewport = (bool)keepCheckBox.Checked;
+			keepCheckBox.Toggled += (s,e) => scrollBar.KeepContentAlwaysInViewport = (bool)keepCheckBox.Checked;
 			Win.Add (keepCheckBox);
 		}
 
@@ -202,13 +202,13 @@ namespace UICatalog.Scenarios {
 			}
 
 			// A slightly adapted method from: https://github.com/gui-cs/Terminal.Gui/blob/fc1faba7452ccbdf49028ac49f0c9f0f42bbae91/Terminal.Gui/Views/ListView.cs#L433-L461
-			private void RenderUstr (ConsoleDriver driver, ustring ustr, int col, int line, int width, int start = 0)
+			private void RenderUstr (ConsoleDriver driver, string ustr, int col, int line, int width, int start = 0)
 			{
 				int used = 0;
 				int index = start;
 				while (index < ustr.Length) {
-					(var rune, var size) = Utf8.DecodeRune (ustr, index, index - ustr.Length);
-					var count = Rune.ColumnWidth (rune);
+					(var rune, var size) = ustr.DecodeRune (index, index - ustr.Length);
+					var count = rune.GetColumns ();
 					if (used + count >= width) break;
 					driver.AddRune (rune);
 					used += count;
@@ -216,7 +216,7 @@ namespace UICatalog.Scenarios {
 				}
 
 				while (used < width) {
-					driver.AddRune (' ');
+					driver.AddRune ((Rune)' ');
 					used++;
 				}
 			}

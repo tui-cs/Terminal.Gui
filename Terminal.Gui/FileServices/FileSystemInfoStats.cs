@@ -73,7 +73,7 @@ namespace Terminal.Gui {
 
 		public bool IsImage ()
 		{
-			return this.FileSystemInfo is FileSystemInfo f &&
+			return this.FileSystemInfo is IFileSystemInfo f &&
 				ImageExtensions.Contains (
 					f.Extension,
 					StringComparer.InvariantCultureIgnoreCase);
@@ -82,36 +82,10 @@ namespace Terminal.Gui {
 		public bool IsExecutable ()
 		{
 			// TODO: handle linux executable status
-			return this.FileSystemInfo is FileSystemInfo f &&
+			return this.FileSystemInfo is IFileSystemInfo f &&
 				ExecutableExtensions.Contains (
 					f.Extension,
 					StringComparer.InvariantCultureIgnoreCase);
-		}
-
-		internal object GetOrderByValue (FileDialog dlg, string columnName)
-		{
-			if (dlg.Style.FilenameColumnName == columnName)
-				return this.FileSystemInfo.Name;
-
-			if (dlg.Style.SizeColumnName == columnName)
-				return this.MachineReadableLength;
-
-			if (dlg.Style.ModifiedColumnName == columnName)
-				return this.LastWriteTime;
-
-			if (dlg.Style.TypeColumnName == columnName)
-				return this.Type;
-
-			throw new ArgumentOutOfRangeException ("Unknown column " + nameof (columnName));
-		}
-
-		internal object GetOrderByDefault ()
-		{
-			if (this.IsDir ()) {
-				return -1;
-			}
-
-			return 100;
 		}
 
 		private static string GetHumanReadableFileSize (long value, CultureInfo culture)

@@ -1,4 +1,4 @@
-﻿using NStack;
+﻿using System.Text;
 using System;
 using System.Threading;
 using Terminal.Gui;
@@ -240,7 +240,7 @@ namespace UICatalog.Scenarios {
 			mainLoopTimeoutDemo.Speed.Text = $"{_mainLooopTimeoutTick}";
 			mainLoopTimeoutDemo.Speed.TextChanged += (s, a) => {
 				uint result;
-				if (uint.TryParse (mainLoopTimeoutDemo.Speed.Text.ToString (), out result)) {
+				if (uint.TryParse (mainLoopTimeoutDemo.Speed.Text, out result)) {
 					_mainLooopTimeoutTick = result;
 					if (mainLoopTimeoutDemo.Started) {
 						mainLoopTimeoutDemo.Start ();

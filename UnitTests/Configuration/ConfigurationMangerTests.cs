@@ -224,7 +224,6 @@ namespace Terminal.Gui.ConfigurationTests {
 			ConfigurationManager.Settings ["Application.QuitKey"].PropertyValue = Key.Q;
 			ConfigurationManager.Settings ["Application.AlternateForwardKey"].PropertyValue = Key.F;
 			ConfigurationManager.Settings ["Application.AlternateBackwardKey"].PropertyValue = Key.B;
-			ConfigurationManager.Settings ["Application.UseSystemConsole"].PropertyValue = true;
 			ConfigurationManager.Settings ["Application.IsMouseDisabled"].PropertyValue = true;
 			ConfigurationManager.Settings ["Application.EnableConsoleScrolling"].PropertyValue = true;
 			ConfigurationManager.Settings.Apply ();
@@ -233,7 +232,6 @@ namespace Terminal.Gui.ConfigurationTests {
 			Assert.Equal (Key.Q, Application.QuitKey);
 			Assert.Equal (Key.F, Application.AlternateForwardKey);
 			Assert.Equal (Key.B, Application.AlternateBackwardKey);
-			Assert.True (Application.UseSystemConsole);
 			Assert.True (Application.IsMouseDisabled);
 			Assert.True (Application.EnableConsoleScrolling);
 
@@ -246,7 +244,6 @@ namespace Terminal.Gui.ConfigurationTests {
 			Assert.Equal (Key.Q | Key.CtrlMask, Application.QuitKey);
 			Assert.Equal (Key.PageDown | Key.CtrlMask, Application.AlternateForwardKey);
 			Assert.Equal (Key.PageUp | Key.CtrlMask, Application.AlternateBackwardKey);
-			Assert.False (Application.UseSystemConsole);
 			Assert.False (Application.IsMouseDisabled);
 			Assert.False (Application.EnableConsoleScrolling);
 
@@ -254,7 +251,6 @@ namespace Terminal.Gui.ConfigurationTests {
 			ConfigurationManager.Settings ["Application.QuitKey"].PropertyValue = Key.Q;
 			ConfigurationManager.Settings ["Application.AlternateForwardKey"].PropertyValue = Key.F;
 			ConfigurationManager.Settings ["Application.AlternateBackwardKey"].PropertyValue = Key.B;
-			ConfigurationManager.Settings ["Application.UseSystemConsole"].PropertyValue = true;
 			ConfigurationManager.Settings ["Application.IsMouseDisabled"].PropertyValue = true;
 			ConfigurationManager.Settings ["Application.EnableConsoleScrolling"].PropertyValue = true;
 			ConfigurationManager.Settings.Apply ();
@@ -271,7 +267,6 @@ namespace Terminal.Gui.ConfigurationTests {
 			Assert.Equal (Key.Q | Key.CtrlMask, Application.QuitKey);
 			Assert.Equal (Key.PageDown | Key.CtrlMask, Application.AlternateForwardKey);
 			Assert.Equal (Key.PageUp | Key.CtrlMask, Application.AlternateBackwardKey);
-			Assert.False (Application.UseSystemConsole);
 			Assert.False (Application.IsMouseDisabled);
 			Assert.False (Application.EnableConsoleScrolling);
 
@@ -289,8 +284,8 @@ namespace Terminal.Gui.ConfigurationTests {
 			Assert.Empty (ConfigurationManager.Settings.Where (cp => cp.Value.PropertyInfo.GetCustomAttribute (typeof (SerializableConfigurationProperty)) == null));
 
 			// Application is a static class
-			PropertyInfo pi = typeof (Application).GetProperty ("UseSystemConsole");
-			Assert.Equal (pi, ConfigurationManager.Settings ["Application.UseSystemConsole"].PropertyInfo);
+			PropertyInfo pi = typeof (Application).GetProperty ("QuitKey");
+			Assert.Equal (pi, ConfigurationManager.Settings ["Application.QuitKey"].PropertyInfo);
 
 			// FrameView is not a static class and DefaultBorderStyle is Scope.Scheme
 			pi = typeof (FrameView).GetProperty ("DefaultBorderStyle");
@@ -544,8 +539,7 @@ namespace Terminal.Gui.ConfigurationTests {
 			// "yellow" is not a color
 			string json = @"
 			{
-				""Themes"" : {
-					""ThemeDefinitions"" : [ 
+				""Themes"" : [
                                         {
 						""Default"" : {
 							""ColorSchemes"": [
@@ -560,8 +554,7 @@ namespace Terminal.Gui.ConfigurationTests {
 							]
 						}
 					}
-					]
-				}
+				]
 			}";
 
 			JsonException jsonException = Assert.Throws<JsonException> (() => ConfigurationManager.Settings.Update (json, "test"));
@@ -570,8 +563,7 @@ namespace Terminal.Gui.ConfigurationTests {
 			// AbNormal is not a ColorScheme attribute
 			json = @"
 			{
-				""Themes"" : {
-					""ThemeDefinitions"" : [ 
+				""Themes"" : [ 
                                         {
 						""Default"" : {
 							""ColorSchemes"": [
@@ -586,8 +578,7 @@ namespace Terminal.Gui.ConfigurationTests {
 							]
 						}
 					}
-					]
-				}
+				]
 			}";
 
 			jsonException = Assert.Throws<JsonException> (() => ConfigurationManager.Settings.Update (json, "test"));
@@ -596,8 +587,7 @@ namespace Terminal.Gui.ConfigurationTests {
 			// Modify hotNormal background only 
 			json = @"
 			{
-				""Themes"" : {
-					""ThemeDefinitions"" : [ 
+				""Themes"" : [ 
                                         {
 						""Default"" : {
 							""ColorSchemes"": [
@@ -611,8 +601,7 @@ namespace Terminal.Gui.ConfigurationTests {
 							]
 						}
 					}
-					]
-				}
+				]
 			}";
 
 			jsonException = Assert.Throws<JsonException> (() => ConfigurationManager.Settings.Update (json, "test"));
@@ -641,8 +630,7 @@ namespace Terminal.Gui.ConfigurationTests {
 			// "yellow" is not a color
 			string json = @"
 			{
-				""Themes"" : {
-					""ThemeDefinitions"" : [ 
+				""Themes"" : [ 
                                         {
 						""Default"" : {
 							""ColorSchemes"": [
@@ -657,7 +645,6 @@ namespace Terminal.Gui.ConfigurationTests {
 							]
 						}
 					}
-					]
 				}
 			}";
 
@@ -666,8 +653,7 @@ namespace Terminal.Gui.ConfigurationTests {
 			// AbNormal is not a ColorScheme attribute
 			json = @"
 			{
-				""Themes"" : {
-					""ThemeDefinitions"" : [ 
+				""Themes"" : [ 
                                         {
 						""Default"" : {
 							""ColorSchemes"": [
@@ -682,7 +668,6 @@ namespace Terminal.Gui.ConfigurationTests {
 							]
 						}
 					}
-					]
 				}
 			}";
 
@@ -691,8 +676,7 @@ namespace Terminal.Gui.ConfigurationTests {
 			// Modify hotNormal background only 
 			json = @"
 			{
-				""Themes"" : {
-					""ThemeDefinitions"" : [ 
+				""Themes"" :  [ 
                                         {
 						""Default"" : {
 							""ColorSchemes"": [
@@ -706,7 +690,6 @@ namespace Terminal.Gui.ConfigurationTests {
 							]
 						}
 					}
-					]
 				}
 			}";
 
@@ -764,7 +747,6 @@ namespace Terminal.Gui.ConfigurationTests {
 			ConfigurationManager.Settings ["Application.QuitKey"].PropertyValue = Key.Q;
 			ConfigurationManager.Settings ["Application.AlternateForwardKey"].PropertyValue = Key.F;
 			ConfigurationManager.Settings ["Application.AlternateBackwardKey"].PropertyValue = Key.B;
-			ConfigurationManager.Settings ["Application.UseSystemConsole"].PropertyValue = true;
 			ConfigurationManager.Settings ["Application.IsMouseDisabled"].PropertyValue = true;
 			ConfigurationManager.Settings ["Application.EnableConsoleScrolling"].PropertyValue = true;
 
@@ -777,7 +759,6 @@ namespace Terminal.Gui.ConfigurationTests {
 				Assert.Equal (Key.Q | Key.CtrlMask, ConfigurationManager.Settings ["Application.QuitKey"].PropertyValue);
 				Assert.Equal (Key.PageDown | Key.CtrlMask, ConfigurationManager.Settings ["Application.AlternateForwardKey"].PropertyValue);
 				Assert.Equal (Key.PageUp | Key.CtrlMask, ConfigurationManager.Settings ["Application.AlternateBackwardKey"].PropertyValue);
-				Assert.False ((bool)ConfigurationManager.Settings ["Application.UseSystemConsole"].PropertyValue);
 				Assert.False ((bool)ConfigurationManager.Settings ["Application.IsMouseDisabled"].PropertyValue);
 				Assert.False ((bool)ConfigurationManager.Settings ["Application.EnableConsoleScrolling"].PropertyValue);
 			}
@@ -803,7 +784,6 @@ namespace Terminal.Gui.ConfigurationTests {
 				Assert.Equal (Key.Q, Application.QuitKey);
 				Assert.Equal (Key.F, Application.AlternateForwardKey);
 				Assert.Equal (Key.B, Application.AlternateBackwardKey);
-				Assert.True (Application.UseSystemConsole);
 				Assert.True (Application.IsMouseDisabled);
 				Assert.True (Application.EnableConsoleScrolling);
 			}
@@ -812,7 +792,6 @@ namespace Terminal.Gui.ConfigurationTests {
 			ConfigurationManager.Settings ["Application.QuitKey"].PropertyValue = Key.Q;
 			ConfigurationManager.Settings ["Application.AlternateForwardKey"].PropertyValue = Key.F;
 			ConfigurationManager.Settings ["Application.AlternateBackwardKey"].PropertyValue = Key.B;
-			ConfigurationManager.Settings ["Application.UseSystemConsole"].PropertyValue = true;
 			ConfigurationManager.Settings ["Application.IsMouseDisabled"].PropertyValue = true;
 			ConfigurationManager.Settings ["Application.EnableConsoleScrolling"].PropertyValue = true;
 

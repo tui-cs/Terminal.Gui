@@ -19,8 +19,10 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		CODE_OF_CONDUCT.md = CODE_OF_CONDUCT.md
 		CONTRIBUTING.md = CONTRIBUTING.md
 		.github\workflows\dotnet-core.yml = .github\workflows\dotnet-core.yml
+		.github\GitVersion.yml = .github\GitVersion.yml
 		.github\workflows\publish.yml = .github\workflows\publish.yml
 		README.md = README.md
+		Release.ps1 = Release.ps1
 		testenvironments.json = testenvironments.json
 	EndProjectSection
 EndProject

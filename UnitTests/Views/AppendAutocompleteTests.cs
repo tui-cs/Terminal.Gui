@@ -24,20 +24,20 @@ namespace Terminal.Gui.TextTests {
 			var generator = (SingleWordSuggestionGenerator)tf.Autocomplete.SuggestionGenerator;
 			generator.AllSuggestions = new List<string> { "fish" };
 
-			tf.Redraw (tf.Bounds);
+			tf.Draw ();
 			TestHelpers.AssertDriverContentsAre ("", output);
 
 			tf.ProcessKey (new KeyEvent (Key.f, new KeyModifiers ()));
 
-			tf.Redraw (tf.Bounds);
+			tf.Draw ();
 			TestHelpers.AssertDriverContentsAre ("fish", output);
-			Assert.Equal ("f", tf.Text.ToString ());
+			Assert.Equal ("f", tf.Text);
 
 			Application.Driver.SendKeys ('\t', ConsoleKey.Tab, false, false, false);
 
-			tf.Redraw (tf.Bounds);
+			tf.Draw ();
 			TestHelpers.AssertDriverContentsAre ("fish", output);
-			Assert.Equal ("fish", tf.Text.ToString ());
+			Assert.Equal ("fish", tf.Text);
 
 			// Tab should autcomplete but not move focus
 			Assert.Same (tf, Application.Top.Focused);
@@ -56,7 +56,7 @@ namespace Terminal.Gui.TextTests {
 			var generator = (SingleWordSuggestionGenerator)tf.Autocomplete.SuggestionGenerator;
 			generator.AllSuggestions = new List<string> { "FISH" };
 
-			tf.Redraw (tf.Bounds);
+			tf.Draw ();
 			TestHelpers.AssertDriverContentsAre ("", output);
 			tf.ProcessKey (new KeyEvent (Key.m, new KeyModifiers ()));
 			tf.ProcessKey (new KeyEvent (Key.y, new KeyModifiers ()));
@@ -64,15 +64,15 @@ namespace Terminal.Gui.TextTests {
 			tf.ProcessKey (new KeyEvent (Key.f, new KeyModifiers ()));
 
 			// Even though there is no match on case we should still get the suggestion
-			tf.Redraw (tf.Bounds);
+			tf.Draw ();
 			TestHelpers.AssertDriverContentsAre ("my fISH", output);
-			Assert.Equal ("my f", tf.Text.ToString ());
+			Assert.Equal ("my f", tf.Text);
 
 			// When tab completing the case of the whole suggestion should be applied
 			Application.Driver.SendKeys ('\t', ConsoleKey.Tab, false, false, false);
-			tf.Redraw (tf.Bounds);
+			tf.Draw ();
 			TestHelpers.AssertDriverContentsAre ("my FISH", output);
-			Assert.Equal ("my FISH", tf.Text.ToString ());
+			Assert.Equal ("my FISH", tf.Text);
 		}
 
 		[Fact, AutoInitShutdown]
@@ -82,17 +82,17 @@ namespace Terminal.Gui.TextTests {
 
 			// f is typed and suggestion is "fish"
 			Application.Driver.SendKeys ('f', ConsoleKey.F, false, false, false);
-			tf.Redraw (tf.Bounds);
+			tf.Draw ();
 			TestHelpers.AssertDriverContentsAre ("fish", output);
-			Assert.Equal ("f", tf.Text.ToString ());
+			Assert.Equal ("f", tf.Text);
 
 			// When cancelling autocomplete
 			Application.Driver.SendKeys ('e', ConsoleKey.Escape, false, false, false);
 
 			// Suggestion should disapear
-			tf.Redraw (tf.Bounds);
+			tf.Draw ();
 			TestHelpers.AssertDriverContentsAre ("f", output);
-			Assert.Equal ("f", tf.Text.ToString ());
+			Assert.Equal ("f", tf.Text);
 
 			// Still has focus though
 			Assert.Same (tf, Application.Top.Focused);
@@ -109,24 +109,24 @@ namespace Terminal.Gui.TextTests {
 
 			// f is typed and suggestion is "fish"
 			Application.Driver.SendKeys ('f', ConsoleKey.F, false, false, false);
-			tf.Redraw (tf.Bounds);
+			tf.Draw ();
 			TestHelpers.AssertDriverContentsAre ("fish", output);
-			Assert.Equal ("f", tf.Text.ToString ());
+			Assert.Equal ("f", tf.Text);
 
 			// When cancelling autocomplete
 			Application.Driver.SendKeys ('e', ConsoleKey.Escape, false, false, false);
 
 			// Suggestion should disapear
-			tf.Redraw (tf.Bounds);
+			tf.Draw ();
 			TestHelpers.AssertDriverContentsAre ("f", output);
-			Assert.Equal ("f", tf.Text.ToString ());
+			Assert.Equal ("f", tf.Text);
 
 			// Should reapear when you press next letter
 			Application.Driver.SendKeys ('i', ConsoleKey.I, false, false, false);
-			tf.Redraw (tf.Bounds);
+			tf.Draw ();
 			// BUGBUG: v2 - I broke this test and don't have time to figure out why. @tznind - help!
 			//TestHelpers.AssertDriverContentsAre ("fish", output);
-			Assert.Equal ("fi", tf.Text.ToString ());
+			Assert.Equal ("fi", tf.Text);
 		}
 
 		[Theory, AutoInitShutdown]
@@ -139,9 +139,9 @@ namespace Terminal.Gui.TextTests {
 
 			// f is typed we should only see 'f' up to size of View (10)
 			Application.Driver.SendKeys ('f', ConsoleKey.F, false, false, false);
-			tf.Redraw (tf.Bounds);
+			tf.Draw ();
 			TestHelpers.AssertDriverContentsAre (expectRender, output);
-			Assert.Equal ("f", tf.Text.ToString ());
+			Assert.Equal ("f", tf.Text);
 		}
 
 		[Theory, AutoInitShutdown]
@@ -153,22 +153,22 @@ namespace Terminal.Gui.TextTests {
 
 			// f is typed and suggestion is "fish"
 			Application.Driver.SendKeys ('f', ConsoleKey.F, false, false, false);
-			tf.Redraw (tf.Bounds);
+			tf.Draw ();
 			TestHelpers.AssertDriverContentsAre ("fish", output);
-			Assert.Equal ("f", tf.Text.ToString ());
+			Assert.Equal ("f", tf.Text);
 
 			// When cycling autocomplete
 			Application.Driver.SendKeys (' ', cycleKey, false, false, false);
 
-			tf.Redraw (tf.Bounds);
+			tf.Draw ();
 			TestHelpers.AssertDriverContentsAre ("friend", output);
-			Assert.Equal ("f", tf.Text.ToString ());
+			Assert.Equal ("f", tf.Text);
 
 			// Should be able to cycle in circles endlessly
 			Application.Driver.SendKeys (' ', cycleKey, false, false, false);
-			tf.Redraw (tf.Bounds);
+			tf.Draw ();
 			TestHelpers.AssertDriverContentsAre ("fish", output);
-			Assert.Equal ("f", tf.Text.ToString ());
+			Assert.Equal ("f", tf.Text);
 		}
 
 		[Fact, AutoInitShutdown]
@@ -178,15 +178,15 @@ namespace Terminal.Gui.TextTests {
 
 			// f is typed and suggestion is "fish"
 			Application.Driver.SendKeys ('f', ConsoleKey.F, false, false, false);
-			tf.Redraw (tf.Bounds);
+			tf.Draw ();
 			TestHelpers.AssertDriverContentsAre ("fish", output);
-			Assert.Equal ("f", tf.Text.ToString ());
+			Assert.Equal ("f", tf.Text);
 
 			// x is typed and suggestion should disapear
 			Application.Driver.SendKeys ('x', ConsoleKey.F, false, false, false);
-			tf.Redraw (tf.Bounds);
+			tf.Draw ();
 			TestHelpers.AssertDriverContentsAre ("fx", output);
-			Assert.Equal ("fx", tf.Text.ToString ());
+			Assert.Equal ("fx", tf.Text);
 		}
 
 		[Fact, AutoInitShutdown]
@@ -196,17 +196,17 @@ namespace Terminal.Gui.TextTests {
 
 			// f is typed and suggestion is "fish"
 			Application.Driver.SendKeys ('f', ConsoleKey.F, false, false, false);
-			tf.Redraw (tf.Bounds);
+			tf.Draw ();
 			TestHelpers.AssertDriverContentsAre ("fish", output);
-			Assert.Equal ("f", tf.Text.ToString ());
+			Assert.Equal ("f", tf.Text);
 
 			// add a space then go back 1
 			Application.Driver.SendKeys (' ', ConsoleKey.Spacebar, false, false, false);
 			Application.Driver.SendKeys ('<', ConsoleKey.LeftArrow, false, false, false);
 
-			tf.Redraw (tf.Bounds);
+			tf.Draw ();
 			TestHelpers.AssertDriverContentsAre ("f", output);
-			Assert.Equal ("f ", tf.Text.ToString ());
+			Assert.Equal ("f ", tf.Text);
 		}
 
 
@@ -218,7 +218,7 @@ namespace Terminal.Gui.TextTests {
 			var generator = (SingleWordSuggestionGenerator)tf.Autocomplete.SuggestionGenerator;
 			generator.AllSuggestions = suggestions.ToList ();
 
-			tf.Redraw (tf.Bounds);
+			tf.Draw ();
 			TestHelpers.AssertDriverContentsAre ("", output);
 
 			return tf;

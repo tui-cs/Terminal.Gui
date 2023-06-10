@@ -302,7 +302,7 @@ namespace Terminal.Gui.ViewsTests {
 
 			cm.Show ();
 			Assert.Equal (new Point (70, 24), cm.Position);
-			Application.Top.Redraw (Application.Top.Bounds);
+			Application.Top.Draw ();
 
 			var expected = @"
                                                                       ┌──────┐
@@ -336,7 +336,7 @@ namespace Terminal.Gui.ViewsTests {
 			Assert.Equal (new Point (10, 5), cm.Position);
 
 			cm.Show ();
-			Application.Top.Redraw (Application.Top.Bounds);
+			Application.Top.Draw ();
 			Assert.Equal (new Point (10, 5), cm.Position);
 
 			var expected = @"
@@ -357,7 +357,7 @@ namespace Terminal.Gui.ViewsTests {
 			cm.Host.Height = 3;
 
 			cm.Show ();
-			Application.Top.Redraw (Application.Top.Bounds);
+			Application.Top.Draw ();
 			Assert.Equal (new Point (5, 12), cm.Position);
 
 			expected = @"
@@ -380,6 +380,8 @@ namespace Terminal.Gui.ViewsTests {
 		[Fact, AutoInitShutdown]
 		public void Show_Display_At_Zero_If_The_Toplevel_Width_Is_Less_Than_The_Menu_Width ()
 		{
+			((FakeDriver)Application.Driver).SetBufferSize (5, 25);
+
 			var cm = new ContextMenu (0, 0,
 				new MenuBarItem (new MenuItem [] {
 					new MenuItem ("One", "", null),
@@ -392,14 +394,12 @@ namespace Terminal.Gui.ViewsTests {
 			cm.Show ();
 			Assert.Equal (new Point (0, 0), cm.Position);
 			Application.Begin (Application.Top);
-			((FakeDriver)Application.Driver).SetBufferSize (5, 25);
 
 			var expected = @"
 ┌────
 │ One
 │ Two
-└────
-";
+└────";
 
 			var pos = TestHelpers.AssertDriverContentsWithFrameAre (expected, output);
 			Assert.Equal (new Rect (0, 1, 5, 4), pos);
@@ -411,6 +411,8 @@ namespace Terminal.Gui.ViewsTests {
 		[Fact, AutoInitShutdown]
 		public void Show_Display_At_Zero_If_The_Toplevel_Height_Is_Less_Than_The_Menu_Height ()
 		{
+			((FakeDriver)Application.Driver).SetBufferSize (80, 3);
+
 			var cm = new ContextMenu (0, 0,
 				new MenuBarItem (new MenuItem [] {
 					new MenuItem ("One", "", null),
@@ -423,13 +425,11 @@ namespace Terminal.Gui.ViewsTests {
 			cm.Show ();
 			Assert.Equal (new Point (0, 0), cm.Position);
 			Application.Begin (Application.Top);
-			((FakeDriver)Application.Driver).SetBufferSize (80, 3);
 
 			var expected = @"
 ┌──────┐
 │ One  │
-│ Two  │
-";
+│ Two  │";
 
 			var pos = TestHelpers.AssertDriverContentsWithFrameAre (expected, output);
 			Assert.Equal (new Rect (0, 0, 8, 3), pos);
@@ -590,7 +590,7 @@ namespace Terminal.Gui.ViewsTests {
 			tf.ContextMenu.Show ();
 			Assert.True (ContextMenu.IsShow);
 			Assert.Equal (new Point (9, 3), tf.ContextMenu.Position);
-			Application.Top.Redraw (Application.Top.Bounds);
+			Application.Top.Draw ();
 			var expected = @"
  File  Edit                     
                                 
@@ -654,7 +654,7 @@ namespace Terminal.Gui.ViewsTests {
 			tf.ContextMenu.Show ();
 			Assert.True (ContextMenu.IsShow);
 			Assert.Equal (new Point (10, 5), tf.ContextMenu.Position);
-			Application.Top.Redraw (Application.Top.Bounds);
+			Application.Top.Draw ();
 			var expected = @"
  File  Edit                                 
 ┌──────────────────────────────────────────┐
@@ -903,9 +903,8 @@ namespace Terminal.Gui.ViewsTests {
 			Assert.Null (tf.ContextMenu.MenuBar);
 		}
 
-		// BUGBUG: Broke this test with #2483 - @bdisp I need your help figuring out why
 		[Fact, AutoInitShutdown]
-		public void Draw_A_ContextManu_Over_A_Dialog ()
+		public void Draw_A_ContextMenu_Over_A_Dialog ()
 		{
 			var top = Application.Top;
 			var win = new Window ();
@@ -980,6 +979,164 @@ namespace Terminal.Gui.ViewsTests {
 └───────────────────
 │                  │
 └──────────────────┘", output);
+
+			Application.End (rs);
+		}
+
+		[Fact, AutoInitShutdown]
+		public void Draw_A_ContextMenu_Over_A_Top_Dialog ()
+		{
+			((FakeDriver)Application.Driver).SetBufferSize (20, 15);
+
+			Assert.Equal (new Rect (0, 0, 20, 15), Application.Driver.Clip);
+			TestHelpers.AssertDriverContentsWithFrameAre ("", output);
+
+			var dialog = new Dialog () { X = 2, Y = 2, Width = 15, Height = 4 };
+			dialog.Add (new TextField ("Test") { X = Pos.Center (), Width = 10 });
+			var rs = Application.Begin (dialog);
+
+			Assert.Equal (new Rect (2, 2, 15, 4), dialog.Frame);
+			Assert.Equal (dialog, Application.Top);
+			TestHelpers.AssertDriverContentsWithFrameAre (@"
+  ┌─────────────┐
+  │ Test        │
+  │             │
+  └─────────────┘", output);
+
+			ReflectionTools.InvokePrivate (
+				typeof (Application),
+				"ProcessMouseEvent",
+				new MouseEvent () {
+					X = 9,
+					Y = 3,
+					Flags = MouseFlags.Button3Clicked
+				});
+
+			var firstIteration = false;
+			Application.RunMainLoopIteration (ref rs, true, ref firstIteration);
+			TestHelpers.AssertDriverContentsWithFrameAre (@"
+  ┌─────────────┐   
+  │ Test        │   
+┌───────────────────
+│ Select All   Ctrl+
+│ Delete All   Ctrl+
+│ Copy         Ctrl+
+│ Cut          Ctrl+
+│ Paste        Ctrl+
+│ Undo         Ctrl+
+│ Redo         Ctrl+
+└───────────────────", output);
+
+			Application.End (rs);
+		}
+
+		[Fact, AutoInitShutdown]
+		public void Draw_A_ContextMenu_Over_A_Borderless_Top ()
+		{
+			((FakeDriver)Application.Driver).SetBufferSize (20, 15);
+
+			Assert.Equal (new Rect (0, 0, 20, 15), Application.Driver.Clip);
+			TestHelpers.AssertDriverContentsWithFrameAre ("", output);
+
+			var top = new Toplevel () { X = 2, Y = 2, Width = 15, Height = 4 };
+			top.Add (new TextField ("Test") { X = Pos.Center (), Width = 10 });
+			var rs = Application.Begin (top);
+
+			Assert.Equal (new Rect (2, 2, 15, 4), top.Frame);
+			Assert.Equal (top, Application.Top);
+			TestHelpers.AssertDriverContentsWithFrameAre (@"
+    Test", output);
+
+			ReflectionTools.InvokePrivate (
+				typeof (Application),
+				"ProcessMouseEvent",
+				new MouseEvent () {
+					X = 8,
+					Y = 2,
+					Flags = MouseFlags.Button3Clicked
+				});
+
+			var firstIteration = false;
+			Application.RunMainLoopIteration (ref rs, true, ref firstIteration);
+			TestHelpers.AssertDriverContentsWithFrameAre (@"
+    Test            
+┌───────────────────
+│ Select All   Ctrl+
+│ Delete All   Ctrl+
+│ Copy         Ctrl+
+│ Cut          Ctrl+
+│ Paste        Ctrl+
+│ Undo         Ctrl+
+│ Redo         Ctrl+
+└───────────────────", output);
+
+			Application.End (rs);
+		}
+
+		[Fact, AutoInitShutdown]
+		public void UseSubMenusSingleFrame_True_By_Mouse ()
+		{
+			var cm = new ContextMenu (5, 10,
+				new MenuBarItem ("Numbers", new MenuItem [] {
+					new MenuItem ("One", "", null),
+					new MenuBarItem ("Two", new MenuItem [] {
+					new MenuItem ("Sub-Menu 1", "", null),
+					new MenuItem ("Sub-Menu 2", "", null)
+					}),
+					new MenuItem ("Three", "", null),
+				})
+			) { UseSubMenusSingleFrame = true };
+
+			cm.Show ();
+			var rs = Application.Begin (Application.Top);
+
+			Assert.Equal (new Rect (5, 11, 10, 5), Application.Top.Subviews [0].Frame);
+			TestHelpers.AssertDriverContentsWithFrameAre (@"
+     ┌────────┐
+     │ One    │
+     │ Two   ►│
+     │ Three  │
+     └────────┘", output);
+
+			ReflectionTools.InvokePrivate (
+				typeof (Application),
+				"ProcessMouseEvent",
+				new MouseEvent () {
+					X = 5,
+					Y = 13,
+					Flags = MouseFlags.Button1Clicked
+				});
+
+			var firstIteration = false;
+			Application.RunMainLoopIteration (ref rs, true, ref firstIteration);
+			Assert.Equal (new Rect (5, 11, 10, 5), Application.Top.Subviews [0].Frame);
+			Assert.Equal (new Rect (5, 11, 15, 6), Application.Top.Subviews [1].Frame);
+			TestHelpers.AssertDriverContentsWithFrameAre (@"
+     ┌─────────────┐
+     │◄    Two     │
+     ├─────────────┤
+     │ Sub-Menu 1  │
+     │ Sub-Menu 2  │
+     └─────────────┘", output);
+
+			ReflectionTools.InvokePrivate (
+				typeof (Application),
+				"ProcessMouseEvent",
+				new MouseEvent () {
+					X = 5,
+					Y = 12,
+					Flags = MouseFlags.Button1Clicked
+				});
+
+			firstIteration = false;
+			Application.RunMainLoopIteration (ref rs, true, ref firstIteration);
+			Assert.Equal (new Rect (5, 11, 10, 5), Application.Top.Subviews [0].Frame);
+			TestHelpers.AssertDriverContentsWithFrameAre (@"
+     ┌────────┐
+     │ One    │
+     │ Two   ►│
+     │ Three  │
+     └────────┘", output);
 
 			Application.End (rs);
 		}

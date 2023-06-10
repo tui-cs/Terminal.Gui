@@ -27,6 +27,8 @@
 
 using System;
 
+#pragma warning disable CA1034 // Nested types should not be visible
+
 namespace Terminal.Gui {
 	/// <summary>
 	/// SpinnerStyles used in a <see cref="SpinnerView"/>.
@@ -1697,3 +1699,5 @@ namespace Terminal.Gui {
 #pragma warning restore CS1591 // Missing XML comment for publicly visible type or member
 	}
 }
+
+#pragma warning restore CA1034 // Nested types should not be visible

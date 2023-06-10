@@ -46,19 +46,6 @@ namespace Terminal.Gui {
 	///   does not seem to be a way of supporting this on Windows.
 	/// </remarks>
 	public class MainLoop {
-		/// <summary>
-		/// Provides data for timers running manipulation.
-		/// </summary>
-		public sealed class Timeout {
-			/// <summary>
-			/// Time to wait before invoke the callback.
-			/// </summary>
-			public TimeSpan Span;
-			/// <summary>
-			/// The function that will be invoked.
-			/// </summary>
-			public Func<MainLoop, bool> Callback;
-		}
 
 		internal SortedList<long, Timeout> timeouts = new SortedList<long, Timeout> ();
 		object _timeoutsLockToken = new object ();

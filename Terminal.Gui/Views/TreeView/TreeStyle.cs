@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Text;
 
 namespace Terminal.Gui {
 	/// <summary>
@@ -17,13 +18,13 @@ namespace Terminal.Gui {
 		/// Symbol to use for branch nodes that can be expanded to indicate this to the user. 
 		/// Defaults to '+'. Set to null to hide.
 		/// </summary>
-		public Rune? ExpandableSymbol { get; set; } = '+';
+		public Rune? ExpandableSymbol { get; set; } = CM.Glyphs.Expand;
 
 		/// <summary>
 		/// Symbol to use for branch nodes that can be collapsed (are currently expanded).
 		/// Defaults to '-'. Set to null to hide.
 		/// </summary>
-		public Rune? CollapseableSymbol { get; set; } = '-';
+		public Rune? CollapseableSymbol { get; set; } = CM.Glyphs.Collapse;
 
 		/// <summary>
 		/// Set to <see langword="true"/> to highlight expand/collapse symbols in hot key color.

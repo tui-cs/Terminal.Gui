@@ -1,4 +1,4 @@
-﻿using NStack;
+﻿using System.Text;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -29,14 +29,14 @@ namespace UICatalog.Scenarios {
 				//TODO: Change to use Pos.AnchorEnd()
 				Y = Pos.Bottom (Win) - 3,
 				//IsDefault = true,
-				HotKeySpecifier = (System.Rune)'_',
+				HotKeySpecifier = (Rune)'_',
 				CanFocus = true,
 			};
 			defaultLabel.Clicked += (s,e) => Application.RequestStop ();
 			Win.Add (defaultLabel);
 
 			var swapLabel = new Label (50, 0, "S_wap Default (Absolute Layout)") {
-				HotKeySpecifier = (System.Rune)'_',
+				HotKeySpecifier = (Rune)'_',
 				CanFocus = true,
 			};
 			swapLabel.Clicked += (s,e) => {
@@ -45,10 +45,10 @@ namespace UICatalog.Scenarios {
 			};
 			Win.Add (swapLabel);
 
-			static void DoMessage (Label Label, ustring txt)
+			static void DoMessage (Label Label, string txt)
 			{
 				Label.Clicked += (s,e) => {
-					var btnText = Label.Text.ToString ();
+					var btnText = Label.Text;
 					MessageBox.Query ("Message", $"Did you click {txt}?", "Yes", "No");
 				};
 			}
@@ -66,20 +66,20 @@ namespace UICatalog.Scenarios {
 					ColorScheme = colorScheme.Value,
 					X = x,
 					Y = Pos.Y (colorLabelsLabel),
-					HotKeySpecifier = (System.Rune)'_',
+					HotKeySpecifier = (Rune)'_',
 					CanFocus = true,
 				};
 				DoMessage (colorLabel, colorLabel.Text);
 				Win.Add (colorLabel);
 				x += colorLabel.Text.Length + 2;
 			}
-			Application.Top.Ready += (s,e) => Application.Top.Redraw (Application.Top.Bounds);
+			Application.Top.Ready += (s,e) => Application.Top.Draw ();
 
 			Label Label;
 			Win.Add (Label = new Label ("A super long _Label that will probably expose a bug in clipping or wrapping of text. Will it?") {
 				X = 2,
 				Y = Pos.Bottom (colorLabelsLabel) + 1,
-				HotKeySpecifier = (System.Rune)'_',
+				HotKeySpecifier = (Rune)'_',
 				CanFocus = true,
 			});
 			DoMessage (Label, Label.Text);
@@ -88,7 +88,7 @@ namespace UICatalog.Scenarios {
 			Win.Add (Label = new Label ("a Newline\nin the Label") {
 				X = 2,
 				Y = Pos.Bottom (Label) + 1,
-				HotKeySpecifier = (System.Rune)'_',
+				HotKeySpecifier = (Rune)'_',
 				CanFocus = true,
 				TextAlignment = TextAlignment.Centered,
 				VerticalTextAlignment = VerticalTextAlignment.Middle
@@ -98,7 +98,7 @@ namespace UICatalog.Scenarios {
 			var textChanger = new Label ("Te_xt Changer") {
 				X = 2,
 				Y = Pos.Bottom (Label) + 1,
-				HotKeySpecifier = (System.Rune)'_',
+				HotKeySpecifier = (Rune)'_',
 				CanFocus = true,
 			};
 			Win.Add (textChanger);
@@ -107,7 +107,7 @@ namespace UICatalog.Scenarios {
 			Win.Add (Label = new Label ("Lets see if this will move as \"Text Changer\" grows") {
 				X = Pos.Right (textChanger) + 2,
 				Y = Pos.Y (textChanger),
-				HotKeySpecifier = (System.Rune)'_',
+				HotKeySpecifier = (Rune)'_',
 				CanFocus = true,
 			});
 
@@ -115,7 +115,7 @@ namespace UICatalog.Scenarios {
 				X = 2,
 				Y = Pos.Bottom (Label) + 1,
 				ColorScheme = Colors.Error,
-				HotKeySpecifier = (System.Rune)'_',
+				HotKeySpecifier = (Rune)'_',
 				CanFocus = true,
 			};
 			Win.Add (removeLabel);
@@ -142,7 +142,7 @@ namespace UICatalog.Scenarios {
 				Y = Pos.Center () - 1,
 				Width = 30,
 				ColorScheme = Colors.Error,
-				HotKeySpecifier = (System.Rune)'_',
+				HotKeySpecifier = (Rune)'_',
 				CanFocus = true,
 			};
 			moveBtn.Clicked += (s,e) => {
@@ -159,7 +159,7 @@ namespace UICatalog.Scenarios {
 				Y = Pos.Center () + 1,
 				Width = 30,
 				ColorScheme = Colors.Error,
-				HotKeySpecifier = (System.Rune)'_',
+				HotKeySpecifier = (Rune)'_',
 				CanFocus = true,
 				AutoSize = false
 			};
@@ -180,7 +180,7 @@ namespace UICatalog.Scenarios {
 			// Demonstrates how changing the View.Frame property can move Views
 			var moveBtnA = new Label (0, 0, "Move This Label via Frame") {
 				ColorScheme = Colors.Error,
-				HotKeySpecifier = (System.Rune)'_',
+				HotKeySpecifier = (Rune)'_',
 				CanFocus = true,
 			};
 			moveBtnA.Clicked += (s,e) => {
@@ -191,7 +191,7 @@ namespace UICatalog.Scenarios {
 			// Demonstrates how changing the View.Frame property can SIZE Views (#583)
 			var sizeBtnA = new Label (0, 2, " ~  s  gui.cs   master ↑10 = Со_хранить") {
 				ColorScheme = Colors.Error,
-				HotKeySpecifier = (System.Rune)'_',
+				HotKeySpecifier = (Rune)'_',
 				CanFocus = true,
 				AutoSize = false
 			};
@@ -203,12 +203,12 @@ namespace UICatalog.Scenarios {
 			var label = new Label ("Text Alignment (changes the four Labels above): ") {
 				X = 2,
 				Y = Pos.Bottom (computedFrame) + 1,
-				HotKeySpecifier = (System.Rune)'_',
+				HotKeySpecifier = (Rune)'_',
 				CanFocus = true,
 			};
 			Win.Add (label);
 
-			var radioGroup = new RadioGroup (new ustring [] { "Left", "Right", "Centered", "Justified" }) {
+			var radioGroup = new RadioGroup (new string [] { "Left", "Right", "Centered", "Justified" }) {
 				X = 4,
 				Y = Pos.Bottom (label) + 1,
 				SelectedItem = 2,
@@ -216,17 +216,17 @@ namespace UICatalog.Scenarios {
 			Win.Add (radioGroup);
 
 			// Demo changing hotkey
-			ustring MoveHotkey (ustring txt)
+			string MoveHotkey (string txt)
 			{
 				// Remove the '_'
 				var runes = txt.ToRuneList ();
 
-				var i = runes.IndexOf ('_');
-				ustring start = "";
+				var i = runes.IndexOf ((Rune)'_');
+				string start = "";
 				if (i > -1) {
-					start = ustring.Make (runes.GetRange (0, i));
+					start = StringExtensions.ToString (runes.GetRange (0, i));
 				}
-				txt = start + ustring.Make (runes.GetRange (i + 1, runes.Count - (i + 1)));
+				txt = start + StringExtensions.ToString (runes.GetRange (i + 1, runes.Count - (i + 1)));
 
 				runes = txt.ToRuneList ();
 
@@ -237,8 +237,8 @@ namespace UICatalog.Scenarios {
 				}
 
 				// Slip in the '_'
-				start = ustring.Make (runes.GetRange (0, i));
-				return start + ustring.Make ('_') + ustring.Make (runes.GetRange (i, runes.Count - i));
+				start = StringExtensions.ToString (runes.GetRange (0, i));
+				return start + '_' + StringExtensions.ToString (runes.GetRange (i, runes.Count - i));
 			}
 
 			var mhkb = "Click to Change th_is Label's Hotkey";
@@ -247,7 +247,7 @@ namespace UICatalog.Scenarios {
 				Y = Pos.Bottom (radioGroup) + 1,
 				Width = Dim.Width (computedFrame) - 2,
 				ColorScheme = Colors.TopLevel,
-				HotKeySpecifier = (System.Rune)'_',
+				HotKeySpecifier = (Rune)'_',
 				CanFocus = true,
 			};
 			moveHotKeyBtn.Clicked += (s,e) => {
@@ -255,13 +255,13 @@ namespace UICatalog.Scenarios {
 			};
 			Win.Add (moveHotKeyBtn);
 
-			ustring muhkb = " ~  s  gui.cs   master ↑10 = Сохранить";
+			string muhkb = " ~  s  gui.cs   master ↑10 = Сохранить";
 			var moveUnicodeHotKeyBtn = new Label (muhkb) {
 				X = Pos.Left (absoluteFrame) + 1,
 				Y = Pos.Bottom (radioGroup) + 1,
 				Width = Dim.Width (absoluteFrame) - 2,
 				ColorScheme = Colors.TopLevel,
-				HotKeySpecifier = (System.Rune)'_',
+				HotKeySpecifier = (Rune)'_',
 				CanFocus = true,
 			};
 			moveUnicodeHotKeyBtn.Clicked += (s,e) => {

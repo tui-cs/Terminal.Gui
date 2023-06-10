@@ -7,7 +7,7 @@ namespace Terminal.Gui {
 	/// <summary>
 	/// Json converter for the <see cref="Color"/> class.
 	/// </summary>
-	public class ColorJsonConverter : JsonConverter<Color> {
+	internal class ColorJsonConverter : JsonConverter<Color> {
 		private static ColorJsonConverter instance;
 
 		/// <summary>
@@ -23,7 +23,6 @@ namespace Terminal.Gui {
 			}
 		}
 
-		/// <inheritdoc/>
 		public override Color Read (ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
 		{
 			// Check if the value is a string
@@ -52,7 +51,6 @@ namespace Terminal.Gui {
 			}
 		}
 
-		/// <inheritdoc/>
 		public override void Write (Utf8JsonWriter writer, Color value, JsonSerializerOptions options)
 		{
 			// Try to get the human readable color name from the map

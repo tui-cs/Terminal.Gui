@@ -1187,7 +1187,7 @@ namespace Terminal.Gui.ViewTests {
 						if (listLabels.Count > 0)
 							field.Text = listLabels [count - 1].Text;
 						else
-							field.Text = NStack.ustring.Empty;
+							field.Text = string.Empty;
 					}
 					Assert.Equal ($"Absolute({count + 1})", view.Height.ToString ());
 				}

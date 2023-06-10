@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Text;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -542,7 +543,7 @@ Y
 			Assert.Equal (new Rect (0, 0, 3, 1), lbl._needsDisplay);
 			Assert.Equal (new Rect (0, 0, 0, 0), lbl.SuperView._needsDisplay);
 			Assert.True (lbl.SuperView.LayoutNeeded);
-			lbl.SuperView.Redraw (lbl.SuperView.Bounds);
+			lbl.SuperView.Draw ();
 			Assert.Equal ("12  ", GetContents ());
 
 			string GetContents ()
@@ -624,7 +625,7 @@ Y
 			Assert.Equal (new Rect (0, 0, 32, 32), pos);
 
 			verticalView.Text = $"最初の行{Environment.NewLine}二行目";
-			Application.Top.Redraw (Application.Top.Bounds);
+			Application.Top.Draw ();
 			Assert.Equal (new Rect (0, 3, 2, 20), verticalView.Frame);
 			expected = @"
 ┌──────────────────────────────┐
@@ -984,14 +985,14 @@ Y
 			var horizontalView = new View () {
 				Id = "horizontalView",
 				AutoSize = true,
-				HotKeySpecifier = '_',
+				HotKeySpecifier = (Rune)'_',
 				Text = text
 			};
 			var verticalView = new View () {
 				Id = "verticalView",
 				Y = 3,
 				AutoSize = true,
-				HotKeySpecifier = '_',
+				HotKeySpecifier = (Rune)'_',
 				Text = text,
 				TextDirection = TextDirection.TopBottom_LeftRight
 			};
@@ -1051,7 +1052,7 @@ Y
 			Assert.Equal (new Rect (0, 0, 22, 22), pos);
 
 			verticalView.Text = $"最初_の行二行目";
-			Application.Top.Redraw (Application.Top.Bounds);
+			Application.Top.Draw ();
 			Assert.True (horizontalView.AutoSize);
 			Assert.True (verticalView.AutoSize);
 			// height was initialized with 8 and can only grow or keep initial value
@@ -1092,10 +1093,10 @@ Y
 		[Fact, AutoInitShutdown]
 		public void AutoSize_Stays_True_Center_HotKeySpecifier ()
 		{
-			var btn = new Button () {
+			var label = new Label () {
 				X = Pos.Center (),
 				Y = Pos.Center (),
-				Text = "Say He_llo 你"
+				Text = "Say Hello 你"
 			};
 
 			var win = new Window () {
@@ -1103,31 +1104,31 @@ Y
 				Height = Dim.Fill (),
 				Title = "Test Demo 你"
 			};
-			win.Add (btn);
+			win.Add (label);
 			Application.Top.Add (win);
 
-			Assert.True (btn.AutoSize);
+			Assert.True (label.AutoSize);
 
 			Application.Begin (Application.Top);
 			((FakeDriver)Application.Driver).SetBufferSize (30, 5);
-			var expected = @"
+			var expected = @$"
 ┌┤Test Demo 你├──────────────┐
 │                            │
-│      [ Say Hello 你 ]      │
+│        Say Hello 你        │
 │                            │
 └────────────────────────────┘
 ";
 
 			TestHelpers.AssertDriverContentsWithFrameAre (expected, output);
 
-			Assert.True (btn.AutoSize);
-			btn.Text = "Say He_llo 你 changed";
-			Assert.True (btn.AutoSize);
+			Assert.True (label.AutoSize);
+			label.Text = "Say Hello 你 changed";
+			Assert.True (label.AutoSize);
 			Application.Refresh ();
 			expected = @"
 ┌┤Test Demo 你├──────────────┐
 │                            │
-│  [ Say Hello 你 changed ]  │
+│    Say Hello 你 changed    │
 │                            │
 └────────────────────────────┘
 ";
@@ -1652,8 +1653,8 @@ Y
 				break;
 			}
 			_ = TestHelpers.AssertDriverContentsWithFrameAre (expected, output);
-
 		}
+
 		[Theory, AutoInitShutdown]
 		[InlineData (1)]
 		[InlineData (2)]
@@ -1721,8 +1722,7 @@ Y
 │ │
 │ │
 │ │
-└─┘
-";
+└─┘";
 				break;
 			case 4:
 				Assert.Equal (new Rect (0, 0, 1, 4), subview.Frame);
@@ -1811,15 +1811,15 @@ Y
 			var clicked = false;
 			var top = Application.Top;
 			var win1 = new Window () { Id = "win1", Width = 20, Height = 10 };
-			var btn = new Button ("ok");
-			var win2 = new Window () { Id = "win2", Y = Pos.Bottom (btn) + 1, Width = 10, Height = 3 };
+			var label= new Label ("[ ok ]");
+			var win2 = new Window () { Id = "win2", Y = Pos.Bottom (label) + 1, Width = 10, Height = 3 };
 			var view1 = new View () { Id = "view1", Width = Dim.Fill (), Height = 1, CanFocus = true };
 			view1.MouseClick += (sender, e) => clicked = true;
 			var view2 = new View () { Id = "view2", Width = Dim.Fill (1), Height = 1, CanFocus = true };
 
 			view1.Add (view2);
 			win2.Add (view1);
-			win1.Add (btn, win2);
+			win1.Add (label, win2);
 			top.Add (win1);
 
 			var rs = Application.Begin (top);
@@ -1836,7 +1836,7 @@ Y
 │                  │
 └──────────────────┘", output);
 			Assert.Equal (new Rect (0, 0, 80, 25), top.Frame);
-			Assert.Equal (new Rect (0, 0, 6, 1), btn.Frame);
+			Assert.Equal (new Rect (0, 0, 6, 1), label.Frame);
 			Assert.Equal (new Rect (0, 0, 20, 10), win1.Frame);
 			Assert.Equal (new Rect (0, 2, 10, 3), win2.Frame);
 			Assert.Equal (new Rect (0, 0, 8, 1), view1.Frame);

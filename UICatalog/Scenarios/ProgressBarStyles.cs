@@ -21,7 +21,7 @@ namespace UICatalog.Scenarios {
 
 			var pbFormatEnum = Enum.GetValues (typeof (ProgressBarFormat)).Cast<ProgressBarFormat> ().ToList ();
 
-			var rbPBFormat = new RadioGroup (pbFormatEnum.Select (e => NStack.ustring.Make (e.ToString ())).ToArray ()) {
+			var rbPBFormat = new RadioGroup (pbFormatEnum.Select (e => e.ToString ()).ToArray ()) {
 				X = Pos.Center (),
 				Y = 1
 			};

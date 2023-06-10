@@ -1,5 +1,5 @@
 ﻿using System;
-using NStack;
+using System.Text;
 
 namespace Terminal.Gui {
 	/// <summary>
@@ -9,12 +9,12 @@ namespace Terminal.Gui {
 		/// <summary>
 		/// The new Window Title.
 		/// </summary>
-		public ustring NewTitle { get; set; }
+		public string NewTitle { get; set; }
 
 		/// <summary>
 		/// The old Window Title.
 		/// </summary>
-		public ustring OldTitle { get; set; }
+		public string OldTitle { get; set; }
 
 		/// <summary>
 		/// Flag which allows canceling the Title change.
@@ -26,7 +26,7 @@ namespace Terminal.Gui {
 		/// </summary>
 		/// <param name="oldTitle">The <see cref="View.Title"/> that is/has been replaced.</param>
 		/// <param name="newTitle">The new <see cref="View.Title"/> to be replaced.</param>
-		public TitleEventArgs (ustring oldTitle, ustring newTitle)
+		public TitleEventArgs (string oldTitle, string newTitle)
 		{
 			OldTitle = oldTitle;
 			NewTitle = newTitle;

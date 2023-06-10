@@ -186,7 +186,7 @@ namespace UICatalog.Scenarios {
 		{
 			Close (focusedTabView, focusedTabView.SelectedTab);
 		}
-		private void Close (TabView tv, TabView.Tab tabToClose)
+		private void Close (TabView tv, Tab tabToClose)
 		{
 			var tab = tabToClose as OpenedFile;
 
@@ -198,7 +198,7 @@ namespace UICatalog.Scenarios {
 
 			if (tab.UnsavedChanges) {
 
-				int result = MessageBox.Query ("Save Changes", $"Save changes to {tab.Text.ToString ().TrimEnd ('*')}", "Yes", "No", "Cancel");
+				int result = MessageBox.Query ("Save Changes", $"Save changes to {tab.Text.TrimEnd ('*')}", "Yes", "No", "Cancel");
 
 				if (result == -1 || result == 2) {
 
@@ -285,7 +285,7 @@ namespace UICatalog.Scenarios {
 		{
 			Save (focusedTabView, focusedTabView.SelectedTab);
 		}
-		public void Save (TabView tabViewToSave, TabView.Tab tabToSave)
+		public void Save (TabView tabViewToSave, Tab tabToSave)
 		{
 			var tab = tabToSave as OpenedFile;
 
@@ -312,7 +312,7 @@ namespace UICatalog.Scenarios {
 			var fd = new SaveDialog ();
 			Application.Run (fd);
 
-			if (string.IsNullOrWhiteSpace (fd.Path?.ToString ())) {
+			if (string.IsNullOrWhiteSpace (fd.Path)) {
 				return false;
 			}
 			
@@ -320,14 +320,14 @@ namespace UICatalog.Scenarios {
 				return false;
 			}
 
-			tab.File = new FileInfo (fd.Path.ToString ());
-			tab.Text = fd.FileName.ToString ();
+			tab.File = new FileInfo (fd.Path);
+			tab.Text = fd.FileName;
 			tab.Save ();
 
 			return true;
 		}
 
-		private class OpenedFile : TabView.Tab {
+		private class OpenedFile : Tab {
 			public FileInfo File { get; set; }
 
 			/// <summary>
@@ -336,14 +336,14 @@ namespace UICatalog.Scenarios {
 			/// <value></value>
 			public string SavedText { get; set; }
 
-			public bool UnsavedChanges => !string.Equals (SavedText, View.Text.ToString ());
+			public bool UnsavedChanges => !string.Equals (SavedText, View.Text);
 
 			public OpenedFile (TabView parent, string name, FileInfo file) 
 				: base (name, CreateTextView(file))
 			{
 
 				File = file;
-				SavedText = View.Text.ToString ();
+				SavedText = View.Text;
 				RegisterTextViewEvents (parent);
 			}
 
@@ -357,16 +357,16 @@ namespace UICatalog.Scenarios {
 					var areDiff = this.UnsavedChanges;
 
 					if (areDiff) {
-						if (!this.Text.ToString ().EndsWith ('*')) {
+						if (!this.Text.EndsWith ('*')) {
 
-							this.Text = this.Text.ToString () + '*';
+							this.Text = this.Text + '*';
 							parent.SetNeedsDisplay ();
 						}
 					} else {
 						
-						if (Text.ToString ().EndsWith ('*')) {
+						if (Text.EndsWith ('*')) {
 
-							Text = Text.ToString ().TrimEnd ('*');
+							Text = Text.TrimEnd ('*');
 							parent.SetNeedsDisplay ();
 						}
 					}
@@ -398,12 +398,12 @@ namespace UICatalog.Scenarios {
 			}
 			internal void Save ()
 			{
-				var newText = View.Text.ToString ();
+				var newText = View.Text;
 
 				System.IO.File.WriteAllText (File.FullName, newText);
 				SavedText = newText;
 
-				Text = Text.ToString ().TrimEnd ('*');
+				Text = Text.TrimEnd ('*');
 			}
 		}
 

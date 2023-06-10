@@ -1,13 +1,12 @@
-name: Publish Terminal.Gui
+name: Publish Terminal.Gui v2
 on:
   push:
     tags:
-      - v*
+      - v2.0.0-alpha.*
 
 jobs:
-
   publish:
-    name: Build and Publish to Nuget.org
+    name: Build and Publish v2 to Nuget.org
     runs-on: ubuntu-latest
 
     steps:
@@ -16,12 +15,15 @@ jobs:
         fetch-depth: 0 #fetch-depth is needed for GitVersion
 
     - name: Install and calculate the new version with GitVersion 
-      uses: gittools/actions/gitversion/setup@v0.9.15
+      uses: gittools/actions/gitversion/setup@v0
       with:
-        versionSpec: 5.x
+          versionSpec: '6.x'
+          includePrerelease: true
 
     - name: Determine Version
-      uses: gittools/actions/gitversion/execute@v0.9.15
+      uses: gittools/actions/gitversion/execute@v0
+      with:
+        useConfigFile: true      
       id: gitversion # step id used as reference for output values
 
     - name: Display GitVersion outputs
@@ -30,9 +32,10 @@ jobs:
         echo "CommitsSinceVersionSource: ${{ steps.gitversion.outputs.CommitsSinceVersionSource }}"
 
     - name: Setup dotnet
-      uses: actions/setup-dotnet@v3.0.3
+      uses: actions/setup-dotnet@v3
       with:
-        dotnet-version: 6.0.100
+        dotnet-version: 7.0
+        dotnet-quality: 'ga'
 
     - name: Install dependencies
       run: dotnet restore
@@ -45,33 +48,33 @@ jobs:
     - name: Pack
       run: dotnet pack -c Release --include-symbols -p:Version='${{ steps.gitversion.outputs.SemVer }}' 
 
-    - name: Test to generate Code Coverage Report
-      run: |
-        dotnet test --verbosity normal --collect:"XPlat Code Coverage" --settings UnitTests/coverlet.runsettings
-        mv -v UnitTests/TestResults/*/*.* UnitTests/TestResults/
+    #- name: Test to generate Code Coverage Report
+    #  run: |
+    #    dotnet test --verbosity normal --collect:"XPlat Code Coverage" --settings UnitTests/coverlet.runsettings
+    #    mv -v UnitTests/TestResults/*/*.* UnitTests/TestResults/
 
-    - name: Create Test Coverage Badge
-      uses: simon-k/dotnet-code-coverage-badge@v1.0.0
-      id: create_coverage_badge
-      with:
-        label: Unit Test Coverage
-        color: brightgreen
-        path: UnitTests/TestResults/coverage.opencover.xml
-        gist-filename: code-coverage.json
-        # https://gist.github.com/migueldeicaza/90ef67a684cb71db1817921a970f8d27
-        gist-id: 90ef67a684cb71db1817921a970f8d27
-        gist-auth-token: ${{ secrets.GIST_AUTH_TOKEN }}   
+    #- name: Create Test Coverage Badge
+    #  uses: simon-k/dotnet-code-coverage-badge@v1.0.0
+    #  id: create_coverage_badge
+    #  with:
+    #    label: Unit Test Coverage
+    #    color: brightgreen
+    #    path: UnitTests/TestResults/coverage.opencover.xml
+    #    gist-filename: code-coverage.json
+    #    # https://gist.github.com/migueldeicaza/90ef67a684cb71db1817921a970f8d27
+    #    gist-id: 90ef67a684cb71db1817921a970f8d27
+    #    gist-auth-token: ${{ secrets.GIST_AUTH_TOKEN }}   
 
-    - name: Print Code Coverage
-      run: |
-        echo "Code coverage percentage: ${{steps.create_coverage_badge.outputs.percentage}}%"
-        echo "Badge data: ${{steps.create_coverage_badge.outputs.badge}}"
-        
-    #- name: Prep GitHub Packages
-    #  run: dotnet nuget add source --username tig --password ${{ secrets.GITHUB_TOKEN }} --store-password-in-clear-text --name github "https://nuget.pkg.github.com/tig/index.json"
-
-    #- name: Publish to GitHub packages 
-    #  run: dotnet nuget push NStack/bin/Release/*.nupkg --api-key ${{ secrets.GITHUB_TOKEN }}  --source "github"
+    #- name: Print Code Coverage
+    #  run: |
+    #    echo "Code coverage percentage: ${{steps.create_coverage_badge.outputs.percentage}}%"
+    #    echo "Badge data: ${{steps.create_coverage_badge.outputs.badge}}"
 
     - name: Publish to NuGet.org
       run: dotnet nuget push Terminal.Gui/bin/Release/*.nupkg --api-key ${{ secrets.NUGET_API_KEY }} -s https://api.nuget.org/v3/index.json
+
+    - name: Unlist from NuGet.org if it's an alpha
+      run: dotnet nuget delete  --non-interactive Terminal.Gui ${{ steps.gitversion.outputs.SemVer }} --api-key ${{ secrets.NUGET_API_KEY }} -s https://api.nuget.org/v3/index.json
+      if: contains(steps.gitversion.outputs.SemVer, 'alpha')
+
+

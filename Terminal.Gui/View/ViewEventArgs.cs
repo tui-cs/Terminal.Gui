@@ -55,6 +55,11 @@ namespace Terminal.Gui {
 		/// Gets the view-relative rectangle describing the currently visible viewport into the <see cref="View"/>.
 		/// </summary>
 		public Rect Rect { get; }
+
+		/// <summary>
+		/// If set to true, the draw operation will be canceled, if applicable.
+		/// </summary>
+		public bool Cancel { get; set; }
 	}
 
 	/// <summary>

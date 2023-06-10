@@ -11,7 +11,7 @@ namespace Terminal.Gui {
 		/// The current table to which the new indexes refer.  May be null e.g. if selection change is the result of clearing the table from the view
 		/// </summary>
 		/// <value></value>
-		public DataTable Table { get; }
+		public ITableSource Table { get; }
 
 		/// <summary>
 		/// The previous selected column index.  May be invalid e.g. when the selection has been changed as a result of replacing the existing Table with a smaller one
@@ -45,7 +45,7 @@ namespace Terminal.Gui {
 		/// <param name="newCol"></param>
 		/// <param name="oldRow"></param>
 		/// <param name="newRow"></param>
-		public SelectedCellChangedEventArgs (DataTable t, int oldCol, int newCol, int oldRow, int newRow)
+		public SelectedCellChangedEventArgs (ITableSource t, int oldCol, int newCol, int oldRow, int newRow)
 		{
 			Table = t;
 			OldCol = oldCol;

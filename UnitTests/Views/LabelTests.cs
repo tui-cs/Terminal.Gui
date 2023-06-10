@@ -18,7 +18,7 @@ namespace Terminal.Gui.ViewsTests {
 			Assert.Equal (string.Empty, label.Text);
 			Application.Top.Add (label);
 			var rs = Application.Begin (Application.Top);
-			
+
 			Assert.Equal (TextAlignment.Left, label.TextAlignment);
 			Assert.True (label.AutoSize);
 			Assert.False (label.CanFocus);
@@ -27,7 +27,7 @@ namespace Terminal.Gui.ViewsTests {
 			var expected = @"";
 			TestHelpers.AssertDriverContentsWithFrameAre (expected, output);
 			Application.End (rs);
-			
+
 			label = new Label ("ARGS", true) { Text = "Test" };
 			Assert.True (label.AutoSize);
 			Assert.Equal ("Test", label.Text);
@@ -41,7 +41,7 @@ Test
 ";
 			TestHelpers.AssertDriverContentsWithFrameAre (expected, output);
 			Application.End (rs);
-			
+
 			label = new Label (3, 4, "Test", true);
 			Assert.Equal ("Test", label.Text);
 			Application.Top.Add (label);
@@ -62,10 +62,10 @@ Test
 		{
 			View b = new Label () { Text = "heya" };
 			Assert.Equal ("heya", b.Text);
-			Assert.True (b.TextFormatter.Text.Contains ("heya"));
+			Assert.Contains ("heya", b.TextFormatter.Text);
 			b.Text = "heyb";
 			Assert.Equal ("heyb", b.Text);
-			Assert.True (b.TextFormatter.Text.Contains ("heyb"));
+			Assert.Contains ("heyb", b.TextFormatter.Text);
 
 			// with cast
 			Assert.Equal ("heyb", ((Label)b).Text);
@@ -232,7 +232,7 @@ Test
 				Text = "Say Hello 你",
 				AutoSize = true
 			};
-			label.X = Pos.AnchorEnd () - Pos.Function (() => TextFormatter.GetTextWidth (label.TextFormatter.Text));
+			label.X = Pos.AnchorEnd () - Pos.Function (() => label.TextFormatter.Text.GetColumns ());
 
 			var win = new Window () {
 				Width = Dim.Fill (),
@@ -269,7 +269,7 @@ Test
 
 			TestHelpers.AssertDriverContentsWithFrameAre (expected, output);
 		}
-		
+
 		[Fact, AutoInitShutdown]
 		public void Pos_Center_Layout_AutoSize_True ()
 		{
@@ -301,7 +301,7 @@ Test
 
 		[Fact, AutoInitShutdown]
 		public void Pos_Center_Layout_AutoSize_False ()
-		{                               
+		{
 			var Label = new Label ("012345678901") {
 				X = Pos.Center (),
 				Y = Pos.Center (),
@@ -329,7 +329,7 @@ Test
 ";
 			TestHelpers.AssertDriverContentsWithFrameAre (expected, output);
 		}
-		
+
 		//[Fact, AutoInitShutdown]
 		//public void Label_HotKeyChanged_EventFires ()
 		//{
@@ -343,14 +343,14 @@ Test
 		//		args = e;
 
 		//	};
-			
+
 		//	label.HotKey = Key.r;
 		//	Assert.Same (label, sender);
 		//	Assert.Equal (Key.Y, args.OldKey);
 		//	Assert.Equal (Key.r, args.NewKey);
 
 		//}
-		
+
 		[Fact, AutoInitShutdown]
 		public void Label_HotKeyChanged_EventFires_WithNone ()
 		{
@@ -889,7 +889,7 @@ This TextFormatter (tf2) with fill will be cleared on rewritten.
 ", output);
 
 			view.Text = "This view is rewritten.";
-			view.Redraw (view.Bounds);
+			view.Draw ();
 
 			tf1.Text = "This TextFormatter (tf1) is rewritten.";
 			tf1.Draw (new Rect (new Point (0, 1), tf1Size), view.GetNormalColor (), view.ColorScheme.HotNormal, default, false);

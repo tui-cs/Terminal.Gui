@@ -1,11 +1,10 @@
-﻿using NStack;
+﻿using System.Text;
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Reflection;
 using System.Runtime.CompilerServices;
-using System.Text;
 using Terminal.Gui;
 
 namespace UICatalog.Scenarios {
@@ -19,12 +18,12 @@ namespace UICatalog.Scenarios {
 		}
 
 		public class DynamicStatusItemList {
-			public ustring Title { get; set; }
+			public string Title { get; set; }
 			public StatusItem StatusItem { get; set; }
 
 			public DynamicStatusItemList () { }
 
-			public DynamicStatusItemList (ustring title, StatusItem statusItem)
+			public DynamicStatusItemList (string title, StatusItem statusItem)
 			{
 				Title = title;
 				StatusItem = statusItem;
@@ -34,18 +33,18 @@ namespace UICatalog.Scenarios {
 		}
 
 		public class DynamicStatusItem {
-			public ustring title = "New";
-			public ustring action = "";
-			public ustring shortcut;
+			public string title = "New";
+			public string action = "";
+			public string shortcut;
 
 			public DynamicStatusItem () { }
 
-			public DynamicStatusItem (ustring title)
+			public DynamicStatusItem (string title)
 			{
 				this.title = title;
 			}
 
-			public DynamicStatusItem (ustring title, ustring action, ustring shortcut = null)
+			public DynamicStatusItem (string title, string action, string shortcut = null)
 			{
 				this.title = title;
 				this.action = action;
@@ -73,7 +72,7 @@ namespace UICatalog.Scenarios {
 					Height = 4
 				};
 
-				var _txtDelimiter = new TextField (StatusBar.ShortcutDelimiter.ToString ()) {
+				var _txtDelimiter = new TextField (StatusBar.ShortcutDelimiter) {
 					X = Pos.Center (),
 					Width = 2,
 				};
@@ -193,7 +192,7 @@ namespace UICatalog.Scenarios {
 				};
 
 				_btnOk.Clicked += (s,e) => {
-					if (ustring.IsNullOrEmpty (_frmStatusBarDetails._txtTitle.Text) && _currentEditStatusItem != null) {
+					if (string.IsNullOrEmpty (_frmStatusBarDetails._txtTitle.Text) && _currentEditStatusItem != null) {
 						MessageBox.ErrorQuery ("Invalid title", "Must enter a valid title!.", "Ok");
 					} else if (_currentEditStatusItem != null) {
 						_frmStatusBarDetails._txtTitle.Text = SetTitleText (
@@ -330,14 +329,14 @@ namespace UICatalog.Scenarios {
 				//_frmStatusBarDetails.Initialized += (s, e) => _frmStatusBarDetails.Enabled = false;
 			}
 
-			public static ustring SetTitleText (ustring title, ustring shortcut)
+			public static string SetTitleText (string title, string shortcut)
 			{
 				var txt = title;
-				var split = title.ToString ().Split ('~');
+				var split = title.Split ('~');
 				if (split.Length > 1) {
 					txt = split [2].Trim (); ;
 				}
-				if (string.IsNullOrEmpty (shortcut.ToString ())) {
+				if (string.IsNullOrEmpty (shortcut)) {
 					return txt;
 				}
 
@@ -356,7 +355,7 @@ namespace UICatalog.Scenarios {
 				_statusItem = statusItem;
 			}
 
-			public DynamicStatusBarDetails (ustring title) : base (title)
+			public DynamicStatusBarDetails (string title) : base (title)
 			{
 				var _lblTitle = new Label ("Title:") {
 					Y = 1
@@ -474,10 +473,10 @@ namespace UICatalog.Scenarios {
 					IsDefault = true,
 				};
 				_btnOk.Clicked += (s,e) => {
-					if (ustring.IsNullOrEmpty (_txtTitle.Text)) {
+					if (string.IsNullOrEmpty (_txtTitle.Text)) {
 						MessageBox.ErrorQuery ("Invalid title", "Must enter a valid title!.", "Ok");
 					} else {
-						if (!ustring.IsNullOrEmpty (_txtShortcut.Text)) {
+						if (!string.IsNullOrEmpty (_txtShortcut.Text)) {
 							_txtTitle.Text = DynamicStatusBarSample.SetTitleText (
 								_txtTitle.Text, _txtShortcut.Text);
 						}
@@ -487,7 +486,7 @@ namespace UICatalog.Scenarios {
 				};
 				var _btnCancel = new Button ("Cancel");
 				_btnCancel.Clicked += (s,e) => {
-					_txtTitle.Text = ustring.Empty;
+					_txtTitle.Text = string.Empty;
 					Application.RequestStop ();
 				};
 				var _dialog = new Dialog (_btnOk, _btnCancel) { Title = "Enter the menu details." };
@@ -517,7 +516,7 @@ namespace UICatalog.Scenarios {
 				}
 				_statusItem = statusItem;
 				_txtTitle.Text = statusItem?.Title ?? "";
-				_txtAction.Text = statusItem != null && statusItem.Action != null ? GetTargetAction (statusItem.Action) : ustring.Empty;
+				_txtAction.Text = statusItem != null && statusItem.Action != null ? GetTargetAction (statusItem.Action) : string.Empty;
 				_txtShortcut.Text = ShortcutHelper.GetShortcutTag (statusItem.Shortcut, StatusBar.ShortcutDelimiter) ?? "";
 			}
 
@@ -528,7 +527,7 @@ namespace UICatalog.Scenarios {
 				_txtShortcut.Text = "";
 			}
 
-			ustring GetTargetAction (Action action)
+			string GetTargetAction (Action action)
 			{
 				var me = action.Target;
 
@@ -541,7 +540,7 @@ namespace UICatalog.Scenarios {
 						v = field.GetValue (me);
 					}
 				}
-				return v == null || !(v is DynamicStatusItem item) ? ustring.Empty : item.action;
+				return v == null || !(v is DynamicStatusItem item) ? string.Empty : item.action;
 			}
 
 			public Action CreateAction (DynamicStatusItem item)
@@ -553,10 +552,10 @@ namespace UICatalog.Scenarios {
 		public class DynamicStatusItemModel : INotifyPropertyChanged {
 			public event PropertyChangedEventHandler PropertyChanged;
 
-			private ustring statusBar;
+			private string statusBar;
 			private List<DynamicStatusItemList> items;
 
-			public ustring StatusBar {
+			public string StatusBar {
 				get => statusBar;
 				set {
 					if (value != statusBar) {
@@ -652,7 +651,7 @@ namespace UICatalog.Scenarios {
 			public object Convert (object value, object parameter = null)
 			{
 				var data = Encoding.ASCII.GetBytes (value.ToString ());
-				return ustring.Make (data);
+				return StringExtensions.ToString (data);
 			}
 		}
 	}

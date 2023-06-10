@@ -1,4 +1,6 @@
-﻿using System;
+﻿global using CM = Terminal.Gui.ConfigurationManager;
+
+using System;
 using System.Diagnostics;
 using System.Reflection;
 using Terminal.Gui;

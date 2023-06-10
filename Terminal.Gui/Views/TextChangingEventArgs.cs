@@ -6,7 +6,7 @@
 //
 
 using System;
-using NStack;
+using System.Text;
 
 namespace Terminal.Gui {
 	/// <summary>
@@ -16,7 +16,7 @@ namespace Terminal.Gui {
 		/// <summary>
 		/// The new text to be replaced.
 		/// </summary>
-		public ustring NewText { get; set; }
+		public string NewText { get; set; }
 		/// <summary>
 		/// Flag which allows to cancel the new text value.
 		/// </summary>
@@ -26,7 +26,7 @@ namespace Terminal.Gui {
 		/// Initializes a new instance of <see cref="TextChangingEventArgs"/>
 		/// </summary>
 		/// <param name="newText">The new <see cref="TextField.Text"/> to be replaced.</param>
-		public TextChangingEventArgs (ustring newText)
+		public TextChangingEventArgs (string newText)
 		{
 			NewText = newText;
 		}

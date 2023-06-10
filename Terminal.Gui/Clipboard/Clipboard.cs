@@ -1,4 +1,4 @@
-﻿using NStack;
+﻿using System.Text;
 using System;
 
 namespace Terminal.Gui {
@@ -25,22 +25,26 @@ namespace Terminal.Gui {
 	/// </para>
 	/// </remarks>
 	public static class Clipboard {
-		static ustring contents;
+		static string contents;
 
 		/// <summary>
 		/// Gets (copies from) or sets (pastes to) the contents of the OS clipboard.
 		/// </summary>
-		public static ustring Contents {
+		public static string Contents {
 			get {
 				try {
 					if (IsSupported) {
-						return contents = ustring.Make (Application.Driver.Clipboard.GetClipboardData ());
-					} else {
-						return contents;
+						var clipData = Application.Driver.Clipboard.GetClipboardData ();
+						if (clipData == null) {
+							// throw new InvalidOperationException ($"{Application.Driver.GetType ().Name}.GetClipboardData returned null instead of string.Empty");
+							clipData = string.Empty;
+						}
+						contents = clipData;
 					}
 				} catch (Exception) {
-					return contents;
+					contents = string.Empty;
 				}
+				return contents;
 			}
 			set {
 				try {
@@ -48,7 +52,7 @@ namespace Terminal.Gui {
 						if (value == null) {
 							value = string.Empty;
 						}
-						Application.Driver.Clipboard.SetClipboardData (value.ToString ());
+						Application.Driver.Clipboard.SetClipboardData (value);
 					}
 					contents = value;
 				} catch (NotSupportedException e) {

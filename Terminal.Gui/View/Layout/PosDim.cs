@@ -345,6 +345,7 @@ namespace Terminal.Gui {
 				case 3: tside = "bottom"; break;
 				default: tside = "unknown"; break;
 				}
+				// Note: We do not checkt `Target` for null here to intentionally throw if so
 				return $"View({tside},{Target.ToString ()})";
 			}
 

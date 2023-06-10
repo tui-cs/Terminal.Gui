@@ -122,7 +122,7 @@ namespace UICatalog.Scenarios {
 
 		private void SetAllSuggestions (TextView view)
 		{
-			((SingleWordSuggestionGenerator)view.Autocomplete.SuggestionGenerator).AllSuggestions = Regex.Matches (view.Text.ToString (), "\\w+")
+			((SingleWordSuggestionGenerator)view.Autocomplete.SuggestionGenerator).AllSuggestions = Regex.Matches (view.Text, "\\w+")
 				.Select (s => s.Value)
 				.Distinct ().ToList ();
 		}

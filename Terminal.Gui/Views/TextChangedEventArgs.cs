@@ -6,7 +6,7 @@
 //
 
 using System;
-using NStack;
+using System.Text;
 
 namespace Terminal.Gui {
 	/// <summary>
@@ -18,7 +18,7 @@ namespace Terminal.Gui {
 		/// Creates a new instance of the <see cref="TextChangedEventArgs"/> class
 		/// </summary>
 		/// <param name="oldValue"></param>
-		public TextChangedEventArgs (ustring oldValue)
+		public TextChangedEventArgs (string oldValue)
 		{
 			OldValue = oldValue;
 		}
@@ -26,6 +26,6 @@ namespace Terminal.Gui {
 		/// <summary>
 		/// The old value before the text changed
 		/// </summary>
-		public ustring OldValue { get; }
+		public string OldValue { get; }
 	}
 }

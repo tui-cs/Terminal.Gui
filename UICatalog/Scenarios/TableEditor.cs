@@ -5,6 +5,7 @@ using Terminal.Gui;
 using System.Linq;
 using System.Globalization;
 using static Terminal.Gui.TableView;
+using System.Text;
 
 namespace UICatalog.Scenarios {
 
@@ -16,20 +17,24 @@ namespace UICatalog.Scenarios {
 	[ScenarioCategory ("Top Level Windows")]
 	public class TableEditor : Scenario {
 		TableView tableView;
-		private MenuItem miShowHeaders;
-		private MenuItem miAlwaysShowHeaders;
-		private MenuItem miHeaderOverline;
-		private MenuItem miHeaderMidline;
-		private MenuItem miHeaderUnderline;
-		private MenuItem miShowHorizontalScrollIndicators;
-		private MenuItem miCellLines;
-		private MenuItem miFullRowSelect;
-		private MenuItem miExpandLastColumn;
-		private MenuItem miAlwaysUseNormalColorForVerticalCellLines;
-		private MenuItem miSmoothScrolling;
-		private MenuItem miAlternatingColors;
-		private MenuItem miCursor;
-		private MenuItem miBottomline;
+		DataTable currentTable;
+    
+		private MenuItem _miShowHeaders;
+		private MenuItem _miAlwaysShowHeaders;
+		private MenuItem _miHeaderOverline;
+		private MenuItem _miHeaderMidline;
+		private MenuItem _miHeaderUnderline;
+		private MenuItem _miShowHorizontalScrollIndicators;
+		private MenuItem _miCellLines;
+		private MenuItem _miFullRowSelect;
+		private MenuItem _miExpandLastColumn;
+		private MenuItem _miAlwaysUseNormalColorForVerticalCellLines;
+		private MenuItem _miSmoothScrolling;
+		private MenuItem _miAlternatingColors;
+		private MenuItem _miCursor;
+		private MenuItem _miBottomline;
+		private MenuItem _miCheckboxes;
+		private MenuItem _miRadioboxes;
 
 		ColorScheme redColorScheme;
 		ColorScheme redColorSchemeAlt;
@@ -58,22 +63,24 @@ namespace UICatalog.Scenarios {
 					new MenuItem ("_Quit", "", () => Quit()),
 				}),
 				new MenuBarItem ("_View", new MenuItem [] {
-					miShowHeaders = new MenuItem ("_ShowHeaders", "", () => ToggleShowHeaders()){Checked = tableView.Style.ShowHeaders, CheckType = MenuItemCheckStyle.Checked },
-					miAlwaysShowHeaders = new MenuItem ("_AlwaysShowHeaders", "", () => ToggleAlwaysShowHeaders()){Checked = tableView.Style.AlwaysShowHeaders, CheckType = MenuItemCheckStyle.Checked },
-					miHeaderOverline = new MenuItem ("_HeaderOverLine", "", () => ToggleOverline()){Checked = tableView.Style.ShowHorizontalHeaderOverline, CheckType = MenuItemCheckStyle.Checked },
-					miHeaderMidline = new MenuItem ("_HeaderMidLine", "", () => ToggleHeaderMidline()){Checked = tableView.Style.ShowVerticalHeaderLines, CheckType = MenuItemCheckStyle.Checked },
-					miHeaderUnderline = new MenuItem ("_HeaderUnderLine", "", () => ToggleUnderline()){Checked = tableView.Style.ShowHorizontalHeaderUnderline, CheckType = MenuItemCheckStyle.Checked },
-					miBottomline = new MenuItem ("_BottomLine", "", () => ToggleBottomline()){Checked = tableView.Style.ShowHorizontalBottomline, CheckType = MenuItemCheckStyle.Checked },
-					miShowHorizontalScrollIndicators = new MenuItem ("_HorizontalScrollIndicators", "", () => ToggleHorizontalScrollIndicators()){Checked = tableView.Style.ShowHorizontalScrollIndicators, CheckType = MenuItemCheckStyle.Checked },
-					miFullRowSelect =new MenuItem ("_FullRowSelect", "", () => ToggleFullRowSelect()){Checked = tableView.FullRowSelect, CheckType = MenuItemCheckStyle.Checked },
-					miCellLines =new MenuItem ("_CellLines", "", () => ToggleCellLines()){Checked = tableView.Style.ShowVerticalCellLines, CheckType = MenuItemCheckStyle.Checked },
-					miExpandLastColumn = new MenuItem ("_ExpandLastColumn", "", () => ToggleExpandLastColumn()){Checked = tableView.Style.ExpandLastColumn, CheckType = MenuItemCheckStyle.Checked },
-					miAlwaysUseNormalColorForVerticalCellLines = new MenuItem ("_AlwaysUseNormalColorForVerticalCellLines", "", () => ToggleAlwaysUseNormalColorForVerticalCellLines()){Checked = tableView.Style.AlwaysUseNormalColorForVerticalCellLines, CheckType = MenuItemCheckStyle.Checked },
-					miSmoothScrolling = new MenuItem ("_SmoothHorizontalScrolling", "", () => ToggleSmoothScrolling()){Checked = tableView.Style.SmoothHorizontalScrolling, CheckType = MenuItemCheckStyle.Checked },
+					_miShowHeaders = new MenuItem ("_ShowHeaders", "", () => ToggleShowHeaders()){Checked = tableView.Style.ShowHeaders, CheckType = MenuItemCheckStyle.Checked },
+					_miAlwaysShowHeaders = new MenuItem ("_AlwaysShowHeaders", "", () => ToggleAlwaysShowHeaders()){Checked = tableView.Style.AlwaysShowHeaders, CheckType = MenuItemCheckStyle.Checked },
+					_miHeaderOverline = new MenuItem ("_HeaderOverLine", "", () => ToggleOverline()){Checked = tableView.Style.ShowHorizontalHeaderOverline, CheckType = MenuItemCheckStyle.Checked },
+					_miHeaderMidline = new MenuItem ("_HeaderMidLine", "", () => ToggleHeaderMidline()){Checked = tableView.Style.ShowVerticalHeaderLines, CheckType = MenuItemCheckStyle.Checked },
+					_miHeaderUnderline = new MenuItem ("_HeaderUnderLine", "", () => ToggleUnderline()){Checked = tableView.Style.ShowHorizontalHeaderUnderline, CheckType = MenuItemCheckStyle.Checked },
+					_miBottomline = new MenuItem ("_BottomLine", "", () => ToggleBottomline()){Checked = tableView.Style.ShowHorizontalBottomline, CheckType = MenuItemCheckStyle.Checked },
+					_miShowHorizontalScrollIndicators = new MenuItem ("_HorizontalScrollIndicators", "", () => ToggleHorizontalScrollIndicators()){Checked = tableView.Style.ShowHorizontalScrollIndicators, CheckType = MenuItemCheckStyle.Checked },
+					_miFullRowSelect =new MenuItem ("_FullRowSelect", "", () => ToggleFullRowSelect()){Checked = tableView.FullRowSelect, CheckType = MenuItemCheckStyle.Checked },
+					_miCellLines =new MenuItem ("_CellLines", "", () => ToggleCellLines()){Checked = tableView.Style.ShowVerticalCellLines, CheckType = MenuItemCheckStyle.Checked },
+					_miExpandLastColumn = new MenuItem ("_ExpandLastColumn", "", () => ToggleExpandLastColumn()){Checked = tableView.Style.ExpandLastColumn, CheckType = MenuItemCheckStyle.Checked },
+					_miAlwaysUseNormalColorForVerticalCellLines = new MenuItem ("_AlwaysUseNormalColorForVerticalCellLines", "", () => ToggleAlwaysUseNormalColorForVerticalCellLines()){Checked = tableView.Style.AlwaysUseNormalColorForVerticalCellLines, CheckType = MenuItemCheckStyle.Checked },
+					_miSmoothScrolling = new MenuItem ("_SmoothHorizontalScrolling", "", () => ToggleSmoothScrolling()){Checked = tableView.Style.SmoothHorizontalScrolling, CheckType = MenuItemCheckStyle.Checked },
 					new MenuItem ("_AllLines", "", () => ToggleAllCellLines()),
 					new MenuItem ("_NoLines", "", () => ToggleNoCellLines()),
-					miAlternatingColors = new MenuItem ("Alternating Colors", "", () => ToggleAlternatingColors()){CheckType = MenuItemCheckStyle.Checked},
-					miCursor = new MenuItem ("Invert Selected Cell First Character", "", () => ToggleInvertSelectedCellFirstCharacter()){Checked = tableView.Style.InvertSelectedCellFirstCharacter,CheckType = MenuItemCheckStyle.Checked},
+					_miCheckboxes = new MenuItem ("_Checkboxes", "", () => ToggleCheckboxes(false)){Checked = false, CheckType = MenuItemCheckStyle.Checked },
+					_miRadioboxes = new MenuItem ("_Radioboxes", "", () => ToggleCheckboxes(true)){Checked = false, CheckType = MenuItemCheckStyle.Checked },
+					_miAlternatingColors = new MenuItem ("Alternating Colors", "", () => ToggleAlternatingColors()){CheckType = MenuItemCheckStyle.Checked},
+					_miCursor = new MenuItem ("Invert Selected Cell First Character", "", () => ToggleInvertSelectedCellFirstCharacter()){Checked = tableView.Style.InvertSelectedCellFirstCharacter,CheckType = MenuItemCheckStyle.Checked},
 					new MenuItem ("_ClearColumnStyles", "", () => ClearColumnStyles()),
 					new MenuItem ("Sho_w All Columns", "", ()=>ShowAllColumns())
 				}),
@@ -139,17 +146,17 @@ namespace UICatalog.Scenarios {
 			// if user clicks the mouse in TableView
 			tableView.MouseClick += (s, e) => {
 
-				tableView.ScreenToCell (e.MouseEvent.X, e.MouseEvent.Y, out DataColumn clickedCol);
+				tableView.ScreenToCell (e.MouseEvent.X, e.MouseEvent.Y, out int? clickedCol);
 
 				if (clickedCol != null) {
 					if (e.MouseEvent.Flags.HasFlag (MouseFlags.Button1Clicked)) {
 
 						// left click in a header
-						SortColumn (clickedCol);
+						SortColumn (clickedCol.Value);
 					} else if (e.MouseEvent.Flags.HasFlag (MouseFlags.Button3Clicked)) {
 
 						// right click in a header
-						ShowHeaderContextMenu (clickedCol, e);
+						ShowHeaderContextMenu (clickedCol.Value, e);
 					}
 				}
 			};
@@ -165,33 +172,39 @@ namespace UICatalog.Scenarios {
 			tableView.Update ();
 		}
 
-		private void SortColumn (DataColumn clickedCol)
+		private void SortColumn (int clickedCol)
 		{
 			var sort = GetProposedNewSortOrder (clickedCol, out var isAsc);
+
+			// don't try to sort on the toggled column
+			if (HasCheckboxes () && clickedCol == 0) {
+				return;
+			}
+				
 
 			SortColumn (clickedCol, sort, isAsc);
 		}
 
-		private void SortColumn (DataColumn clickedCol, string sort, bool isAsc)
+		private void SortColumn (int clickedCol, string sort, bool isAsc)
 		{
 			// set a sort order
-			tableView.Table.DefaultView.Sort = sort;
+			currentTable.DefaultView.Sort = sort;
 
 			// copy the rows from the view
-			var sortedCopy = tableView.Table.DefaultView.ToTable ();
-			tableView.Table.Rows.Clear ();
+			var sortedCopy = currentTable.DefaultView.ToTable ();
+			currentTable.Rows.Clear ();
 			foreach (DataRow r in sortedCopy.Rows) {
-				tableView.Table.ImportRow (r);
+				currentTable.ImportRow (r);
 			}
 
-			foreach (DataColumn col in tableView.Table.Columns) {
+			foreach (DataColumn col in currentTable.Columns) {
 
 				// remove any lingering sort indicator
 				col.ColumnName = TrimArrows (col.ColumnName);
 
 				// add a new one if this the one that is being sorted
-				if (col == clickedCol) {
-					col.ColumnName += isAsc ? '▲' : '▼';
+				if (col.Ordinal == clickedCol) {
+					col.ColumnName += isAsc ? CM.Glyphs.UpArrow : CM.Glyphs.DownArrow;
 				}
 			}
 
@@ -200,35 +213,41 @@ namespace UICatalog.Scenarios {
 
 		private string TrimArrows (string columnName)
 		{
-			return columnName.TrimEnd ('▼', '▲');
+			return columnName.TrimEnd ((char)CM.Glyphs.UpArrow.Value, (char)CM.Glyphs.DownArrow.Value);
 		}
 		private string StripArrows (string columnName)
 		{
-			return columnName.Replace ("▼", "").Replace ("▲", "");
+			return columnName.Replace ($"{CM.Glyphs.DownArrow}", "").Replace ($"{CM.Glyphs.UpArrow}", "");
 		}
-		private string GetProposedNewSortOrder (DataColumn clickedCol, out bool isAsc)
+		private string GetProposedNewSortOrder (int clickedCol, out bool isAsc)
 		{
 			// work out new sort order
-			var sort = tableView.Table.DefaultView.Sort;
+			var sort = currentTable.DefaultView.Sort;
+			var colName = tableView.Table.ColumnNames[clickedCol];
 
 			if (sort?.EndsWith ("ASC") ?? false) {
-				sort = $"{clickedCol.ColumnName} DESC";
+				sort = $"{colName} DESC";
 				isAsc = false;
 			} else {
-				sort = $"{clickedCol.ColumnName} ASC";
+				sort = $"{colName} ASC";
 				isAsc = true;
 			}
 
 			return sort;
 		}
 
-		private void ShowHeaderContextMenu (DataColumn clickedCol, MouseEventEventArgs e)
+		private void ShowHeaderContextMenu (int clickedCol, MouseEventEventArgs e)
 		{
+			if(HasCheckboxes() && clickedCol == 0) {
+				return;
+			}
+
 			var sort = GetProposedNewSortOrder (clickedCol, out var isAsc);
+			var colName = tableView.Table.ColumnNames[clickedCol];
 
 			var contextMenu = new ContextMenu (e.MouseEvent.X + 1, e.MouseEvent.Y + 1,
 				new MenuBarItem (new MenuItem [] {
-					new MenuItem ($"Hide {TrimArrows(clickedCol.ColumnName)}", "", () => HideColumn(clickedCol)),
+					new MenuItem ($"Hide {TrimArrows(colName)}", "", () => HideColumn(clickedCol)),
 					new MenuItem ($"Sort {StripArrows(sort)}","",()=>SortColumn(clickedCol,sort,isAsc)),
 				})
 			);
@@ -236,28 +255,28 @@ namespace UICatalog.Scenarios {
 			contextMenu.Show ();
 		}
 
-		private void HideColumn (DataColumn clickedCol)
+		private void HideColumn (int clickedCol)
 		{
 			var style = tableView.Style.GetOrCreateColumnStyle (clickedCol);
 			style.Visible = false;
 			tableView.Update ();
 		}
 
-		private DataColumn GetColumn ()
+		private int? GetColumn ()
 		{
 			if (tableView.Table == null)
 				return null;
 
-			if (tableView.SelectedColumn < 0 || tableView.SelectedColumn > tableView.Table.Columns.Count)
+			if (tableView.SelectedColumn < 0 || tableView.SelectedColumn > tableView.Table.Columns)
 				return null;
 
-			return tableView.Table.Columns [tableView.SelectedColumn];
+			return tableView.SelectedColumn;
 		}
 
 		private void SetMinAcceptableWidthToOne ()
 		{
-			foreach (DataColumn c in tableView.Table.Columns) {
-				var style = tableView.Style.GetOrCreateColumnStyle (c);
+			foreach (DataColumn c in currentTable.Columns) {
+				var style = tableView.Style.GetOrCreateColumnStyle (c.Ordinal);
 				style.MinAcceptableWidth = 1;
 			}
 		}
@@ -279,8 +298,12 @@ namespace UICatalog.Scenarios {
 			RunColumnWidthDialog (col, "MaxWidth", (s, v) => s.MaxWidth = v, (s) => s.MaxWidth);
 		}
 
-		private void RunColumnWidthDialog (DataColumn col, string prompt, Action<ColumnStyle, int> setter, Func<ColumnStyle, int> getter)
+		private void RunColumnWidthDialog (int? col, string prompt, Action<ColumnStyle, int> setter, Func<ColumnStyle, int> getter)
 		{
+			if(col == null) {
+				return;
+			}
+
 			var accepted = false;
 			var ok = new Button ("Ok", is_default: true);
 			ok.Clicked += (s, e) => { accepted = true; Application.RequestStop (); };
@@ -288,12 +311,12 @@ namespace UICatalog.Scenarios {
 			cancel.Clicked += (s,e) => { Application.RequestStop (); };
 			var d = new Dialog (ok, cancel) { Title = prompt };
 
-			var style = tableView.Style.GetOrCreateColumnStyle (col);
+			var style = tableView.Style.GetOrCreateColumnStyle (col.Value);
 
 			var lbl = new Label () {
 				X = 0,
 				Y = 1,
-				Text = col.ColumnName
+				Text = tableView.Table.ColumnNames[col.Value]
 			};
 
 			var tf = new TextField () {
@@ -311,7 +334,7 @@ namespace UICatalog.Scenarios {
 			if (accepted) {
 
 				try {
-					setter (style, int.Parse (tf.Text.ToString ()));
+					setter (style, int.Parse (tf.Text));
 				} catch (Exception ex) {
 					MessageBox.ErrorQuery (60, 20, "Failed to set", ex.Message, "Ok");
 				}
@@ -322,30 +345,30 @@ namespace UICatalog.Scenarios {
 
 		private void SetupScrollBar ()
 		{
-			var _scrollBar = new ScrollBarView (tableView, true);
+			var scrollBar = new ScrollBarView (tableView, true);
 
-			_scrollBar.ChangedPosition += (s, e) => {
-				tableView.RowOffset = _scrollBar.Position;
-				if (tableView.RowOffset != _scrollBar.Position) {
-					_scrollBar.Position = tableView.RowOffset;
+			scrollBar.ChangedPosition += (s,e) => {
+				tableView.RowOffset = scrollBar.Position;
+				if (tableView.RowOffset != scrollBar.Position) {
+					scrollBar.Position = tableView.RowOffset;
+				}
+				tableView.SetNeedsDisplay ();
+			};
+			
+			scrollBar.OtherScrollBarView.ChangedPosition += (s,e) => {
+				tableView.LeftItem = scrollBar.OtherScrollBarView.Position;
+				if (tableView.LeftItem != scrollBar.OtherScrollBarView.Position) {
+					scrollBar.OtherScrollBarView.Position = tableView.LeftItem;
 				}
 				tableView.SetNeedsDisplay ();
 			};
 
-			_scrollBar.OtherScrollBarView.ChangedPosition += (s, e) => {
-				tableView.ColumnOffset = _scrollBar.OtherScrollBarView.Position;
-				if (tableView.ColumnOffset != _scrollBar.OtherScrollBarView.Position) {
-					_scrollBar.OtherScrollBarView.Position = tableView.ColumnOffset;
-				}
-				tableView.SetNeedsDisplay ();
-			};
-
-			tableView.DrawContent += (s, e) => {
-				_scrollBar.Size = tableView.Table?.Rows?.Count ?? 0;
-				_scrollBar.Position = tableView.RowOffset;
-				_scrollBar.OtherScrollBarView.Size = tableView.Table != null ? tableView.Bounds.Width + 1 : 0;
-				_scrollBar.OtherScrollBarView.Position = tableView.ColumnOffset;
-				_scrollBar.Refresh ();
+			tableView.DrawContent += (s,e) => {
+				scrollBar.Size = tableView.Table?.Rows ?? 0;
+				scrollBar.Position = tableView.RowOffset;
+				//scrollBar.OtherScrollBarView.Size = tableView.Maxlength - 1;
+				//scrollBar.OtherScrollBarView.Position = tableView.LeftItem;
+				scrollBar.Refresh ();
 			};
 		}
 
@@ -356,12 +379,12 @@ namespace UICatalog.Scenarios {
 				if (tableView.FullRowSelect) {
 					// Delete button deletes all rows when in full row mode
 					foreach (int toRemove in tableView.GetAllSelectedCells ().Select (p => p.Y).Distinct ().OrderByDescending (i => i))
-						tableView.Table.Rows.RemoveAt (toRemove);
+						currentTable.Rows.RemoveAt (toRemove);
 				} else {
 
 					// otherwise set all selected cells to null
 					foreach (var pt in tableView.GetAllSelectedCells ()) {
-						tableView.Table.Rows [pt.Y] [pt.X] = DBNull.Value;
+						currentTable.Rows [pt.Y] [pt.X] = DBNull.Value;
 					}
 				}
 
@@ -379,83 +402,119 @@ namespace UICatalog.Scenarios {
 
 		private void ToggleShowHeaders ()
 		{
-			miShowHeaders.Checked = !miShowHeaders.Checked;
-			tableView.Style.ShowHeaders = (bool)miShowHeaders.Checked;
+			_miShowHeaders.Checked = !_miShowHeaders.Checked;
+			tableView.Style.ShowHeaders = (bool)_miShowHeaders.Checked;
 			tableView.Update ();
 		}
 
 		private void ToggleAlwaysShowHeaders ()
 		{
-			miAlwaysShowHeaders.Checked = !miAlwaysShowHeaders.Checked;
-			tableView.Style.AlwaysShowHeaders = (bool)miAlwaysShowHeaders.Checked;
+			_miAlwaysShowHeaders.Checked = !_miAlwaysShowHeaders.Checked;
+			tableView.Style.AlwaysShowHeaders = (bool)_miAlwaysShowHeaders.Checked;
 			tableView.Update ();
 		}
 
 		private void ToggleOverline ()
 		{
-			miHeaderOverline.Checked = !miHeaderOverline.Checked;
-			tableView.Style.ShowHorizontalHeaderOverline = (bool)miHeaderOverline.Checked;
+			_miHeaderOverline.Checked = !_miHeaderOverline.Checked;
+			tableView.Style.ShowHorizontalHeaderOverline = (bool)_miHeaderOverline.Checked;
 			tableView.Update ();
 		}
 		private void ToggleHeaderMidline ()
 		{
-			miHeaderMidline.Checked = !miHeaderMidline.Checked;
-			tableView.Style.ShowVerticalHeaderLines = (bool)miHeaderMidline.Checked;
+			_miHeaderMidline.Checked = !_miHeaderMidline.Checked;
+			tableView.Style.ShowVerticalHeaderLines = (bool)_miHeaderMidline.Checked;
 			tableView.Update ();
 		}
 		private void ToggleUnderline ()
 		{
-			miHeaderUnderline.Checked = !miHeaderUnderline.Checked;
-			tableView.Style.ShowHorizontalHeaderUnderline = (bool)miHeaderUnderline.Checked;
+			_miHeaderUnderline.Checked = !_miHeaderUnderline.Checked;
+			tableView.Style.ShowHorizontalHeaderUnderline = (bool)_miHeaderUnderline.Checked;
 			tableView.Update ();
 		}
 		private void ToggleBottomline()
 		{
-			miBottomline.Checked = !miBottomline.Checked;
-			tableView.Style.ShowHorizontalBottomline = (bool)miBottomline.Checked;
+			_miBottomline.Checked = !_miBottomline.Checked;
+			tableView.Style.ShowHorizontalBottomline = (bool)_miBottomline.Checked;
 			tableView.Update ();
 		}
 		private void ToggleHorizontalScrollIndicators ()
 		{
-			miShowHorizontalScrollIndicators.Checked = !miShowHorizontalScrollIndicators.Checked;
-			tableView.Style.ShowHorizontalScrollIndicators = (bool)miShowHorizontalScrollIndicators.Checked;
+			_miShowHorizontalScrollIndicators.Checked = !_miShowHorizontalScrollIndicators.Checked;
+			tableView.Style.ShowHorizontalScrollIndicators = (bool)_miShowHorizontalScrollIndicators.Checked;
 			tableView.Update ();
 		}
 		private void ToggleFullRowSelect ()
 		{
-			miFullRowSelect.Checked = !miFullRowSelect.Checked;
-			tableView.FullRowSelect = (bool)miFullRowSelect.Checked;
+			_miFullRowSelect.Checked = !_miFullRowSelect.Checked;
+			tableView.FullRowSelect = (bool)_miFullRowSelect.Checked;
 			tableView.Update ();
 		}
 
 		private void ToggleExpandLastColumn ()
 		{
-			miExpandLastColumn.Checked = !miExpandLastColumn.Checked;
-			tableView.Style.ExpandLastColumn = (bool)miExpandLastColumn.Checked;
+			_miExpandLastColumn.Checked = !_miExpandLastColumn.Checked;
+			tableView.Style.ExpandLastColumn = (bool)_miExpandLastColumn.Checked;
 
 			tableView.Update ();
 
 		}
 
+		private void ToggleCheckboxes (bool radio)
+		{
+			if (tableView.Table is CheckBoxTableSourceWrapperByIndex wrapper) {
+
+				// unwrap it to remove check boxes
+				tableView.Table = wrapper.Wrapping;
+
+				_miCheckboxes.Checked = false;
+				_miRadioboxes.Checked = false;
+
+				// if toggling off checkboxes/radio
+				if(wrapper.UseRadioButtons == radio) {
+					return;
+				}
+			}
+			
+			// Either toggling on checkboxes/radio or switching from radio to checkboxes (or vice versa)
+			
+			var source = new CheckBoxTableSourceWrapperByIndex (tableView, tableView.Table) {
+				UseRadioButtons = radio
+			};
+			tableView.Table = source;
+
+
+			if (radio) {
+				_miRadioboxes.Checked = true;
+				_miCheckboxes.Checked = false;
+			}
+			else {
+
+				_miRadioboxes.Checked = false;
+				_miCheckboxes.Checked = true;
+			}
+			
+		}
+
 		private void ToggleAlwaysUseNormalColorForVerticalCellLines()
 		{
-			miAlwaysUseNormalColorForVerticalCellLines.Checked = !miAlwaysUseNormalColorForVerticalCellLines.Checked;
-			tableView.Style.AlwaysUseNormalColorForVerticalCellLines = (bool)miAlwaysUseNormalColorForVerticalCellLines.Checked;
+			_miAlwaysUseNormalColorForVerticalCellLines.Checked = !_miAlwaysUseNormalColorForVerticalCellLines.Checked;
+			tableView.Style.AlwaysUseNormalColorForVerticalCellLines = (bool)_miAlwaysUseNormalColorForVerticalCellLines.Checked;
 
 			tableView.Update ();
 		}
 		private void ToggleSmoothScrolling ()
 		{
-			miSmoothScrolling.Checked = !miSmoothScrolling.Checked;
-			tableView.Style.SmoothHorizontalScrolling = (bool)miSmoothScrolling.Checked;
+			_miSmoothScrolling.Checked = !_miSmoothScrolling.Checked;
+			tableView.Style.SmoothHorizontalScrolling = (bool)_miSmoothScrolling.Checked;
 
 			tableView.Update ();
 
 		}
 		private void ToggleCellLines ()
 		{
-			miCellLines.Checked = !miCellLines.Checked;
-			tableView.Style.ShowVerticalCellLines = (bool)miCellLines.Checked;
+			_miCellLines.Checked = !_miCellLines.Checked;
+			tableView.Style.ShowVerticalCellLines = (bool)_miCellLines.Checked;
 			tableView.Update ();
 		}
 		private void ToggleAllCellLines ()
@@ -465,10 +524,10 @@ namespace UICatalog.Scenarios {
 			tableView.Style.ShowHorizontalHeaderUnderline = true;
 			tableView.Style.ShowVerticalCellLines = true;
 
-			miHeaderOverline.Checked = true;
-			miHeaderMidline.Checked = true;
-			miHeaderUnderline.Checked = true;
-			miCellLines.Checked = true;
+			_miHeaderOverline.Checked = true;
+			_miHeaderMidline.Checked = true;
+			_miHeaderUnderline.Checked = true;
+			_miCellLines.Checked = true;
 
 			tableView.Update ();
 		}
@@ -479,10 +538,10 @@ namespace UICatalog.Scenarios {
 			tableView.Style.ShowHorizontalHeaderUnderline = false;
 			tableView.Style.ShowVerticalCellLines = false;
 
-			miHeaderOverline.Checked = false;
-			miHeaderMidline.Checked = false;
-			miHeaderUnderline.Checked = false;
-			miCellLines.Checked = false;
+			_miHeaderOverline.Checked = false;
+			_miHeaderMidline.Checked = false;
+			_miHeaderUnderline.Checked = false;
+			_miCellLines.Checked = false;
 
 			tableView.Update ();
 		}
@@ -490,9 +549,9 @@ namespace UICatalog.Scenarios {
 		private void ToggleAlternatingColors ()
 		{
 			//toggle menu item
-			miAlternatingColors.Checked = !miAlternatingColors.Checked;
+			_miAlternatingColors.Checked = !_miAlternatingColors.Checked;
 
-			if (miAlternatingColors.Checked == true) {
+			if (_miAlternatingColors.Checked == true) {
 				tableView.Style.RowColorGetter = (a) => { return a.RowIndex % 2 == 0 ? alternatingColorScheme : null; };
 			} else {
 				tableView.Style.RowColorGetter = null;
@@ -503,8 +562,8 @@ namespace UICatalog.Scenarios {
 		private void ToggleInvertSelectedCellFirstCharacter ()
 		{
 			//toggle menu item
-			miCursor.Checked = !miCursor.Checked;
-			tableView.Style.InvertSelectedCellFirstCharacter = (bool)miCursor.Checked;
+			_miCursor.Checked = !_miCursor.Checked;
+			tableView.Style.InvertSelectedCellFirstCharacter = (bool)_miCursor.Checked;
 			tableView.SetNeedsDisplay ();
 		}
 		private void CloseExample ()
@@ -519,13 +578,18 @@ namespace UICatalog.Scenarios {
 
 		private void OpenExample (bool big)
 		{
-			tableView.Table = BuildDemoDataTable (big ? 30 : 5, big ? 1000 : 5);
+			SetTable(BuildDemoDataTable (big ? 30 : 5, big ? 1000 : 5));
 			SetDemoTableStyles ();
+		}
+
+		private void SetTable (DataTable dataTable)
+		{
+			tableView.Table = new DataTableSource(currentTable = dataTable);
 		}
 
 		private void OpenUnicodeMap ()
 		{
-			tableView.Table = BuildUnicodeMap ();
+			SetTable(BuildUnicodeMap ());
 			tableView.Update ();
 		}
 
@@ -537,7 +601,7 @@ namespace UICatalog.Scenarios {
 			for (int i = 0; i < 10; i++) {
 
 				var col = dt.Columns.Add (i.ToString (), typeof (uint));
-				var style = tableView.Style.GetOrCreateColumnStyle (col);
+				var style = tableView.Style.GetOrCreateColumnStyle (col.Ordinal);
 				style.RepresentationGetter = (o) => new Rune ((uint)o).ToString ();
 			}
 
@@ -545,7 +609,7 @@ namespace UICatalog.Scenarios {
 			for (int i = 'a'; i < 'a' + 26; i++) {
 
 				var col = dt.Columns.Add (((char)i).ToString (), typeof (uint));
-				var style = tableView.Style.GetOrCreateColumnStyle (col);
+				var style = tableView.Style.GetOrCreateColumnStyle (col.Ordinal);
 				style.RepresentationGetter = (o) => new Rune ((uint)o).ToString ();
 			}
 
@@ -598,7 +662,7 @@ namespace UICatalog.Scenarios {
 			new UnicodeRange(0xFB00, 0xFb4f,"Alphabetic Presentation Forms"),
 			new UnicodeRange(0x12400, 0x1240f,"Cuneiform Numbers and Punctuation"),
 			new UnicodeRange(0x1FA00, 0x1FA0f,"Chess Symbols"),
-			new UnicodeRange((uint)(CharMap.MaxCodePointVal - 16), (uint)CharMap.MaxCodePointVal,"End"),
+			new UnicodeRange((uint)(CharMap.MaxCodePoint - 16), (uint)CharMap.MaxCodePoint,"End"),
 
 			new UnicodeRange (0x0020 ,0x007F        ,"Basic Latin"),
 			new UnicodeRange (0x00A0 ,0x00FF        ,"Latin-1 Supplement"),
@@ -726,19 +790,21 @@ namespace UICatalog.Scenarios {
 		};
 		private void SetDemoTableStyles ()
 		{
-			var alignMid = new TableView.ColumnStyle () {
+			tableView.Style.ColumnStyles.Clear();
+
+			var alignMid = new ColumnStyle () {
 				Alignment = TextAlignment.Centered
 			};
-			var alignRight = new TableView.ColumnStyle () {
+			var alignRight = new ColumnStyle () {
 				Alignment = TextAlignment.Right
 			};
 
-			var dateFormatStyle = new TableView.ColumnStyle () {
+			var dateFormatStyle = new ColumnStyle () {
 				Alignment = TextAlignment.Right,
 				RepresentationGetter = (v) => v is DateTime d ? d.ToString ("yyyy-MM-dd") : v.ToString ()
 			};
 
-			var negativeRight = new TableView.ColumnStyle () {
+			var negativeRight = new ColumnStyle () {
 
 				Format = "0.##",
 				MinWidth = 10,
@@ -752,35 +818,41 @@ namespace UICatalog.Scenarios {
 
 				ColorGetter = (a) => a.CellValue is double d ?
 								// color 0 and negative values red
-								d <= 0.0000001 ? a.RowIndex % 2 == 0 && miAlternatingColors.Checked == true ? redColorSchemeAlt : redColorScheme :
+								d <= 0.0000001 ? a.RowIndex % 2 == 0 && _miAlternatingColors.Checked == true ? redColorSchemeAlt : redColorScheme :
 								// use normal scheme for positive values
 								null :
 								// not a double
 								null
 			};
 
-			tableView.Style.ColumnStyles.Add (tableView.Table.Columns ["DateCol"], dateFormatStyle);
-			tableView.Style.ColumnStyles.Add (tableView.Table.Columns ["DoubleCol"], negativeRight);
-			tableView.Style.ColumnStyles.Add (tableView.Table.Columns ["NullsCol"], alignMid);
-			tableView.Style.ColumnStyles.Add (tableView.Table.Columns ["IntCol"], alignRight);
+			tableView.Style.ColumnStyles.Add (currentTable.Columns ["DateCol"].Ordinal, dateFormatStyle);
+			tableView.Style.ColumnStyles.Add (currentTable.Columns ["DoubleCol"].Ordinal, negativeRight);
+			tableView.Style.ColumnStyles.Add (currentTable.Columns ["NullsCol"].Ordinal, alignMid);
+			tableView.Style.ColumnStyles.Add (currentTable.Columns ["IntCol"].Ordinal, alignRight);
 
 			tableView.Update ();
 		}
 
 		private void OpenSimple (bool big)
 		{
-			tableView.Table = BuildSimpleDataTable (big ? 30 : 5, big ? 1000 : 5);
+			SetTable(BuildSimpleDataTable (big ? 30 : 5, big ? 1000 : 5));
 		}
 
 		private void EditCurrentCell (object sender, CellActivatedEventArgs e)
 		{
 			if (e.Table == null)
 				return;
-			var o = e.Table.Rows [e.Row] [e.Col];
+
+			var tableCol = ToTableCol(e.Col);
+			if (tableCol < 0) {
+				return;
+			}
+
+			var o = currentTable.Rows [e.Row] [tableCol];
 
 			var title = o is uint u ? GetUnicodeCategory (u) + $"(0x{o:X4})" : "Enter new value";
 
-			var oldValue = e.Table.Rows [e.Row] [e.Col].ToString ();
+			var oldValue = currentTable.Rows [e.Row] [tableCol].ToString ();
 			bool okPressed = false;
 
 			var ok = new Button ("Ok", is_default: true);
@@ -792,7 +864,7 @@ namespace UICatalog.Scenarios {
 			var lbl = new Label () {
 				X = 0,
 				Y = 1,
-				Text = e.Table.Columns [e.Col].ColumnName
+				Text = tableView.Table.ColumnNames[e.Col]
 			};
 
 			var tf = new TextField () {
@@ -810,13 +882,27 @@ namespace UICatalog.Scenarios {
 			if (okPressed) {
 
 				try {
-					e.Table.Rows [e.Row] [e.Col] = string.IsNullOrWhiteSpace (tf.Text.ToString ()) ? DBNull.Value : (object)tf.Text;
+					currentTable.Rows [e.Row] [tableCol] = string.IsNullOrWhiteSpace (tf.Text) ? DBNull.Value : (object)tf.Text;
 				} catch (Exception ex) {
 					MessageBox.ErrorQuery (60, 20, "Failed to set text", ex.Message, "Ok");
 				}
 
 				tableView.Update ();
 			}
+		}
+
+		private int ToTableCol (int col)
+		{
+			if (HasCheckboxes ()) {
+				return col - 1;
+			}
+
+			return col;
+		}
+
+		private bool HasCheckboxes ()
+		{
+			return tableView.Table is CheckBoxTableSourceWrapperBase;
 		}
 
 		private string GetUnicodeCategory (uint u)

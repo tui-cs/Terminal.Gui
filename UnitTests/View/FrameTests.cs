@@ -1,4 +1,4 @@
-﻿using NStack;
+﻿using System.Text;
 using System;
 using System.Collections.Generic;
 using System.Xml.Linq;
@@ -50,7 +50,7 @@ namespace Terminal.Gui.ViewTests {
 		[InlineData (3)]
 		public void Border_With_Title_Size_Height (int height)
 		{
-			var win = new Window () { 
+			var win = new Window () {
 				Title = "1234",
 				Width = Dim.Fill (),
 				Height = Dim.Fill ()
@@ -93,7 +93,7 @@ namespace Terminal.Gui.ViewTests {
 			_ = TestHelpers.AssertDriverContentsWithFrameAre (expected, output);
 
 		}
-		
+
 		[Theory, AutoInitShutdown]
 		[InlineData (0)]
 		[InlineData (1)]
@@ -195,7 +195,6 @@ namespace Terminal.Gui.ViewTests {
 				break;
 			}
 			_ = TestHelpers.AssertDriverContentsWithFrameAre (expected, output);
-
 		}
 
 		[Fact, AutoInitShutdown]
@@ -268,6 +267,339 @@ namespace Terminal.Gui.ViewTests {
 ║└──────┘║
 ╚════════╝";
 
+			_ = TestHelpers.AssertDriverContentsWithFrameAre (expected, output);
+		}
+
+		[Theory, AutoInitShutdown]
+		[InlineData (0)]
+		[InlineData (1)]
+		[InlineData (2)]
+		[InlineData (3)]
+		[InlineData (4)]
+		[InlineData (5)]
+		[InlineData (6)]
+		[InlineData (7)]
+		[InlineData (8)]
+		[InlineData (9)]
+		[InlineData (10)]
+		public void Border_With_Title_Border_Double_Thickness_Top_Two_Size_Width (int width)
+		{
+			var win = new Window () {
+				Title = "1234",
+				Width = Dim.Fill (),
+				Height = Dim.Fill (),
+				BorderStyle = LineStyle.Double,
+			};
+			win.Border.Thickness.Top = 2;
+
+			var rs = Application.Begin (win);
+			bool firstIteration = false;
+
+			((FakeDriver)Application.Driver).SetBufferSize (width, 4);
+			Application.RunMainLoopIteration (ref rs, true, ref firstIteration);
+			var expected = string.Empty;
+
+			switch (width) {
+			case 1:
+				Assert.Equal (new Rect (0, 0, 1, 4), win.Frame);
+				expected = @"
+║
+║
+║";
+				break;
+			case 2:
+				Assert.Equal (new Rect (0, 0, 2, 4), win.Frame);
+				expected = @"
+╔╗
+║║
+╚╝";
+				break;
+			case 3:
+				Assert.Equal (new Rect (0, 0, 3, 4), win.Frame);
+				expected = @"
+╔═╗
+║ ║
+╚═╝";
+				break;
+			case 4:
+				Assert.Equal (new Rect (0, 0, 4, 4), win.Frame);
+				expected = @"
+ ╒╕ 
+╔╛╘╗
+║  ║
+╚══╝";
+				break;
+			case 5:
+				Assert.Equal (new Rect (0, 0, 5, 4), win.Frame);
+				expected = @"
+ ╒═╕ 
+╔╛1╘╗
+║   ║
+╚═══╝";
+				break;
+			case 6:
+				Assert.Equal (new Rect (0, 0, 6, 4), win.Frame);
+				expected = @"
+ ╒══╕ 
+╔╛12╘╗
+║    ║
+╚════╝";
+				break;
+			case 7:
+				Assert.Equal (new Rect (0, 0, 7, 4), win.Frame);
+				expected = @"
+ ╒═══╕ 
+╔╛123╘╗
+║     ║
+╚═════╝";
+				break;
+			case 8:
+				Assert.Equal (new Rect (0, 0, 8, 4), win.Frame);
+				expected = @"
+ ╒════╕ 
+╔╛1234╘╗
+║      ║
+╚══════╝";
+				break;
+			case 9:
+				Assert.Equal (new Rect (0, 0, 9, 4), win.Frame);
+				expected = @"
+ ╒════╕  
+╔╛1234╘═╗
+║       ║
+╚═══════╝";
+				break;
+			case 10:
+				Assert.Equal (new Rect (0, 0, 10, 4), win.Frame);
+				expected = @"
+ ╒════╕   
+╔╛1234╘══╗
+║        ║
+╚════════╝";
+				break;
+			}
+			_ = TestHelpers.AssertDriverContentsWithFrameAre (expected, output);
+		}
+
+		[Theory, AutoInitShutdown]
+		[InlineData (0)]
+		[InlineData (1)]
+		[InlineData (2)]
+		[InlineData (3)]
+		[InlineData (4)]
+		[InlineData (5)]
+		[InlineData (6)]
+		[InlineData (7)]
+		[InlineData (8)]
+		[InlineData (9)]
+		[InlineData (10)]
+		public void Border_With_Title_Border_Double_Thickness_Top_Three_Size_Width (int width)
+		{
+			var win = new Window () {
+				Title = "1234",
+				Width = Dim.Fill (),
+				Height = Dim.Fill (),
+				BorderStyle = LineStyle.Double,
+			};
+			win.Border.Thickness.Top = 3;
+
+			var rs = Application.Begin (win);
+			bool firstIteration = false;
+
+			((FakeDriver)Application.Driver).SetBufferSize (width, 4);
+			Application.RunMainLoopIteration (ref rs, true, ref firstIteration);
+			var expected = string.Empty;
+
+			switch (width) {
+			case 1:
+				Assert.Equal (new Rect (0, 0, 1, 4), win.Frame);
+				expected = @"
+║
+║
+║";
+				break;
+			case 2:
+				Assert.Equal (new Rect (0, 0, 2, 4), win.Frame);
+				expected = @"
+╔╗
+║║
+╚╝";
+				break;
+			case 3:
+				Assert.Equal (new Rect (0, 0, 3, 4), win.Frame);
+				expected = @"
+╔═╗
+║ ║
+╚═╝";
+				break;
+			case 4:
+				Assert.Equal (new Rect (0, 0, 4, 4), win.Frame);
+				expected = @"
+ ╒╕ 
+╔╡╞╗
+║╘╛║
+╚══╝";
+				break;
+			case 5:
+				Assert.Equal (new Rect (0, 0, 5, 4), win.Frame);
+				expected = @"
+ ╒═╕ 
+╔╡1╞╗
+║╘═╛║
+╚═══╝";
+				break;
+			case 6:
+				Assert.Equal (new Rect (0, 0, 6, 4), win.Frame);
+				expected = @"
+ ╒══╕ 
+╔╡12╞╗
+║╘══╛║
+╚════╝";
+				break;
+			case 7:
+				Assert.Equal (new Rect (0, 0, 7, 4), win.Frame);
+				expected = @"
+ ╒═══╕ 
+╔╡123╞╗
+║╘═══╛║
+╚═════╝";
+				break;
+			case 8:
+				Assert.Equal (new Rect (0, 0, 8, 4), win.Frame);
+				expected = @"
+ ╒════╕ 
+╔╡1234╞╗
+║╘════╛║
+╚══════╝";
+				break;
+			case 9:
+				Assert.Equal (new Rect (0, 0, 9, 4), win.Frame);
+				expected = @"
+ ╒════╕  
+╔╡1234╞═╗
+║╘════╛ ║
+╚═══════╝";
+				break;
+			case 10:
+				Assert.Equal (new Rect (0, 0, 10, 4), win.Frame);
+				expected = @"
+ ╒════╕   
+╔╡1234╞══╗
+║╘════╛  ║
+╚════════╝";
+				break;
+			}
+			_ = TestHelpers.AssertDriverContentsWithFrameAre (expected, output);
+		}
+
+		[Theory, AutoInitShutdown]
+		[InlineData (0)]
+		[InlineData (1)]
+		[InlineData (2)]
+		[InlineData (3)]
+		[InlineData (4)]
+		[InlineData (5)]
+		[InlineData (6)]
+		[InlineData (7)]
+		[InlineData (8)]
+		[InlineData (9)]
+		[InlineData (10)]
+		public void Border_With_Title_Border_Double_Thickness_Top_Four_Size_Width (int width)
+		{
+			var win = new Window () {
+				Title = "1234",
+				Width = Dim.Fill (),
+				Height = Dim.Fill (),
+				BorderStyle = LineStyle.Double,
+			};
+			win.Border.Thickness.Top = 4;
+
+			var rs = Application.Begin (win);
+			bool firstIteration = false;
+
+			((FakeDriver)Application.Driver).SetBufferSize (width, 5);
+			Application.RunMainLoopIteration (ref rs, true, ref firstIteration);
+			var expected = string.Empty;
+
+			switch (width) {
+			case 1:
+				Assert.Equal (new Rect (0, 0, 1, 5), win.Frame);
+				expected = @"
+║
+║
+║";
+				break;
+			case 2:
+				Assert.Equal (new Rect (0, 0, 2, 5), win.Frame);
+				expected = @"
+╔╗
+║║
+╚╝";
+				break;
+			case 3:
+				Assert.Equal (new Rect (0, 0, 3, 5), win.Frame);
+				expected = @"
+╔═╗
+║ ║
+╚═╝";
+				break;
+			case 4:
+				Assert.Equal (new Rect (0, 0, 4, 5), win.Frame);
+				expected = @"
+ ╒╕ 
+╔╡╞╗
+║╘╛║
+╚══╝";
+				break;
+			case 5:
+				Assert.Equal (new Rect (0, 0, 5, 5), win.Frame);
+				expected = @"
+ ╒═╕ 
+╔╡1╞╗
+║╘═╛║
+╚═══╝";
+				break;
+			case 6:
+				Assert.Equal (new Rect (0, 0, 6, 5), win.Frame);
+				expected = @"
+ ╒══╕ 
+╔╡12╞╗
+║╘══╛║
+╚════╝";
+				break;
+			case 7:
+				Assert.Equal (new Rect (0, 0, 7, 5), win.Frame);
+				expected = @"
+ ╒═══╕ 
+╔╡123╞╗
+║╘═══╛║
+╚═════╝";
+				break;
+			case 8:
+				Assert.Equal (new Rect (0, 0, 8, 5), win.Frame);
+				expected = @"
+ ╒════╕ 
+╔╡1234╞╗
+║╘════╛║
+╚══════╝";
+				break;
+			case 9:
+				Assert.Equal (new Rect (0, 0, 9, 5), win.Frame);
+				expected = @"
+ ╒════╕  
+╔╡1234╞═╗
+║╘════╛ ║
+╚═══════╝";
+				break;
+			case 10:
+				Assert.Equal (new Rect (0, 0, 10, 5), win.Frame);
+				expected = @"
+ ╒════╕   
+╔╡1234╞══╗
+║╘════╛  ║
+╚════════╝";
+				break;
+			}
 			_ = TestHelpers.AssertDriverContentsWithFrameAre (expected, output);
 		}
 	}

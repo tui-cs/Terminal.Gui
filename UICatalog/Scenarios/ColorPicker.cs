@@ -19,17 +19,17 @@ namespace UICatalog.Scenarios {
 		/// <summary>
 		/// Foreground color label.
 		/// </summary>
-		private Label foregroundColorLabel;
+		private Label _foregroundColorLabel;
 
 		/// <summary>
 		/// Background color Label.
 		/// </summary>
-		private Label backgroundColorLabel;
+		private Label _backgroundColorLabel;
 
 		/// <summary>
 		/// Demo label.
 		/// </summary>
-		private Label demoLabel;
+		private View _demoView;
 
 		/// <summary>
 		/// Setup the scenario.
@@ -40,36 +40,57 @@ namespace UICatalog.Scenarios {
 			Win.Title = this.GetName ();
 
 			// Foreground ColorPicker.
-			foregroundColorPicker = new ColorPicker ("Foreground Color");
+			foregroundColorPicker = new ColorPicker () {
+				Title = "Foreground Color",
+				X = 0,
+				Y = 0,
+				BoxHeight = 3,
+				BoxWidth = 6,
+				BorderStyle = LineStyle.Single
+			};
 			foregroundColorPicker.ColorChanged += ForegroundColor_ColorChanged;
 			Win.Add (foregroundColorPicker);
 
-			foregroundColorLabel = new Label {
+			_foregroundColorLabel = new Label {
 				X = Pos.Left (foregroundColorPicker),
 				Y = Pos.Bottom (foregroundColorPicker) + 1
 			};
-			Win.Add (foregroundColorLabel);
+			Win.Add (_foregroundColorLabel);
 
 			// Background ColorPicker.
-			backgroundColorPicker = new ColorPicker ("Background Color");
+			backgroundColorPicker = new ColorPicker () { 
+				Title = "Background Color",
+				Y = 0,
+				BoxHeight = 1,
+				BoxWidth = 4,
+				BorderStyle = LineStyle.Single
+			};
 			backgroundColorPicker.X = Pos.AnchorEnd () - (Pos.Right (backgroundColorPicker) - Pos.Left (backgroundColorPicker));
 			backgroundColorPicker.ColorChanged += BackgroundColor_ColorChanged;
 			Win.Add (backgroundColorPicker);
 
-			backgroundColorLabel = new Label ();
-			backgroundColorLabel.X = Pos.AnchorEnd () - (Pos.Right (backgroundColorLabel) - Pos.Left (backgroundColorLabel));
-			backgroundColorLabel.Y = Pos.Bottom (backgroundColorPicker) + 1;
-			Win.Add (backgroundColorLabel);
+			_backgroundColorLabel = new Label ();
+			_backgroundColorLabel.X = Pos.AnchorEnd () - (Pos.Right (_backgroundColorLabel) - Pos.Left (_backgroundColorLabel));
+			_backgroundColorLabel.Y = Pos.Bottom (backgroundColorPicker) + 1;
+			Win.Add (_backgroundColorLabel);
 
 			// Demo Label.
-			demoLabel = new Label ("Lorem Ipsum");
-			demoLabel.X = Pos.Center ();
-			demoLabel.Y = 1;
-			Win.Add (demoLabel);
+			_demoView = new View () {
+				Title = "Color Sample",
+				Text = "Lorem Ipsum",
+				TextAlignment = TextAlignment.Centered,
+				VerticalTextAlignment = VerticalTextAlignment.Middle,
+				BorderStyle = LineStyle.Heavy,
+				X = Pos.Center (),
+				Y = Pos.Center (),
+				Height = 5,
+				Width = 20
+			};
+			Win.Add (_demoView);
 
 			// Set default colors.
-			backgroundColorPicker.SelectedColor = demoLabel.SuperView.ColorScheme.Normal.Background;
-			foregroundColorPicker.SelectedColor = demoLabel.SuperView.ColorScheme.Normal.Foreground;
+			backgroundColorPicker.SelectedColor = _demoView.SuperView.ColorScheme.Normal.Background;
+			foregroundColorPicker.SelectedColor = _demoView.SuperView.ColorScheme.Normal.Foreground;
 		}
 
 		/// <summary>
@@ -77,7 +98,7 @@ namespace UICatalog.Scenarios {
 		/// </summary>
 		private void ForegroundColor_ColorChanged (object sender, EventArgs e)
 		{
-			UpdateColorLabel (foregroundColorLabel, foregroundColorPicker);
+			UpdateColorLabel (_foregroundColorLabel, foregroundColorPicker);
 			UpdateDemoLabel ();
 		}
 
@@ -86,7 +107,7 @@ namespace UICatalog.Scenarios {
 		/// </summary>
 		private void BackgroundColor_ColorChanged (object sender, EventArgs e)
 		{
-			UpdateColorLabel (backgroundColorLabel, backgroundColorPicker);
+			UpdateColorLabel (_backgroundColorLabel, backgroundColorPicker);
 			UpdateDemoLabel ();
 		}
 
@@ -102,7 +123,7 @@ namespace UICatalog.Scenarios {
 		/// <summary>
 		/// Update Demo Label.
 		/// </summary>
-		private void UpdateDemoLabel () => demoLabel.ColorScheme = new ColorScheme () {
+		private void UpdateDemoLabel () => _demoView.ColorScheme = new ColorScheme () {
 			Normal = new Terminal.Gui.Attribute (foregroundColorPicker.SelectedColor, backgroundColorPicker.SelectedColor)
 		};
 	}
