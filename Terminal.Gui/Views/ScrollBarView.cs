@@ -91,7 +91,7 @@ namespace Terminal.Gui {
 			SetInitialProperties (size, position, isVertical);
 		}
 
-		static (bool IsVertical, bool ShowBothScrollIndicator) GetHostScrollBar (ScrollBarType scrollBarType)
+		private static (bool IsVertical, bool ShowBothScrollIndicator) GetHostScrollBar (ScrollBarType scrollBarType)
 		{
 			switch (scrollBarType) {
 			case ScrollBarType.Vertical:
@@ -105,7 +105,7 @@ namespace Terminal.Gui {
 		}
 
 		string _lines, _cols, _line, _col, _top, _left;// bottom, right;
-							 //int savedBottom, savedRight;
+							       //int savedBottom, savedRight;
 
 		/// <summary>
 		/// Initializes a new instance of the <see cref="Gui.ScrollBarView"/> class based on the <see cref="ScrollBarType"/>.
@@ -200,14 +200,34 @@ namespace Terminal.Gui {
 		//	}
 		//}
 
-		//private void OtherScrollBarView_VisibleChanged ()
-		//{
-		//	if (OtherScrollBarView.Visible && GetPropertyValue (bottom) == 0) {
-		//		SetPropertyValue (bottom, savedBottom);
-		//	} else if (!OtherScrollBarView.Visible && GetPropertyValue (bottom) == savedBottom) {
-		//		SetPropertyValue (bottom, 0);
-		//	}
-		//}
+		public int GetScrollOffset (bool isVertical)
+		{
+			switch (GetScrollBarType ()) {
+			case ScrollBarView.ScrollBarType.Vertical:
+				return isVertical ? ShowScrollIndicator ? 1 : 0 : 0;
+			case ScrollBarView.ScrollBarType.Horizontal:
+				return !isVertical ? ShowScrollIndicator ? 1 : 0 : 0;
+			case ScrollBarView.ScrollBarType.Both:
+				return isVertical ? ShowScrollIndicator ? 1 : 0
+					: OtherScrollBarView.ShowScrollIndicator ? 1 : 0;
+			}
+			return 0;
+		}
+
+		private ScrollBarType GetScrollBarType ()
+		{
+			if (IsVertical && _otherScrollBarView == null) {
+				return ScrollBarType.Vertical;
+			} else if (!IsVertical && _otherScrollBarView == null) {
+				return ScrollBarType.Horizontal;
+			} else if ((IsVertical && _otherScrollBarView != null) ||
+				(!IsVertical && _otherScrollBarView != null)) {
+
+				return ScrollBarType.Both;
+			}
+
+			return ScrollBarType.None;
+		}
 
 		/// <summary>
 		/// Initializes a new instance of the <see cref="Gui.ScrollBarView"/> class using <see cref="LayoutStyle.Computed"/> layout.
@@ -324,8 +344,8 @@ namespace Terminal.Gui {
 		//private void Host_CanFocusChanged ()
 		//{
 		//	CanFocus = Host.CanFocus;
-		//	if (otherScrollBarView != null) {
-		//		otherScrollBarView.CanFocus = CanFocus;
+		//	if (_otherScrollBarView != null) {
+		//		_otherScrollBarView.CanFocus = CanFocus;
 		//	}
 		//}
 
@@ -456,8 +476,8 @@ namespace Terminal.Gui {
 		//	if (position != value) {
 		//		return false;
 		//	}
-		//	var s = isVertical ? Host.Bounds.Height + (otherScrollBarView != null && otherScrollBarView.showBothScrollIndicator ? 1 : 0) :
-		//		Host.Bounds.Width + (otherScrollBarView != null && otherScrollBarView.showBothScrollIndicator ? 1 : 0);
+		//	var s = isVertical ? Host.Bounds.Height + (_otherScrollBarView != null && _otherScrollBarView.showBothScrollIndicator ? 1 : 0) :
+		//		Host.Bounds.Width + (_otherScrollBarView != null && _otherScrollBarView.showBothScrollIndicator ? 1 : 0);
 		//	if (position + s > size) {
 		//		value++;
 		//		return true;

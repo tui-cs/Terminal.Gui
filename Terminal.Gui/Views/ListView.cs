@@ -532,6 +532,10 @@ namespace Terminal.Gui {
 		///<inheritdoc/>
 		public override void OnDrawContent (Rect contentArea)
 		{
+			if (_source != null) {
+				_source.PreRender (this, Frame.Width - (_allowsMarking ? 2 : 0));
+			}
+
 			if (_scrollBar != null) {
 				_scrollBar.Size = Source.Count - 1;
 				_scrollBar.Position = TopItem;
@@ -894,14 +898,19 @@ namespace Terminal.Gui {
 			return true;
 		}
 
+		private int _frameWidth => Frame.Width - _scrollBar.GetScrollOffset (false);
+		private int _frameHeight => Frame.Height - _scrollBar.GetScrollOffset (true);
+
 		/// <summary>
 		/// Scrolls the view right.
 		/// </summary>
 		/// <param name="cols">Number of columns to scroll right.</param>
 		public virtual bool ScrollRight (int cols)
 		{
-			if (ScrollBar?.KeepContentAlwaysInViewport == true) {
-				_left = Math.Max (Math.Max (cols, Maxlength - _left), 0);
+			if (ScrollBar?.KeepContentAlwaysInViewport == true 
+				&& _left + cols > Math.Max (Math.Max (cols, Maxlength - _frameWidth), 0)) {
+
+				_left = Math.Max (Math.Max (cols, Maxlength - _frameWidth), 0);
 			} else {
 				_left = Math.Max (Math.Min (_left + cols, Maxlength - 1), 0);
 			}
@@ -1067,14 +1076,6 @@ namespace Terminal.Gui {
 
 			return true;
 		}
-
-		//public override void OnDrawContent (Rect viewport)
-		//{
-		//	if (source != null) {
-		//		source.PreRender (this, Frame.Width - (allowsMarking ? 2 : 0));
-		//	}
-		//	base.OnDrawContent (viewport);
-		//}
 	}
 
 	/// <summary>

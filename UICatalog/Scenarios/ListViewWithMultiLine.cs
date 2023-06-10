@@ -73,7 +73,9 @@ namespace UICatalog.Scenarios {
 			_listView.RowRender += ListView_RowRender;
 			Win.Add (_listView);
 
-			var scrollBar = new ScrollBarView (_listView, true);
+			_listView.ScrollBarType = ScrollBarView.ScrollBarType.Both;
+
+			var scrollBar = _listView.ScrollBar;
 
 			int lastVertPos = 0;
 			int lastHoriPos = 0;

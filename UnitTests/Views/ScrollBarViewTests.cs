@@ -704,8 +704,6 @@ namespace Terminal.Gui.ViewsTests {
 		{
 			Hosting_A_View_To_A_ScrollBarView ();
 
-			//AddHandlers ();
-
 			_hostView.Draw ();
 			Assert.True (_scrollBar.ShowScrollIndicator);
 			Assert.True (_scrollBar.Visible);
@@ -1156,8 +1154,6 @@ namespace Terminal.Gui.ViewsTests {
 			pos = TestHelpers.AssertDriverContentsWithFrameAre (expected, output);
 			Assert.Equal (new Rect (0, 0, 10, 10), pos);
 		}
-
-
 
 		[Fact, AutoInitShutdown]
 		public void ContentBottomRightCorner_Not_Redraw_If_Both_Size_Equal_To_Zero ()

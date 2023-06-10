@@ -118,7 +118,7 @@ namespace UICatalog.Scenarios {
 				X = 1,
 				Y = Pos.Bottom (lbListView),
 			};
-			btnMoveUp.Clicked += (s,e) => {
+			btnMoveUp.Clicked += (s, e) => {
 				listview.MoveUp ();
 			};
 
@@ -126,7 +126,7 @@ namespace UICatalog.Scenarios {
 				X = Pos.Right (btnMoveUp) + 1,
 				Y = Pos.Bottom (lbListView),
 			};
-			btnMoveDown.Clicked += (s,e) => {
+			btnMoveDown.Clicked += (s, e) => {
 				listview.MoveDown ();
 			};
 
