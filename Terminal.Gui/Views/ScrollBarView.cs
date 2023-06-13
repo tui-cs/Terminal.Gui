@@ -661,7 +661,7 @@ namespace Terminal.Gui {
 				if (scrollBarView._showScrollIndicator) {
 					scrollBarView.ShowScrollIndicator = false;
 				}
-				if (isHostWidthOrHeightZero && scrollBarView.OtherScrollBarView._showScrollIndicator) {
+				if (isHostWidthOrHeightZero && scrollBarView.OtherScrollBarView != null && scrollBarView.OtherScrollBarView._showScrollIndicator) {
 					scrollBarView.OtherScrollBarView.ShowScrollIndicator = false;
 				}
 				if (scrollBarView.Visible) {

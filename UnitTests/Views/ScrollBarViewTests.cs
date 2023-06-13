@@ -790,75 +790,75 @@ namespace Terminal.Gui.ViewsTests {
 		}
 
 		// BUGBUG: v2 - Tig broke these tests; @bdisp help?
-		//[Fact]
-		//public void Constructor_ShowBothScrollIndicator_False_And_IsVertical_True_Refresh_Does_Not_Throws_An_Object_Null_Exception ()
-		//{
-		//	var exception = Record.Exception (() => {
-		//		Application.Init (new FakeDriver ());
+		[Fact]
+		public void Constructor_ShowBothScrollIndicator_False_And_IsVertical_True_Refresh_Does_Not_Throws_An_Object_Null_Exception ()
+		{
+			var exception = Record.Exception (() => {
+				Application.Init (new FakeDriver ());
 
-		//		var top = Application.Top;
+				var top = Application.Top;
 
-		//		var win = new Window () {
-		//			X = 0,
-		//			Y = 0,
-		//			Width = Dim.Fill (),
-		//			Height = Dim.Fill ()
-		//		};
+				var win = new Window () {
+					X = 0,
+					Y = 0,
+					Width = Dim.Fill (),
+					Height = Dim.Fill ()
+				};
 
-		//		List<string> source = new List<string> ();
+				List<string> source = new List<string> ();
 
-		//		for (int i = 0; i < 50; i++) {
-		//			source.Add ($"item {i}");
-		//		}
+				for (int i = 0; i < 50; i++) {
+					source.Add ($"item {i}");
+				}
 
-		//		var listView = new ListView (source) {
-		//			X = 0,
-		//			Y = 0,
-		//			Width = Dim.Fill (),
-		//			Height = Dim.Fill ()
-		//		};
-		//		win.Add (listView);
+				var listView = new ListView (source) {
+					X = 0,
+					Y = 0,
+					Width = Dim.Fill (),
+					Height = Dim.Fill ()
+				};
+				win.Add (listView);
 
-		//		var newScrollBarView = new ScrollBarView (listView, true, false) {
-		//			KeepContentAlwaysInViewport = true
-		//		};
-		//		win.Add (newScrollBarView);
+				var newScrollBarView = new ScrollBarView (listView, true, false) {
+					KeepContentAlwaysInViewport = true
+				};
+				win.Add (newScrollBarView);
 
-		//newScrollBarView.ChangedPosition += (s, e) => {
-		//	listView.TopItem = newScrollBarView.Position;
-		//	if (listView.TopItem != newScrollBarView.Position) {
-		//		newScrollBarView.Position = listView.TopItem;
-		//	}
-		//	Assert.Equal (newScrollBarView.Position, listView.TopItem);
-		//	listView.SetNeedsDisplay ();
-		//};
+				newScrollBarView.ChangedPosition += (s, e) => {
+					listView.TopItem = newScrollBarView.Position;
+					if (listView.TopItem != newScrollBarView.Position) {
+						newScrollBarView.Position = listView.TopItem;
+					}
+					Assert.Equal (newScrollBarView.Position, listView.TopItem);
+					listView.SetNeedsDisplay ();
+				};
 
-		//listView.DrawContent += (s, e) => {
-		//	newScrollBarView.Size = listView.Source.Count;
-		//	Assert.Equal (newScrollBarView.Size, listView.Source.Count);
-		//	newScrollBarView.Position = listView.TopItem;
-		//	Assert.Equal (newScrollBarView.Position, listView.TopItem);
-		//	newScrollBarView.Refresh ();
-		//};
+				listView.DrawContent += (s, e) => {
+					newScrollBarView.Size = listView.Source.Count;
+					Assert.Equal (newScrollBarView.Size, listView.Source.Count);
+					newScrollBarView.Position = listView.TopItem;
+					Assert.Equal (newScrollBarView.Position, listView.TopItem);
+					newScrollBarView.Refresh ();
+				};
 
-		//		top.Ready += (s, e) => {
-		//			newScrollBarView.Position = 45;
-		//			Assert.Equal (newScrollBarView.Position, newScrollBarView.Size - listView.TopItem + (listView.TopItem - listView.Bounds.Height));
-		//			Assert.Equal (newScrollBarView.Position, listView.TopItem);
-		//			Assert.Equal (27, newScrollBarView.Position);
-		//			Assert.Equal (27, listView.TopItem);
-		//			Application.RequestStop ();
-		//		};
+				top.Ready += (s, e) => {
+					newScrollBarView.Position = 45;
+					Assert.Equal (newScrollBarView.Position, newScrollBarView.Size - listView.TopItem + (listView.TopItem - listView.Bounds.Height));
+					Assert.Equal (newScrollBarView.Position, listView.TopItem);
+					Assert.Equal (27, newScrollBarView.Position);
+					Assert.Equal (27, listView.TopItem);
+					Application.RequestStop ();
+				};
 
-		//		top.Add (win);
+				top.Add (win);
 
-		//		Application.Run ();
+				Application.Run ();
 
-		//		Application.Shutdown ();
-		//	});
+				Application.Shutdown ();
+			});
 
-		//	Assert.Null (exception);
-		//}
+			Assert.Null (exception);
+		}
 
 		[Fact]
 		public void Constructor_ShowBothScrollIndicator_False_And_IsVertical_False_Refresh_Does_Not_Throws_An_Object_Null_Exception ()
