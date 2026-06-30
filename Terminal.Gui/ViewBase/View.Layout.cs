@@ -67,11 +67,14 @@ public partial class View // Layout APIs
                 return;
             }
 
-            // BUGBUG: We set the internal fields here to avoid recursion. However, this means that
-            // BUGBUG: other logic in the property setters does not get executed.  Specifically:
-            // BUGBUG: - Reset TextFormatter
-            // BUGBUG: - SetLayoutNeeded (not an issue as we explicitly call Layout below)
-            // BUGBUG: - If we add property change events for X/Y/Width/Height they will not be invoked
+            // We set the internal fields directly (not via the X/Y/Width/Height setters) to avoid recursion.
+            // This is intentional and the two side effects of the setters are accounted for elsewhere (#5498):
+            // - TextFormatter constraints: recomputed by the Layout () -> SetRelativeLayout call below
+            //   (SetTextFormatterSize + FinalizeTextFormatterConstraints), so no reset is needed here.
+            // - Width/Height (and X/Y) change events: deliberately NOT raised here. Those events observe
+            //   declarative Dim/Pos assignment; this path overwrites them with Absolute values as bookkeeping
+            //   to keep state consistent with an imperatively-set Frame. Use FrameChanged (raised by SetFrame
+            //   above) to observe resolved-size changes from any cause.
             // If Frame gets set, set all Pos/Dim to Absolute values.
             _x = _frame!.Value.X;
             _y = _frame!.Value.Y;
@@ -152,6 +155,14 @@ public partial class View // Layout APIs
     ///     Raised when the <see cref="Frame"/> changes. This event is raised after the <see cref="Frame"/> has been
     ///     updated.
     /// </summary>
+    /// <remarks>
+    ///     This is the canonical event for observing resolved-size and position changes. It fires whenever the
+    ///     absolute <see cref="Frame"/> changes for any reason: assigning <see cref="X"/>, <see cref="Y"/>,
+    ///     <see cref="Width"/>, or <see cref="Height"/>; setting <see cref="Frame"/> directly; or a layout pass
+    ///     resolving a relative <see cref="Dim"/>/<see cref="Pos"/> (e.g. <see cref="DimFill"/>). By contrast, the
+    ///     <see cref="WidthChanged"/>/<see cref="HeightChanged"/> events observe assignment of the declarative
+    ///     <see cref="Width"/>/<see cref="Height"/> <see cref="Dim"/> only.
+    /// </remarks>
     public event EventHandler<EventArgs<Rectangle>>? FrameChanged;
 
     /// <summary>Gets the <see cref="Frame"/> with a screen-relative location.</summary>
@@ -368,6 +379,13 @@ public partial class View // Layout APIs
     ///         allowing customization or cancellation of the change. The <see cref="HeightChanging"/> event
     ///         is raised before the change, and <see cref="HeightChanged"/> is raised after.
     ///     </para>
+    ///     <para>
+    ///         <see cref="HeightChanging"/>/<see cref="HeightChanged"/> observe assignment of this declarative
+    ///         <see cref="Dim"/> only. They are deliberately not raised when a layout pass resolves the view's size
+    ///         or when <see cref="Frame"/> is set directly, because those paths change the resolved
+    ///         <see cref="Frame"/> rather than the declarative <see cref="Height"/>. To observe resolved-size
+    ///         changes from any cause, subscribe to <see cref="FrameChanged"/>.
+    ///     </para>
     ///     <para>The default value is <c>Dim.Absolute (0)</c>.</para>
     /// </remarks>
     /// <seealso cref="HeightChanging"/>
@@ -461,6 +479,13 @@ public partial class View // Layout APIs
     ///         Setting this property raises pre- and post-change events via <see cref="CWPPropertyHelper"/>,
     ///         allowing customization or cancellation of the change. The <see cref="WidthChanging"/> event
     ///         is raised before the change, and <see cref="WidthChanged"/> is raised after.
+    ///     </para>
+    ///     <para>
+    ///         <see cref="WidthChanging"/>/<see cref="WidthChanged"/> observe assignment of this declarative
+    ///         <see cref="Dim"/> only. They are deliberately not raised when a layout pass resolves the view's size
+    ///         or when <see cref="Frame"/> is set directly, because those paths change the resolved
+    ///         <see cref="Frame"/> rather than the declarative <see cref="Width"/>. To observe resolved-size
+    ///         changes from any cause, subscribe to <see cref="FrameChanged"/>.
     ///     </para>
     ///     <para>The default value is <c>Dim.Absolute (0)</c>.</para>
     /// </remarks>
@@ -686,11 +711,14 @@ public partial class View // Layout APIs
                 _suppressNeedsDrawAfterLayout = false;
             }
 
-            // BUGBUG: We set the internal fields here to avoid recursion. However, this means that
-            // BUGBUG: other logic in the property setters does not get executed.  Specifically:
-            // BUGBUG: - Reset TextFormatter
-            // BUGBUG: - SetLayoutNeeded (not an issue as we explicitly call Layout below)
-            // BUGBUG: - If we add property change events for X/Y/Width/Height they will not be invoked
+            // We update the internal fields directly (not via the X/Y/Width/Height setters) to avoid recursion.
+            // This is intentional and the two side effects of the setters are accounted for here (#5498):
+            // - TextFormatter constraints: already recomputed by SetTextFormatterSize () above and finalized by
+            //   FinalizeTextFormatterConstraints () below, so no reset is needed here.
+            // - Width/Height (and X/Y) change events: deliberately NOT raised. A layout pass resolves the Frame
+            //   without changing the declarative Dim/Pos (e.g. Dim.Fill () stays Dim.Fill ()); these assignments
+            //   only collapse an already-Absolute dim onto its resolved value. FrameChanged (raised by SetFrame
+            //   above) is the event for resolved-size changes.
             if (_x is PosAbsolute)
             {
                 _x = Frame.X;

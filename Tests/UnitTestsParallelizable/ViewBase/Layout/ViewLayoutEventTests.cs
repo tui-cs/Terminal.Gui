@@ -283,6 +283,121 @@ public class ViewLayoutEventTests
         Assert.Equal (new Size (0, 0), oldValue);
     }
 
+    // The following tests lock the Width/Height vs Frame event contract (#5498):
+    // WidthChanged/HeightChanged observe declarative Dim assignment only; FrameChanged observes
+    // resolved-size changes from any cause (Frame setter, declarative assignment, or a layout pass).
+
+    // Claude - Opus 4.8
+    [Fact]
+    public void View_FrameSetter_DoesNotRaise_WidthChanged ()
+    {
+        View view = new () { Width = Dim.Fill (), Height = Dim.Fill () };
+        bool fired = false;
+
+        view.WidthChanged += (_, _) => fired = true;
+
+        view.Frame = new (0, 0, 10, 5);
+
+        // The Frame setter converts Width to Dim.Absolute as bookkeeping, but that is not a
+        // declarative Width assignment, so WidthChanged must not fire.
+        Assert.False (fired);
+        Assert.Equal (Dim.Absolute (10), view.Width);
+    }
+
+    // Claude - Opus 4.8
+    [Fact]
+    public void View_FrameSetter_DoesNotRaise_HeightChanged ()
+    {
+        View view = new () { Width = Dim.Fill (), Height = Dim.Fill () };
+        bool fired = false;
+
+        view.HeightChanged += (_, _) => fired = true;
+
+        view.Frame = new (0, 0, 10, 5);
+
+        Assert.False (fired);
+        Assert.Equal (Dim.Absolute (5), view.Height);
+    }
+
+    // Claude - Opus 4.8
+    [Fact]
+    public void View_FrameSetter_Raises_FrameChanged ()
+    {
+        View view = new ();
+        Rectangle? observed = null;
+
+        view.FrameChanged += (_, args) => observed = args.Value;
+
+        view.Frame = new (1, 2, 10, 5);
+
+        Assert.Equal (new Rectangle (1, 2, 10, 5), observed);
+    }
+
+    // Claude - Opus 4.8
+    [Fact]
+    public void View_LayoutDrivenResize_DoesNotRaise_WidthChanged_Or_HeightChanged ()
+    {
+        View container = new () { Width = 20, Height = 10 };
+        View child = new () { Width = Dim.Fill (), Height = Dim.Fill () };
+        container.Add (child);
+        container.Layout ();
+        Assert.Equal (20, child.Frame.Width);
+
+        bool fired = false;
+        child.WidthChanged += (_, _) => fired = true;
+        child.HeightChanged += (_, _) => fired = true;
+
+        // Growing the container re-resolves the child's Dim.Fill () to a new absolute size during
+        // layout. The declarative Width/Height (still Dim.Fill ()) does not change, so no event fires.
+        container.Width = 30;
+        container.Height = 14;
+        container.Layout ();
+
+        Assert.False (fired);
+        Assert.Equal (30, child.Frame.Width);
+        Assert.Equal (14, child.Frame.Height);
+        Assert.Equal (Dim.Fill (), child.Width);
+        Assert.Equal (Dim.Fill (), child.Height);
+    }
+
+    // Claude - Opus 4.8
+    [Fact]
+    public void View_LayoutDrivenResize_Raises_FrameChanged ()
+    {
+        View container = new () { Width = 20, Height = 10 };
+        View child = new () { Width = Dim.Fill (), Height = Dim.Fill () };
+        container.Add (child);
+        container.Layout ();
+
+        bool fired = false;
+        child.FrameChanged += (_, _) => fired = true;
+
+        container.Width = 30;
+        container.Layout ();
+
+        Assert.True (fired);
+        Assert.Equal (30, child.Frame.Width);
+    }
+
+    // Claude - Opus 4.8
+    [Fact]
+    public void View_DeclarativeWidthAssignment_Raises_FrameChanged_AfterLayout ()
+    {
+        View container = new () { Width = 50, Height = 20 };
+        View child = new () { Width = 10, Height = 5 };
+        container.Add (child);
+        container.Layout ();
+
+        bool fired = false;
+        child.FrameChanged += (_, _) => fired = true;
+
+        child.Width = 25;
+        container.Layout ();
+
+        Assert.True (fired);
+        Assert.Equal (25, child.Frame.Width);
+    }
+
     private class TestView : View
     {
         public bool CancelWidthChange { get; set; }
