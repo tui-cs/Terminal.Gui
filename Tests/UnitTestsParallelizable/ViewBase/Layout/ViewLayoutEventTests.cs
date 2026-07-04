@@ -333,6 +333,29 @@ public class ViewLayoutEventTests
         Assert.Equal (new Rectangle (1, 2, 10, 5), observed);
     }
 
+    [Fact]
+    public void View_FrameSetter_DoesNotRaise_WidthHeightChangingChanged_Or_OnWidthHeightChangingChanged ()
+    {
+        EventProbeView view = new () { Width = Dim.Fill (), Height = Dim.Fill () };
+        view.ResetCounts ();
+        int changingEvents = 0;
+        int changedEvents = 0;
+
+        view.WidthChanging += (_, _) => changingEvents++;
+        view.HeightChanging += (_, _) => changingEvents++;
+        view.WidthChanged += (_, _) => changedEvents++;
+        view.HeightChanged += (_, _) => changedEvents++;
+
+        view.Frame = new (0, 0, 10, 5);
+
+        Assert.Equal (0, changingEvents);
+        Assert.Equal (0, changedEvents);
+        Assert.Equal (0, view.WidthChangingCount);
+        Assert.Equal (0, view.HeightChangingCount);
+        Assert.Equal (0, view.WidthChangedCount);
+        Assert.Equal (0, view.HeightChangedCount);
+    }
+
     // Claude - Opus 4.8
     [Fact]
     public void View_LayoutDrivenResize_DoesNotRaise_WidthChanged_Or_HeightChanged ()
@@ -358,6 +381,34 @@ public class ViewLayoutEventTests
         Assert.Equal (14, child.Frame.Height);
         Assert.Equal (Dim.Fill (), child.Width);
         Assert.Equal (Dim.Fill (), child.Height);
+    }
+
+    [Fact]
+    public void View_LayoutDrivenResize_DoesNotRaise_WidthHeightChangingChanged_Or_OnWidthHeightChangingChanged ()
+    {
+        View container = new () { Width = 20, Height = 10 };
+        EventProbeView child = new () { Width = Dim.Fill (), Height = Dim.Fill () };
+        container.Add (child);
+        container.Layout ();
+        child.ResetCounts ();
+
+        int changingEvents = 0;
+        int changedEvents = 0;
+        child.WidthChanging += (_, _) => changingEvents++;
+        child.HeightChanging += (_, _) => changingEvents++;
+        child.WidthChanged += (_, _) => changedEvents++;
+        child.HeightChanged += (_, _) => changedEvents++;
+
+        container.Width = 30;
+        container.Height = 14;
+        container.Layout ();
+
+        Assert.Equal (0, changingEvents);
+        Assert.Equal (0, changedEvents);
+        Assert.Equal (0, child.WidthChangingCount);
+        Assert.Equal (0, child.HeightChangingCount);
+        Assert.Equal (0, child.WidthChangedCount);
+        Assert.Equal (0, child.HeightChangedCount);
     }
 
     // Claude - Opus 4.8
@@ -411,6 +462,46 @@ public class ViewLayoutEventTests
         protected override bool OnHeightChanging (ValueChangingEventArgs<Dim> args)
         {
             return CancelHeightChange;
+        }
+    }
+
+    private class EventProbeView : View
+    {
+        public int HeightChangedCount { get; private set; }
+        public int HeightChangingCount { get; private set; }
+        public int WidthChangedCount { get; private set; }
+        public int WidthChangingCount { get; private set; }
+
+        public void ResetCounts ()
+        {
+            HeightChangedCount = 0;
+            HeightChangingCount = 0;
+            WidthChangedCount = 0;
+            WidthChangingCount = 0;
+        }
+
+        protected override void OnHeightChanged (ValueChangedEventArgs<Dim> args)
+        {
+            HeightChangedCount++;
+        }
+
+        protected override bool OnHeightChanging (ValueChangingEventArgs<Dim> args)
+        {
+            HeightChangingCount++;
+
+            return false;
+        }
+
+        protected override void OnWidthChanged (ValueChangedEventArgs<Dim> args)
+        {
+            WidthChangedCount++;
+        }
+
+        protected override bool OnWidthChanging (ValueChangingEventArgs<Dim> args)
+        {
+            WidthChangingCount++;
+
+            return false;
         }
     }
 }
