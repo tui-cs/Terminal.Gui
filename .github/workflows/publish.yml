@@ -32,12 +32,12 @@ jobs:
     # from git history + GitVersion.yml during build. We still run the CLI here to
     # capture the SemVer for use in subsequent steps (push, template dispatch).
     - name: Install GitVersion
-      uses: gittools/actions/gitversion/setup@v4.5.0
+      uses: gittools/actions/gitversion/setup@v4.7.0
       with:
         versionSpec: '6.x'
 
     - name: Determine Version
-      uses: gittools/actions/gitversion/execute@v4.5.0
+      uses: gittools/actions/gitversion/execute@v4.7.0
       with:
         useConfigFile: true
       id: gitversion # step id used as reference for output values
