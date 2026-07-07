@@ -4,6 +4,8 @@ namespace Terminal.Gui.Views;
 
 internal class FileDialogState
 {
+    private static readonly EnumerationOptions _ignoreInaccessibleEnumerationOptions = new () { IgnoreInaccessible = true };
+
     public FileDialogState (IDirectoryInfo dir, FileDialog parent)
     {
         Parent = parent;
@@ -60,19 +62,7 @@ internal class FileDialogState
     {
         try
         {
-            IEnumerable<IFileSystemInfo> entries;
-
-            // if directories only
-            if (Parent.OpenMode == OpenMode.Directory)
-            {
-                entries = dir.GetDirectories ();
-            }
-            else
-            {
-                entries = dir.GetFileSystemInfos ();
-            }
-
-            foreach (IFileSystemInfo entry in entries)
+            foreach (IFileSystemInfo entry in EnumerateReadableEntries (dir))
             {
                 AddReadableChild (children, entry);
             }
@@ -81,6 +71,17 @@ internal class FileDialogState
         {
             // Access permission exceptions, missing directories, etc.
         }
+    }
+
+    private IEnumerable<IFileSystemInfo> EnumerateReadableEntries (IDirectoryInfo dir)
+    {
+        // if directories only
+        if (Parent.OpenMode == OpenMode.Directory)
+        {
+            return dir.EnumerateDirectories ("*", _ignoreInaccessibleEnumerationOptions);
+        }
+
+        return dir.EnumerateFileSystemInfos ("*", _ignoreInaccessibleEnumerationOptions);
     }
 
     private void AddReadableChild (List<FileSystemInfoStats> children, IFileSystemInfo entry)
