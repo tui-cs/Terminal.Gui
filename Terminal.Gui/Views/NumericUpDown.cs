@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Numerics;
 
 namespace Terminal.Gui.Views;
@@ -44,10 +45,12 @@ public class NumericUpDown<T> : View, IValue<T> where T : notnull
     public new static Dictionary<Command, PlatformKeyBinding>? DefaultKeyBindings { get; set; } = new ();
 
     private readonly ScrollButton _down;
-
-    // TODO: Use a TextField instead of a Label
-    private readonly View _number;
     private readonly ScrollButton _up;
+
+    private View _number;
+    private TextField? _editor;
+    private bool _updatingText;
+    private bool _canEdit;
 
     /// <summary>
     ///     Initializes a new instance of the <see cref="NumericUpDown{T}"/> class.
@@ -64,16 +67,6 @@ public class NumericUpDown<T> : View, IValue<T> where T : notnull
 
         CanFocus = true;
 
-        // `object` is supported only for AllViewsTester
-        if (type != typeof (object))
-        {
-            if (NumericHelper.TryGetHelper (typeof (T), out INumericHelper? helper))
-            {
-                Increment = (T)helper!.One;
-                Value = (T)helper.Zero;
-            }
-        }
-
         Width = Dim.Auto (DimAutoStyle.Content);
         Height = Dim.Auto (DimAutoStyle.Content);
 
@@ -83,16 +76,7 @@ public class NumericUpDown<T> : View, IValue<T> where T : notnull
             Direction = NavigationDirection.Forward
         };
 
-        _number = new View
-        {
-            Text = Value?.ToString () ?? "Err",
-            X = Pos.Right (_down),
-            Y = Pos.Top (_down),
-            Width = Dim.Auto (minimumContentDim: Dim.Func (_ => string.Format (Format, Value).GetColumns ())),
-            Height = 1,
-            TextAlignment = Alignment.Center,
-            CanFocus = true
-        };
+        _number = CreateNumberView ();
 
         _up = new ScrollButton
         {
@@ -106,6 +90,16 @@ public class NumericUpDown<T> : View, IValue<T> where T : notnull
         _up.Accepting += OnUpButtonOnAccept;
 
         Add (_down, _number, _up);
+
+        // `object` is supported only for AllViewsTester
+        if (type != typeof (object))
+        {
+            if (NumericHelper.TryGetHelper (typeof (T), out INumericHelper? helper))
+            {
+                Increment = (T)helper!.One;
+                Value = (T)helper.Zero;
+            }
+        }
 
         AddCommand (Command.Up,
                     _ =>
@@ -160,6 +154,24 @@ public class NumericUpDown<T> : View, IValue<T> where T : notnull
         {
             InvokeCommand (Command.Up);
             e.Handled = true;
+        }
+    }
+
+    /// <summary>
+    ///     Gets or sets whether the value area uses an editable text field instead of the compact display.
+    /// </summary>
+    public bool CanEdit
+    {
+        get => _canEdit;
+        set
+        {
+            if (_canEdit == value)
+            {
+                return;
+            }
+
+            _canEdit = value;
+            UpdateNumberView ();
         }
     }
 
@@ -253,10 +265,144 @@ public class NumericUpDown<T> : View, IValue<T> where T : notnull
     /// </summary>
     public event EventHandler<EventArgs<string>>? FormatChanged;
 
+    private View CreateNumberView ()
+    {
+        View view = new ()
+        {
+            Text = GetDisplayText (),
+            X = Pos.Right (_down),
+            Y = Pos.Top (_down),
+            Width = Dim.Auto (minimumContentDim: Dim.Func (_ => GetNumberWidth ())),
+            Height = 1,
+            TextAlignment = Alignment.Center,
+            CanFocus = true
+        };
+
+        return view;
+    }
+
+    private TextField CreateEditorView ()
+    {
+        TextField editor = new ()
+        {
+            Text = GetDisplayText (),
+            X = Pos.Right (_down),
+            Y = Pos.Top (_down),
+            Width = Dim.Auto (minimumContentDim: Dim.Func (_ => GetNumberWidth ())),
+            Height = 1,
+            TextAlignment = Alignment.Center,
+            CanFocus = true
+        };
+
+        editor.ValueChanged += EditorValueChanged;
+
+        return editor;
+    }
+
+    private void UpdateNumberView ()
+    {
+        View oldNumber = _number;
+        View newNumber = CanEdit ? CreateEditorView () : CreateNumberView ();
+
+        if (oldNumber != newNumber)
+        {
+            Remove (oldNumber);
+            oldNumber.Dispose ();
+        }
+
+        _editor = newNumber as TextField;
+        _number = newNumber;
+        _number.X = Pos.Right (_down);
+        _number.Y = Pos.Top (_down);
+        _number.Width = Dim.Auto (minimumContentDim: Dim.Func (_ => GetNumberWidth ()));
+        _number.Height = 1;
+        _number.TextAlignment = Alignment.Center;
+        _number.CanFocus = true;
+
+        _up.X = Pos.Right (_number);
+        _up.Y = Pos.Top (_number);
+
+        Add (_number);
+        SetNeedsLayout ();
+        SetText ();
+    }
+
+    private void EditorValueChanged (object? sender, ValueChangedEventArgs<string?> e)
+    {
+        if (_updatingText || !CanEdit || _editor is null)
+        {
+            return;
+        }
+
+        Text = _editor.Text;
+
+        if (TryParse (_editor.Text, out T? parsedValue))
+        {
+            Value = parsedValue;
+        }
+    }
+
+    private bool TryParse (string? text, out T? result)
+    {
+        if (string.IsNullOrWhiteSpace (text))
+        {
+            result = default;
+
+            return false;
+        }
+
+        try
+        {
+            object? convertedValue = Convert.ChangeType (text, typeof (T), CultureInfo.CurrentCulture);
+            result = (T?)convertedValue;
+
+            return true;
+        }
+        catch
+        {
+            result = default;
+
+            return false;
+        }
+    }
+
+    private int GetNumberWidth ()
+    {
+        int width = GetDisplayText ().GetColumns ();
+
+        if (CanEdit)
+        {
+            width++;
+        }
+
+        return Math.Max (width, 1);
+    }
+
+    private string GetDisplayText () => string.Format (Format, _value);
+
     private void SetText ()
     {
-        _number.Text = string.Format (Format, _value);
-        Text = _number.Text;
+        string displayText = GetDisplayText ();
+
+        if (_number is TextField textField)
+        {
+            _updatingText = true;
+
+            try
+            {
+                textField.Text = displayText;
+            }
+            finally
+            {
+                _updatingText = false;
+            }
+        }
+        else
+        {
+            _number.Text = displayText;
+        }
+
+        Text = displayText;
     }
 
     /// <summary>

@@ -646,4 +646,40 @@ public class NumericUpDownTests
 
         numericUpDown.Dispose ();
     }
+
+    // GitHub Copilot
+    // Tests that editable mode parses text, keeps invalid text visible, and resyncs on increment
+    [Fact]
+    public void CanEdit_Parses_Valid_Text_And_Resyncs_Invalid_Text_On_Increment ()
+    {
+        NumericUpDown<decimal> numericUpDown = new ()
+        {
+            CanEdit = true,
+            Value = 12.5m,
+            Increment = 0.25m,
+            Format = "{0:0.00}"
+        };
+
+        TextField editor = Assert.IsType<TextField> (numericUpDown.SubViews.OfType<TextField> ().Single ());
+
+        Assert.Equal ("12.50", editor.Text);
+        Assert.Equal (12.5m, numericUpDown.Value);
+
+        editor.Text = "3";
+
+        Assert.Equal (3m, numericUpDown.Value);
+        Assert.Equal ("3.00", editor.Text);
+
+        editor.Text = "3a.00";
+
+        Assert.Equal (3m, numericUpDown.Value);
+        Assert.Equal ("3a.00", editor.Text);
+
+        numericUpDown.InvokeCommand (Command.Up);
+
+        Assert.Equal (3.25m, numericUpDown.Value);
+        Assert.Equal ("3.25", editor.Text);
+
+        numericUpDown.Dispose ();
+    }
 }
