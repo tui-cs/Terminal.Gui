@@ -103,7 +103,9 @@ public class CharMap : View, IDesignable, IValue<Rune>
         KeyBindings.Add (Key.PageDown, Command.PageDown);
         KeyBindings.Add (Key.Home, Command.Start);
         KeyBindings.Add (Key.End, Command.End);
-        KeyBindings.Add (PopoverMenu.DefaultKey, Command.Context);
+        // ReplaceCommands, not Add: PopoverMenu.DefaultKey is configurable and may collide with a key
+        // that is already bound (e.g. Ctrl+P); the user's context-menu key wins.
+        KeyBindings.ReplaceCommands (PopoverMenu.DefaultKey, Command.Context);
 
         MouseBindings.ReplaceCommands (MouseFlags.LeftButtonClicked, Command.Activate);
         MouseBindings.Add (MouseFlags.LeftButtonDoubleClicked, Command.Accept);
