@@ -34,4 +34,16 @@ public class FileSystemTreeBuilderTests
 
         Assert.Empty (children);
     }
+
+    // Claude - Opus 4.8
+    [Fact]
+    public void IsReparsePoint_WhenAttributesUnreadable_FailsClosed ()
+    {
+        Mock<IDirectoryInfo> directory = new ();
+        directory.SetupGet (d => d.Attributes).Throws (new UnauthorizedAccessException ("Access denied"));
+
+        // Fail closed: an entry whose reparse status cannot be read must be treated as a reparse
+        // point so callers (CanExpand, GetChildren, FileDialog search) do not traverse it.
+        Assert.True (FileSystemTreeBuilder.IsReparsePoint (directory.Object));
+    }
 }

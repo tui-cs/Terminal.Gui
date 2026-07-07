@@ -231,7 +231,10 @@ public partial class FileDialog : Dialog<IReadOnlyList<string>?>, IDesignable
         // by default, Runnable doesn't bind to Command.Context, so
         // we can take advantage of the CommandNotBound event to handle it
         _tableView.CommandNotBound += TableViewHandleCommandNotBound;
-        _tableView.KeyBindings.Add (PopoverMenu.DefaultKey, Command.Context);
+
+        // ReplaceCommands, not Add: PopoverMenu.DefaultKey is configurable and may collide with a key
+        // TableView already binds (e.g. Ctrl+P -> Command.Up); the user's context-menu key wins.
+        _tableView.KeyBindings.ReplaceCommands (PopoverMenu.DefaultKey, Command.Context);
         _tableView.MouseBindings.Add (MouseFlags.RightButtonClicked, Command.Context);
 
         _tbPath.TextChanged += (_, _) => PathChanged ();
