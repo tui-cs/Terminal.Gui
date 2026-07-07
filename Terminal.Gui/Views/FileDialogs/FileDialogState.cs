@@ -4,7 +4,9 @@ namespace Terminal.Gui.Views;
 
 internal class FileDialogState
 {
-    private static readonly EnumerationOptions _ignoreInaccessibleEnumerationOptions = new () { IgnoreInaccessible = true };
+    // AttributesToSkip defaults to Hidden | System; clear it so hidden/system entries (e.g. dotfiles on Unix)
+    // remain visible, matching the behavior of the GetDirectories ()/GetFileSystemInfos () calls this replaced.
+    private static readonly EnumerationOptions _ignoreInaccessibleEnumerationOptions = new () { IgnoreInaccessible = true, AttributesToSkip = FileAttributes.None };
 
     public FileDialogState (IDirectoryInfo dir, FileDialog parent)
     {
@@ -63,6 +65,32 @@ internal class FileDialogState
         try
         {
             foreach (IFileSystemInfo entry in EnumerateReadableEntries (dir))
+            {
+                AddReadableChild (children, entry);
+            }
+        }
+        catch (NotSupportedException)
+        {
+            // Some IFileSystem implementations (e.g. System.IO.Abstractions.TestingHelpers MockFileSystem)
+            // do not support clearing EnumerationOptions.AttributesToSkip; fall back to the eager listing
+            // methods, which never skip hidden/system entries.
+            AddReadableChildrenEagerly (children, dir);
+        }
+        catch (Exception)
+        {
+            // Access permission exceptions, missing directories, etc.
+        }
+    }
+
+    private void AddReadableChildrenEagerly (List<FileSystemInfoStats> children, IDirectoryInfo dir)
+    {
+        try
+        {
+            IEnumerable<IFileSystemInfo> entries = Parent.OpenMode == OpenMode.Directory
+                                                       ? dir.GetDirectories ()
+                                                       : dir.GetFileSystemInfos ();
+
+            foreach (IFileSystemInfo entry in entries)
             {
                 AddReadableChild (children, entry);
             }
