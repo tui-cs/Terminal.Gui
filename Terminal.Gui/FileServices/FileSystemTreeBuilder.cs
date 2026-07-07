@@ -80,7 +80,10 @@ public class FileSystemTreeBuilder : ITreeBuilder<IFileSystemInfo>, IComparer<IF
         }
         catch (Exception)
         {
-            return false; // treat an unreadable entry as not a reparse point / not expandable
+            // Fail closed: if the reparse status cannot be read, treat the entry as a reparse point so
+            // callers do not traverse it — an unreadable symlink/junction could otherwise recreate the
+            // directory-cycle risk this guard exists to prevent.
+            return true;
         }
     }
 }
