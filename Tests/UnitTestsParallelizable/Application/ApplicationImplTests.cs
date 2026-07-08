@@ -92,6 +92,9 @@ public class ApplicationImplTests
         IApplication app1 = Application.Create ();
         app1.Init (DriverRegistry.Names.ANSI);
 
+        IApplication app2 = Application.Create ();
+        app2.Init (DriverRegistry.Names.ANSI);
+
         int mainThreadId1 = app1.MainThreadId ?? Thread.CurrentThread.ManagedThreadId;
         int? callbackThreadId1 = null;
         SynchronizationContext? synchronizationContext1 = null;
@@ -126,9 +129,6 @@ public class ApplicationImplTests
         Assert.True (callbackCalled.Wait (TimeSpan.FromMilliseconds (200), TestContext.Current.CancellationToken));
         Assert.Equal (mainThreadId1, callbackThreadId1);
         Assert.Equal (synchronizationContext1, SynchronizationContext.Current);
-
-        IApplication app2 = Application.Create ();
-        app2.Init (DriverRegistry.Names.ANSI);
 
         int mainThreadId2 = app2.MainThreadId ?? Thread.CurrentThread.ManagedThreadId;
         int? callbackThreadId2 = null;
