@@ -50,6 +50,7 @@ public class NumericUpDown<T> : View, IValue<T> where T : notnull
     private View _number;
     private TextField? _editor;
     private bool _updatingText;
+    private bool _editingFromUser;
     private bool _canEdit;
 
     /// <summary>
@@ -322,7 +323,11 @@ public class NumericUpDown<T> : View, IValue<T> where T : notnull
         _up.X = Pos.Right (_number);
         _up.Y = Pos.Top (_number);
 
+        // Insert the value view between the down and up buttons so Tab/focus order matches the
+        // visual left-to-right layout (down, value, up). Add () appends after _up, so move it back one.
         Add (_number);
+        MoveSubViewTowardsStart (_number);
+
         SetNeedsLayout ();
         SetText ();
     }
@@ -336,9 +341,22 @@ public class NumericUpDown<T> : View, IValue<T> where T : notnull
 
         Text = _editor.Text;
 
-        if (TryParse (_editor.Text, out T? parsedValue))
+        if (!TryParse (_editor.Text, out T? parsedValue))
+        {
+            return;
+        }
+
+        // Apply the parsed value but leave the user's in-progress text untouched (see SetText). Reformatting
+        // on every keystroke would wipe out partial input such as a trailing decimal point.
+        _editingFromUser = true;
+
+        try
         {
             Value = parsedValue;
+        }
+        finally
+        {
+            _editingFromUser = false;
         }
     }
 
@@ -383,6 +401,14 @@ public class NumericUpDown<T> : View, IValue<T> where T : notnull
     private void SetText ()
     {
         string displayText = GetDisplayText ();
+
+        // When the value change was initiated by the user typing, don't overwrite the editor text; doing so
+        // would reformat and reset the caret mid-entry. Text already reflects the user's raw input (set in
+        // EditorValueChanged). The editor resyncs on Up/Down or external Value changes.
+        if (_editingFromUser)
+        {
+            return;
+        }
 
         if (_number is TextField textField)
         {

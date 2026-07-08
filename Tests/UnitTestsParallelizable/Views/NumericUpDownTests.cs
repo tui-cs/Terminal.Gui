@@ -667,18 +667,72 @@ public class NumericUpDownTests
 
         editor.Text = "3";
 
+        // The parsed value is applied, but the editor text is NOT reformatted while the user is typing.
         Assert.Equal (3m, numericUpDown.Value);
-        Assert.Equal ("3.00", editor.Text);
+        Assert.Equal ("3", editor.Text);
 
         editor.Text = "3a.00";
 
         Assert.Equal (3m, numericUpDown.Value);
         Assert.Equal ("3a.00", editor.Text);
 
+        // Increment resyncs the editor text to the formatted value.
         numericUpDown.InvokeCommand (Command.Up);
 
         Assert.Equal (3.25m, numericUpDown.Value);
         Assert.Equal ("3.25", editor.Text);
+
+        numericUpDown.Dispose ();
+    }
+
+    // Claude - Opus 4.8
+    // Editable mode must keep the value editor between the down and up buttons so keyboard Tab order matches
+    // the visual left-to-right layout (down, value, up).
+    [Fact]
+    public void CanEdit_Editor_Preserves_SubView_Order_Between_Buttons ()
+    {
+        NumericUpDown<int> numericUpDown = new () { CanEdit = true };
+
+        TextField editor = numericUpDown.SubViews.OfType<TextField> ().Single ();
+
+        Assert.Equal (3, numericUpDown.SubViews.Count);
+        Assert.Same (editor, numericUpDown.SubViews.ElementAt (1));
+
+        numericUpDown.Dispose ();
+    }
+
+    // Claude - Opus 4.8
+    // Typing into the editor must update Value without reformatting the in-progress text, so partial input
+    // such as a trailing decimal point is preserved. Only Up/Down (or an external Value change) resyncs the text.
+    [Fact]
+    public void CanEdit_Typing_Does_Not_Reformat_Editor_Text_Until_Increment ()
+    {
+        NumericUpDown<decimal> numericUpDown = new ()
+        {
+            CanEdit = true,
+            Value = 0m,
+            Increment = 0.25m,
+            Format = "{0:0.00}"
+        };
+
+        TextField editor = numericUpDown.SubViews.OfType<TextField> ().Single ();
+
+        // Simulate mid-typing a fractional value; the trailing "." must not be wiped out by reformatting.
+        editor.Text = "3.";
+
+        Assert.Equal (3m, numericUpDown.Value);
+        Assert.Equal ("3.", editor.Text);
+
+        editor.Text = "3.5";
+
+        Assert.Equal (3.5m, numericUpDown.Value);
+        Assert.Equal ("3.5", editor.Text);
+
+        // An external Value change resyncs the editor to the formatted display.
+        numericUpDown.InvokeCommand (Command.Up);
+
+        Assert.Equal (3.75m, numericUpDown.Value);
+        Assert.Equal ("3.75", editor.Text);
 
         numericUpDown.Dispose ();
     }
