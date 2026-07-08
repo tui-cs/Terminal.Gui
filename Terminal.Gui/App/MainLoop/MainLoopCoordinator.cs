@@ -71,8 +71,7 @@ internal class MainLoopCoordinator<TInputRecord> : IMainLoopCoordinator where TI
         Task waitForSemaphore = _startupSemaphore.WaitAsync ();
 
         // Wait for either the semaphore to be released or the input task to crash.
-        // ReSharper disable once UseConfigureAwaitFalse
-        Task completedTask = await Task.WhenAny (waitForSemaphore, _inputTask);
+        Task completedTask = await Task.WhenAny (waitForSemaphore, _inputTask).ConfigureAwait (false);
 
         // Check if the task was the input task and if it has failed.
         if (completedTask == _inputTask)

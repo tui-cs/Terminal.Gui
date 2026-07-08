@@ -54,6 +54,122 @@ public class ApplicationImplTests
     }
 
     [Fact]
+    public void Init_Posts_To_The_App_Main_Thread ()
+    {
+        IApplication app = Application.Create ();
+        app.Init (DriverRegistry.Names.ANSI);
+
+        int mainThreadId = app.MainThreadId ?? Thread.CurrentThread.ManagedThreadId;
+        int? callbackThreadId = null;
+        ManualResetEventSlim callbackCalled = new (false);
+
+        SynchronizationContext.Current!.Post (_ =>
+                                              {
+                                                  callbackThreadId = Thread.CurrentThread.ManagedThreadId;
+                                                  callbackCalled.Set ();
+                                              },
+                                              null);
+
+        app.AddTimeout (TimeSpan.FromMilliseconds (100),
+                        () =>
+                        {
+                            app.RequestStop ();
+
+                            return false;
+                        });
+
+        app.Run (new Window ());
+
+        Assert.True (callbackCalled.Wait (TimeSpan.FromMilliseconds (200), TestContext.Current.CancellationToken));
+        Assert.Equal (mainThreadId, callbackThreadId);
+
+        app.Dispose ();
+    }
+
+    [Fact]
+    public void Init_Posts_To_The_App_Instance_Main_Thread ()
+    {
+        IApplication app1 = Application.Create ();
+        app1.Init (DriverRegistry.Names.ANSI);
+
+        int mainThreadId1 = app1.MainThreadId ?? Thread.CurrentThread.ManagedThreadId;
+        int? callbackThreadId1 = null;
+        SynchronizationContext? synchronizationContext1 = null;
+
+        ManualResetEventSlim callbackCalled = new (false);
+
+        app1.AddTimeout (TimeSpan.FromMilliseconds (100),
+                        () =>
+                        {
+                            if (synchronizationContext1 is null)
+                            {
+                                synchronizationContext1 = SynchronizationContext.Current;
+                                synchronizationContext1?.Post (_ =>
+                                                                      {
+                                                                          callbackThreadId1 = Thread.CurrentThread.ManagedThreadId;
+                                                                          callbackCalled.Set ();
+                                                                      },
+                                                                      null);
+
+                                return true;
+                            }
+                            else
+                            {
+                                app1.RequestStop ();
+
+                                return false;
+                            }
+                        });
+
+        app1.Run (new Window ());
+
+        Assert.True (callbackCalled.Wait (TimeSpan.FromMilliseconds (200), TestContext.Current.CancellationToken));
+        Assert.Equal (mainThreadId1, callbackThreadId1);
+        Assert.Equal (synchronizationContext1, SynchronizationContext.Current);
+
+        IApplication app2 = Application.Create ();
+        app2.Init (DriverRegistry.Names.ANSI);
+
+        int mainThreadId2 = app2.MainThreadId ?? Thread.CurrentThread.ManagedThreadId;
+        int? callbackThreadId2 = null;
+        SynchronizationContext? synchronizationContext2 = null;
+
+        app2.AddTimeout (TimeSpan.FromMilliseconds (100),
+                         () =>
+                         {
+                             if (synchronizationContext2 is null)
+                             {
+                                 synchronizationContext2 = SynchronizationContext.Current;
+                                 synchronizationContext2?.Post (_ =>
+                                                                      {
+                                                                          callbackThreadId2 = Thread.CurrentThread.ManagedThreadId;
+                                                                          callbackCalled.Set ();
+                                                                      },
+                                                                      null);
+
+                                 return true;
+                             }
+                             else
+                             {
+                                 app2.RequestStop ();
+
+                                 return false;
+                             }
+                         });
+
+        app2.Run (new Window ());
+
+        Assert.True (callbackCalled.Wait (TimeSpan.FromMilliseconds (200), TestContext.Current.CancellationToken));
+        Assert.Equal (mainThreadId2, callbackThreadId2);
+        Assert.NotEqual (synchronizationContext1, SynchronizationContext.Current);
+        Assert.Equal (synchronizationContext2, SynchronizationContext.Current);
+        Assert.NotEqual (synchronizationContext1, synchronizationContext2);
+
+        app1.Dispose ();
+        app2.Dispose ();
+    }
+
+    [Fact]
     public void Dispose_Alone_Does_Nothing ()
     {
         IApplication app = Application.Create ();
