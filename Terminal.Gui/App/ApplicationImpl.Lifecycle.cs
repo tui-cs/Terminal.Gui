@@ -14,10 +14,10 @@ internal partial class ApplicationImpl
     /// <inheritdoc/>
     public bool Initialized { get; set; }
 
+    internal SynchronizationContext? SynchronizationContext { get; private set; }
+
     /// <inheritdoc/>
     public event EventHandler<EventArgs<bool>>? InitializedChanged;
-
-    internal SynchronizationContext SynchronizationContext;
 
     /// <inheritdoc/>
     public IApplication Init (string? driverName = null)
