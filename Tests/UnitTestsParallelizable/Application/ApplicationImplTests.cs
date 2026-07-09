@@ -130,6 +130,8 @@ public class ApplicationImplTests
         Assert.Equal (mainThreadId1, callbackThreadId1);
         Assert.Equal (synchronizationContext1, SynchronizationContext.Current);
 
+        callbackCalled.Reset ();
+
         int mainThreadId2 = app2.MainThreadId ?? Thread.CurrentThread.ManagedThreadId;
         int? callbackThreadId2 = null;
         SynchronizationContext? synchronizationContext2 = null;
