@@ -136,6 +136,9 @@ internal partial class ApplicationImpl
         // Set the application reference in the runnable
         runnable.SetApp (this);
 
+        // Set the synchronization context to MainLoopSyncContext for this application
+        SynchronizationContext.SetSynchronizationContext (SynchronizationContext);
+
         // Ensure the mouse is ungrabbed
         Mouse.UngrabMouse ();
 
