@@ -72,7 +72,7 @@ internal sealed class MainLoopSyncContext : SynchronizationContext
 
         if (error is { })
         {
-            throw error;
+            System.Runtime.ExceptionServices.ExceptionDispatchInfo.Capture (error).Throw ();
         }
     }
 }
