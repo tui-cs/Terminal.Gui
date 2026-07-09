@@ -1,4 +1,4 @@
-namespace Terminal.Gui;
+namespace Terminal.Gui.Input;
 
 /// <summary>
 ///     Interface for views that handle <see cref="Command.Accept"/> as terminal destinations.

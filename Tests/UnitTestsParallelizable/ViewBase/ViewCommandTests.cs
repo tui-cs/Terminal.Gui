@@ -1279,6 +1279,13 @@ public class ViewCommandTests (ITestOutputHelper output)
         Assert.IsAssignableFrom<IAcceptTarget> (button);
     }
 
+    // Copilot
+    [Fact]
+    public void IAcceptTarget_Is_In_Input_Namespace ()
+    {
+        Assert.Equal ("Terminal.Gui.Input", typeof (IAcceptTarget).Namespace);
+    }
+
     // CoPilot - ChatGPT o1
     [Fact]
     public void NonIAcceptTarget_Handled_Does_Not_Redirect ()

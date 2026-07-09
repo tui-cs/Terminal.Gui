@@ -324,7 +324,7 @@ Bound to `Key.Enter`.
 4. If not handled, redirects to <xref:Terminal.Gui.ViewBase.View.DefaultAcceptView> via `DispatchDown` (unless Accept will also bubble to an ancestor — prevents double-path)
 5. For `BubblingUp` with a dispatch target, calls <xref:Terminal.Gui.ViewBase.View.RaiseAccepted*>
 6. Calls <xref:Terminal.Gui.ViewBase.View.RaiseAccepted*>
-7. Returns `true` if: redirected, will bubble to ancestor, routing is `BubblingUp`, or view is <xref:Terminal.Gui.IAcceptTarget>
+7. Returns `true` if: redirected, will bubble to ancestor, routing is `BubblingUp`, or view is <xref:Terminal.Gui.Input.IAcceptTarget>
 
 ### `DefaultHotKeyHandler` (<xref:Terminal.Gui.Input.Command.HotKey>)
 
@@ -404,7 +404,7 @@ Called by <xref:Terminal.Gui.ViewBase.View.RaiseActivating*>, <xref:Terminal.Gui
 
 1. If already handled → return `true`
 2. If routing is `DispatchingDown` → return `false` (prevents re-entry)
-3. For <xref:Terminal.Gui.Input.Command.Accept>: handles <xref:Terminal.Gui.ViewBase.View.DefaultAcceptView> + <xref:Terminal.Gui.IAcceptTarget> redirect logic
+3. For <xref:Terminal.Gui.Input.Command.Accept>: handles <xref:Terminal.Gui.ViewBase.View.DefaultAcceptView> + <xref:Terminal.Gui.Input.IAcceptTarget> redirect logic
 4. If command is in `SuperView.CommandsToBubbleUp` → invoke on SuperView with `Routing = BubblingUp`
 5. Handles `Padding` edge cases (checks Padding's parent)
 
@@ -420,14 +420,14 @@ protected bool? DispatchDown (View target, ICommandContext? ctx)
 
 Creates a <xref:Terminal.Gui.Input.CommandContext> with `Routing = CommandRouting.DispatchingDown` and invokes on the target. <xref:Terminal.Gui.ViewBase.View.TryBubbleUp*> checks for `DispatchingDown` and skips bubbling, preventing infinite recursion.
 
-### <xref:Terminal.Gui.ViewBase.View.DefaultAcceptView> and <xref:Terminal.Gui.IAcceptTarget>
+### <xref:Terminal.Gui.ViewBase.View.DefaultAcceptView> and <xref:Terminal.Gui.Input.IAcceptTarget>
 
 <xref:Terminal.Gui.ViewBase.View.DefaultAcceptView> identifies the SubView that receives <xref:Terminal.Gui.Input.Command.Accept> when no other handles it. Defaults to the first `IAcceptTarget { IsDefault: true }` SubView (typically a <xref:Terminal.Gui.Views.Button>).
 
-<xref:Terminal.Gui.IAcceptTarget> affects flow in three ways:
+<xref:Terminal.Gui.Input.IAcceptTarget> affects flow in three ways:
 1. **Resolution**: <xref:Terminal.Gui.ViewBase.View.DefaultAcceptView> searches for `IAcceptTarget { IsDefault: true }`
-2. **Return value**: `DefaultAcceptHandler` returns `true` for <xref:Terminal.Gui.IAcceptTarget> views
-3. **Redirect**: Non-default <xref:Terminal.Gui.IAcceptTarget> sources bubble up when a <xref:Terminal.Gui.ViewBase.View.DefaultAcceptView> exists
+2. **Return value**: `DefaultAcceptHandler` returns `true` for <xref:Terminal.Gui.Input.IAcceptTarget> views
+3. **Redirect**: Non-default <xref:Terminal.Gui.Input.IAcceptTarget> sources bubble up when a <xref:Terminal.Gui.ViewBase.View.DefaultAcceptView> exists
 
 ## CommandBridge
 
@@ -650,7 +650,7 @@ When an inner <xref:Terminal.Gui.Views.CheckBox> activates (via click/space), th
 
 1. **<xref:Terminal.Gui.ViewBase.View> base**: Space → <xref:Terminal.Gui.Input.Command.Activate>, Enter → <xref:Terminal.Gui.Input.Command.Accept>, `LeftButtonReleased` → <xref:Terminal.Gui.Input.Command.Activate>. Subclasses override or extend.
 
-2. **<xref:Terminal.Gui.Views.Button>**: Implements <xref:Terminal.Gui.IAcceptTarget>. All interactions map to <xref:Terminal.Gui.Input.Command.Accept>.
+2. **<xref:Terminal.Gui.Views.Button>**: Implements <xref:Terminal.Gui.Input.IAcceptTarget>. All interactions map to <xref:Terminal.Gui.Input.Command.Accept>.
 
 3. **Selector views**: Use `ConsumeDispatch=true`. Inner <xref:Terminal.Gui.Views.CheckBox> commands are consumed; don't propagate to SuperView.
 
