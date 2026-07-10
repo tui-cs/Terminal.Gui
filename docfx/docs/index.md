@@ -19,6 +19,7 @@ Welcome to the Terminal.Gui documentation! This comprehensive guide covers every
 ## Deep Dives
 
 - [ANSI Handling](~/docs/ansihandling.md) - Terminal escape sequence parsing, encoding, and state management
+- [Agent Design Loop (Proposal)](~/docs/agent-design-loop.md) - Design for a gui-cs plugin-powered human+agent TUI co-design workflow
 - [Application](~/docs/application.md) - Application lifecycle, initialization, and main loop
 - [Arrangement](~/docs/arrangement.md) - View arrangement and positioning strategies
 - [Borders](~/docs/borders.md) - Border rendering, tab headers, LineCanvas auto-join, and focus-aware styling
@@ -50,4 +51,3 @@ Welcome to the Terminal.Gui documentation! This comprehensive guide covers every
 ## API Reference
 
 For detailed API documentation, see the [API Reference](~/api/Terminal.Gui.ViewBase.yml).
-

@@ -14,6 +14,8 @@
   href: views.md
 - name: ANSI Handling
   href: ansihandling.md
+- name: Agent Design Loop (Proposal)
+  href: agent-design-loop.md
 - name: Application
   href: application.md
 - name: Arrangement
@@ -70,4 +72,3 @@
   href: treeview.md
 - name: View
   href: View.md
-
