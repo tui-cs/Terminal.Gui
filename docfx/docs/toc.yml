@@ -42,6 +42,8 @@
   href: events.md
 - name: Input Injection
   href: input-injection.md
+- name: Key Sequences
+  href: keysequences.md
 - name: Keyboard
   href: keyboard.md
 - name: Layout

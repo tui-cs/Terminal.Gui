@@ -1,0 +1,28 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AssemblyName>Terminal.Gui.KeySequences</AssemblyName>
+    <RootNamespace>Terminal.Gui.KeySequences</RootNamespace>
+    <TargetFramework>net10.0</TargetFramework>
+    <LangVersion>14</LangVersion>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <IsPackable>true</IsPackable>
+    <PackageId>Terminal.Gui.KeySequences</PackageId>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageProjectUrl>https://github.com/gui-cs/Terminal.Gui</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/gui-cs/Terminal.Gui.git</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <Description>Add-on for Terminal.Gui leader-key and multi-key command sequences.</Description>
+    <PackageTags>terminal.gui, tui, keybindings, vim, command-sequences</PackageTags>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <NoWarn>$(NoWarn);CS1591</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Terminal.Gui\Terminal.Gui.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Remove="Tests\**\*.cs" />
+  </ItemGroup>
+</Project>

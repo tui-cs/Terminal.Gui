@@ -22,6 +22,7 @@
     <File Path="docfx/docs/getting-started.md" />
     <File Path="docfx/docs/index.md" />
     <File Path="docfx/docs/input-injection.md" />
+    <File Path="docfx/docs/keysequences.md" />
     <File Path="docfx/docs/keyboard.md" />
     <File Path="docfx/docs/layout.md" />
     <File Path="docfx/docs/lexicon.md" />
@@ -102,8 +103,10 @@
     <Project Path="Tests/UnitTests.Legacy/UnitTests.Legacy.csproj" />
     <Project Path="Tests/UnitTests.NonParallelizable/UnitTests.NonParallelizable.csproj" />
     <Project Path="Tests/UnitTestsParallelizable/UnitTests.Parallelizable.csproj" />
+    <Project Path="Terminal.Gui.KeySequences/Tests/Terminal.Gui.KeySequences.Tests.csproj" />
   </Folder>
   <Project Path="Terminal.Gui.Analyzers.Internal/Terminal.Gui.Analyzers.Internal.csproj" />
   <Project Path="Terminal.Gui.Interop.Spectre/Terminal.Gui.Interop.Spectre.csproj" />
+  <Project Path="Terminal.Gui.KeySequences/Terminal.Gui.KeySequences.csproj" />
   <Project Path="Terminal.Gui/Terminal.Gui.csproj" />
 </Solution>
