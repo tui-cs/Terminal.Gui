@@ -609,6 +609,7 @@ public class OutputBufferImpl : IOutputBuffer
     {
         Contents! [row, col].Attribute = CurrentAttribute;
         Contents [row, col].IsDirty = true;
+        DirtyLines [row] = true;
 
         // Update the URL map: store CurrentUrl, or clear any stale entry so cells
         // overdrawn by non-link content are not wrapped in OSC 8 sequences.

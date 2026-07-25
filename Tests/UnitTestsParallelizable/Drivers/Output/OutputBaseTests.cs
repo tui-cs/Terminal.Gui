@@ -104,6 +104,38 @@ public class OutputBaseTests
         Assert.False (buffer.Contents! [0, 1].IsDirty);
     }
 
+    // CoPilot - GPT-5
+    [Fact]
+    public void Write_ClearsDirtyLines_AfterFlushing ()
+    {
+        AnsiOutput output = new ();
+        IOutputBuffer buffer = output.GetLastBuffer ()!;
+        buffer.SetSize (3, 2);
+
+        output.Write (buffer);
+
+        Assert.All (buffer.DirtyLines, Assert.False);
+    }
+
+    // CoPilot - GPT-5
+    [Fact]
+    public void FillRect_MarksDirtyLine_AfterPreviousFlush ()
+    {
+        AnsiOutput output = new ();
+        IOutputBuffer buffer = output.GetLastBuffer ()!;
+        buffer.SetSize (3, 2);
+        output.Write (buffer);
+
+        buffer.FillRect (new Rectangle (1, 1, 1, 1), 'X');
+
+        Assert.False (buffer.DirtyLines [0]);
+        Assert.True (buffer.DirtyLines [1]);
+
+        output.Write (buffer);
+
+        Assert.False (buffer.DirtyLines [1]);
+    }
+
     [Theory]
     [InlineData (true)]
     [InlineData (false)]

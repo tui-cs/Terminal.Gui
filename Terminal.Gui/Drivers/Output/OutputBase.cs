@@ -271,6 +271,10 @@ public abstract class OutputBase
                 }
             }
 
+            // Every dirty cell in this row has now been consumed. Drawing operations will
+            // set this flag again when they modify the row in a later frame.
+            buffer.DirtyLines [row] = false;
+
             // Flush buffered output for row. Even when nothing remains buffered, an OSC 8 hyperlink
             // may still be open in the terminal because it was started in a prior batch flushed by
             // WriteToConsole and the row ended (or only clean cells followed) before any cell with
