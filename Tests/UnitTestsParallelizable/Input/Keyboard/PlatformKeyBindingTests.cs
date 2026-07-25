@@ -77,7 +77,7 @@ public class PlatformKeyBindingTests
     {
         PlatformKeyBinding pkb = OperatingSystem.IsWindows() ? new () { Windows = [Key.F1] } :
             OperatingSystem.IsMacOS () ? new () { Macos = [Key.F1] } :
-            new () { Macos = [Key.F1] };
+            new () { Linux = [Key.F1] };
 
         List<Key> keys = pkb.GetCurrentPlatformKeys ().ToList ();
 
