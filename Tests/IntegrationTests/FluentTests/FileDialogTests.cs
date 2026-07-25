@@ -144,7 +144,7 @@ public class FileDialogTests : TestsAllDrivers
                                     .AssertEqual (GetFileSystemRoot (fs!), sd!.FileName);
     }
 
-    private string GetFileSystemRoot (IFileSystem fs) => RuntimeInformation.IsOSPlatform (OSPlatform.Windows) ? $@"C:{fs.Path.DirectorySeparatorChar}" : "/";
+    private string GetFileSystemRoot (IFileSystem fs) => OperatingSystem.IsWindows () ? $@"C:{fs.Path.DirectorySeparatorChar}" : "/";
 
     [Theory]
     [MemberData (nameof (GetAllDriverNames))]

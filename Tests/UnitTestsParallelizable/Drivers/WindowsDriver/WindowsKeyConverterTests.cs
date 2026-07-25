@@ -25,7 +25,7 @@ public class WindowsKeyConverterTests
         KeyCode expectedKeyCode
     )
     {
-        if (!RuntimeInformation.IsOSPlatform (OSPlatform.Windows))
+        if (!OperatingSystem.IsWindows ())
         {
             return;
         }
@@ -53,7 +53,7 @@ public class WindowsKeyConverterTests
         KeyCode expectedKeyCode
     )
     {
-        if (!RuntimeInformation.IsOSPlatform (OSPlatform.Windows))
+        if (!OperatingSystem.IsWindows ())
         {
             return;
         }
@@ -87,7 +87,7 @@ public class WindowsKeyConverterTests
         KeyCode expectedKeyCode
     )
     {
-        if (!RuntimeInformation.IsOSPlatform (OSPlatform.Windows))
+        if (!OperatingSystem.IsWindows ())
         {
             return;
         }
@@ -123,7 +123,7 @@ public class WindowsKeyConverterTests
     [InlineData (ConsoleKey.RightArrow, KeyCode.CursorRight)]
     public void ToKey_SpecialKeys_ReturnsExpectedKeyCode (ConsoleKey consoleKey, KeyCode expectedKeyCode)
     {
-        if (!RuntimeInformation.IsOSPlatform (OSPlatform.Windows))
+        if (!OperatingSystem.IsWindows ())
         {
             return;
         }
@@ -161,7 +161,7 @@ public class WindowsKeyConverterTests
     [InlineData (ConsoleKey.F12, KeyCode.F12)]
     public void ToKey_FunctionKeys_ReturnsExpectedKeyCode (ConsoleKey consoleKey, KeyCode expectedKeyCode)
     {
-        if (!RuntimeInformation.IsOSPlatform (OSPlatform.Windows))
+        if (!OperatingSystem.IsWindows ())
         {
             return;
         }
@@ -189,7 +189,7 @@ public class WindowsKeyConverterTests
     [InlineData ('Ω')] // Greek character
     public void ToKey_VKPacket_Unicode_ReturnsExpectedCharacter (char unicodeChar)
     {
-        if (!RuntimeInformation.IsOSPlatform (OSPlatform.Windows))
+        if (!OperatingSystem.IsWindows ())
         {
             return;
         }
@@ -207,7 +207,7 @@ public class WindowsKeyConverterTests
     [Fact]
     public void ToKey_VKPacket_ZeroChar_ReturnsNull ()
     {
-        if (!RuntimeInformation.IsOSPlatform (OSPlatform.Windows))
+        if (!OperatingSystem.IsWindows ())
         {
             return;
         }
@@ -225,7 +225,7 @@ public class WindowsKeyConverterTests
     [Fact]
     public void ToKey_VKPacket_SurrogatePair_DocumentsCurrentLimitation ()
     {
-        if (!RuntimeInformation.IsOSPlatform (OSPlatform.Windows))
+        if (!OperatingSystem.IsWindows ())
         {
             return;
         }
@@ -289,7 +289,7 @@ public class WindowsKeyConverterTests
         KeyCode expectedKeyCode
     )
     {
-        if (!RuntimeInformation.IsOSPlatform (OSPlatform.Windows))
+        if (!OperatingSystem.IsWindows ())
         {
             return;
         }
@@ -319,7 +319,7 @@ public class WindowsKeyConverterTests
         KeyCode expectedKeyCode
     )
     {
-        if (!RuntimeInformation.IsOSPlatform (OSPlatform.Windows))
+        if (!OperatingSystem.IsWindows ())
         {
             return;
         }
@@ -346,7 +346,7 @@ public class WindowsKeyConverterTests
         KeyCode expectedKeyCode
     )
     {
-        if (!RuntimeInformation.IsOSPlatform (OSPlatform.Windows))
+        if (!OperatingSystem.IsWindows ())
         {
             return;
         }
@@ -368,7 +368,7 @@ public class WindowsKeyConverterTests
     [Fact]
     public void ToKey_NullKey_ReturnsEmpty ()
     {
-        if (!RuntimeInformation.IsOSPlatform (OSPlatform.Windows))
+        if (!OperatingSystem.IsWindows ())
         {
             return;
         }
@@ -398,7 +398,7 @@ public class WindowsKeyConverterTests
         char expectedChar
     )
     {
-        if (!RuntimeInformation.IsOSPlatform (OSPlatform.Windows))
+        if (!OperatingSystem.IsWindows ())
         {
             return;
         }
@@ -427,7 +427,7 @@ public class WindowsKeyConverterTests
         char expectedChar
     )
     {
-        if (!RuntimeInformation.IsOSPlatform (OSPlatform.Windows))
+        if (!OperatingSystem.IsWindows ())
         {
             return;
         }
@@ -459,7 +459,7 @@ public class WindowsKeyConverterTests
         char expectedChar
     )
     {
-        if (!RuntimeInformation.IsOSPlatform (OSPlatform.Windows))
+        if (!OperatingSystem.IsWindows ())
         {
             return;
         }
@@ -488,7 +488,7 @@ public class WindowsKeyConverterTests
     [InlineData (KeyCode.CursorRight, ConsoleKey.RightArrow)]
     public void ToKeyInfo_NavigationKeys_ReturnsExpectedInputRecord (KeyCode keyCode, ConsoleKey expectedConsoleKey)
     {
-        if (!RuntimeInformation.IsOSPlatform (OSPlatform.Windows))
+        if (!OperatingSystem.IsWindows ())
         {
             return;
         }
@@ -510,7 +510,7 @@ public class WindowsKeyConverterTests
     [InlineData (KeyCode.F12, ConsoleKey.F12)]
     public void ToKeyInfo_FunctionKeys_ReturnsExpectedInputRecord (KeyCode keyCode, ConsoleKey expectedConsoleKey)
     {
-        if (!RuntimeInformation.IsOSPlatform (OSPlatform.Windows))
+        if (!OperatingSystem.IsWindows ())
         {
             return;
         }
@@ -546,7 +546,7 @@ public class WindowsKeyConverterTests
         WindowsConsole.ControlKeyState expectedState
     )
     {
-        if (!RuntimeInformation.IsOSPlatform (OSPlatform.Windows))
+        if (!OperatingSystem.IsWindows ())
         {
             return;
         }
@@ -576,7 +576,7 @@ public class WindowsKeyConverterTests
     [InlineData (KeyCode.Home, 71)]
     public void ToKeyInfo_ScanCodes_ReturnsExpectedScanCode (KeyCode keyCode, ushort expectedScanCode)
     {
-        if (!RuntimeInformation.IsOSPlatform (OSPlatform.Windows))
+        if (!OperatingSystem.IsWindows ())
         {
             return;
         }
@@ -607,7 +607,7 @@ public class WindowsKeyConverterTests
     [InlineData (KeyCode.Space)]
     public void RoundTrip_ToKeyInfo_ToKey_PreservesKeyCode (KeyCode originalKeyCode)
     {
-        if (!RuntimeInformation.IsOSPlatform (OSPlatform.Windows))
+        if (!OperatingSystem.IsWindows ())
         {
             return;
         }
@@ -636,7 +636,7 @@ public class WindowsKeyConverterTests
         bool ctrl
     )
     {
-        if (!RuntimeInformation.IsOSPlatform (OSPlatform.Windows))
+        if (!OperatingSystem.IsWindows ())
         {
             return;
         }
@@ -686,7 +686,7 @@ public class WindowsKeyConverterTests
         bool capsLock
     )
     {
-        if (!RuntimeInformation.IsOSPlatform (OSPlatform.Windows))
+        if (!OperatingSystem.IsWindows ())
         {
             return;
         }

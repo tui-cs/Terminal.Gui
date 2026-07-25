@@ -98,12 +98,4 @@ public class BindTests
         Assert.Null (result.Linux);
         Assert.Null (result.Macos);
     }
-
-    [Fact]
-    public void GetCurrentPlatform_ReturnsValidPlatform ()
-    {
-        TuiPlatform platform = PlatformDetection.GetCurrentPlatform ();
-
-        Assert.True (Enum.IsDefined (platform));
-    }
 }

@@ -185,15 +185,15 @@ public class Link : View, IDesignable
 
         try
         {
-            if (PlatformDetection.IsWindows ())
+            if (OperatingSystem.IsWindows ())
             {
                 Process.Start (new ProcessStartInfo (url) { UseShellExecute = true });
             }
-            else if (PlatformDetection.IsMac ())
+            else if (OperatingSystem.IsMacOS ())
             {
                 Process.Start ("open", url);
             }
-            else if (PlatformDetection.IsLinux ())
+            else if (OperatingSystem.IsLinux ())
             {
                 using Process process = new ();
 

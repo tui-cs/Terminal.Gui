@@ -181,9 +181,7 @@ internal static class UnixIOHelper
     ///     Get window/terminal size using ioctl.
     ///     Platform-specific constant (different on Darwin/BSD vs Linux).
     /// </summary>
-    public static readonly uint TIOCGWINSZ = RuntimeInformation.IsOSPlatform (OSPlatform.OSX) || RuntimeInformation.IsOSPlatform (OSPlatform.FreeBSD)
-                                                 ? 0x40087468u // Darwin/BSD
-                                                 : 0x5413u; // Linux
+    public static readonly uint TIOCGWINSZ = OperatingSystem.IsLinux () ? 0x5413u : 0x40087468u;
 
     /// <summary>
     ///     I/O control operations on file descriptors.
@@ -196,7 +194,7 @@ internal static class UnixIOHelper
     public static extern int ioctl (int fd, uint request, out WinSize ws);
 
     /// <summary>
-    ///     ioctl definition for Darwin/FreeBSD on ARM64.
+    ///     ioctl definition for Darwin on ARM64.
     ///     See https://github.com/dotnet/runtime/issues/48796#issuecomment-3695794860.
     /// </summary>
     /// <param name="fd">File descriptor</param>
@@ -435,7 +433,7 @@ internal static class UnixIOHelper
             WinSize ws;
 
             if (RuntimeInformation.OSArchitecture == Architecture.Arm64
-                && (RuntimeInformation.IsOSPlatform (OSPlatform.OSX) || RuntimeInformation.IsOSPlatform (OSPlatform.FreeBSD)))
+                && OperatingSystem.IsMacOS ())
             {
                 ioctlResult = ioctl_arm64 (fd,
                                            TIOCGWINSZ,

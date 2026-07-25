@@ -100,7 +100,7 @@ internal static class UnixTerminalHelper
 
     public static void Suspend (IOutput output)
     {
-        if (PlatformDetection.IsWindows ())
+        if (OperatingSystem.IsWindows ())
         {
             return;
         }

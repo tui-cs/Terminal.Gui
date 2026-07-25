@@ -39,7 +39,7 @@ public class FileSystemIconProviderTests
         var p = new FileSystemIconProvider ();
         IFileSystem fs = GetMockFileSystem ();
 
-        Assert.Equal (IsWindows () ? new Rune ('\\') : new Rune ('/'), p.GetIcon (fs.DirectoryInfo.New (@"c:\")));
+        Assert.Equal (OperatingSystem.IsWindows () ? new Rune ('\\') : new Rune ('/'), p.GetIcon (fs.DirectoryInfo.New (@"c:\")));
 
         Assert.Equal (
                       new Rune (' '),
@@ -49,7 +49,7 @@ public class FileSystemIconProviderTests
                      );
     }
 
-    private string GetFileSystemRoot () { return IsWindows () ? @"c:\" : "/"; }
+    private string GetFileSystemRoot () { return OperatingSystem.IsWindows () ? @"c:\" : "/"; }
 
     private IFileSystem GetMockFileSystem ()
     {
@@ -67,6 +67,4 @@ public class FileSystemIconProviderTests
 
         return fileSystem;
     }
-
-    private bool IsWindows () { return RuntimeInformation.IsOSPlatform (OSPlatform.Windows); }
 }
