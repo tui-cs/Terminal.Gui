@@ -13,7 +13,7 @@ public class TextViewMouseSelectionBindingsTests
                                                 ? MouseFlags.LeftButtonPressed | MouseFlags.Alt
                                                 : MouseFlags.LeftButtonPressed | MouseFlags.Shift;
 
-        MouseFlags expectedStartRectangleSelection = OperatingSystem.IsWindows()
+        MouseFlags expectedStartRectangleSelection = OperatingSystem.IsWindows. ()
                                                          ? MouseFlags.LeftButtonPressed | MouseFlags.Alt | MouseFlags.Ctrl
                                                          : MouseFlags.LeftButtonPressed | MouseFlags.Shift | MouseFlags.Ctrl;
 

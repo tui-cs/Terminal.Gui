@@ -75,7 +75,7 @@ public class PlatformKeyBindingTests
     [Fact]
     public void GetCurrentPlatformKeys_PlatformOnly_ReturnsCurrentPlatformKeys ()
     {
-        PlatformKeyBinding pkb = OperatingSystem.IsWindows() ? new () { Windows = [Key.F1] } :
+        PlatformKeyBinding pkb = OperatingSystem.IsWindows () ? new () { Windows = [Key.F1] } :
             OperatingSystem.IsMacOS () ? new () { Macos = [Key.F1] } :
             new () { Linux = [Key.F1] };
 
@@ -88,7 +88,7 @@ public class PlatformKeyBindingTests
     [Fact]
     public void GetCurrentPlatformKeys_AllPlusPlatform_Additive ()
     {
-        PlatformKeyBinding pkb = OperatingSystem.IsWindows() ? new () { All = [Key.Esc], Windows = [Key.Q.WithCtrl] } :
+        PlatformKeyBinding pkb = OperatingSystem.IsWindows () ? new () { All = [Key.Esc], Windows = [Key.Q.WithCtrl] } :
             OperatingSystem.IsMacOS () ? new () { All = [Key.Esc], Macos = [Key.Q.WithCtrl] } :
             new () { All = [Key.Esc], Linux = [Key.Q.WithCtrl] };
 
@@ -102,7 +102,7 @@ public class PlatformKeyBindingTests
     [Fact]
     public void GetCurrentPlatformKeys_OtherPlatformOnly_ReturnsEmpty ()
     {
-        PlatformKeyBinding pkb = OperatingSystem.IsWindows() ? new () { Linux = [Key.F1] } :
+        PlatformKeyBinding pkb = OperatingSystem.IsWindows () ? new () { Linux = [Key.F1] } :
             OperatingSystem.IsMacOS () ? new () { Windows = [Key.F1] } :
             new () { Windows = [Key.F1] };
 

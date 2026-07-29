@@ -66,7 +66,7 @@ public record PlatformKeyBinding
             }
         }
 
-        Key []? platKeys = OperatingSystem.IsWindows() ? Windows :
+        Key []? platKeys = OperatingSystem.IsWindows () ? Windows :
             OperatingSystem.IsMacOS () ? Macos : Linux;
 
         if (platKeys is null)

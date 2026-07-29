@@ -46,7 +46,7 @@ internal static class SuspendHelper
         }
         else if (OperatingSystem.IsLinux ())
         {
-                _suspendSignal = 20;
+            _suspendSignal = 20;
         }
         else if (RuntimeInformation.IsOSPlatform (OSPlatform.Create ("SOLARIS")) ||
                  RuntimeInformation.IsOSPlatform (OSPlatform.Create ("ILLUMOS")))
