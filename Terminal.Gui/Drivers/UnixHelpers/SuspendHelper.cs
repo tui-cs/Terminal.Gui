@@ -53,6 +53,10 @@ internal static class SuspendHelper
         {
             _suspendSignal = 24;
         }
+        else if (RuntimeInformation.IsOSPlatform (OSPlatform.Create ("HAIKU")))
+        {
+            _suspendSignal = 21;
+        }
         else
         {
             _suspendSignal = -1;
