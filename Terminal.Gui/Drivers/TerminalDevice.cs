@@ -186,7 +186,7 @@ internal static class TerminalDevice
 
             try
             {
-                if (RuntimeInformation.IsOSPlatform (OSPlatform.Windows))
+                if (OperatingSystem.IsWindows ())
                 {
                     InitializeWindows ();
                 }

@@ -78,7 +78,7 @@ public class AnsiComponentFactory : ComponentFactoryImpl<char>
     /// </summary>
     internal static Func<Size?> CreateNativeSizeQuery ()
     {
-        if (RuntimeInformation.IsOSPlatform (OSPlatform.Windows))
+        if (OperatingSystem.IsWindows ())
         {
             return () =>
                    {

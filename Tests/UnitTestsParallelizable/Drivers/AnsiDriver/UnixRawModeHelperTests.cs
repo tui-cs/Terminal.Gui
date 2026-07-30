@@ -63,9 +63,7 @@ public class UnixRawModeHelperTests
     [Fact]
     public void TryEnable_OnNonUnix_ReturnsFalse_AndLeavesNoSavedTermios ()
     {
-        if (RuntimeInformation.IsOSPlatform (OSPlatform.Linux)
-            || RuntimeInformation.IsOSPlatform (OSPlatform.OSX)
-            || RuntimeInformation.IsOSPlatform (OSPlatform.FreeBSD))
+        if (!OperatingSystem.IsWindows ())
         {
             // Behaviour on Unix depends on whether stdin is a tty; covered by
             // integration tests, not this unit test.

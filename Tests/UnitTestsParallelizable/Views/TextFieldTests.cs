@@ -1740,7 +1740,7 @@ public class TextFieldTests (ITestOutputHelper output) : TestDriverBase
     [Fact]
     public void UnifiedKeyBindings_NonWindows_Undo_Redo ()
     {
-        if (PlatformDetection.IsWindows ())
+        if (OperatingSystem.IsWindows ())
         {
             return; // non-Windows-only bindings are not added on Windows
         }

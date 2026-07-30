@@ -66,13 +66,8 @@ public record PlatformMouseBinding
             }
         }
 
-        MouseFlags []? platformFlags = PlatformDetection.GetCurrentPlatform () switch
-        {
-            TuiPlatform.Windows => Windows,
-            TuiPlatform.Linux => Linux,
-            TuiPlatform.Macos => Macos,
-            _ => null
-        };
+        MouseFlags []? platformFlags = OperatingSystem.IsWindows () ? Windows :
+            OperatingSystem.IsMacOS () ? Macos : Linux;
 
         if (platformFlags is null)
         {

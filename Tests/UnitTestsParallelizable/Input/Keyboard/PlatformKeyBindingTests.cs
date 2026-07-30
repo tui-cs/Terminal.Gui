@@ -75,16 +75,9 @@ public class PlatformKeyBindingTests
     [Fact]
     public void GetCurrentPlatformKeys_PlatformOnly_ReturnsCurrentPlatformKeys ()
     {
-        // Set the current platform's property (test runs on Windows for this CI)
-        TuiPlatform current = PlatformDetection.GetCurrentPlatform ();
-
-        PlatformKeyBinding pkb = current switch
-        {
-            TuiPlatform.Windows => new () { Windows = [Key.F1] },
-            TuiPlatform.Linux => new () { Linux = [Key.F1] },
-            TuiPlatform.Macos => new () { Macos = [Key.F1] },
-            _ => new () { Linux = [Key.F1] }
-        };
+        PlatformKeyBinding pkb = OperatingSystem.IsWindows () ? new () { Windows = [Key.F1] } :
+            OperatingSystem.IsMacOS () ? new () { Macos = [Key.F1] } :
+            new () { Linux = [Key.F1] };
 
         List<Key> keys = pkb.GetCurrentPlatformKeys ().ToList ();
 
@@ -95,15 +88,9 @@ public class PlatformKeyBindingTests
     [Fact]
     public void GetCurrentPlatformKeys_AllPlusPlatform_Additive ()
     {
-        TuiPlatform current = PlatformDetection.GetCurrentPlatform ();
-
-        PlatformKeyBinding pkb = current switch
-        {
-            TuiPlatform.Windows => new () { All = [Key.Esc], Windows = [Key.Q.WithCtrl] },
-            TuiPlatform.Linux => new () { All = [Key.Esc], Linux = [Key.Q.WithCtrl] },
-            TuiPlatform.Macos => new () { All = [Key.Esc], Macos = [Key.Q.WithCtrl] },
-            _ => new () { All = [Key.Esc], Linux = [Key.Q.WithCtrl] }
-        };
+        PlatformKeyBinding pkb = OperatingSystem.IsWindows () ? new () { All = [Key.Esc], Windows = [Key.Q.WithCtrl] } :
+            OperatingSystem.IsMacOS () ? new () { All = [Key.Esc], Macos = [Key.Q.WithCtrl] } :
+            new () { All = [Key.Esc], Linux = [Key.Q.WithCtrl] };
 
         List<Key> keys = pkb.GetCurrentPlatformKeys ().ToList ();
 
@@ -115,16 +102,9 @@ public class PlatformKeyBindingTests
     [Fact]
     public void GetCurrentPlatformKeys_OtherPlatformOnly_ReturnsEmpty ()
     {
-        TuiPlatform current = PlatformDetection.GetCurrentPlatform ();
-
-        // Set a platform that's NOT the current one
-        PlatformKeyBinding pkb = current switch
-        {
-            TuiPlatform.Windows => new () { Linux = [Key.F1] },
-            TuiPlatform.Linux => new () { Windows = [Key.F1] },
-            TuiPlatform.Macos => new () { Windows = [Key.F1] },
-            _ => new () { Windows = [Key.F1] }
-        };
+        PlatformKeyBinding pkb = OperatingSystem.IsWindows () ? new () { Linux = [Key.F1] } :
+            OperatingSystem.IsMacOS () ? new () { Windows = [Key.F1] } :
+            new () { Windows = [Key.F1] };
 
         List<Key> keys = pkb.GetCurrentPlatformKeys ().ToList ();
 
