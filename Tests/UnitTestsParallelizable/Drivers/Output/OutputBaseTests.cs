@@ -109,12 +109,50 @@ public class OutputBaseTests
     public void Write_ClearsDirtyLines_AfterFlushing ()
     {
         AnsiOutput output = new ();
-        IOutputBuffer buffer = output.GetLastBuffer ()!;
+        OutputBufferImpl buffer = new () { InlineMode = true };
         buffer.SetSize (3, 2);
+        buffer.AddStr ("X");
+
+        Assert.True (buffer.DirtyLines [0]);
+        Assert.False (buffer.DirtyLines [1]);
 
         output.Write (buffer);
 
         Assert.All (buffer.DirtyLines, Assert.False);
+    }
+
+    // Codex - GPT-5
+    [Fact]
+    public void FillRect_InlineMode_WritesDirtyRow ()
+    {
+        AnsiOutput output = new ();
+        OutputBufferImpl buffer = new () { InlineMode = true };
+        buffer.SetSize (3, 2);
+
+        buffer.FillRect (new Rectangle (1, 1, 1, 1), 'X');
+
+        Assert.True (buffer.DirtyLines [1]);
+
+        output.Write (buffer);
+
+        Assert.Contains ("X", output.GetLastOutput ());
+        Assert.False (buffer.DirtyLines [1]);
+    }
+
+    // Codex - GPT-5
+    [Fact]
+    public void Write_UnchangedBuffer_DoesNotMoveCursorOrWrite ()
+    {
+        CountingOutput output = new ();
+        OutputBufferImpl buffer = new ();
+        buffer.SetSize (3, 2);
+        output.Write (buffer);
+        output.ResetCounters ();
+
+        output.Write (buffer);
+
+        Assert.Equal (0, output.CursorMoves);
+        Assert.Equal (0, output.Writes);
     }
 
     // CoPilot - GPT-5
@@ -1923,6 +1961,28 @@ public class OutputBaseTests
         }
 
         return image;
+    }
+
+    private sealed class CountingOutput : OutputBase
+    {
+        public int CursorMoves { get; private set; }
+
+        public int Writes { get; private set; }
+
+        public void ResetCounters ()
+        {
+            CursorMoves = 0;
+            Writes = 0;
+        }
+
+        protected override bool SetCursorPositionImpl (int screenPositionX, int screenPositionY)
+        {
+            CursorMoves++;
+
+            return true;
+        }
+
+        protected override void Write (StringBuilder output) => Writes++;
     }
 
     // Copilot - Claude Sonnet 4.6
