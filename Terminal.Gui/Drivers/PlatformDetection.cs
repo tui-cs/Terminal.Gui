@@ -11,10 +11,16 @@ public static class PlatformDetection
     ///     The .NET OS platform names Terminal.Gui carries platform-specific data for, in probe order.
     /// </summary>
     /// <remarks>
-    ///     These are the names <see cref="OperatingSystem.IsOSPlatform"/> matches against. .NET reports exactly one
-    ///     of them for any given runtime. Note that <c>ANDROID</c> is distinct from <c>LINUX</c>:
-    ///     <see cref="OperatingSystem.IsLinux"/> returns <see langword="false"/> on Android even though Android
-    ///     runs a Linux kernel.
+    ///     <para>
+    ///         These are the names <see cref="OperatingSystem.IsOSPlatform"/> matches against. Note that
+    ///         <c>ANDROID</c> is distinct from <c>LINUX</c>: <see cref="OperatingSystem.IsLinux"/> returns
+    ///         <see langword="false"/> on Android even though Android runs a Linux kernel.
+    ///     </para>
+    ///     <para>
+    ///         Order matters. A runtime normally reports exactly one of these names, but Mac Catalyst matches both
+    ///         <c>MACCATALYST</c> and <c>IOS</c> — .NET aliases <c>IOS</c> on that target. <c>MACCATALYST</c> is
+    ///         therefore listed first so the more specific name wins.
+    ///     </para>
     /// </remarks>
     internal static readonly string [] KnownPlatformNames =
     [

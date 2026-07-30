@@ -32,7 +32,37 @@ public class UnixIOHelperTiocgwinszTests
     // Unknown platforms fall back to BSD-style encoding, the most common convention.
     [InlineData ("", 0x40087468u)]
     public void MapTiocgwinsz_ReturnsRequestCodeForPlatform (string platformName, uint expected) =>
-        Assert.Equal (expected, UnixIOHelper.MapTiocgwinsz (platformName));
+        Assert.Equal (expected, UnixIOHelper.MapTiocgwinsz (Architecture.X64, platformName));
+
+    // Claude - Opus 5
+    // Linux ioctl numbering is architecture-dependent: ppc64le uses _IOR ('t', 104, struct winsize) per its UAPI,
+    // every other architecture .NET targets uses asm-generic 0x5413.
+    [Theory]
+    [InlineData (Architecture.Ppc64le, 0x40087468u)]
+    [InlineData (Architecture.X64, 0x5413u)]
+    [InlineData (Architecture.X86, 0x5413u)]
+    [InlineData (Architecture.Arm, 0x5413u)]
+    [InlineData (Architecture.Arm64, 0x5413u)]
+    [InlineData (Architecture.RiscV64, 0x5413u)]
+    [InlineData (Architecture.S390x, 0x5413u)]
+    [InlineData (Architecture.LoongArch64, 0x5413u)]
+    public void MapTiocgwinsz_Linux_IsArchitectureDependent (Architecture arch, uint expected) =>
+        Assert.Equal (expected, UnixIOHelper.MapTiocgwinsz (arch, "LINUX"));
+
+    // Claude - Opus 5
+    [Fact]
+    public void MapTiocgwinsz_NonLinux_IsArchitectureIndependent ()
+    {
+        string [] nonLinux = ["OSX", "FREEBSD", "NETBSD", "OPENBSD", "SOLARIS", "ILLUMOS", "HAIKU", ""];
+        Architecture [] arches = [Architecture.X64, Architecture.Arm64, Architecture.Ppc64le, Architecture.S390x];
+
+        foreach (string platform in nonLinux)
+        {
+            uint baseline = UnixIOHelper.MapTiocgwinsz (Architecture.X64, platform);
+
+            Assert.All (arches, a => Assert.Equal (baseline, UnixIOHelper.MapTiocgwinsz (a, platform)));
+        }
+    }
 
     // Claude - Opus 5
     [Fact]
@@ -43,7 +73,7 @@ public class UnixIOHelperTiocgwinszTests
         const uint WINSIZE_SIZE = 8u; // four ushorts
         uint expected = IOC_OUT | (WINSIZE_SIZE << 16) | ((uint)'t' << 8) | 104u;
 
-        Assert.Equal (expected, UnixIOHelper.MapTiocgwinsz ("OSX"));
+        Assert.Equal (expected, UnixIOHelper.MapTiocgwinsz (Architecture.X64, "OSX"));
     }
 
     // Claude - Opus 5
@@ -53,7 +83,7 @@ public class UnixIOHelperTiocgwinszTests
         // Solaris: TIOCGWINSZ == (TIOC|104) where TIOC == ('T' << 8)
         uint expected = ((uint)'T' << 8) | 104u;
 
-        Assert.Equal (expected, UnixIOHelper.MapTiocgwinsz ("SOLARIS"));
+        Assert.Equal (expected, UnixIOHelper.MapTiocgwinsz (Architecture.X64, "SOLARIS"));
     }
 
     // Claude - Opus 5
@@ -65,14 +95,15 @@ public class UnixIOHelperTiocgwinszTests
         const uint TCGETA = 0x8000u;
         uint expected = TCGETA + 12u;
 
-        Assert.Equal (expected, UnixIOHelper.MapTiocgwinsz ("HAIKU"));
-        Assert.NotEqual (0x40087468u, UnixIOHelper.MapTiocgwinsz ("HAIKU"));
+        Assert.Equal (expected, UnixIOHelper.MapTiocgwinsz (Architecture.X64, "HAIKU"));
+        Assert.NotEqual (0x40087468u, UnixIOHelper.MapTiocgwinsz (Architecture.X64, "HAIKU"));
     }
 
     // Claude - Opus 5
     [Fact]
     public void TIOCGWINSZ_MatchesMappingForCurrentPlatform () =>
-        Assert.Equal (UnixIOHelper.MapTiocgwinsz (PlatformDetection.GetPlatformName ()), UnixIOHelper.TIOCGWINSZ);
+        Assert.Equal (UnixIOHelper.MapTiocgwinsz (RuntimeInformation.ProcessArchitecture, PlatformDetection.GetPlatformName ()),
+                      UnixIOHelper.TIOCGWINSZ);
 
     // Claude - Opus 5
     // The Apple ARM64 variadic ABI applies to every Apple platform on ARM64, and to nothing else.

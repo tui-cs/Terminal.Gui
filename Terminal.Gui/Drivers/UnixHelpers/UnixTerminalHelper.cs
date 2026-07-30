@@ -134,14 +134,18 @@ internal static class UnixTerminalHelper
 
             Logging.Information ("UnixTerminalHelper.Suspend: Terminal restored to cooked mode, calling SuspendHelper.Suspend...");
 
-            if (!SuspendHelper.Suspend ())
+            if (SuspendHelper.Suspend ())
             {
-                Logging.Warning ("UnixTerminalHelper.Suspend: SuspendHelper.Suspend() returned false");
-
-                return;
+                Logging.Information ("UnixTerminalHelper.Suspend: Resumed from suspend! Restoring raw mode...");
             }
-
-            Logging.Information ("UnixTerminalHelper.Suspend: Resumed from suspend! Restoring raw mode...");
+            else
+            {
+                // Do NOT return here. The terminal is already in cooked mode, out of the alternate buffer, with the
+                // cursor shown. Returning would leave it that way while the app keeps running, so input would be
+                // line-buffered and echoed and drawing would land in the scrollback buffer.
+                Logging.Warning ("UnixTerminalHelper.Suspend: SuspendHelper.Suspend () returned false; the process was "
+                                 + "never stopped. Restoring terminal state anyway.");
+            }
 
             // Restore the saved raw mode terminal state.
             RestoreTerminalState ();

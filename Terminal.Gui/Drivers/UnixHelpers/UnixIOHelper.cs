@@ -188,11 +188,15 @@ internal static class UnixIOHelper
     /// <summary>
     ///     Get window/terminal size using ioctl. Platform-specific constant; see <see cref="MapTiocgwinsz"/>.
     /// </summary>
-    public static readonly uint TIOCGWINSZ = MapTiocgwinsz (PlatformDetection.GetPlatformName ());
+    public static readonly uint TIOCGWINSZ = MapTiocgwinsz (RuntimeInformation.ProcessArchitecture, PlatformDetection.GetPlatformName ());
 
     /// <summary>
     ///     Maps a .NET OS platform name to that platform's <c>TIOCGWINSZ</c> ioctl request code.
     /// </summary>
+    /// <param name="processArchitecture">
+    ///     The architecture of the running process — <see cref="RuntimeInformation.ProcessArchitecture"/>. Only
+    ///     consulted for Linux, whose ioctl numbering varies by architecture.
+    /// </param>
     /// <param name="platformName">
     ///     A platform name from <see cref="PlatformDetection.KnownPlatformNames"/>, as returned by
     ///     <see cref="PlatformDetection.GetPlatformName"/>.
@@ -204,16 +208,17 @@ internal static class UnixIOHelper
     ///         <see langword="false"/> on Android even though it uses the same asm-generic ioctl numbering as Linux.
     ///     </para>
     ///     <para>
-    ///         On Linux the value is architecture-dependent, not purely OS-dependent: ppc64le, MIPS, SPARC and Alpha
-    ///         use the BSD-style 0x40087468 rather than 0x5413. Only the asm-generic architectures (x86, x64, Arm,
-    ///         Arm64, RISC-V, s390x) are handled here, which covers every architecture Terminal.Gui is tested on.
+    ///         On Linux the value is architecture-dependent, not purely OS-dependent, which is why this takes an
+    ///         architecture. Every architecture .NET targets uses asm-generic numbering (0x5413) except ppc64le, whose
+    ///         UAPI defines <c>TIOCGWINSZ</c> as <c>_IOR ('t', 104, struct winsize)</c> — the BSD encoding, 0x40087468.
+    ///         Linux on MIPS, SPARC and Alpha does the same, but .NET has no targets for those.
     ///     </para>
     /// </remarks>
-    internal static uint MapTiocgwinsz (string platformName) =>
+    internal static uint MapTiocgwinsz (Architecture processArchitecture, string platformName) =>
         platformName switch
         {
-            // asm-generic ioctl numbering.
-            "LINUX" or "ANDROID" => 0x5413u,
+            // asm-generic ioctl numbering, except on ppc64le which uses the BSD encoding.
+            "LINUX" or "ANDROID" => processArchitecture == Architecture.Ppc64le ? 0x40087468u : 0x5413u,
 
             // Solaris/illumos: TIOC|104, where TIOC is ('T' << 8).
             "SOLARIS" or "ILLUMOS" => 0x5468u,

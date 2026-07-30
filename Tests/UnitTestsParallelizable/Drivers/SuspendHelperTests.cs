@@ -53,4 +53,54 @@ public class SuspendHelperTests
     // Claude - Opus 5
     [Fact]
     public void MapSuspendSignal_UnknownPlatform_ReturnsMinusOne () => Assert.Equal (-1, SuspendHelper.MapSuspendSignal ("NOT_A_PLATFORM"));
+
+    // Claude - Opus 5
+    [Fact]
+    public void Suspend_KillpgSucceeds_ReturnsTrue () => Assert.True (SuspendHelper.Suspend (20, (_, _) => 0));
+
+    // Claude - Opus 5
+    // killpg failing means the process was never stopped, so Suspend () must not claim success — callers use this to
+    // decide whether they resumed, and previously it always returned true.
+    [Theory]
+    [InlineData (-1)]
+    [InlineData (1)]
+    public void Suspend_KillpgFails_ReturnsFalse (int killpgResult) => Assert.False (SuspendHelper.Suspend (20, (_, _) => killpgResult));
+
+    // Claude - Opus 5
+    [Fact]
+    public void Suspend_NoSuspendSignal_ReturnsFalse_AndDoesNotSignal ()
+    {
+        var invoked = false;
+
+        bool result = SuspendHelper.Suspend (-1,
+                                             (_, _) =>
+                                             {
+                                                 invoked = true;
+
+                                                 return 0;
+                                             });
+
+        Assert.False (result);
+        Assert.False (invoked);
+    }
+
+    // Claude - Opus 5
+    [Fact]
+    public void Suspend_SignalsOwnProcessGroup_WithMappedSignal ()
+    {
+        int observedGroup = int.MinValue;
+        int observedSignal = int.MinValue;
+
+        SuspendHelper.Suspend (20,
+                               (pgrp, sig) =>
+                               {
+                                   observedGroup = pgrp;
+                                   observedSignal = sig;
+
+                                   return 0;
+                               });
+
+        Assert.Equal (0, observedGroup); // 0 == caller's own process group
+        Assert.Equal (20, observedSignal);
+    }
 }
