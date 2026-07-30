@@ -212,7 +212,10 @@ public class NetOutput : OutputBase, IOutput
 
             if (!SuspendHelper.Suspend ())
             {
-                return;
+                // Do NOT return here. The alternate buffer has already been left and the cursor shown, so returning
+                // would leave the terminal that way while the app keeps drawing into the scrollback buffer.
+                Logging.Warning ("NetOutput.Suspend: SuspendHelper.Suspend () returned false; the process was never "
+                                 + "stopped. Re-entering the alternate buffer anyway.");
             }
 
             //Enable alternative screen buffer.

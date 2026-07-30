@@ -57,7 +57,8 @@ internal sealed class UnixRawModeHelper : IDisposable
             return true;
         }
 
-        // Only attempt on Unix-like platforms
+        // Attempt on every non-Windows platform. Testing for a known Unix would exclude NetBSD, OpenBSD, Solaris,
+        // illumos and Haiku; platforms without libc fail below and fall back to degraded mode.
         if (OperatingSystem.IsWindows ())
         {
             return false;
