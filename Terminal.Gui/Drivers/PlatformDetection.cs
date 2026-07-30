@@ -54,6 +54,66 @@ public static class PlatformDetection
     }
 
     /// <summary>
+    ///     Determines whether the current operating system is Linux.
+    /// </summary>
+    /// <remarks>
+    ///     This method returns <see langword="true"/> only when running on a Linux distribution. Other Unix-like
+    ///     platforms such as macOS and FreeBSD return <see langword="false"/>, as does Android.
+    /// </remarks>
+    /// <returns><see langword="true"/> if the operating system is Linux; otherwise, <see langword="false"/>.</returns>
+    [Obsolete ("Use OperatingSystem.IsLinux () instead. This shim exists for binary compatibility with v2.4.17 and earlier.")]
+    public static bool IsLinux () => OperatingSystem.IsLinux ();
+
+    /// <summary>
+    ///     Determines whether the current operating system is macOS.
+    /// </summary>
+    /// <returns><see langword="true"/> if the current operating system is macOS; otherwise, <see langword="false"/>.</returns>
+    [Obsolete ("Use OperatingSystem.IsMacOS () instead. This shim exists for binary compatibility with v2.4.17 and earlier.")]
+    public static bool IsMac () => OperatingSystem.IsMacOS ();
+
+    /// <summary>
+    ///     Determines if the current platform is Windows.
+    /// </summary>
+    /// <returns><see langword="true"/> if the operating system is Windows; otherwise, <see langword="false"/>.</returns>
+    [Obsolete ("Use OperatingSystem.IsWindows () instead. This shim exists for binary compatibility with v2.4.17 and earlier.")]
+    public static bool IsWindows () => OperatingSystem.IsWindows ();
+
+    /// <summary>
+    ///     Determines whether the current operating system is a Unix-like platform.
+    /// </summary>
+    /// <remarks>
+    ///     Returns <see langword="true"/> for Linux, macOS (Darwin), and FreeBSD only. Other Unix platforms .NET can
+    ///     report — NetBSD, OpenBSD, Solaris, illumos, Haiku — return <see langword="false"/>, which is why driver
+    ///     code should test <c>!OperatingSystem.IsWindows ()</c> rather than call this.
+    /// </remarks>
+    /// <returns>
+    ///     <see langword="true"/> if the operating system is Linux, macOS, or FreeBSD; otherwise,
+    ///     <see langword="false"/>.
+    /// </returns>
+    [Obsolete ("Test !OperatingSystem.IsWindows () instead; this method excludes NetBSD, OpenBSD, Solaris, illumos and Haiku. "
+               + "This shim exists for binary compatibility with v2.4.17 and earlier.")]
+    public static bool IsUnixLike () => OperatingSystem.IsLinux () || OperatingSystem.IsMacOS () || OperatingSystem.IsFreeBSD ();
+
+    /// <summary>Returns the <see cref="TuiPlatform"/> for the current operating system.</summary>
+    /// <remarks>Any platform that is neither Windows nor macOS reports <see cref="TuiPlatform.Linux"/>.</remarks>
+    [Obsolete ("Use OperatingSystem.IsWindows ()/IsMacOS ()/IsLinux () instead. This shim exists for binary compatibility "
+               + "with v2.4.17 and earlier.")]
+    public static TuiPlatform GetCurrentPlatform ()
+    {
+        if (OperatingSystem.IsWindows ())
+        {
+            return TuiPlatform.Windows;
+        }
+
+        if (OperatingSystem.IsMacOS ())
+        {
+            return TuiPlatform.Macos;
+        }
+
+        return TuiPlatform.Linux;
+    }
+
+    /// <summary>
     ///     Determines if the current platform is WSL (Windows Subsystem for Linux).
     /// </summary>
     /// <returns>True if running on WSL, false otherwise.</returns>

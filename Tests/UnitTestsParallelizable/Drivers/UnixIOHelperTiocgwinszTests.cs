@@ -24,8 +24,10 @@ public class UnixIOHelperTiocgwinszTests
     [InlineData ("SOLARIS", 0x5468u)]
     [InlineData ("ILLUMOS", 0x5468u)]
 
+    // Haiku: (TCGETA + 12) where TCGETA == 0x8000. Notably NOT the BSD value.
+    [InlineData ("HAIKU", 0x800Cu)]
+
     // Unknown platforms fall back to BSD-style encoding, the most common convention.
-    [InlineData ("HAIKU", 0x40087468u)]
     [InlineData ("", 0x40087468u)]
     public void MapTiocgwinsz_ReturnsRequestCodeForPlatform (string platformName, uint expected) =>
         Assert.Equal (expected, UnixIOHelper.MapTiocgwinsz (platformName));
@@ -50,6 +52,19 @@ public class UnixIOHelperTiocgwinszTests
         uint expected = ((uint)'T' << 8) | 104u;
 
         Assert.Equal (expected, UnixIOHelper.MapTiocgwinsz ("SOLARIS"));
+    }
+
+    // Claude - Opus 5
+    [Fact]
+    public void MapTiocgwinsz_HaikuConstant_MatchesTcgetaOffset ()
+    {
+        // Haiku: TIOCGWINSZ == (TCGETA + 12), TCGETA == 0x8000. Haiku does not use BSD _IOR encoding, so the
+        // BSD fallback is wrong for it.
+        const uint TCGETA = 0x8000u;
+        uint expected = TCGETA + 12u;
+
+        Assert.Equal (expected, UnixIOHelper.MapTiocgwinsz ("HAIKU"));
+        Assert.NotEqual (0x40087468u, UnixIOHelper.MapTiocgwinsz ("HAIKU"));
     }
 
     // Claude - Opus 5

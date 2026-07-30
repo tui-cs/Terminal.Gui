@@ -210,6 +210,9 @@ internal static class UnixIOHelper
             // Solaris/illumos: TIOC|104, where TIOC is ('T' << 8).
             "SOLARIS" or "ILLUMOS" => 0x5468u,
 
+            // Haiku uses its own sequential numbering: TIOCGWINSZ is (TCGETA + 12), where TCGETA is 0x8000.
+            "HAIKU" => 0x800Cu,
+
             // BSD _IOR ('t', 104, struct winsize): Darwin, FreeBSD, NetBSD, OpenBSD, and the best guess for any
             // other Unix, since BSD-style ioctl encoding is the most common.
             _ => 0x40087468u
