@@ -135,6 +135,10 @@ public class AnsiOutput : OutputBase, IOutput
                     return;
                 }
 
+                // The duplicate only proves the fd is usable; writes go through UnixIOHelper.TryWriteStdout, which
+                // resolves TerminalDevice.OutputFd itself. Close it so each AnsiOutput does not leak a descriptor.
+                UnixIOHelper.close (fdCopy);
+
                 _platform = AnsiPlatform.UnixRaw;
             }
 

@@ -22,6 +22,9 @@ public static class PlatformDetection
         "LINUX",
         "ANDROID",
         "OSX",
+        "MACCATALYST",
+        "IOS",
+        "TVOS",
         "FREEBSD",
         "NETBSD",
         "OPENBSD",
@@ -29,6 +32,18 @@ public static class PlatformDetection
         "ILLUMOS",
         "HAIKU"
     ];
+
+    /// <summary>
+    ///     Determines whether a platform name identifies an Apple (Darwin) platform.
+    /// </summary>
+    /// <param name="platformName">A platform name, as returned by <see cref="GetPlatformName"/>.</param>
+    /// <returns><see langword="true"/> if <paramref name="platformName"/> is an Apple platform.</returns>
+    /// <remarks>
+    ///     Apple platforms share Darwin's kernel interfaces and, on ARM64, Apple's variadic calling convention, so
+    ///     they must be treated as a group rather than testing for macOS alone. watchOS is absent because .NET has no
+    ///     <c>WATCHOS</c> platform name — it never reports one, so there is nothing to match.
+    /// </remarks>
+    internal static bool IsApplePlatformName (string platformName) => platformName is "OSX" or "MACCATALYST" or "IOS" or "TVOS";
 
     /// <summary>
     ///     Gets the .NET OS platform name for the current platform (for example <c>LINUX</c>, <c>OSX</c>, or

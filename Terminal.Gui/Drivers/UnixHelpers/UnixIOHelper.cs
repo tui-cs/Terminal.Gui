@@ -118,6 +118,14 @@ internal static class UnixIOHelper
     public static extern int dup (int fd);
 
     /// <summary>
+    ///     Close a file descriptor.
+    /// </summary>
+    /// <param name="fd">File descriptor to close.</param>
+    /// <returns>0 on success, -1 on error.</returns>
+    [DllImport ("libc", SetLastError = true)]
+    public static extern int close (int fd);
+
+    /// <summary>
     ///     Wait until all output written to the file descriptor has been transmitted.
     /// </summary>
     /// <param name="fd">File descriptor (typically <see cref="STDOUT_FILENO"/>).</param>
@@ -213,10 +221,39 @@ internal static class UnixIOHelper
             // Haiku uses its own sequential numbering: TIOCGWINSZ is (TCGETA + 12), where TCGETA is 0x8000.
             "HAIKU" => 0x800Cu,
 
-            // BSD _IOR ('t', 104, struct winsize): Darwin, FreeBSD, NetBSD, OpenBSD, and the best guess for any
-            // other Unix, since BSD-style ioctl encoding is the most common.
+            // BSD _IOR ('t', 104, struct winsize): Darwin (all Apple platforms), FreeBSD, NetBSD, OpenBSD, and the
+            // best guess for any other Unix, since BSD-style ioctl encoding is the most common.
             _ => 0x40087468u
         };
+
+    /// <summary>
+    ///     Determines whether <see cref="ioctl_arm64"/> must be used in place of <see cref="ioctl"/>.
+    /// </summary>
+    /// <param name="processArchitecture">
+    ///     The architecture of the running process — <see cref="RuntimeInformation.ProcessArchitecture"/>, never
+    ///     <see cref="RuntimeInformation.OSArchitecture"/>. See the remarks.
+    /// </param>
+    /// <param name="platformName">A platform name, as returned by <see cref="PlatformDetection.GetPlatformName"/>.</param>
+    /// <returns><see langword="true"/> when the Apple ARM64 variadic calling convention applies.</returns>
+    /// <remarks>
+    ///     <para>
+    ///         Apple's ARM64 ABI passes every variadic argument on the stack, unlike standard AAPCS64 where they go in
+    ///         registers. <c>ioctl</c> is variadic, so on Apple ARM64 the <c>winsize*</c> must be pushed past the eight
+    ///         register slots — which is what <see cref="ioctl_arm64"/>'s placeholder parameters accomplish. Every other
+    ///         ARM64 platform (Linux, Android, FreeBSD) follows standard AAPCS64 and must use the plain
+    ///         <see cref="ioctl"/>. See https://github.com/dotnet/runtime/issues/48796#issuecomment-3695794860.
+    ///     </para>
+    ///     <para>
+    ///         This must key off the <em>process</em> architecture, not the OS architecture. .NET deliberately reports
+    ///         <see cref="RuntimeInformation.OSArchitecture"/> as <see cref="Architecture.Arm64"/> for an x64 process
+    ///         translated by Rosetta (it checks <c>sysctl.proc_translated</c>), but such a process executes x64 code and
+    ///         follows the x64 ABI, where variadic arguments go in registers. Keying off
+    ///         <see cref="RuntimeInformation.OSArchitecture"/> therefore selects the stack-passing path for a process
+    ///         that needs the register path, and terminal sizing fails.
+    ///     </para>
+    /// </remarks>
+    internal static bool UseArm64VariadicIoctl (Architecture processArchitecture, string platformName) =>
+        processArchitecture == Architecture.Arm64 && PlatformDetection.IsApplePlatformName (platformName);
 
     /// <summary>
     ///     I/O control operations on file descriptors.
@@ -467,8 +504,7 @@ internal static class UnixIOHelper
             var ioctlResult = 0;
             WinSize ws;
 
-            if (RuntimeInformation.OSArchitecture == Architecture.Arm64
-                && OperatingSystem.IsMacOS ())
+            if (UseArm64VariadicIoctl (RuntimeInformation.ProcessArchitecture, PlatformDetection.GetPlatformName ()))
             {
                 ioctlResult = ioctl_arm64 (fd,
                                            TIOCGWINSZ,

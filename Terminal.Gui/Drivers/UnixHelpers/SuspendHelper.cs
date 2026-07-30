@@ -65,8 +65,8 @@ internal static class SuspendHelper
     internal static int MapSuspendSignal (string platformName) =>
         platformName switch
         {
-            // Darwin and the BSDs share the historical BSD signal numbering.
-            "OSX" or "FREEBSD" or "NETBSD" or "OPENBSD" => 18,
+            // Darwin (all Apple platforms) and the BSDs share the historical BSD signal numbering.
+            "OSX" or "MACCATALYST" or "IOS" or "TVOS" or "FREEBSD" or "NETBSD" or "OPENBSD" => 18,
 
             // Linux, on every architecture .NET targets. (Linux/MIPS uses 24, but .NET has no MIPS target.)
             "LINUX" or "ANDROID" => 20,

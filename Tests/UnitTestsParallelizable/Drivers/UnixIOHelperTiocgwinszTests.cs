@@ -1,3 +1,5 @@
+using System.Runtime.InteropServices;
+
 namespace DriverTests;
 
 /// <summary>
@@ -71,4 +73,47 @@ public class UnixIOHelperTiocgwinszTests
     [Fact]
     public void TIOCGWINSZ_MatchesMappingForCurrentPlatform () =>
         Assert.Equal (UnixIOHelper.MapTiocgwinsz (PlatformDetection.GetPlatformName ()), UnixIOHelper.TIOCGWINSZ);
+
+    // Claude - Opus 5
+    // The Apple ARM64 variadic ABI applies to every Apple platform on ARM64, and to nothing else.
+    [Theory]
+    [InlineData (Architecture.Arm64, "OSX", true)]
+    [InlineData (Architecture.Arm64, "MACCATALYST", true)]
+    [InlineData (Architecture.Arm64, "IOS", true)]
+    [InlineData (Architecture.Arm64, "TVOS", true)]
+
+    // Non-Apple ARM64 uses standard AAPCS64, where variadic args go in registers.
+    [InlineData (Architecture.Arm64, "LINUX", false)]
+    [InlineData (Architecture.Arm64, "ANDROID", false)]
+    [InlineData (Architecture.Arm64, "FREEBSD", false)]
+    [InlineData (Architecture.Arm64, "NETBSD", false)]
+
+    // Non-ARM64 never uses the placeholder signature, Apple or not.
+    [InlineData (Architecture.X64, "OSX", false)]
+    [InlineData (Architecture.X64, "LINUX", false)]
+    [InlineData (Architecture.Arm, "OSX", false)]
+    [InlineData (Architecture.X86, "OSX", false)]
+    public void UseArm64VariadicIoctl_OnlyForAppleArm64 (Architecture arch, string platformName, bool expected) =>
+        Assert.Equal (expected, UnixIOHelper.UseArm64VariadicIoctl (arch, platformName));
+
+    // Claude - Opus 5
+    [Fact]
+    public void UseArm64VariadicIoctl_RosettaX64Process_UsesPlainIoctl ()
+    {
+        // .NET reports OSArchitecture == Arm64 for an x64 process translated by Rosetta (it checks
+        // sysctl.proc_translated). That process executes x64 code and passes variadic args in registers, so keying
+        // off OSArchitecture would wrongly select the stack-passing path. ProcessArchitecture is X64 there.
+        Assert.False (UnixIOHelper.UseArm64VariadicIoctl (Architecture.X64, "OSX"));
+        Assert.True (UnixIOHelper.UseArm64VariadicIoctl (Architecture.Arm64, "OSX"));
+    }
+
+    // Claude - Opus 5
+    [Fact]
+    public void UseArm64VariadicIoctl_MatchesProcessArchitectureForCurrentPlatform ()
+    {
+        bool expected = RuntimeInformation.ProcessArchitecture == Architecture.Arm64
+                        && PlatformDetection.IsApplePlatformName (PlatformDetection.GetPlatformName ());
+
+        Assert.Equal (expected, UnixIOHelper.UseArm64VariadicIoctl (RuntimeInformation.ProcessArchitecture, PlatformDetection.GetPlatformName ()));
+    }
 }

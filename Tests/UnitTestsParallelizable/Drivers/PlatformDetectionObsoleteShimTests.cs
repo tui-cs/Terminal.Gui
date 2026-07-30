@@ -1,3 +1,5 @@
+using System.Reflection;
+
 namespace DriverTests;
 
 /// <summary>
@@ -58,6 +60,42 @@ public class PlatformDetectionObsoleteShimTests
     // Claude - Opus 5
     [Fact]
     public void GetCurrentPlatform_ReturnsDefinedvalue () => Assert.True (Enum.IsDefined (PlatformDetection.GetCurrentPlatform ()));
+
+    // Claude - Opus 5
+    // Pins the public surface that #5600 removed. A full PublicAPI baseline for the library would catch this
+    // class of break everywhere, but this guards the specific type that regressed without gating every future PR.
+    [Fact]
+    public void PublicSurface_MatchesV2_4_17 ()
+    {
+        string [] expected =
+        [
+            "GetCurrentPlatform",
+            "IsLinux",
+            "IsMac",
+            "IsUnixLike",
+            "IsWSL",
+            "IsWindows"
+        ];
+
+        string [] actual =
+        [
+            .. typeof (PlatformDetection).GetMethods (BindingFlags.Public | BindingFlags.Static | BindingFlags.DeclaredOnly)
+                                        .Select (m => m.Name)
+                                        .OrderBy (n => n, StringComparer.Ordinal)
+        ];
+
+        Assert.Equal (expected, actual);
+    }
+
+    // Claude - Opus 5
+    [Fact]
+    public void PublicSurface_IsParameterlessAndReturnsExpectedTypes ()
+    {
+        MethodInfo [] methods = typeof (PlatformDetection).GetMethods (BindingFlags.Public | BindingFlags.Static | BindingFlags.DeclaredOnly);
+
+        Assert.All (methods, m => Assert.Empty (m.GetParameters ()));
+        Assert.Equal (typeof (TuiPlatform), typeof (PlatformDetection).GetMethod (nameof (PlatformDetection.GetCurrentPlatform))!.ReturnType);
+    }
 
     // Claude - Opus 5
     [Fact]
