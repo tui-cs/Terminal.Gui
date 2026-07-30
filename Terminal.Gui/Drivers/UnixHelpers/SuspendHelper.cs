@@ -1,4 +1,3 @@
-using System;
 using System.Runtime.InteropServices;
 
 namespace Terminal.Gui.Drivers;
@@ -37,33 +36,44 @@ internal static class SuspendHelper
             return _suspendSignal;
         }
 
-        if (OperatingSystem.IsMacOS () ||
-            OperatingSystem.IsFreeBSD () ||
-            RuntimeInformation.IsOSPlatform (OSPlatform.Create ("NETBSD")) ||
-            RuntimeInformation.IsOSPlatform (OSPlatform.Create ("OPENBSD")))
-        {
-            _suspendSignal = 18;
-        }
-        else if (OperatingSystem.IsLinux ())
-        {
-            _suspendSignal = 20;
-        }
-        else if (RuntimeInformation.IsOSPlatform (OSPlatform.Create ("SOLARIS")) ||
-                 RuntimeInformation.IsOSPlatform (OSPlatform.Create ("ILLUMOS")))
-        {
-            _suspendSignal = 24;
-        }
-        else if (RuntimeInformation.IsOSPlatform (OSPlatform.Create ("HAIKU")))
-        {
-            _suspendSignal = 21;
-        }
-        else
-        {
-            _suspendSignal = -1;
-        }
+        _suspendSignal = MapSuspendSignal (PlatformDetection.GetPlatformName ());
 
         return _suspendSignal;
     }
+
+    /// <summary>
+    ///     Maps a .NET OS platform name to that platform's <c>SIGTSTP</c> signal number.
+    /// </summary>
+    /// <param name="platformName">
+    ///     A platform name from <see cref="PlatformDetection.KnownPlatformNames"/>, as returned by
+    ///     <see cref="PlatformDetection.GetPlatformName"/>.
+    /// </param>
+    /// <returns>The <c>SIGTSTP</c> number, or -1 when the platform has no known suspend signal.</returns>
+    /// <remarks>
+    ///     Values come from each platform's <c>signal.h</c>. Two entries are easy to get wrong:
+    ///     <list type="bullet">
+    ///         <item>
+    ///             Haiku's <c>SIGTSTP</c> is 13. 21 is <c>SIGKILLTHR</c> there, so sending 21 would kill threads
+    ///             instead of suspending.
+    ///         </item>
+    ///         <item>
+    ///             Android needs its own entry because <see cref="OperatingSystem.IsLinux"/> returns
+    ///             <see langword="false"/> on Android.
+    ///         </item>
+    ///     </list>
+    /// </remarks>
+    internal static int MapSuspendSignal (string platformName) =>
+        platformName switch
+        {
+            // Darwin and the BSDs share the historical BSD signal numbering.
+            "OSX" or "FREEBSD" or "NETBSD" or "OPENBSD" => 18,
+
+            // Linux, on every architecture .NET targets. (Linux/MIPS uses 24, but .NET has no MIPS target.)
+            "LINUX" or "ANDROID" => 20,
+            "SOLARIS" or "ILLUMOS" => 24,
+            "HAIKU" => 13,
+            _ => -1
+        };
 
     [DllImport ("libc", SetLastError = true)]
     private static extern int killpg (int pgrp, int sig);

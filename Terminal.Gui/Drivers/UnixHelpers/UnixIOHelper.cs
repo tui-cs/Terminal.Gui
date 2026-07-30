@@ -178,10 +178,42 @@ internal static class UnixIOHelper
     }
 
     /// <summary>
-    ///     Get window/terminal size using ioctl.
-    ///     Platform-specific constant (different on Darwin/BSD vs Linux).
+    ///     Get window/terminal size using ioctl. Platform-specific constant; see <see cref="MapTiocgwinsz"/>.
     /// </summary>
-    public static readonly uint TIOCGWINSZ = OperatingSystem.IsLinux () ? 0x5413u : 0x40087468u;
+    public static readonly uint TIOCGWINSZ = MapTiocgwinsz (PlatformDetection.GetPlatformName ());
+
+    /// <summary>
+    ///     Maps a .NET OS platform name to that platform's <c>TIOCGWINSZ</c> ioctl request code.
+    /// </summary>
+    /// <param name="platformName">
+    ///     A platform name from <see cref="PlatformDetection.KnownPlatformNames"/>, as returned by
+    ///     <see cref="PlatformDetection.GetPlatformName"/>.
+    /// </param>
+    /// <returns>The <c>TIOCGWINSZ</c> request code for <paramref name="platformName"/>.</returns>
+    /// <remarks>
+    ///     <para>
+    ///         Android needs its own entry because <see cref="OperatingSystem.IsLinux"/> returns
+    ///         <see langword="false"/> on Android even though it uses the same asm-generic ioctl numbering as Linux.
+    ///     </para>
+    ///     <para>
+    ///         On Linux the value is architecture-dependent, not purely OS-dependent: ppc64le, MIPS, SPARC and Alpha
+    ///         use the BSD-style 0x40087468 rather than 0x5413. Only the asm-generic architectures (x86, x64, Arm,
+    ///         Arm64, RISC-V, s390x) are handled here, which covers every architecture Terminal.Gui is tested on.
+    ///     </para>
+    /// </remarks>
+    internal static uint MapTiocgwinsz (string platformName) =>
+        platformName switch
+        {
+            // asm-generic ioctl numbering.
+            "LINUX" or "ANDROID" => 0x5413u,
+
+            // Solaris/illumos: TIOC|104, where TIOC is ('T' << 8).
+            "SOLARIS" or "ILLUMOS" => 0x5468u,
+
+            // BSD _IOR ('t', 104, struct winsize): Darwin, FreeBSD, NetBSD, OpenBSD, and the best guess for any
+            // other Unix, since BSD-style ioctl encoding is the most common.
+            _ => 0x40087468u
+        };
 
     /// <summary>
     ///     I/O control operations on file descriptors.
