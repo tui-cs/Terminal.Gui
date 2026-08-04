@@ -181,7 +181,10 @@ internal static class UnixIOHelper
     ///     Get window/terminal size using ioctl.
     ///     Platform-specific constant (different on Darwin/BSD vs Linux).
     /// </summary>
-    public static readonly uint TIOCGWINSZ = OperatingSystem.IsLinux () ? 0x5413u : 0x40087468u;
+    public static readonly uint TIOCGWINSZ = 
+        (OperatingSystem.IsLinux () || OperatingSystem.IsAndroid ()) && RuntimeInformation.ProcessArchitecture != Architecture.Ppc64le ? 0x5413u :
+        RuntimeInformation.IsOSPlatform(OSPlatform.Create ("SOLARIS")) || RuntimeInformation.IsOSPlatform(OSPlatform.Create ("ILLUMOS")) ? 0x5468u :
+        RuntimeInformation.IsOSPlatform(OSPlatform.Create ("HAIKU")) ? 0x800Cu : 0x40087468u;
 
     /// <summary>
     ///     I/O control operations on file descriptors.
