@@ -11,6 +11,7 @@ internal static class SuspendHelper
     /// <returns>True if the suspension was successful.</returns>
     public static bool Suspend ()
     {
+        // TODO: Use (int)PosixSignal.SIGTSTP once baseline moves to .NET 11.0
         int signal = GetSuspendSignal ();
 
         Logging.Information ($"SuspendHelper.Suspend: signal={signal}");
