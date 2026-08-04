@@ -38,13 +38,18 @@ internal static class SuspendHelper
         }
 
         if (OperatingSystem.IsMacOS () ||
+            OperatingSystem.IsMacCatalyst () ||
+            OperatingSystem.IsIOS () ||
+            OperatingSystem.IsTvOS () ||
+            OperatingSystem.IsWatchOS () ||
             OperatingSystem.IsFreeBSD () ||
             RuntimeInformation.IsOSPlatform (OSPlatform.Create ("NETBSD")) ||
             RuntimeInformation.IsOSPlatform (OSPlatform.Create ("OPENBSD")))
         {
             _suspendSignal = 18;
         }
-        else if (OperatingSystem.IsLinux ())
+        else if (OperatingSystem.IsLinux () ||
+                 OperatingSystem.IsAndroid ())
         {
             _suspendSignal = 20;
         }
@@ -55,7 +60,7 @@ internal static class SuspendHelper
         }
         else if (RuntimeInformation.IsOSPlatform (OSPlatform.Create ("HAIKU")))
         {
-            _suspendSignal = 21;
+            _suspendSignal = 13;
         }
         else
         {
