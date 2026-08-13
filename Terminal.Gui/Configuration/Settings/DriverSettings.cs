@@ -9,7 +9,7 @@ public class DriverSettings
     public bool Force16Colors { get; set; }
 
     /// <summary>Gets or sets the size detection mode.</summary>
-    public SizeDetectionMode SizeDetection { get; set; } = SizeDetectionMode.AnsiQuery;
+    public SizeDetectionMode SizeDetection { get; set; } = SizeDetectionMode.Polling;
 
     /// <summary>
     ///     The static facade instance. Always contains the current effective values.

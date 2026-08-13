@@ -27,6 +27,7 @@ public class AnsiComponentFactory : ComponentFactoryImpl<char>
     private readonly AnsiInput? _input;
     private readonly IOutput? _output;
     private readonly ISizeMonitor? _injectedSizeMonitor;
+    private readonly Func<Size?>? _nativeSizeQuery;
 
     /// <summary>
     ///     Creates a new ANSIComponentFactory with optional output capture.
@@ -38,10 +39,15 @@ public class AnsiComponentFactory : ComponentFactoryImpl<char>
     ///     <see cref="Driver.SizeDetection"/>).
     /// </param>
     public AnsiComponentFactory (AnsiInput? input = null, IOutput? output = null, ISizeMonitor? sizeMonitor = null)
+        : this (input, output, sizeMonitor, null)
+    { }
+
+    internal AnsiComponentFactory (AnsiInput? input, IOutput? output, ISizeMonitor? sizeMonitor, Func<Size?>? nativeSizeQuery)
     {
         _input = input;
         _output = output;
         _injectedSizeMonitor = sizeMonitor;
+        _nativeSizeQuery = nativeSizeQuery;
     }
 
     /// <inheritdoc/>
@@ -60,15 +66,33 @@ public class AnsiComponentFactory : ComponentFactoryImpl<char>
 
         if (Driver.SizeDetection != SizeDetectionMode.Polling)
         {
+            ansiOutput.NativeSizeQuery = null;
+
             return new AnsiSizeMonitor (ansiOutput);
         }
 
-        // Polling mode: wire up a platform-native size query so that
-        // AnsiOutput.GetSize() returns the real terminal size via
-        // ioctl(TIOCGWINSZ) on Unix or the Console API on Windows.
-        ansiOutput.NativeSizeQuery = CreateNativeSizeQuery ();
+        if (ansiOutput.NativeSizeQuery is null && !TryConfigureNativeSizeQuery (ansiOutput))
+        {
+            return new AnsiSizeMonitor (ansiOutput);
+        }
 
-        return new SizeMonitorImpl (ansiOutput);
+        return new AnsiSizeMonitor (ansiOutput, queryTerminalSize: false);
+    }
+
+    private bool TryConfigureNativeSizeQuery (AnsiOutput output)
+    {
+        Func<Size?> nativeSizeQuery = output.NativeSizeQuery ?? _nativeSizeQuery ?? CreateNativeSizeQuery ();
+        Size? initialSize = nativeSizeQuery ();
+
+        if (initialSize is null)
+        {
+            return false;
+        }
+
+        output.NativeSizeQuery = nativeSizeQuery;
+        output.SetSize (initialSize.Value.Width, initialSize.Value.Height);
+
+        return true;
     }
 
     /// <summary>
@@ -109,5 +133,16 @@ public class AnsiComponentFactory : ComponentFactoryImpl<char>
         new AnsiInputProcessor (inputBuffer, timeProvider);
 
     /// <inheritdoc/>
-    public override IOutput CreateOutput () => _output ?? new AnsiOutput (AppModel);
+    public override IOutput CreateOutput ()
+    {
+        IOutput output = _output ?? new AnsiOutput (AppModel);
+
+        if (Driver.SizeDetection == SizeDetectionMode.Polling
+            && output is AnsiOutput { NativeSizeQuery: null } ansiOutput)
+        {
+            TryConfigureNativeSizeQuery (ansiOutput);
+        }
+
+        return output;
+    }
 }

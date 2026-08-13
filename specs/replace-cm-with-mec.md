@@ -1257,7 +1257,7 @@ The following are explicitly **not** part of this proposal:
 | `Application` | `IsMouseDisabled` | `bool` | `false` |
 | `ConfigurationManager` | `ThrowOnJsonErrors` | `bool?` | `false` |
 | `Driver` | `Force16Colors` | `bool` | `false` |
-| `Driver` | `SizeDetection` | `SizeDetectionMode` | `AnsiQuery` |
+| `Driver` | `SizeDetection` | `SizeDetectionMode` | `Polling` |
 | `Key` | `Separator` | `char` | `'+'` |
 | `MenuBar` | `DefaultKey` | `Key` | `F10` |
 | `PopoverMenu` | `DefaultKey` | `Key` | `Shift+F10` |

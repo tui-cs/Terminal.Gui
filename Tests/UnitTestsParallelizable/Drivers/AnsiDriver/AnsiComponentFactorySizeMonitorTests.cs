@@ -1,4 +1,5 @@
 using Moq;
+using Terminal.Gui.Configuration;
 
 namespace DriverTests.Ansi;
 
@@ -32,12 +33,11 @@ public class AnsiComponentFactorySizeMonitorTests
     }
 
     /// <summary>
-    ///     When <see cref="SizeDetectionMode.AnsiQuery"/> is active (the default),
-    ///     <see cref="AnsiComponentFactory.CreateSizeMonitor"/> should return an
-    ///     <see cref="AnsiSizeMonitor"/> for an <see cref="AnsiOutput"/> argument.
+    ///     When <see cref="SizeDetectionMode.AnsiQuery"/> is explicitly selected,
+    ///     the size monitor must queue an ANSI terminal-size query when initialized.
     /// </summary>
     [Fact]
-    public void CreateSizeMonitor_AnsiQuery_ReturnsAnsiSizeMonitor ()
+    public void CreateSizeMonitor_AnsiQuery_QueuesAnsiSizeQuery ()
     {
         SizeDetectionMode saved = Driver.SizeDetection;
 
@@ -50,9 +50,90 @@ public class AnsiComponentFactorySizeMonitorTests
 
             AnsiComponentFactory factory = new ();
 
-            ISizeMonitor result = factory.CreateSizeMonitor (output, Mock.Of<IOutputBuffer> ());
+            ISizeMonitor monitor = factory.CreateSizeMonitor (output, Mock.Of<IOutputBuffer> ());
 
-            Assert.IsType<AnsiSizeMonitor> (result);
+            List<AnsiEscapeSequenceRequest> queuedRequests = [];
+            Mock<IDriver> driver = new ();
+            driver.Setup (d => d.QueueAnsiRequest (It.IsAny<AnsiEscapeSequenceRequest> ()))
+                  .Callback<AnsiEscapeSequenceRequest> (queuedRequests.Add);
+
+            monitor.Initialize (driver.Object);
+
+            Assert.Contains (queuedRequests,
+                             request => request.Request == EscSeqUtils.CSI_ReportWindowSizeInChars.Request);
+        }
+        finally
+        {
+            Driver.SizeDetection = saved;
+        }
+    }
+
+    // Codex - GPT-5 Codex
+    /// <summary>
+    ///     The default ANSI size monitor must observe native size changes without queuing
+    ///     terminal-size queries.
+    /// </summary>
+    [Fact]
+    public void CreateSizeMonitor_Default_DetectsNativeResize_WithoutAnsiSizeQuery ()
+    {
+        SizeDetectionMode saved = Driver.SizeDetection;
+
+        try
+        {
+            DriverSettings defaults = new ();
+            Driver.SizeDetection = defaults.SizeDetection;
+
+            AnsiOutput output = new ();
+            Size reportedSize = new (80, 25);
+
+            AnsiComponentFactory factory = new (null, output, null, () => reportedSize);
+            ISizeMonitor monitor = factory.CreateSizeMonitor (output, Mock.Of<IOutputBuffer> ());
+
+            List<AnsiEscapeSequenceRequest> queuedRequests = [];
+            Mock<IDriver> driver = new ();
+            driver.Setup (d => d.QueueAnsiRequest (It.IsAny<AnsiEscapeSequenceRequest> ()))
+                  .Callback<AnsiEscapeSequenceRequest> (queuedRequests.Add);
+
+            List<SizeChangedEventArgs> sizeChanges = [];
+            monitor.SizeChanged += (_, e) => sizeChanges.Add (e);
+            monitor.Initialize (driver.Object);
+
+            Assert.Equal (reportedSize, output.GetSize ());
+            Assert.False (monitor.Poll ());
+
+            reportedSize = new Size (120, 40);
+
+            Assert.True (monitor.Poll ());
+            Assert.Single (sizeChanges);
+            Assert.Equal (reportedSize, sizeChanges [0].Size);
+            Assert.DoesNotContain (queuedRequests,
+                                   request => request.Request == EscSeqUtils.CSI_ReportWindowSizeInChars.Request);
+        }
+        finally
+        {
+            Driver.SizeDetection = saved;
+        }
+    }
+
+    // Codex - GPT-5 Codex
+    [Fact]
+    public void CreateOutput_Default_InitializesNativeSizeBeforeMainLoopSizing ()
+    {
+        SizeDetectionMode saved = Driver.SizeDetection;
+
+        try
+        {
+            DriverSettings defaults = new ();
+            Driver.SizeDetection = defaults.SizeDetection;
+
+            AnsiOutput output = new ();
+            Size reportedSize = new (120, 40);
+            AnsiComponentFactory factory = new (null, output, null, () => reportedSize);
+
+            IOutput createdOutput = factory.CreateOutput ();
+
+            Assert.Same (output, createdOutput);
+            Assert.Equal (reportedSize, createdOutput.GetSize ());
         }
         finally
         {
@@ -62,12 +143,11 @@ public class AnsiComponentFactorySizeMonitorTests
 
     /// <summary>
     ///     When <see cref="SizeDetectionMode.Polling"/> is active,
-    ///     <see cref="AnsiComponentFactory.CreateSizeMonitor"/> should return a
-    ///     <see cref="SizeMonitorImpl"/> and configure <see cref="AnsiOutput.NativeSizeQuery"/>
-    ///     so that <c>GetSize()</c> queries the OS instead of returning the stale cache.
+    ///     <see cref="AnsiComponentFactory.CreateSizeMonitor"/> should return an ANSI size monitor
+    ///     configured to query the OS without sending terminal-size requests.
     /// </summary>
     [Fact]
-    public void CreateSizeMonitor_Polling_ReturnsSizeMonitorImpl_AndSetsNativeSizeQuery ()
+    public void CreateSizeMonitor_Polling_ReturnsAnsiSizeMonitor_AndSetsNativeSizeQuery ()
     {
         SizeDetectionMode saved = Driver.SizeDetection;
 
@@ -76,16 +156,43 @@ public class AnsiComponentFactorySizeMonitorTests
             Driver.SizeDetection = SizeDetectionMode.Polling;
 
             AnsiOutput output = new ();
-            output.SetSize (80, 25);
+            Size reportedSize = new (80, 25);
 
-            AnsiComponentFactory factory = new ();
+            AnsiComponentFactory factory = new (null, output, null, () => reportedSize);
 
             ISizeMonitor result = factory.CreateSizeMonitor (output, Mock.Of<IOutputBuffer> ());
 
-            Assert.IsType<SizeMonitorImpl> (result);
-
-            // NativeSizeQuery must have been wired up so GetSize() can query the OS.
+            Assert.IsType<AnsiSizeMonitor> (result);
             Assert.NotNull (output.NativeSizeQuery);
+        }
+        finally
+        {
+            Driver.SizeDetection = saved;
+        }
+    }
+
+    // Codex - GPT-5 Codex
+    [Fact]
+    public void CreateSizeMonitor_PollingWithoutNativeSize_FallsBackToAnsiQuery ()
+    {
+        SizeDetectionMode saved = Driver.SizeDetection;
+
+        try
+        {
+            Driver.SizeDetection = SizeDetectionMode.Polling;
+            AnsiOutput output = new ();
+            AnsiComponentFactory factory = new (null, output, null, () => null);
+            ISizeMonitor monitor = factory.CreateSizeMonitor (output, Mock.Of<IOutputBuffer> ());
+
+            List<AnsiEscapeSequenceRequest> queuedRequests = [];
+            Mock<IDriver> driver = new ();
+            driver.Setup (d => d.QueueAnsiRequest (It.IsAny<AnsiEscapeSequenceRequest> ()))
+                  .Callback<AnsiEscapeSequenceRequest> (queuedRequests.Add);
+
+            monitor.Initialize (driver.Object);
+
+            Assert.Contains (queuedRequests,
+                             request => request.Request == EscSeqUtils.CSI_ReportWindowSizeInChars.Request);
         }
         finally
         {
