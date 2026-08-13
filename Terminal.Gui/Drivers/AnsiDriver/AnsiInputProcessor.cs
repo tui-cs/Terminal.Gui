@@ -39,8 +39,9 @@ namespace Terminal.Gui.Drivers;
 /// </summary>
 public class AnsiInputProcessor : InputProcessorImpl<char>
 {
-    private bool _isKittyKeyboardEnabled;
-    private string _pendingPrintableSuppression = string.Empty;
+    private static readonly TimeSpan PrintableSuppressionTimeout = TimeSpan.FromMilliseconds (50);
+    private string _pendingParsedPrintableSuppression = string.Empty;
+    private DateTime _pendingParsedPrintableSuppressionExpiresAt;
 
     /// <inheritdoc/>
     /// <param name="inputBuffer">The input buffer to process.</param>
@@ -62,9 +63,12 @@ public class AnsiInputProcessor : InputProcessorImpl<char>
     /// <inheritdoc/>
     protected override Key OnKeyboardEventParsed (Key keyEvent)
     {
-        _pendingPrintableSuppression = string.Empty;
+        _pendingParsedPrintableSuppression = string.Empty;
 
-        if (keyEvent.EventType != KeyEventType.Press || keyEvent.IsAlt || keyEvent.IsCtrl || keyEvent.IsModifierOnly)
+        if (keyEvent.EventType != KeyEventType.Press
+            || keyEvent.IsAlt
+            || keyEvent.IsCtrl
+            || keyEvent.IsModifierOnly)
         {
             return keyEvent;
         }
@@ -73,7 +77,8 @@ public class AnsiInputProcessor : InputProcessorImpl<char>
 
         if (!string.IsNullOrEmpty (printableText))
         {
-            _pendingPrintableSuppression = printableText;
+            _pendingParsedPrintableSuppression = printableText;
+            _pendingParsedPrintableSuppressionExpiresAt = CurrentTime + PrintableSuppressionTimeout;
         }
 
         return keyEvent;
@@ -82,29 +87,18 @@ public class AnsiInputProcessor : InputProcessorImpl<char>
     /// <inheritdoc/>
     protected override bool ShouldSuppressFallbackKeyDown (Key key)
     {
-        if (string.IsNullOrEmpty (_pendingPrintableSuppression))
+        string parsedPrintableText = _pendingParsedPrintableSuppression;
+        _pendingParsedPrintableSuppression = string.Empty;
+
+        if (string.IsNullOrEmpty (parsedPrintableText)
+            || CurrentTime > _pendingParsedPrintableSuppressionExpiresAt)
         {
-            if (_isKittyKeyboardEnabled)
-            {
-                string fallbackPrintableText = key.GetPrintableText ();
-
-                if (!string.IsNullOrEmpty (fallbackPrintableText))
-                {
-                    _pendingPrintableSuppression = fallbackPrintableText;
-                }
-            }
-
             return false;
         }
 
         string printableText = key.GetPrintableText ();
-        bool suppress = string.Equals (printableText, _pendingPrintableSuppression, StringComparison.Ordinal);
-        _pendingPrintableSuppression = string.Empty;
-
-        return suppress;
+        return string.Equals (printableText, parsedPrintableText, StringComparison.Ordinal);
     }
-
-    internal void SetKittyKeyboardEnabled (bool enabled) => _isKittyKeyboardEnabled = enabled;
 
     /// <inheritdoc/>
     public override void InjectKeyDownEvent (Key key)
