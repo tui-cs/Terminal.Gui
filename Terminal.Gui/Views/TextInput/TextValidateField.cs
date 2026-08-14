@@ -368,7 +368,7 @@ public class TextValidateField : View, IDesignable, IValue<string>
             return true;
         }
 
-        var role = VisualRole.Editable;
+        VisualRole role = VisualRole.Editable;
         Attribute textColor = IsValid ? GetAttributeForRole (role) : SchemeManager.GetScheme (Schemes.Error).GetAttributeForRole (role);
 
         (int marginLeft, int marginRight) = GetMargins (Viewport.Width);
@@ -405,7 +405,7 @@ public class TextValidateField : View, IDesignable, IValue<string>
             return true;
         }
 
-        SetAttributeForRole (VisualRole.Focus);
+        SetAttribute (textColor with { Style = textColor.Style | TextStyle.Underline });
         Move (InsertionPoint + marginLeft, 0);
         AddRune ((Rune)_provider.DisplayText [InsertionPoint]);
 
