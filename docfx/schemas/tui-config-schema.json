@@ -1,7 +1,7 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
   "title": "Terminal.Gui Configuration",
-  "description": "Configuration settings for Terminal.Gui applications. This schema defines settings for the application behavior, appearance, themes, key bindings, and component-specific options.",
+  "description": "Nested MEC configuration for Terminal.Gui 2.5+. Sections match Settings POCOs (Application, Button, Glyphs, …). Themes is a dictionary of overlays. Convert pre-2.5 flat-key files with Tools/MigrateConfig.",
   "type": "object",
   "properties": {
     "$schema": {
@@ -9,205 +9,362 @@
       "format": "uri",
       "description": "The URI of the schema that this configuration file adheres to. Optional but recommended for validation."
     },
-    "ConfigurationManager.ThrowOnJsonErrors": {
-      "type": "boolean",
-      "default": false,
-      "description": "If true, JSON parsing errors encountered during configuration loading will throw exceptions. If false, errors are typically logged, and default values may be used."
-    },
-    "Key.Separator": {
-      "type": "string",
-      "default": "+",
-      "description": "The character used to separate modifiers and keys in key string representations (e.g., 'Ctrl+Q')."
-    },
-    "Application.DefaultKeyBindings": {
-      "type": "object",
-      "description": "A dictionary mapping Command names to PlatformKeyBinding objects. Each PlatformKeyBinding can specify keys for All platforms or per-platform (Windows, Linux, Macos). Commands include Quit, Arrange, NextTabStop, PreviousTabStop, NextTabGroup, PreviousTabGroup.",
-      "additionalProperties": {
-        "type": "object",
-        "properties": {
-          "All": {
-            "type": "array",
-            "items": { "type": "string" },
-            "description": "Key combinations applied on all platforms."
-          },
-          "Windows": {
-            "type": "array",
-            "items": { "type": "string" },
-            "description": "Key combinations applied only on Windows."
-          },
-          "Linux": {
-            "type": "array",
-            "items": { "type": "string" },
-            "description": "Key combinations applied only on Linux."
-          },
-          "Macos": {
-            "type": "array",
-            "items": { "type": "string" },
-            "description": "Key combinations applied only on macOS."
-          }
-        }
-      }
-    },
-    "Application.Force16Colors": {
-      "type": "boolean",
-      "default": false,
-      "description": "If true, forces the console driver to output only the basic 16 ANSI colors, even if the terminal supports more (e.g., 256 colors or TrueColor)."
-    },
-    "Application.ForceDriver": {
-      "type": [
-        "string",
-        "null"
-      ],
-      "enum": [
-        "",
-        "ansi",
-        "dotent",
-        "unix",
-        "windows",
-        null
-      ],
-      "default": "",
-      "description": "Forces the use of a specific console driver. If empty or null, Terminal.Gui will attempt to auto-detect the best driver. Options: 'ansi', 'unix', 'dotnet', 'windows'."
-    },
-    "Application.IsMouseDisabled": {
-      "type": "boolean",
-      "default": false,
-      "description": "Disables or enables mouse support for the application. If true, mouse events will be ignored."
-    },
-    "PopoverMenu.DefaultKey": {
-      "type": "string",
-      "default": "Shift+F10",
-      "description": "Default key to open the context menu (PopoverMenu)."
-    },
-    "FileDialog.MaxSearchResults": {
-      "type": "integer",
-      "default": 10000,
-      "description": "Maximum number of search results to display in the FileDialog."
-    },
-    "FileDialogStyle.DefaultUseColors": {
-      "type": "boolean",
-      "default": false,
-      "description": "Whether the FileDialog should use colors by default to differentiate file/directory types."
-    },
-    "FileDialogStyle.DefaultUseUnicodeCharacters": {
-      "type": "boolean",
-      "default": false,
-      "description": "Whether the FileDialog should use Unicode characters for icons by default."
-    },
-    "Colors16": {
-      "type": "object",
-      "description": "Defines the 3-byte/6-character hexadecimal string values for the 16 legacy ANSI color names (ColorName16). These definitions can be overridden by the user to customize the base 16 color palette.",
-      "properties": {
-        "Black": {
-          "type": "string",
-          "pattern": "^#[0-9a-fA-F]{6}$",
-          "description": "Hex string for ColorName16.Black (typically #000000)."
-        },
-        "Blue": {
-          "type": "string",
-          "pattern": "^#[0-9a-fA-F]{6}$",
-          "description": "Hex string for ColorName16.Blue (typically #000080, a dark blue like Navy)."
-        },
-        "Green": {
-          "type": "string",
-          "pattern": "^#[0-9a-fA-F]{6}$",
-          "description": "Hex string for ColorName16.Green (typically #008000, a dark green)."
-        },
-        "Cyan": {
-          "type": "string",
-          "pattern": "^#[0-9a-fA-F]{6}$",
-          "description": "Hex string for ColorName16.Cyan (typically #008080, a dark cyan like Teal)."
-        },
-        "Red": {
-          "type": "string",
-          "pattern": "^#[0-9a-fA-F]{6}$",
-          "description": "Hex string for ColorName16.Red (typically #800000, a dark red like Maroon)."
-        },
-        "Magenta": {
-          "type": "string",
-          "pattern": "^#[0-9a-fA-F]{6}$",
-          "description": "Hex string for ColorName16.Magenta (typically #800080, a dark magenta like Purple)."
-        },
-        "Yellow": {
-          "type": "string",
-          "pattern": "^#[0-9a-fA-F]{6}$",
-          "description": "Hex string for ColorName16.Yellow (typically #808000, a dark yellow like Olive)."
-        },
-        "Gray": {
-          "type": "string",
-          "pattern": "^#[0-9a-fA-F]{6}$",
-          "description": "Hex string for ColorName16.Gray (typically #C0C0C0, a light gray like Silver)."
-        },
-        "DarkGray": {
-          "type": "string",
-          "pattern": "^#[0-9a-fA-F]{6}$",
-          "description": "Hex string for ColorName16.DarkGray (typically #808080, a medium gray)."
-        },
-        "BrightBlue": {
-          "type": "string",
-          "pattern": "^#[0-9a-fA-F]{6}$",
-          "description": "Hex string for ColorName16.BrightBlue (typically #0000FF)."
-        },
-        "BrightGreen": {
-          "type": "string",
-          "pattern": "^#[0-9a-fA-F]{6}$",
-          "description": "Hex string for ColorName16.BrightGreen (typically #00FF00, like Lime)."
-        },
-        "BrightCyan": {
-          "type": "string",
-          "pattern": "^#[0-9a-fA-F]{6}$",
-          "description": "Hex string for ColorName16.BrightCyan (typically #00FFFF, like Aqua)."
-        },
-        "BrightRed": {
-          "type": "string",
-          "pattern": "^#[0-9a-fA-F]{6}$",
-          "description": "Hex string for ColorName16.BrightRed (typically #FF0000)."
-        },
-        "BrightMagenta": {
-          "type": "string",
-          "pattern": "^#[0-9a-fA-F]{6}$",
-          "description": "Hex string for ColorName16.BrightMagenta (typically #FF00FF, like Fuchsia)."
-        },
-        "BrightYellow": {
-          "type": "string",
-          "pattern": "^#[0-9a-fA-F]{6}$",
-          "description": "Hex string for ColorName16.BrightYellow (typically #FFFF00)."
-        },
-        "White": {
-          "type": "string",
-          "pattern": "^#[0-9a-fA-F]{6}$",
-          "description": "Hex string for ColorName16.White (typically #FFFFFF)."
-        }
-      },
-      "additionalProperties": false
-    },
     "Theme": {
       "type": "string",
       "default": "Default",
-      "description": "The name of the theme to be applied at application startup. This name must match one of the theme names defined in the 'Themes' array."
+      "description": "Name of the theme applied at startup. Must match a key in Themes."
     },
+    "Application": { "$ref": "#/definitions/applicationSettings" },
+    "Driver": { "$ref": "#/definitions/driverSettings" },
+    "Key": { "$ref": "#/definitions/keySettings" },
+    "FileDialog": { "$ref": "#/definitions/fileDialogSettings" },
+    "FileDialogStyle": { "$ref": "#/definitions/fileDialogStyleSettings" },
+    "Trace": { "$ref": "#/definitions/traceSettings" },
+    "Button": { "$ref": "#/definitions/buttonSettings" },
+    "CheckBox": { "$ref": "#/definitions/checkBoxSettings" },
+    "CharMap": { "$ref": "#/definitions/charMapSettings" },
+    "Dialog": { "$ref": "#/definitions/dialogSettings" },
+    "FrameView": { "$ref": "#/definitions/frameViewSettings" },
+    "HexView": { "$ref": "#/definitions/hexViewSettings" },
+    "LinearRange": { "$ref": "#/definitions/linearRangeSettings" },
+    "Menu": { "$ref": "#/definitions/menuSettings" },
+    "MenuBar": { "$ref": "#/definitions/menuBarSettings" },
+    "MessageBox": { "$ref": "#/definitions/messageBoxSettings" },
+    "NerdFonts": { "$ref": "#/definitions/nerdFontsSettings" },
+    "PopoverMenu": { "$ref": "#/definitions/popoverMenuSettings" },
+    "SelectorBase": { "$ref": "#/definitions/selectorBaseSettings" },
+    "StatusBar": { "$ref": "#/definitions/statusBarSettings" },
+    "TextField": { "$ref": "#/definitions/textFieldSettings" },
+    "TextView": { "$ref": "#/definitions/textViewSettings" },
+    "Window": { "$ref": "#/definitions/windowSettings" },
+    "Glyphs": { "$ref": "#/definitions/glyphSettings" },
     "Themes": {
-      "type": "array",
-      "description": "A list of theme definitions. Each theme provides a distinct look and feel for the application.",
-      "items": {
-        "type": "object",
-        "description": "A single theme definition. The object should have exactly one property, where the key is the unique name of the theme (e.g., 'Default', 'Dark'), and the value contains the theme's settings.",
-        "maxProperties": 1,
-        "minProperties": 1,
-        "patternProperties": {
-          "^[\\w\\s&\\(\\)-]+$": {
-            "$ref": "#/definitions/themeSettings"
-          }
-        },
-        "additionalProperties": false
+      "type": "object",
+      "description": "Dictionary of theme name to overlay. Each overlay uses the same nested section names as the root (Button, Glyphs, Dialog, Schemes, …). Properties omitted from an overlay keep the root value.",
+      "additionalProperties": {
+        "$ref": "#/definitions/themeSettings"
       }
     }
   },
   "additionalProperties": true,
   "definitions": {
+    "lineStyle": {
+      "type": "string",
+      "enum": [
+        "None",
+        "Single",
+        "Dashed",
+        "Dotted",
+        "Double",
+        "Heavy",
+        "HeavyDashed",
+        "HeavyDotted",
+        "Rounded",
+        "RoundedDashed",
+        "RoundedDotted"
+      ]
+    },
+    "shadowStyles": {
+      "type": "string",
+      "enum": [ "None", "Opaque", "Transparent" ]
+    },
+    "alignment": {
+      "type": "string",
+      "enum": [ "Start", "End", "Center", "Fill" ]
+    },
+    "alignmentModes": {
+      "type": "string",
+      "description": "Comma-separated AlignmentModes flags: StartToEnd, EndToStart, AddSpaceBetweenItems."
+    },
+    "cursorStyle": {
+      "type": "string",
+      "enum": [
+        "Default",
+        "BlinkingBlock",
+        "SteadyBlock",
+        "BlinkingUnderline",
+        "SteadyUnderline",
+        "BlinkingBar",
+        "SteadyBar",
+        "Hidden"
+      ]
+    },
+    "mouseState": {
+      "type": "string",
+      "description": "Comma-separated MouseState flags: None, In, Pressed, PressedOutside."
+    },
+    "applicationSettings": {
+      "type": "object",
+      "description": "Application-level settings (SettingsScope).",
+      "properties": {
+        "AppModel": {
+          "type": "string",
+          "enum": [ "FullScreen", "Inline" ],
+          "default": "FullScreen",
+          "description": "FullScreen uses the alternate screen buffer; Inline renders in the primary buffer."
+        },
+        "ForceDriver": {
+          "type": [ "string", "null" ],
+          "enum": [ "", "ansi", "dotnet", "unix", "windows", null ],
+          "default": "",
+          "description": "Forces a console driver. Empty or null auto-detects."
+        },
+        "IsMouseDisabled": {
+          "type": "boolean",
+          "default": false,
+          "description": "When true, mouse events are ignored."
+        }
+      },
+      "additionalProperties": false
+    },
+    "driverSettings": {
+      "type": "object",
+      "description": "Driver settings (SettingsScope).",
+      "properties": {
+        "Force16Colors": {
+          "type": "boolean",
+          "default": false,
+          "description": "When true, the driver outputs only the 16 ANSI colors."
+        },
+        "SizeDetection": {
+          "type": "string",
+          "enum": [ "AnsiQuery", "Polling" ],
+          "default": "Polling",
+          "description": "How the ANSI driver detects terminal size."
+        }
+      },
+      "additionalProperties": false
+    },
+    "keySettings": {
+      "type": "object",
+      "description": "Key parsing settings (SettingsScope).",
+      "properties": {
+        "Separator": {
+          "type": "string",
+          "minLength": 1,
+          "default": "+",
+          "description": "Character that separates modifiers and keys (e.g. Ctrl+Q)."
+        }
+      },
+      "additionalProperties": false
+    },
+    "fileDialogSettings": {
+      "type": "object",
+      "properties": {
+        "MaxSearchResults": {
+          "type": "integer",
+          "default": 10000,
+          "description": "Maximum search results shown in FileDialog."
+        }
+      },
+      "additionalProperties": false
+    },
+    "fileDialogStyleSettings": {
+      "type": "object",
+      "properties": {
+        "DefaultUseColors": {
+          "type": "boolean",
+          "default": true,
+          "description": "Whether FileDialog uses colors to distinguish file types."
+        },
+        "DefaultUseUnicodeCharacters": {
+          "type": "boolean",
+          "default": false,
+          "description": "Whether FileDialog uses Unicode icons by default."
+        }
+      },
+      "additionalProperties": false
+    },
+    "traceSettings": {
+      "type": "object",
+      "properties": {
+        "EnabledCategories": {
+          "type": "string",
+          "description": "Comma-separated TraceCategory flags: None, Lifecycle, Command, Mouse, Keyboard, Navigation, Configuration, Draw, All."
+        }
+      },
+      "additionalProperties": false
+    },
+    "buttonSettings": {
+      "type": "object",
+      "properties": {
+        "DefaultShadow": { "$ref": "#/definitions/shadowStyles", "default": "Opaque" }
+      },
+      "additionalProperties": false
+    },
+    "checkBoxSettings": {
+      "type": "object",
+      "properties": {
+        "DefaultMouseHighlightStates": { "$ref": "#/definitions/mouseState" }
+      },
+      "additionalProperties": false
+    },
+    "charMapSettings": {
+      "type": "object",
+      "properties": {
+        "DefaultCursorStyle": { "$ref": "#/definitions/cursorStyle", "default": "BlinkingBlock" }
+      },
+      "additionalProperties": false
+    },
+    "dialogSettings": {
+      "type": "object",
+      "properties": {
+        "DefaultShadow": { "$ref": "#/definitions/shadowStyles", "default": "Transparent" },
+        "DefaultBorderStyle": { "$ref": "#/definitions/lineStyle", "default": "Heavy" },
+        "DefaultButtonAlignment": { "$ref": "#/definitions/alignment", "default": "End" },
+        "DefaultButtonAlignmentModes": { "$ref": "#/definitions/alignmentModes" }
+      },
+      "additionalProperties": false
+    },
+    "frameViewSettings": {
+      "type": "object",
+      "properties": {
+        "DefaultBorderStyle": { "$ref": "#/definitions/lineStyle", "default": "Rounded" }
+      },
+      "additionalProperties": false
+    },
+    "hexViewSettings": {
+      "type": "object",
+      "properties": {
+        "DefaultCursorStyle": { "$ref": "#/definitions/cursorStyle", "default": "BlinkingBlock" }
+      },
+      "additionalProperties": false
+    },
+    "linearRangeSettings": {
+      "type": "object",
+      "properties": {
+        "DefaultCursorStyle": { "$ref": "#/definitions/cursorStyle", "default": "BlinkingBlock" }
+      },
+      "additionalProperties": false
+    },
+    "menuSettings": {
+      "type": "object",
+      "properties": {
+        "DefaultBorderStyle": { "$ref": "#/definitions/lineStyle", "default": "None" }
+      },
+      "additionalProperties": false
+    },
+    "menuBarSettings": {
+      "type": "object",
+      "properties": {
+        "DefaultBorderStyle": { "$ref": "#/definitions/lineStyle", "default": "None" },
+        "DefaultKey": {
+          "type": "string",
+          "default": "F10",
+          "description": "Default key that opens the MenuBar."
+        }
+      },
+      "additionalProperties": false
+    },
+    "messageBoxSettings": {
+      "type": "object",
+      "properties": {
+        "DefaultBorderStyle": { "$ref": "#/definitions/lineStyle", "default": "Heavy" },
+        "DefaultButtonAlignment": { "$ref": "#/definitions/alignment", "default": "Center" }
+      },
+      "additionalProperties": false
+    },
+    "nerdFontsSettings": {
+      "type": "object",
+      "properties": {
+        "Enable": {
+          "type": "boolean",
+          "default": false,
+          "description": "When true, Nerd Font glyphs are used where available."
+        }
+      },
+      "additionalProperties": false
+    },
+    "popoverMenuSettings": {
+      "type": "object",
+      "properties": {
+        "DefaultKey": {
+          "type": "string",
+          "default": "Shift+F10",
+          "description": "Default key that opens a PopoverMenu (context menu)."
+        }
+      },
+      "additionalProperties": false
+    },
+    "selectorBaseSettings": {
+      "type": "object",
+      "properties": {
+        "DefaultMouseHighlightStates": { "$ref": "#/definitions/mouseState" }
+      },
+      "additionalProperties": false
+    },
+    "statusBarSettings": {
+      "type": "object",
+      "properties": {
+        "DefaultSeparatorLineStyle": { "$ref": "#/definitions/lineStyle", "default": "Single" }
+      },
+      "additionalProperties": false
+    },
+    "textFieldSettings": {
+      "type": "object",
+      "properties": {
+        "DefaultCursorStyle": { "$ref": "#/definitions/cursorStyle", "default": "BlinkingBar" }
+      },
+      "additionalProperties": false
+    },
+    "textViewSettings": {
+      "type": "object",
+      "properties": {
+        "DefaultCursorStyle": { "$ref": "#/definitions/cursorStyle", "default": "BlinkingBar" }
+      },
+      "additionalProperties": false
+    },
+    "windowSettings": {
+      "type": "object",
+      "properties": {
+        "DefaultShadow": { "$ref": "#/definitions/shadowStyles", "default": "None" },
+        "DefaultBorderStyle": { "$ref": "#/definitions/lineStyle", "default": "Single" }
+      },
+      "additionalProperties": false
+    },
+    "glyphSettings": {
+      "type": "object",
+      "description": "Glyph characters used to draw UI chrome. Keys match GlyphSettings property names (LeftArrow, HLine, CheckStateChecked, …).",
+      "additionalProperties": {
+        "type": "string",
+        "minLength": 1,
+        "description": "A single glyph (Unicode character or grapheme)."
+      }
+    },
+    "themeSettings": {
+      "type": "object",
+      "description": "Overlay for one named theme. Nested sections match root ThemeScope POCOs. Omitted properties keep the root value.",
+      "properties": {
+        "Button": { "$ref": "#/definitions/buttonSettings" },
+        "CheckBox": { "$ref": "#/definitions/checkBoxSettings" },
+        "CharMap": { "$ref": "#/definitions/charMapSettings" },
+        "Dialog": { "$ref": "#/definitions/dialogSettings" },
+        "FrameView": { "$ref": "#/definitions/frameViewSettings" },
+        "HexView": { "$ref": "#/definitions/hexViewSettings" },
+        "LinearRange": { "$ref": "#/definitions/linearRangeSettings" },
+        "Menu": { "$ref": "#/definitions/menuSettings" },
+        "MenuBar": { "$ref": "#/definitions/menuBarSettings" },
+        "MessageBox": { "$ref": "#/definitions/messageBoxSettings" },
+        "NerdFonts": { "$ref": "#/definitions/nerdFontsSettings" },
+        "PopoverMenu": { "$ref": "#/definitions/popoverMenuSettings" },
+        "SelectorBase": { "$ref": "#/definitions/selectorBaseSettings" },
+        "StatusBar": { "$ref": "#/definitions/statusBarSettings" },
+        "TextField": { "$ref": "#/definitions/textFieldSettings" },
+        "TextView": { "$ref": "#/definitions/textViewSettings" },
+        "Window": { "$ref": "#/definitions/windowSettings" },
+        "Glyphs": { "$ref": "#/definitions/glyphSettings" },
+        "Schemes": {
+          "type": "object",
+          "description": "Named schemes for this theme (Base, Menu, Error, …).",
+          "additionalProperties": {
+            "$ref": "#/definitions/scheme"
+          }
+        }
+      },
+      "additionalProperties": true
+    },
     "Color": {
-      "description": "One of the standard color names (parsed case-insensitively; (e.g. 'BrightBlue'), an rgb(r,g,b) tuple, or a hex color string in the format #RRGGBB.",
-      "$schema": "http://json-schema.org/draft-07/schema#",
+      "description": "One of the standard color names (parsed case-insensitively; e.g. 'BrightBlue'), an rgb(r,g,b) tuple, or a hex color string in the format #RRGGBB.",
       "type": "string",
       "oneOf": [
         {
@@ -388,283 +545,50 @@
     },
     "attribute": {
       "type": "object",
-      "description": "Defines the foreground color, background color, and style for a specific UI element state.",
+      "description": "Foreground color, background color, and style for a UI element state.",
       "properties": {
-        "Foreground": {
-          "$ref": "#/definitions/Color"
-        },
-        "Background": {
-          "$ref": "#/definitions/Color"
-        },
+        "Foreground": { "$ref": "#/definitions/Color" },
+        "Background": { "$ref": "#/definitions/Color" },
         "Style": {
           "type": "string",
           "default": "None",
-          "description": "Text style. Parsed case-insensitively by the application. Can be a single style or a comma-separated list of the following valid flags: None, Bold, Italic, Underline, Faint, Blink, Reverse, Strikethrough (e.g., 'Bold,Italic').",
+          "description": "Text style. A single flag or a comma-separated list: None, Bold, Italic, Underline, Faint, Blink, Reverse, Strikethrough.",
           "pattern": "^(None|Bold|Italic|Underline|Faint|Blink|Reverse|Strikethrough)(\\s*,\\s*(None|Bold|Italic|Underline|Faint|Blink|Reverse|Strikethrough))*$"
         }
       },
-      "required": [
-        "Foreground",
-        "Background"
-      ],
+      "required": [ "Foreground", "Background" ],
       "additionalProperties": false
     },
     "scheme": {
       "type": "object",
-      "description": "A collection of attributes defining the appearance of UI elements in different states (normal, focused, etc.).",
+      "description": "Attributes for UI elements in different visual roles.",
       "properties": {
-        "Normal": {
-          "$ref": "#/definitions/attribute",
-          "description": "Appearance in the normal, non-focused state."
-        },
-        "Focus": {
-          "$ref": "#/definitions/attribute",
-          "description": "Appearance when the element has input focus."
-        },
-        "HotNormal": {
-          "$ref": "#/definitions/attribute",
-          "description": "Appearance for a 'hot' element (e.g., mouse hover) that is not focused."
-        },
-        "HotFocus": {
-          "$ref": "#/definitions/attribute",
-          "description": "Appearance for a 'hot' element that also has input focus."
-        },
-        "Disabled": {
-          "$ref": "#/definitions/attribute",
-          "description": "Appearance when the element is disabled."
-        },
-        "Active": {
-          "$ref": "#/definitions/attribute",
-          "description": "Appearance when the element is active."
-        },
-        "HotActive": {
-          "$ref": "#/definitions/attribute",
-          "description": "Appearance for a 'hot' element that is also active."
-        },
-        "Highlight": {
-          "$ref": "#/definitions/attribute",
-          "description": "Appearance for a highlighted element."
-        },
-        "Editable": {
-          "$ref": "#/definitions/attribute",
-          "description": "Appearance for an editable element."
-        },
-        "ReadOnly": {
-          "$ref": "#/definitions/attribute",
-          "description": "Appearance for a read-only element."
-        },
-        "Code": {
-          "$ref": "#/definitions/attribute",
-          "description": "Appearance for preformatted or source code content."
-        },
-        "CodeComment": {
-          "$ref": "#/definitions/attribute",
-          "description": "Appearance for source-code comments."
-        },
-        "CodeKeyword": {
-          "$ref": "#/definitions/attribute",
-          "description": "Appearance for source-code keywords."
-        },
-        "CodeString": {
-          "$ref": "#/definitions/attribute",
-          "description": "Appearance for source-code string literals."
-        },
-        "CodeNumber": {
-          "$ref": "#/definitions/attribute",
-          "description": "Appearance for source-code numeric literals."
-        },
-        "CodeOperator": {
-          "$ref": "#/definitions/attribute",
-          "description": "Appearance for source-code operators."
-        },
-        "CodeType": {
-          "$ref": "#/definitions/attribute",
-          "description": "Appearance for source-code type names."
-        },
-        "CodePreprocessor": {
-          "$ref": "#/definitions/attribute",
-          "description": "Appearance for source-code preprocessor directives."
-        },
-        "CodeIdentifier": {
-          "$ref": "#/definitions/attribute",
-          "description": "Appearance for source-code identifiers."
-        },
-        "CodeConstant": {
-          "$ref": "#/definitions/attribute",
-          "description": "Appearance for source-code constants."
-        },
-        "CodePunctuation": {
-          "$ref": "#/definitions/attribute",
-          "description": "Appearance for source-code punctuation."
-        },
-        "CodeFunctionName": {
-          "$ref": "#/definitions/attribute",
-          "description": "Appearance for source-code function names."
-        },
-        "CodeAttribute": {
-          "$ref": "#/definitions/attribute",
-          "description": "Appearance for source-code attributes."
-        }
+        "Normal": { "$ref": "#/definitions/attribute", "description": "Normal, non-focused state." },
+        "Focus": { "$ref": "#/definitions/attribute", "description": "Has input focus." },
+        "HotNormal": { "$ref": "#/definitions/attribute", "description": "Hot (e.g. hover) and not focused." },
+        "HotFocus": { "$ref": "#/definitions/attribute", "description": "Hot and focused." },
+        "Disabled": { "$ref": "#/definitions/attribute", "description": "Disabled." },
+        "Active": { "$ref": "#/definitions/attribute", "description": "Active." },
+        "HotActive": { "$ref": "#/definitions/attribute", "description": "Hot and active." },
+        "Highlight": { "$ref": "#/definitions/attribute", "description": "Highlighted." },
+        "Editable": { "$ref": "#/definitions/attribute", "description": "Editable." },
+        "ReadOnly": { "$ref": "#/definitions/attribute", "description": "Read-only." },
+        "Code": { "$ref": "#/definitions/attribute", "description": "Preformatted or source code." },
+        "CodeComment": { "$ref": "#/definitions/attribute", "description": "Source-code comments." },
+        "CodeKeyword": { "$ref": "#/definitions/attribute", "description": "Source-code keywords." },
+        "CodeString": { "$ref": "#/definitions/attribute", "description": "Source-code string literals." },
+        "CodeNumber": { "$ref": "#/definitions/attribute", "description": "Source-code numeric literals." },
+        "CodeOperator": { "$ref": "#/definitions/attribute", "description": "Source-code operators." },
+        "CodeType": { "$ref": "#/definitions/attribute", "description": "Source-code type names." },
+        "CodePreprocessor": { "$ref": "#/definitions/attribute", "description": "Source-code preprocessor directives." },
+        "CodeIdentifier": { "$ref": "#/definitions/attribute", "description": "Source-code identifiers." },
+        "CodeConstant": { "$ref": "#/definitions/attribute", "description": "Source-code constants." },
+        "CodePunctuation": { "$ref": "#/definitions/attribute", "description": "Source-code punctuation." },
+        "CodeFunctionName": { "$ref": "#/definitions/attribute", "description": "Source-code function names." },
+        "CodeAttribute": { "$ref": "#/definitions/attribute", "description": "Source-code attributes." }
       },
-      "required": [
-        "Normal"
-      ],
+      "required": [ "Normal" ],
       "additionalProperties": false
-    },
-    "themeSettings": {
-      "type": "object",
-      "description": "Contains all settings for a specific theme, including default styles for various UI elements, glyphs, and color schemes.",
-      "properties": {
-        "BasedOn": {
-          "type": "string",
-          "description": "The name of another theme that this theme inherits settings from. Settings in the current theme will override those from the base theme."
-        },
-        "Dialog.DefaultButtonAlignment": {
-          "type": "string",
-          "enum": [
-            "Start",
-            "End",
-            "Center",
-            "Fill"
-          ],
-          "description": "Default horizontal alignment for buttons within Dialog views."
-        },
-        "Dialog.DefaultButtonAlignmentModes": {
-          "type": "string",
-          "enum": [
-            "None",
-            "AddSpaceBetweenItems",
-            "AddSpaceAroundItems"
-          ],
-          "description": "Specifies how extra space is distributed between buttons in Dialog views when alignment is 'Start', 'End', or 'Center'."
-        },
-        "Dialog.DefaultBorderStyle": {
-          "type": "string",
-          "enum": [
-            "None",
-            "Single",
-            "Double",
-            "Heavy",
-            "Rounded"
-          ],
-          "description": "Default border style for Dialog views."
-        },
-        "Dialog.DefaultShadow": {
-          "type": "string",
-          "enum": [
-            "None",
-            "Transparent",
-            "Opaque"
-          ],
-          "description": "Default shadow style for Dialog views, rendered behind the dialog."
-        },
-        "FrameView.DefaultBorderStyle": {
-          "type": "string",
-          "enum": [
-            "None",
-            "Single",
-            "Double",
-            "Heavy",
-            "Rounded"
-          ],
-          "description": "Default border style for FrameView controls."
-        },
-        "Window.DefaultBorderStyle": {
-          "type": "string",
-          "enum": [
-            "None",
-            "Single",
-            "Double",
-            "Heavy",
-            "Rounded"
-          ],
-          "description": "Default border style for Window views."
-        },
-        "MessageBox.DefaultButtonAlignment": {
-          "type": "string",
-          "enum": [
-            "Start",
-            "End",
-            "Center",
-            "Fill"
-          ],
-          "description": "Default horizontal alignment for buttons within MessageBox views."
-        },
-        "MessageBox.DefaultBorderStyle": {
-          "type": "string",
-          "enum": [
-            "None",
-            "Single",
-            "Double",
-            "Heavy",
-            "Rounded"
-          ],
-          "description": "Default border style for MessageBox views."
-        },
-        "Button.DefaultShadow": {
-          "type": "string",
-          "enum": [
-            "None",
-            "Transparent",
-            "Opaque"
-          ],
-          "description": "Default shadow style for Button controls, often used for 3D effect."
-        },
-        "Menu.DefaultBorderStyle": {
-          "type": "string",
-          "enum": [
-            "None",
-            "Single",
-            "Double",
-            "Heavy",
-            "Rounded"
-          ],
-          "description": "Default border style for the newer Menu control and its sub-menus."
-        },
-        "MenuBar.DefaultBorderStyle": {
-          "type": "string",
-          "enum": [
-            "None",
-            "Single",
-            "Double",
-            "Heavy",
-            "Rounded"
-          ],
-          "description": "Default border style for the MenuBar control."
-        },
-        "StatusBar.DefaultSeparatorLineStyle": {
-          "type": "string",
-          "enum": [
-            "None",
-            "Single",
-            "Double",
-            "Heavy"
-          ],
-          "description": "Default style for separator lines in the StatusBar."
-        },
-        "Schemes": {
-          "type": "array",
-          "description": "A list of scheme definitions for this theme. Each item in the array is an object containing one or more named schemes (e.g., 'Runnable', 'Base', 'Menu').",
-          "items": {
-            "type": "object",
-            "description": "An object where each key is a scheme name (e.g., 'Base', 'Error') and its value is the scheme definition.",
-            "patternProperties": {
-              "^[A-Za-z][A-Za-z0-9_]*$": {
-                "$ref": "#/definitions/scheme"
-              }
-            },
-            "additionalProperties": false,
-            "minProperties": 1
-          }
-        }
-      },
-      "patternProperties": {
-        "^Glyphs\\.[A-Za-z0-9]+$": {
-          "type": "string",
-          "description": "A specific glyph character used by the theme for drawing UI elements like borders, arrows, indicators, etc. (e.g., 'Glyphs.LeftArrow', 'Glyphs.HLine'). The string value is the character to be used."
-        }
-      },
-      "additionalProperties": true
     }
   }
 }

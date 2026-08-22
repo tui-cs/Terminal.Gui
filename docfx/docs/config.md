@@ -34,7 +34,7 @@ Later sources override earlier ones property-by-property.
 
 ## JSON shape
 
-Settings are **nested objects**, not dotted keys.
+Settings are **nested objects**, not dotted keys. The JSON Schema is [`docfx/schemas/tui-config-schema.json`](../schemas/tui-config-schema.json), hosted at `https://tui-cs.github.io/Terminal.Gui/schemas/tui-config-schema.json` after docs publish.
 
 ```json
 {
@@ -126,5 +126,6 @@ IConfiguration config = new ConfigurationBuilder ()
 ## See also
 
 - [Migrating ConfigurationManager to TuiConfigurationBuilder](migrate-cm-to-mec.md)
+- [Configuration JSON Schema](../schemas/tui-config-schema.json)
 - [Scheme Deep Dive](scheme.md)
 - [Menus](menus.md)

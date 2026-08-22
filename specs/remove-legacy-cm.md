@@ -386,7 +386,7 @@ Scope (per §5.4 resolution):
 5. Add `Tools/MigrateConfig/` — standalone console app (~50 LOC), separate csproj, not in any shipping solution.
 6. Add CHANGELOG entry pointing at the tool and the migration guide URL.
 7. Wire `JsonConfigurationSource.OnLoadException` per §5.7 so v2 deferred-error behavior is preserved.
-8. File a follow-up issue to update the hosted JSON schema (Q-03).
+8. Update `docfx/schemas/tui-config-schema.json` to the nested MEC shape (Q-03 / #5631). Docs publish hosts it at `https://tui-cs.github.io/Terminal.Gui/schemas/tui-config-schema.json`.
 
 Tests for Phase D: **two** parallelizable tests — one asserts the warning fires on a flat-key sample, one asserts it fires on an array-themes sample. No translation logic to test, so no round-trip tests are required.
 
@@ -458,7 +458,7 @@ Static `ThemeManager` and `SchemeManager` remain as MEC-backed facades (`ThemeMa
 
 ### JSON file breaking change
 
-The library `Resources/config.json` is nested MEC. User files and `RuntimeConfig` in the legacy flat-key format (`"Button.DefaultShadow": "..."`) or array-themes format still bind (dotted keys overlay nested library sections) but log a `WARN` pointing at the migration documentation and `Tools/MigrateConfig/`. No library-side auto-migration of on-disk files ships. The hosted JSON schema update is follow-up [#5631](https://github.com/tui-cs/Terminal.Gui/issues/5631).
+The library `Resources/config.json` is nested MEC. User files and `RuntimeConfig` in the legacy flat-key format (`"Button.DefaultShadow": "..."`) or array-themes format still bind (dotted keys overlay nested library sections) but log a `WARN` pointing at the migration documentation and `Tools/MigrateConfig/`. No library-side auto-migration of on-disk files ships. The hosted JSON schema (`docfx/schemas/tui-config-schema.json`) is updated in this PR (#5631).
 
 ### Migration guide
 
