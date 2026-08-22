@@ -151,46 +151,131 @@ public sealed class SchemeManager : ISchemeManager
 
     void ISchemeManager.AddScheme (string name, Scheme scheme) => AddScheme (name, scheme);
 
-    internal static void LoadToHardCodedDefaults () => ReplaceSchemes (HardCodedDictionary ());
+    private static HashSet<string> _configSourcedSchemeNames = new (StringComparer.InvariantCultureIgnoreCase);
+
+    /// <summary>INTERNAL: Gets a copy of the scheme names the last configuration apply sourced (for tests).</summary>
+    internal static HashSet<string> GetConfigSourcedSchemeNames ()
+    {
+        lock (_schemesLock)
+        {
+            return new (_configSourcedSchemeNames, StringComparer.InvariantCultureIgnoreCase);
+        }
+    }
+
+    /// <summary>INTERNAL: Replaces the config-sourced scheme name set (for tests).</summary>
+    internal static void SetConfigSourcedSchemeNames (IEnumerable<string> names)
+    {
+        lock (_schemesLock)
+        {
+            _configSourcedSchemeNames = new (names, StringComparer.InvariantCultureIgnoreCase);
+        }
+    }
+
+    internal static void LoadToHardCodedDefaults ()
+    {
+        ReplaceSchemes (HardCodedDictionary ());
+        SetConfigSourcedSchemeNames ([]);
+    }
 
     /// <summary>
-    ///     Overlays <paramref name="themeName"/>'s <c>Schemes</c> section from <paramref name="config"/> onto
-    ///     hard-coded schemes and publishes the result.
+    ///     Publishes the schemes for <paramref name="themeName"/>: hard-coded defaults, plus schemes added
+    ///     at runtime via <see cref="AddScheme"/>, plus the root <c>Schemes</c> section deep-merged with the
+    ///     theme's <c>Schemes</c> overlay (the root-then-overlay contract every ThemeScope section follows).
     /// </summary>
     internal static void ApplyFromConfiguration (IConfiguration config, string themeName)
     {
         Dictionary<string, Scheme?> next = HardCodedDictionary ();
-        IConfigurationSection? named = ThemeCatalog.Find (config, themeName);
-        IConfigurationSection schemesSection = named is not null ? named.GetSection ("Schemes") : config.GetSection ("Schemes");
 
-        foreach (IConfigurationSection schemeChild in schemesSection.GetChildren ())
+        // Preserve schemes added at runtime via AddScheme: anything currently present that is neither
+        // hard-coded nor sourced from configuration by a prior apply.
+        lock (_schemesLock)
         {
-            Scheme? parsed = TryBindScheme (schemeChild);
-
-            if (parsed is not null)
+            foreach (KeyValuePair<string, Scheme?> pair in _schemes)
             {
-                next [schemeChild.Key] = parsed;
+                if (next.ContainsKey (pair.Key) || _configSourcedSchemeNames.Contains (pair.Key))
+                {
+                    continue;
+                }
+
+                next [pair.Key] = pair.Value;
             }
         }
 
-        ReplaceSchemes (next);
-    }
+        Dictionary<string, JsonObject> merged = new (StringComparer.InvariantCultureIgnoreCase);
+        MergeSchemesSection (merged, config.GetSection ("Schemes"));
+        IConfigurationSection? named = ThemeCatalog.Find (config, themeName);
 
-    private static Scheme? TryBindScheme (IConfigurationSection section)
-    {
-        JsonNode? node = SectionToJson (section);
-
-        if (node is not JsonObject obj || obj.Count == 0)
+        if (named is not null)
         {
-            return null;
+            MergeSchemesSection (merged, named.GetSection ("Schemes"));
         }
 
+        HashSet<string> configSourced = new (StringComparer.InvariantCultureIgnoreCase);
+
+        foreach (KeyValuePair<string, JsonObject> pair in merged)
+        {
+            Scheme? parsed = TryBindScheme (pair.Key, pair.Value);
+
+            if (parsed is null)
+            {
+                continue;
+            }
+
+            next [pair.Key] = parsed;
+            configSourced.Add (pair.Key);
+        }
+
+        ReplaceSchemes (next);
+        SetConfigSourcedSchemeNames (configSourced);
+    }
+
+    private static void MergeSchemesSection (Dictionary<string, JsonObject> merged, IConfigurationSection schemesSection)
+    {
+        foreach (IConfigurationSection schemeChild in schemesSection.GetChildren ())
+        {
+            if (SectionToJson (schemeChild) is not JsonObject obj || obj.Count == 0)
+            {
+                continue;
+            }
+
+            if (merged.TryGetValue (schemeChild.Key, out JsonObject? existing))
+            {
+                DeepMerge (existing, obj);
+
+                continue;
+            }
+
+            merged [schemeChild.Key] = obj;
+        }
+    }
+
+    private static void DeepMerge (JsonObject target, JsonObject source)
+    {
+        foreach (KeyValuePair<string, JsonNode?> pair in source)
+        {
+            if (target [pair.Key] is JsonObject existingChild && pair.Value is JsonObject incomingChild)
+            {
+                DeepMerge (existingChild, incomingChild);
+
+                continue;
+            }
+
+            target [pair.Key] = pair.Value is null ? null : JsonNode.Parse (pair.Value.ToJsonString ());
+        }
+    }
+
+    private static Scheme? TryBindScheme (string name, JsonObject obj)
+    {
         try
         {
             return JsonSerializer.Deserialize (obj.ToJsonString (), TuiSerializerContext.Instance.Scheme);
         }
-        catch (JsonException)
+        catch (JsonException ex)
         {
+            // One bad value must not silently revert the user's whole scheme to hard-coded colors
+            // with zero diagnostics; the error is printed at shutdown.
+            TuiJsonErrors.Add ($"Scheme \"{name}\": {ex.Message}");
+
             return null;
         }
     }

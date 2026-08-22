@@ -83,7 +83,7 @@ public static class ConfigJsonMigrator
     {
         if (!key.Contains ('.'))
         {
-            target [key] = value;
+            SetOrMerge (target, key, value);
 
             return;
         }
@@ -104,7 +104,39 @@ public static class ConfigJsonMigrator
             cursor = next;
         }
 
-        cursor [parts [^1]] = value;
+        SetOrMerge (cursor, parts [^1], value);
+    }
+
+    /// <summary>
+    ///     Assigns <paramref name="value"/> to <paramref name="key"/>, deep-merging when both the existing
+    ///     entry and the value are objects. Legacy CM accepted mixed dotted and nested keys for the same
+    ///     section; overwriting would drop settings depending on key order.
+    /// </summary>
+    private static void SetOrMerge (JsonObject target, string key, JsonNode? value)
+    {
+        if (target [key] is JsonObject existing && value is JsonObject incoming)
+        {
+            DeepMerge (existing, incoming);
+
+            return;
+        }
+
+        target [key] = value;
+    }
+
+    private static void DeepMerge (JsonObject target, JsonObject source)
+    {
+        foreach (KeyValuePair<string, JsonNode?> pair in source)
+        {
+            if (target [pair.Key] is JsonObject existing && pair.Value is JsonObject incoming)
+            {
+                DeepMerge (existing, incoming);
+
+                continue;
+            }
+
+            target [pair.Key] = pair.Value is null ? null : Clone (pair.Value);
+        }
     }
 
     private static JsonNode Clone (JsonNode node) =>

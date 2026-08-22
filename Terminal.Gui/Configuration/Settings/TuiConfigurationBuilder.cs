@@ -1,7 +1,6 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using Microsoft.Extensions.Configuration;
-using Terminal.Gui.App;
 
 namespace Terminal.Gui.Configuration;
 
@@ -52,14 +51,20 @@ public class TuiConfigurationBuilder
     public static TuiConfigurationBuilder Shared { get; } = new ();
 
     private readonly string? _appName;
+    private readonly string? _currentDirectory;
     private string? _runtimeConfig;
     private IConfiguration? _configuration;
 
     /// <summary>Initializes a new instance of <see cref="TuiConfigurationBuilder"/>.</summary>
     /// <param name="appName">The application name for app-specific config file discovery. If null, uses entry assembly name.</param>
-    public TuiConfigurationBuilder (string? appName = null)
+    /// <param name="currentDirectory">
+    ///     The directory <c>./.tui/</c> config files are resolved against. If null, uses
+    ///     <see cref="Environment.CurrentDirectory"/>.
+    /// </param>
+    public TuiConfigurationBuilder (string? appName = null, string? currentDirectory = null)
     {
         _appName = appName ?? System.Reflection.Assembly.GetEntryAssembly ()?.GetName ().Name;
+        _currentDirectory = currentDirectory;
     }
 
     /// <summary>
@@ -85,20 +90,39 @@ public class TuiConfigurationBuilder
     /// <summary>
     ///     Builds the configuration from all sources in precedence order.
     /// </summary>
+    /// <remarks>
+    ///     A malformed source must never crash the app — the build runs from a module initializer.
+    ///     Per-source failures are collected in <see cref="TuiJsonErrors"/> and skipped; if the build
+    ///     still fails, the library's embedded defaults are used and the error is printed at shutdown.
+    /// </remarks>
     /// <returns>The built configuration root.</returns>
     public IConfiguration Build ()
     {
         IConfigurationBuilder builder = new ConfigurationBuilder ()
                                         .AddTuiLibraryDefaults ()
                                         .AddTuiAppDefaults (_appName)
-                                        .AddTuiUserFiles (_appName)
+                                        .AddTuiUserFiles (_appName, _currentDirectory)
                                         .AddTuiEnvironmentVariable ()
                                         .AddTuiRuntimeConfig (_runtimeConfig);
 
-        _configuration = builder.Build ();
+        try
+        {
+            _configuration = builder.Build ();
+        }
+        catch (Exception ex)
+        {
+            TuiJsonErrors.Add ($"Configuration build failed: {ex.Message}. Falling back to library defaults.");
+            _configuration = new ConfigurationBuilder ().AddTuiLibraryDefaults ().Build ();
+        }
 
         return _configuration;
     }
+
+    /// <summary>
+    ///     Invalidates the cached configuration so the next access to <see cref="Configuration"/> rebuilds
+    ///     from all sources. Use after a configuration file changes on disk.
+    /// </summary>
+    public void Reload () => _configuration = null;
 
     /// <summary>
     ///     Gets the MEC-backed theme manager instance for this builder.
@@ -114,15 +138,12 @@ public class TuiConfigurationBuilder
 
     /// <summary>
     ///     Applies configuration sources to SettingsScope facades, then publishes the active theme's overlays.
+    ///     If the configuration's <c>Theme</c> key changes the active theme, raises
+    ///     <see cref="ThemeManager.ThemeChanged"/> so subscribers re-render.
     /// </summary>
     public void ApplyToStaticFacades ()
     {
-        if (!string.IsNullOrEmpty (_runtimeConfig) && TuiConfigurationExtensions.IsLegacyConfigShape (_runtimeConfig))
-        {
-            Logging.Warning (
-                             "RuntimeConfig uses a pre-MEC (flat-key or array-Themes) shape and is not applied. Convert it with Tools/MigrateConfig. See docfx/docs/migrate-cm-to-mec.md.");
-        }
-
+        string previousTheme = ThemeSettings.Defaults.Theme;
         IConfiguration config = Configuration;
         BindThemeScalar (config);
         ApplicationSettings.Defaults = BindSection<ApplicationSettings> (config, "Application");
@@ -132,6 +153,13 @@ public class TuiConfigurationBuilder
         KeySettings.Defaults = BindSection<KeySettings> (config, "Key");
         TraceSettings.Defaults = BindSection<TraceSettings> (config, "Trace");
         ApplyActiveThemeOverlays ();
+
+        string newTheme = ThemeSettings.Defaults.Theme;
+
+        if (!string.Equals (previousTheme, newTheme, StringComparison.OrdinalIgnoreCase))
+        {
+            global::Terminal.Gui.Configuration.ThemeManager.RaiseThemeChanged (newTheme);
+        }
     }
 
     /// <summary>
@@ -362,12 +390,20 @@ public class TuiConfigurationBuilder
 
         if (targetType == typeof (Rune))
         {
+            // Glyph forms first ("6" is the glyph '6', "U+2611" is ☑). Multi-digit strings are legacy
+            // JSON-number codepoints flattened to strings by MEC (e.g. "9733" is ★); the glyph parser
+            // rejects them, so they fall through to the codepoint parse.
+            if (RuneJsonConverter.TryParse (value, out Rune rune))
+            {
+                return rune;
+            }
+
             if (uint.TryParse (value, out uint codePoint) && Rune.IsValid (codePoint))
             {
                 return new Rune (codePoint);
             }
 
-            return RuneJsonConverter.TryParse (value, out Rune rune) ? rune : null;
+            return null;
         }
 
         if (targetType == typeof (Key))

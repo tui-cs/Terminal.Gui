@@ -61,4 +61,76 @@ public class ConfigJsonMigratorTests
     {
         Assert.False (TuiConfigurationExtensions.IsLegacyConfigShape ("""{ "Button": { "DefaultShadow": "None" }, "Themes": { "Dark": {} } }"""));
     }
+
+    // Claude - Fable 5
+    [Fact]
+    public void MigrateObject_DottedKeyThenPlainSection_MergesBoth ()
+    {
+        JsonObject src = JsonNode.Parse (
+                             """
+                             {
+                               "Button.DefaultShadow": "Opaque",
+                               "Button": { "DefaultMouseHighlightStates": "In" }
+                             }
+                             """)!
+                         .AsObject ();
+        JsonObject migrated = ConfigJsonMigrator.MigrateObject (src);
+
+        Assert.Equal ("Opaque", migrated ["Button"]? ["DefaultShadow"]?.GetValue<string> ());
+        Assert.Equal ("In", migrated ["Button"]? ["DefaultMouseHighlightStates"]?.GetValue<string> ());
+    }
+
+    // Claude - Fable 5
+    [Fact]
+    public void MigrateObject_PlainSectionThenDottedKey_MergesBoth ()
+    {
+        JsonObject src = JsonNode.Parse (
+                             """
+                             {
+                               "Button": { "DefaultMouseHighlightStates": "In" },
+                               "Button.DefaultShadow": "Opaque"
+                             }
+                             """)!
+                         .AsObject ();
+        JsonObject migrated = ConfigJsonMigrator.MigrateObject (src);
+
+        Assert.Equal ("Opaque", migrated ["Button"]? ["DefaultShadow"]?.GetValue<string> ());
+        Assert.Equal ("In", migrated ["Button"]? ["DefaultMouseHighlightStates"]?.GetValue<string> ());
+    }
+
+    // Claude - Fable 5
+    [Fact]
+    public void MigrateObject_TwoDottedKeysDeepPath_MergesBoth ()
+    {
+        JsonObject src = JsonNode.Parse (
+                             """
+                             {
+                               "FileDialogStyle.ColorProviderName": "Ext",
+                               "FileDialogStyle.UseColors": true
+                             }
+                             """)!
+                         .AsObject ();
+        JsonObject migrated = ConfigJsonMigrator.MigrateObject (src);
+
+        Assert.Equal ("Ext", migrated ["FileDialogStyle"]? ["ColorProviderName"]?.GetValue<string> ());
+        Assert.True (migrated ["FileDialogStyle"]? ["UseColors"]?.GetValue<bool> ());
+    }
+
+    // Claude - Fable 5
+    [Fact]
+    public void MigrateObject_NestedObjectsUnderSameKey_DeepMerges ()
+    {
+        JsonObject src = JsonNode.Parse (
+                             """
+                             {
+                               "Themes.Dark.Button": { "DefaultShadow": "None" },
+                               "Themes": { "Dark": { "Dialog": { "DefaultShadow": "Opaque" } } }
+                             }
+                             """)!
+                         .AsObject ();
+        JsonObject migrated = ConfigJsonMigrator.MigrateObject (src);
+
+        Assert.Equal ("None", migrated ["Themes"]? ["Dark"]? ["Button"]? ["DefaultShadow"]?.GetValue<string> ());
+        Assert.Equal ("Opaque", migrated ["Themes"]? ["Dark"]? ["Dialog"]? ["DefaultShadow"]?.GetValue<string> ());
+    }
 }

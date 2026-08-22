@@ -32,6 +32,10 @@ Views read static facades such as `Button.DefaultShadow` (backed by `ButtonSetti
 
 Later sources override earlier ones property-by-property.
 
+`./.tui/` paths resolve against the process's current directory (never the app's install directory).
+
+A bad source never crashes the app. A malformed source (invalid JSON, an unreadable file, an invalid scheme value) is skipped; the error is collected in `TuiJsonErrors` and logged at shutdown. A legacy-shaped source (dotted keys or array `Themes`/`Schemes`) is skipped with a `WARN` log — convert it with `Tools/MigrateConfig`.
+
 ## JSON shape
 
 Settings are **nested objects**, not dotted keys. The JSON Schema is [`docfx/schemas/tui-config-schema.json`](../schemas/tui-config-schema.json), hosted at `https://tui-cs.github.io/Terminal.Gui/schemas/tui-config-schema.json` after docs publish.

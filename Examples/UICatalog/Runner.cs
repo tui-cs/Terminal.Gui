@@ -378,6 +378,8 @@ public class Runner
     private static void ConfigFileChanged (object sender, FileSystemEventArgs e)
     {
         Logging.Debug ($"{e.FullPath} {e.ChangeType} - Loading and Applying");
+        TuiConfigurationBuilder.Shared.Reload ();
+        TuiConfigurationBuilder.Shared.ApplyToStaticFacades ();
     }
 
     #endregion Interactive Mode

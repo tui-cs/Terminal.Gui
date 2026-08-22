@@ -184,6 +184,79 @@ public class ThemeOverlayMergeTests
         Assert.Equal (ShadowStyles.None, ButtonSettings.Current.DefaultShadow);
     }
 
+    // Claude - Fable 5
+    [Fact]
+    public void ApplyToStaticFacades_ConfigChangesActiveTheme_RaisesThemeChanged ()
+    {
+        using SettingsFacadeSnapshot snapshot = new ();
+        TuiConfigurationBuilder tuiBuilder = new ();
+
+        tuiBuilder.RuntimeConfig = """
+                                   {
+                                     "Theme": "A",
+                                     "Themes": { "A": {}, "B": {} }
+                                   }
+                                   """;
+
+        tuiBuilder.ApplyToStaticFacades ();
+
+        MecThemeManager manager = new (tuiBuilder);
+        Assert.True (manager.SwitchTheme ("B"));
+        Assert.Equal ("B", manager.CurrentThemeName);
+
+        string? raisedTheme = null;
+        manager.ThemeChanged += Handler;
+
+        try
+        {
+            // Re-applying configuration snaps the theme back to "A"; subscribers must be told.
+            tuiBuilder.ApplyToStaticFacades ();
+        }
+        finally
+        {
+            manager.ThemeChanged -= Handler;
+        }
+
+        Assert.Equal ("A", manager.CurrentThemeName);
+        Assert.Equal ("A", raisedTheme);
+
+        void Handler (object? sender, EventArgs<string> e) { raisedTheme = e.Value; }
+    }
+
+    // Claude - Fable 5
+    [Fact]
+    public void ApplyToStaticFacades_ActiveThemeUnchanged_DoesNotRaiseThemeChanged ()
+    {
+        using SettingsFacadeSnapshot snapshot = new ();
+        TuiConfigurationBuilder tuiBuilder = new ();
+
+        tuiBuilder.RuntimeConfig = """
+                                   {
+                                     "Theme": "A",
+                                     "Themes": { "A": {} }
+                                   }
+                                   """;
+
+        tuiBuilder.ApplyToStaticFacades ();
+
+        var raised = false;
+        MecThemeManager manager = new (tuiBuilder);
+        manager.ThemeChanged += Handler;
+
+        try
+        {
+            tuiBuilder.ApplyToStaticFacades ();
+        }
+        finally
+        {
+            manager.ThemeChanged -= Handler;
+        }
+
+        Assert.False (raised);
+
+        void Handler (object? sender, EventArgs<string> e) { raised = true; }
+    }
+
     // Grok - grok-4.6
     [Fact]
     public void ApplyToStaticFacades_LegacyArrayThemeShape_IsNotApplied ()

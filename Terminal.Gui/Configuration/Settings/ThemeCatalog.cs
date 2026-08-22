@@ -3,8 +3,9 @@ using Microsoft.Extensions.Configuration;
 namespace Terminal.Gui.Configuration;
 
 /// <summary>
-///     Nested <c>Themes</c> dictionary helpers. Array-of-single-key (pre-MEC) shapes are ignored;
-///     convert those files with <c>Tools/MigrateConfig</c>.
+///     Nested <c>Themes</c> dictionary helpers. Legacy array-of-single-key (pre-MEC) sources are
+///     skipped at add time (see <see cref="TuiConfigurationExtensions"/>); convert those files with
+///     <c>Tools/MigrateConfig</c>.
 /// </summary>
 internal static class ThemeCatalog
 {
@@ -17,11 +18,6 @@ internal static class ThemeCatalog
 
         foreach (IConfigurationSection child in config.GetSection ("Themes").GetChildren ())
         {
-            if (int.TryParse (child.Key, out _))
-            {
-                continue;
-            }
-
             if (!names.Contains (child.Key, StringComparer.OrdinalIgnoreCase))
             {
                 names.Add (child.Key);

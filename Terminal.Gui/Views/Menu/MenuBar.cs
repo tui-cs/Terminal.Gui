@@ -440,12 +440,22 @@ public class MenuBar : Menu, IDesignable
     /// </summary>
     public new static LineStyle DefaultBorderStyle => MenuBarSettings.Current.DefaultBorderStyle;
 
+    private static Key? _defaultKeyOverride;
+
     /// <summary>The default key for activating menu bars.</summary>
+    /// <remarks>
+    ///     Setting this overrides the configured value; the override survives theme switches and
+    ///     configuration re-application (<see cref="MenuBarSettings.Current"/> is wholesale-replaced
+    ///     on each apply, so a value written there would silently revert).
+    /// </remarks>
     public static Key DefaultKey
     {
-        get => MenuBarSettings.Current.DefaultKey;
-        set => MenuBarSettings.Current = MenuBarSettings.Current with { DefaultKey = value };
+        get => _defaultKeyOverride ?? MenuBarSettings.Current.DefaultKey;
+        set => _defaultKeyOverride = value;
     }
+
+    /// <summary>INTERNAL: Clears the app-set <see cref="DefaultKey"/> override (for tests).</summary>
+    internal static void ResetDefaultKeyOverride () => _defaultKeyOverride = null;
 
     /// <inheritdoc/>
     public override void EndInit ()
