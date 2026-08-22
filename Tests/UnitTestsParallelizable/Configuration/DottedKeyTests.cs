@@ -1,5 +1,5 @@
 // Claude - Opus 4.8
-// Tests that verify MEC binding against the flat dotted-key format used by the shipped config.json.
+// Tests that verify MEC binding of flat dotted keys (legacy RuntimeConfig / user-file shape).
 
 using System.Text;
 using Microsoft.Extensions.Configuration;
@@ -9,11 +9,11 @@ using Terminal.Gui.Input;
 namespace ConfigurationTests;
 
 /// <summary>
-///     Verifies that flat dotted keys (e.g. <c>Driver.Force16Colors</c>) and the scalar <c>Theme</c> key,
-///     as used by the shipped <c>config.json</c>, are correctly bound by <see cref="TuiConfigurationBuilder"/>.
+///     Verifies that flat dotted keys (e.g. <c>Driver.Force16Colors</c>) and the scalar <c>Theme</c> key
+///     overlay nested library sections when supplied via <see cref="TuiConfigurationBuilder.RuntimeConfig"/>.
 /// </summary>
 [Collection ("StaticSettingsTests")]
-public class MecDottedKeyTests
+public class DottedKeyTests
 {
     /// <summary>
     ///     Documents the root cause of CR feedback #1: the MEC JSON provider does NOT interpret a dot in a key
@@ -178,5 +178,24 @@ public class MecDottedKeyTests
         {
             PopoverMenu.DefaultKey = original;
         }
+    }
+
+    /// <summary>
+    ///     Nested library sections (e.g. <c>Driver</c> in <c>config.json</c>) must not skip later dotted
+    ///     RuntimeConfig keys. MEC does not treat <c>.</c> as a section separator, so the dotted overlay
+    ///     is applied after the nested Bind.
+    /// </summary>
+    // Grok - grok-4.6
+    [Fact]
+    public void ApplyToStaticFacades_DottedRuntimeConfig_OverlaysNestedLibrarySection ()
+    {
+        using SettingsFacadeSnapshot snapshot = new ();
+
+        TuiConfigurationBuilder builder = new ();
+        builder.RuntimeConfig = """{ "Driver.Force16Colors": true, "Key.Separator": "-" }""";
+        builder.ApplyToStaticFacades ();
+
+        Assert.True (DriverSettings.Defaults.Force16Colors);
+        Assert.Equal (new Rune ('-'), KeySettings.Defaults.Separator);
     }
 }

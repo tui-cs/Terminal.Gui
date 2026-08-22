@@ -13,9 +13,7 @@ namespace Terminal.Gui.Configuration;
 ///     <see cref="JavaScriptEncoder.UnsafeRelaxedJsonEscaping"/>).
 /// </summary>
 /// <remarks>
-///     Internal: this is the non-obsolete home for what was historically
-///     <c>ConfigurationManager.SerializerContext</c>. Converters and consumers that previously
-///     referenced the obsolete static should reference <see cref="Instance"/> here instead.
+///     Internal: converters and serializers should reference <see cref="Instance"/>.
 /// </remarks>
 [SuppressMessage ("Style", "IDE1006:Naming Styles", Justification = "Internal serializer context")]
 internal static class TuiSerializerContext

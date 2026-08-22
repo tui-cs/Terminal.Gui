@@ -11,10 +11,9 @@ namespace ConfigurationTests;
 /// </summary>
 /// <remarks>
 ///     <para>
-///         These tests validate the bind-target shape only. No production code consumes
-///         <see cref="ThemeDefinition"/> yet — the consumer (rewired <c>MecThemeManager</c>) lands in a subsequent
-///         commit. Tests use <c>AddJsonStream</c> against in-memory JSON, not <c>Resources/config.json</c>, so the
-///         tests remain valid while the embedded library config keeps its legacy flat shape.
+///         These tests validate the bind-target shape. Production overlay uses
+///         <see cref="TuiConfigurationBuilder.ApplyToStaticFacades"/> per-section binds, not a single
+///         <see cref="ThemeDefinition"/> graph. Tests use <c>AddJsonStream</c> against in-memory JSON.
 ///     </para>
 /// </remarks>
 public class ThemeDefinitionBindingTests

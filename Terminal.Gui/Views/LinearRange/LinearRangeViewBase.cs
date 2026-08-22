@@ -111,7 +111,7 @@ public abstract class LinearRangeViewBase<TOption, TValue> : View, IOrientation,
         SubViewLayout += (_, _) => { SetContentSize (); };
     }
 
-    // TODO: Make configurable via ConfigurationManager
+    // TODO: Make configurable via TuiConfigurationBuilder
     private void SetDefaultStyle ()
     {
         _config._showLegends = true;

@@ -7,7 +7,7 @@ namespace ConfigurationTests;
 
 /// <summary>Tests for the MEC-based settings POCOs and <see cref="TuiConfigurationBuilder"/>.</summary>
 [Collection ("StaticSettingsTests")]
-public class MecSettingsTests
+public class SettingsTests
 {
     [Fact]
     public void ApplicationSettings_Defaults_HasCorrectValues ()

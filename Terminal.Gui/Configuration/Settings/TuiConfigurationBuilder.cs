@@ -194,12 +194,11 @@ public class TuiConfigurationBuilder
             section.Bind (settings);
             BindDirectProperties (section, settings);
         }
-        else
-        {
-            // Flat dotted-key format: { "Driver.Force16Colors": true }. The MEC JSON provider stores
-            // these literally (a dot is not a section separator), so map them to properties by hand.
-            BindFlatDottedKeys (config, sectionName, settings);
-        }
+
+        // Flat dotted keys (e.g. RuntimeConfig `"Driver.Force16Colors": true`) overlay nested
+        // library sections. MEC stores a literal dot; GetSection ("Driver") does not see them,
+        // so they must always be applied after the nested Bind, not only when the section is missing.
+        BindFlatDottedKeys (config, sectionName, settings);
 
         apply (settings);
     }
@@ -221,10 +220,8 @@ public class TuiConfigurationBuilder
             section.Bind (settings);
             BindDirectProperties (section, settings);
         }
-        else
-        {
-            BindFlatDottedKeys (config, sectionName, settings);
-        }
+
+        BindFlatDottedKeys (config, sectionName, settings);
 
         IConfigurationSection? themeObject = FindThemeObject (config, activeTheme);
 
@@ -237,10 +234,8 @@ public class TuiConfigurationBuilder
                 overlay.Bind (settings);
                 BindDirectProperties (overlay, settings);
             }
-            else
-            {
-                BindFlatDottedKeys (themeObject, sectionName, settings);
-            }
+
+            BindFlatDottedKeys (themeObject, sectionName, settings);
         }
 
         apply (settings);

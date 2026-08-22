@@ -380,7 +380,7 @@ public class TextInputControls : Scenario
 
         win.Accepting += WinOnAccept;
 
-        ThemeChanges.ThemeChanged += ConfigurationManagerOnApplied;
+        ThemeChanges.ThemeChanged += (_, _) => win.SetNeedsDraw ();
 
         app.Run (win);
 
@@ -406,7 +406,6 @@ public class TextInputControls : Scenario
                       });
         }
 
-        void ConfigurationManagerOnApplied (object? sender, EventArgs<string> e) => win.SetNeedsDraw ();
     }
 
     private void TimeChanged (object? sender, ValueChangedEventArgs<TimeSpan> e)

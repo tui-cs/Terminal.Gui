@@ -7,7 +7,7 @@ namespace ConfigurationTests;
 
 /// <summary>Tests for the MEC-backed theme and scheme manager interfaces.</summary>
 [Collection ("StaticSettingsTests")]
-public class MecThemeTests
+public class ThemeTests
 {
     [Fact]
     public void ThemeSettings_Defaults_HasDefaultThemeName ()

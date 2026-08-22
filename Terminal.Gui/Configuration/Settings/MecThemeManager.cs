@@ -1,14 +1,11 @@
-#pragma warning disable CS0618 // Obsolete - MecThemeManager forwards from legacy ThemeManager during transition
-
 using Microsoft.Extensions.Configuration;
 
 namespace Terminal.Gui.Configuration;
 
 /// <summary>
-///     MEC-backed implementation of <see cref="IThemeManager"/>.
-///     During the transition period (PR #5411), this delegates writes to the legacy static <see cref="ThemeManager"/>
-///     because the runtime theme/scheme dictionary is still owned by <see cref="TuiConfigurationBuilder"/>.
-///     The Phase A2 work in #5416 will let this type own the theme/scheme data directly.
+///     MEC-backed implementation of <see cref="IThemeManager"/>. Applies theme overlays through
+///     <see cref="TuiConfigurationBuilder"/> and raises <see cref="IThemeManager.ThemeChanged"/>.
+///     Distinct from the static <see cref="ThemeManager"/> facade (<c>ThemeManager.Theme =</c>).
 /// </summary>
 public class MecThemeManager : IThemeManager
 {
@@ -64,7 +61,7 @@ public class MecThemeManager : IThemeManager
 
     /// <inheritdoc/>
     /// <remarks>
-    ///     Forwarding from the legacy static <see cref="ThemeManager.ThemeChanged"/> event is wired up only while
+    ///     Forwarding from the static <see cref="ThemeManager.ThemeChanged"/> event is wired up only while
     ///     this instance has at least one subscriber. This avoids leaking the instance through the static event
     ///     (which would otherwise keep every <see cref="MecThemeManager"/> alive for the lifetime of the process).
     /// </remarks>

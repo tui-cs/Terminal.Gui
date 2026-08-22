@@ -11,7 +11,7 @@ namespace Terminal.Gui.Benchmarks.Configuration;
 ///         <item><see cref="VisualRole.HotFocus"/> — derived from <see cref="VisualRole.Focus"/></item>
 ///         <item><see cref="VisualRole.Code"/> — deepest derivation (<c>Code → Editable → Normal</c>)</item>
 ///     </list>
-///     No <see cref="Terminal.Gui.Configuration.ConfigurationManager"/> required; operates on a standalone
+///     No configuration pipeline required; operates on a standalone
 ///     <see cref="Scheme"/> instance.
 /// </summary>
 /// <remarks>

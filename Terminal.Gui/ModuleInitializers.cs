@@ -14,7 +14,7 @@ internal static class ModuleInitializers
 #pragma warning disable CA2255
     [ModuleInitializer]
 #pragma warning restore CA2255
-    internal static void InitializeConfigurationManager ()
+    internal static void InitializeConfiguration ()
     {
         TuiConfigurationBuilder.Shared.ApplyToStaticFacades ();
     }

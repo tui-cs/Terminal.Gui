@@ -1,9 +1,9 @@
 namespace Terminal.Gui.Configuration;
 
 /// <summary>
-///     MEC-backed implementation of <see cref="ISchemeManager"/>.
-///     During the transition period, this delegates to the existing static <see cref="SchemeManager"/>
-///     for scheme data.
+///     MEC-backed implementation of <see cref="ISchemeManager"/>. Delegates to the static
+///     <see cref="SchemeManager"/> facade. Distinct from that facade because instance
+///     <see cref="ISchemeManager.GetScheme"/> cannot share a name with the static method.
 /// </summary>
 public class MecSchemeManager : ISchemeManager
 {

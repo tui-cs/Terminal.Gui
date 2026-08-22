@@ -41,7 +41,7 @@ public class StatusBar : Bar, IDesignable
     {
         if (SuperView is null)
         {
-            // BUGBUG: This is a hack for avoiding a race condition in ConfigurationManager.Apply
+            // BUGBUG: This is a hack for avoiding a race condition when theme overlays re-apply.
             // BUGBUG: For some reason in some unit tests, when Top is disposed, MenuBar.Dispose does not get called.
             // BUGBUG: Yet, the MenuBar does get Removed from Top (and it's SuperView set to null).
             // BUGBUG: Related: https://github.com/tui-cs/Terminal.Gui/issues/4021

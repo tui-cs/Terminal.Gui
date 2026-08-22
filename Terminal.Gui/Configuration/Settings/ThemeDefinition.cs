@@ -27,10 +27,9 @@ namespace Terminal.Gui.Configuration;
 ///         own values" — both ambiguities are avoided by nullability.
 ///     </para>
 ///     <para>
-///         This type is the bind target for the <c>Themes</c> section of <c>config.json</c> after the Phase D rewrite. No
-///         production code consumes it yet; the consumer (a rewired <c>MecThemeManager</c> reading via
-///         <c>IOptionsMonitor&lt;ThemeSettings&gt;</c>) lands in a subsequent commit. This type ships with binding tests
-///         only; reviewers can object to specific subsections without reading manager code that does not yet exist.
+///         This type is the typed bind target for a nested <c>Themes:{name}</c> object. Runtime overlay is applied
+///         per section by <see cref="TuiConfigurationBuilder.ApplyToStaticFacades"/>; this type is used by
+///         source-generation and binding tests.
 ///     </para>
 /// </remarks>
 public class ThemeDefinition

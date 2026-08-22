@@ -1,6 +1,6 @@
 # Spec: Remove Legacy ConfigurationManager (Phase 4–6 of CM → MEC)
 
-> **Status:** Draft — follow-up to PR #5411 (`copilot/replace-cm-with-mec`).
+> **Status:** Implemented in PR #5416 (`tig/remove-cm-followup`).
 > **Tracking Issue:** [#4943](https://github.com/gui-cs/Terminal.Gui/issues/4943)
 > **PR:** [#5416 — `tig/remove-cm-followup`](https://github.com/gui-cs/Terminal.Gui/pull/5416) (stacked on `copilot/replace-cm-with-mec`)
 > **Predecessor Spec:** [`specs/replace-cm-with-mec.md`](./replace-cm-with-mec.md)
@@ -95,15 +95,14 @@ The exhaustive inventory of what still has to go. Discovered by `grep`ping the w
 
 ### 4.3 Types to **rename** (drop the `Mec` prefix once the legacy peers are gone)
 
-| Old (post‑#5411) | New |
-|------------------|-----|
-| `MecSchemeManager` | `SchemeManager` (replaces the deleted legacy static class) |
-| `MecThemeManager` | `ThemeManager` (replaces the deleted legacy static class) |
-| `Tests/UnitTestsParallelizable/Configuration/MecSettingsTests.cs` | `SettingsTests.cs` |
-| `Tests/UnitTestsParallelizable/Configuration/MecThemeTests.cs` | `ThemeTests.cs` |
-| `Tests/UnitTestsParallelizable/Configuration/MecAppSettingsTests.cs` | `AppSettingsTests.cs` |
-
-The legacy `SchemeManager` / `ThemeManager` are deleted in §4.1; the rename is a single namespace move and does not collide.
+| Old (post‑#5411) | New | Outcome |
+|------------------|-----|---------|
+| `MecSchemeManager` | `SchemeManager` | **Kept.** Static `SchemeManager` was retained as a MEC-backed facade (`GetScheme`, `AddScheme`). Instance `ISchemeManager.GetScheme` cannot share that name. |
+| `MecThemeManager` | `ThemeManager` | **Kept.** Static `ThemeManager` was retained as a MEC-backed facade (`ThemeManager.Theme =`). A static `ThemeChanged` event cannot coexist with the instance event on `IThemeManager`. |
+| `Tests/UnitTestsParallelizable/Configuration/MecSettingsTests.cs` | `SettingsTests.cs` | Renamed |
+| `Tests/UnitTestsParallelizable/Configuration/MecThemeTests.cs` | `ThemeTests.cs` | Renamed |
+| `Tests/UnitTestsParallelizable/Configuration/MecAppSettingsTests.cs` | `AppSettingsTests.cs` | Renamed |
+| `Tests/UnitTestsParallelizable/Configuration/MecDottedKeyTests.cs` | `DottedKeyTests.cs` | Renamed |
 
 ### 4.4 Callers to **rewire** (production source outside `Configuration/`)
 
@@ -410,8 +409,8 @@ Tests for Phase D: **two** parallelizable tests — one asserts the warning fire
 - Sweep stale doc-comment references (§4.4 last row).
 
 ### Phase F — Rename `MecThemeManager`/`MecSchemeManager` → `ThemeManager`/`SchemeManager`
-- Now that the legacy types are gone, the `Mec` prefix is redundant.
-- Pure rename — no behavior change.
+- Test files renamed (`SettingsTests`, `ThemeTests`, `AppSettingsTests`, `DottedKeyTests`).
+- Production `MecThemeManager` / `MecSchemeManager` **keep the `Mec` prefix**: static `ThemeManager` / `SchemeManager` facades were retained for `ThemeManager.Theme =` and `SchemeManager.GetScheme` callers. C# cannot host both the static facade members and the `IThemeManager` / `ISchemeManager` instance members on one type (`ThemeChanged` event and `GetScheme` collide). The instance types stay the `IThemeManager` / `ISchemeManager` implementations returned by `TuiConfigurationBuilder`.
 
 ### Phase G — Update examples (Runner, UICatalog, NativeAot, etc.)
 - §4.8 sweep.
@@ -425,8 +424,17 @@ Tests for Phase D: **two** parallelizable tests — one asserts the warning fire
 ### Phase I — Verification
 - Run full test matrix (`UnitTestsParallelizable`, `UnitTests.NonParallelizable`, `IntegrationTests`).
 - Confirm zero new warnings (the `CS0618` suppressions are gone — if anything tries to use a deleted obsolete API the build fails by design).
-- Build `Examples/NativeAot` with `PublishAot=true` and record `before` / `after` binary size in the PR description.
+- Build `Tests/NativeAotSmoke` with `PublishAot=true` and record `before` / `after` binary size in the PR description.
 - Run `Benchmarks/Configuration/*` and record delta.
+
+#### Phase I results
+
+| Check | Result |
+|-------|--------|
+| `Tests/NativeAotSmoke` `PublishAot=true` `win-arm64` | develop `24,640,512` (23.50 MB) → this PR `24,201,728` (23.08 MB), **−438,784 (−1.78%)** |
+| Dotted RuntimeConfig overlay | `BindFlatDottedKeys` always runs after nested `Bind`, so later dotted keys win over library nested sections |
+| Test matrix | CI on PR #5416 (parallel, non-parallel, integration) |
+| Benchmarks | `TuiConfigurationBuilderBuildBenchmark` replaces `ConfigurationManagerLoadBenchmark`; `ThemeSwitchBenchmark` uses `ThemeManager.Theme =` |
 
 ---
 
@@ -444,13 +452,13 @@ The following public surface is **removed**. Source-incompatible for any consume
 - `Terminal.Gui.Configuration.SourcesManager` (replaced by `TuiConfigurationBuilder`)
 - `Terminal.Gui.Configuration.DeepCloner`
 - `Terminal.Gui.Configuration.ScopeJsonConverter<T>`
-- Static `Terminal.Gui.Configuration.ThemeManager` — replaced by instance `IThemeManager`
-- Static `Terminal.Gui.Configuration.SchemeManager` static class — replaced by instance `ISchemeManager` (with a static convenience facade for `GetScheme(string)` only)
 - The `Terminal.Gui.Configuration.ConfigurationManager.Applied` / `Updated` events
+
+Static `ThemeManager` and `SchemeManager` remain as MEC-backed facades (`ThemeManager.Theme =`, `SchemeManager.GetScheme`). Instance APIs are `IThemeManager` / `ISchemeManager` (`MecThemeManager` / `MecSchemeManager`).
 
 ### JSON file breaking change
 
-User config files in the legacy flat-key format (`"Button.DefaultShadow": "..."`) or array-themes format are **not parsed** by the new pipeline; affected settings fall through to defaults. A `WARN`-level log identifies offending files and points at the migration documentation + standalone migration tool (`Tools/MigrateConfig/`). No library-side auto-migration ships (per §5.4 α-lite resolution).
+The library `Resources/config.json` is nested MEC. User files and `RuntimeConfig` in the legacy flat-key format (`"Button.DefaultShadow": "..."`) or array-themes format still bind (dotted keys overlay nested library sections) but log a `WARN` pointing at the migration documentation and `Tools/MigrateConfig/`. No library-side auto-migration of on-disk files ships. The hosted JSON schema update is follow-up [#5631](https://github.com/tui-cs/Terminal.Gui/issues/5631).
 
 ### Migration guide
 

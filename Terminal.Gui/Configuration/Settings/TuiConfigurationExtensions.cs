@@ -138,7 +138,7 @@ public static class TuiConfigurationExtensions
 
     /// <summary>
     ///     Adds an in-memory JSON string as the highest-priority configuration source.
-    ///     Equivalent to the legacy <c>ConfigurationManager.RuntimeConfig</c> property.
+    ///     Highest-priority in-memory JSON overlay (UICatalog, tests, and app startup).
     /// </summary>
     /// <param name="builder">The configuration builder.</param>
     /// <param name="json">A JSON string containing configuration overrides.</param>

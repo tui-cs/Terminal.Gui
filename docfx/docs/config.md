@@ -2,7 +2,7 @@
 
 Terminal.Gui loads themes, glyphs, key bindings, and view defaults from JSON using [Microsoft.Extensions.Configuration](https://learn.microsoft.com/dotnet/core/extensions/configuration) via <xref:Terminal.Gui.Configuration.TuiConfigurationBuilder>.
 
-The legacy <xref:Terminal.Gui.Configuration.ConfigurationManager> type was removed in 2.5.0. To convert a pre-2.5.0 `config.json`, see [Migrating ConfigurationManager to TuiConfigurationBuilder](migrate-cm-to-mec.md).
+The legacy `ConfigurationManager` type was removed in 2.5.0. To convert a pre-2.5.0 `config.json`, see [Migrating ConfigurationManager to TuiConfigurationBuilder](migrate-cm-to-mec.md).
 
 ## Quick start
 

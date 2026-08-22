@@ -38,10 +38,9 @@ public abstract class CommandBindingsBase<TEvent, TBinding> where TBinding : ICo
             throw new ArgumentException (@"Invalid newEventArgs", nameof (eventArgs));
         }
 
-        // IMPORTANT: Add a COPY of the eventArgs. This is needed because ConfigurationManager.Apply uses DeepMemberWiseCopy
-        // IMPORTANT: update the memory referenced by the key, and Dictionary uses caching for performance, and thus
-        // IMPORTANT: Apply will update the Dictionary with the new eventArgs, but the old eventArgs will still be in the dictionary.
-        // IMPORTANT: See the ConfigurationManager.Illustrate_DeepMemberWiseCopy_Breaks_Dictionary test for details.
+        // IMPORTANT: Add a COPY of the eventArgs. Dictionary keys are cached; if a later overlay mutated
+        // IMPORTANT: the same instance in place, lookup would see a different key than the one stored.
+        // IMPORTANT: Copying keeps the stored key stable after theme/config re-apply.
         if (!_bindings.TryAdd (eventArgs, binding))
         {
             throw new InvalidOperationException (@$"A binding for {eventArgs} exists ({binding}).");

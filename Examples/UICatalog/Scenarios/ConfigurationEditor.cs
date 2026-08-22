@@ -47,7 +47,7 @@ public class ConfigurationEditor : Scenario
 
         win.Add (_tabs, statusBar);
 
-        ThemeChanges.ThemeChanged += ConfigurationManagerOnApplied;
+        ThemeChanges.ThemeChanged += (_, _) => _app?.TopRunnableView?.SetNeedsDraw ();
         Open ();
 
         _tabs.Disposing += (_, _) =>
@@ -57,8 +57,6 @@ public class ConfigurationEditor : Scenario
         app.Run (win);
 
         return;
-
-        void ConfigurationManagerOnApplied (object? sender, EventArgs<string> e) => _app?.TopRunnableView?.SetNeedsDraw ();
     }
 
     public void Save ()

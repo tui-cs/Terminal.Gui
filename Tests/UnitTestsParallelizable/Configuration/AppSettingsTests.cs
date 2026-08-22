@@ -6,7 +6,7 @@ namespace ConfigurationTests;
 
 /// <summary>Tests for the app-developer <see cref="TuiConfigurationBuilder.BindAppSettings{T}"/> workflow.</summary>
 [Collection ("StaticSettingsTests")]
-public class MecAppSettingsTests
+public class AppSettingsTests
 {
     /// <summary>Example app settings POCO for testing.</summary>
     private class SampleAppSettings
