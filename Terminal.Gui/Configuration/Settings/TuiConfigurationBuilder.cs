@@ -108,14 +108,21 @@ public class TuiConfigurationBuilder
 
     /// <summary>
     ///     Applies the current configuration to all static settings facades.
-    ///     Call this after building or rebuilding to push MEC values to the static <c>Defaults</c> properties.
+    ///     Call this after building or rebuilding to push MEC values to the static <c>Defaults</c>/<c>Current</c> properties.
     /// </summary>
-    public void ApplyToStaticFacades ()
+    /// <param name="rebindSelectedTheme">
+    ///     When <see langword="true"/> (the default), the selected theme is read from configuration.
+    ///     When <see langword="false"/>, the already-selected <see cref="ThemeSettings.Defaults"/>.Theme is kept so
+    ///     <see cref="MecThemeManager.SwitchTheme"/> can re-apply overlays without resetting to the config default.
+    /// </param>
+    public void ApplyToStaticFacades (bool rebindSelectedTheme = true)
     {
         IConfiguration config = Configuration;
 
-        // ThemeSettings is special: the active theme is a scalar "Theme" key, not a nested section.
-        BindThemeScalar (config);
+        if (rebindSelectedTheme)
+        {
+            BindThemeScalar (config);
+        }
 
         // SettingsScope POCOs
         BindSection<ApplicationSettings> (config, "Application", s => ApplicationSettings.Defaults = s);
@@ -178,6 +185,7 @@ public class TuiConfigurationBuilder
         {
             // Nested object format: { "Driver": { "Force16Colors": true } }
             section.Bind (settings);
+            BindDirectProperties (section, settings);
         }
         else
         {
@@ -204,19 +212,70 @@ public class TuiConfigurationBuilder
         if (section.Exists ())
         {
             section.Bind (settings);
+            BindDirectProperties (section, settings);
         }
         else
         {
             BindFlatDottedKeys (config, sectionName, settings);
         }
 
-        config.GetSection ($"Themes:{activeTheme}:{sectionName}").Bind (settings);
+        IConfigurationSection? themeObject = FindThemeObject (config, activeTheme);
+
+        if (themeObject is not null)
+        {
+            IConfigurationSection overlay = themeObject.GetSection (sectionName);
+
+            if (overlay.Exists ())
+            {
+                overlay.Bind (settings);
+                BindDirectProperties (overlay, settings);
+            }
+            else
+            {
+                BindFlatDottedKeys (themeObject, sectionName, settings);
+            }
+        }
+
         apply (settings);
     }
 
     /// <summary>
+    ///     Resolves a theme object from either the nested dictionary shape
+    ///     (<c>Themes:{name}</c>) or the legacy array-of-single-key-objects shape
+    ///     (<c>Themes:{index}:{name}</c>).
+    /// </summary>
+    private static IConfigurationSection? FindThemeObject (IConfiguration config, string activeTheme)
+    {
+        if (string.IsNullOrEmpty (activeTheme))
+        {
+            return null;
+        }
+
+        IConfigurationSection themes = config.GetSection ("Themes");
+        IConfigurationSection named = themes.GetSection (activeTheme);
+
+        if (named.Exists ())
+        {
+            return named;
+        }
+
+        foreach (IConfigurationSection child in themes.GetChildren ())
+        {
+            IConfigurationSection candidate = child.GetSection (activeTheme);
+
+            if (candidate.Exists ())
+            {
+                return candidate;
+            }
+        }
+
+        return null;
+    }
+
+    /// <summary>
     ///     Binds the scalar <c>Theme</c> key from configuration to <see cref="ThemeSettings.Defaults"/>.
-    ///     Unlike other settings, the active theme is a scalar value (e.g. <c>"Dark"</c>), not a nested section.
+    ///     Accepts either a root scalar (<c>"Theme": "Dark"</c>) or a nested section
+    ///     (<c>"Theme": { "Theme": "Dark" }</c>).
     /// </summary>
     private static void BindThemeScalar (IConfiguration config)
     {
@@ -224,10 +283,53 @@ public class TuiConfigurationBuilder
 
         if (string.IsNullOrEmpty (themeValue))
         {
+            themeValue = config.GetSection ("Theme") ["Theme"];
+        }
+
+        if (string.IsNullOrEmpty (themeValue))
+        {
             return;
         }
 
         ThemeSettings.Defaults = new () { Theme = themeValue };
+    }
+
+    /// <summary>
+    ///     Binds scalar properties whose names match keys on <paramref name="section"/> (no dotted prefix).
+    ///     Used after <c>Bind</c> so types MEC does not convert (notably <see cref="Rune"/>) still apply.
+    /// </summary>
+    [UnconditionalSuppressMessage ("Trimming", "IL2026", Justification = "Settings POCOs are simple types preserved by DynamicDependency in ConfigPropertyHostTypes.")]
+    [UnconditionalSuppressMessage ("AOT", "IL3050", Justification = "Settings POCOs are simple types; no generic instantiation needed at runtime.")]
+    private static void BindDirectProperties<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicProperties)] T> (IConfiguration section, T settings)
+    {
+        foreach (PropertyInfo prop in typeof (T).GetProperties (BindingFlags.Public | BindingFlags.Instance))
+        {
+            if (!prop.CanWrite)
+            {
+                continue;
+            }
+
+            string? value = section [prop.Name];
+
+            if (value is null)
+            {
+                continue;
+            }
+
+            try
+            {
+                object? converted = ConvertValue (value, prop.PropertyType);
+
+                if (converted is not null)
+                {
+                    prop.SetValue (settings, converted);
+                }
+            }
+            catch (Exception)
+            {
+                // Skip properties whose value cannot be converted to the target type.
+            }
+        }
     }
 
     /// <summary>

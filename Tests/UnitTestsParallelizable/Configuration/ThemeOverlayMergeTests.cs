@@ -1,6 +1,8 @@
 // Copilot - Claude Opus 4.7
+// Grok - grok-4.6
 
 using Terminal.Gui.Configuration;
+using Terminal.Gui.Drawing;
 
 namespace ConfigurationTests;
 
@@ -15,6 +17,7 @@ namespace ConfigurationTests;
 ///         in the overlay must win. This mirrors legacy CM <c>Scope.Apply</c> property-level merge semantics.
 ///     </para>
 /// </remarks>
+[Collection ("StaticSettingsTests")]
 public class ThemeOverlayMergeTests
 {
     /// <summary>
@@ -24,42 +27,32 @@ public class ThemeOverlayMergeTests
     [Fact]
     public void ApplyToStaticFacades_ThemeOverlay_PreservesRootDefaultsForUnmentionedProperties ()
     {
-        DialogSettings originalDialog = DialogSettings.Current;
-        ThemeSettings originalTheme = ThemeSettings.Defaults;
+        using SettingsFacadeSnapshot snapshot = new ();
+        TuiConfigurationBuilder tuiBuilder = new ();
 
-        try
-        {
-            TuiConfigurationBuilder tuiBuilder = new ();
-
-            tuiBuilder.RuntimeConfig = """
-                                       {
-                                         "Theme": { "Theme": "Custom" },
+        tuiBuilder.RuntimeConfig = """
+                                   {
+                                     "Theme": "Custom",
+                                     "Dialog": {
+                                       "DefaultShadow": "Opaque",
+                                       "DefaultBorderStyle": "Double",
+                                       "DefaultButtonAlignment": "Start"
+                                     },
+                                     "Themes": {
+                                       "Custom": {
                                          "Dialog": {
-                                           "DefaultShadow": "Opaque",
-                                           "DefaultBorderStyle": "Double",
-                                           "DefaultButtonAlignment": "Start"
-                                         },
-                                         "Themes": {
-                                           "Custom": {
-                                             "Dialog": {
-                                               "DefaultBorderStyle": "Single"
-                                             }
-                                           }
+                                           "DefaultBorderStyle": "Single"
                                          }
                                        }
-                                       """;
+                                     }
+                                   }
+                                   """;
 
-            tuiBuilder.ApplyToStaticFacades ();
+        tuiBuilder.ApplyToStaticFacades ();
 
-            Assert.Equal (LineStyle.Single, DialogSettings.Current.DefaultBorderStyle);
-            Assert.Equal (ShadowStyles.Opaque, DialogSettings.Current.DefaultShadow);
-            Assert.Equal (Alignment.Start, DialogSettings.Current.DefaultButtonAlignment);
-        }
-        finally
-        {
-            DialogSettings.Current = originalDialog;
-            ThemeSettings.Defaults = originalTheme;
-        }
+        Assert.Equal (LineStyle.Single, DialogSettings.Current.DefaultBorderStyle);
+        Assert.Equal (ShadowStyles.Opaque, DialogSettings.Current.DefaultShadow);
+        Assert.Equal (Alignment.Start, DialogSettings.Current.DefaultButtonAlignment);
     }
 
     /// <summary>
@@ -68,32 +61,22 @@ public class ThemeOverlayMergeTests
     [Fact]
     public void ApplyToStaticFacades_NoOverlay_UsesRootValuesAsIs ()
     {
-        ButtonSettings originalButton = ButtonSettings.Current;
-        ThemeSettings originalTheme = ThemeSettings.Defaults;
+        using SettingsFacadeSnapshot snapshot = new ();
+        TuiConfigurationBuilder tuiBuilder = new ();
 
-        try
-        {
-            TuiConfigurationBuilder tuiBuilder = new ();
+        tuiBuilder.RuntimeConfig = """
+                                   {
+                                     "Theme": "Custom",
+                                     "Button": {
+                                       "DefaultShadow": "None"
+                                     },
+                                     "Themes": { "Custom": { } }
+                                   }
+                                   """;
 
-            tuiBuilder.RuntimeConfig = """
-                                       {
-                                         "Theme": { "Theme": "Custom" },
-                                         "Button": {
-                                           "DefaultShadow": "None"
-                                         },
-                                         "Themes": { "Custom": { } }
-                                       }
-                                       """;
+        tuiBuilder.ApplyToStaticFacades ();
 
-            tuiBuilder.ApplyToStaticFacades ();
-
-            Assert.Equal (ShadowStyles.None, ButtonSettings.Current.DefaultShadow);
-        }
-        finally
-        {
-            ButtonSettings.Current = originalButton;
-            ThemeSettings.Defaults = originalTheme;
-        }
+        Assert.Equal (ShadowStyles.None, ButtonSettings.Current.DefaultShadow);
     }
 
     /// <summary>
@@ -104,29 +87,78 @@ public class ThemeOverlayMergeTests
     [Fact]
     public void ApplyToStaticFacades_AtomicSwap_DoesNotMutatePriorReference ()
     {
-        ButtonSettings originalButton = ButtonSettings.Current;
-        ThemeSettings originalTheme = ThemeSettings.Defaults;
+        using SettingsFacadeSnapshot snapshot = new ();
+        TuiConfigurationBuilder tuiBuilder = new ();
+        tuiBuilder.RuntimeConfig = """{ "Button": { "DefaultShadow": "Transparent" } }""";
+        tuiBuilder.ApplyToStaticFacades ();
 
-        try
-        {
-            TuiConfigurationBuilder tuiBuilder = new ();
-            tuiBuilder.RuntimeConfig = """{ "Button": { "DefaultShadow": "Transparent" } }""";
-            tuiBuilder.ApplyToStaticFacades ();
+        ButtonSettings captured = ButtonSettings.Current;
+        Assert.Equal (ShadowStyles.Transparent, captured.DefaultShadow);
 
-            ButtonSettings captured = ButtonSettings.Current;
-            Assert.Equal (ShadowStyles.Transparent, captured.DefaultShadow);
+        tuiBuilder.RuntimeConfig = """{ "Button": { "DefaultShadow": "None" } }""";
+        tuiBuilder.ApplyToStaticFacades ();
 
-            tuiBuilder.RuntimeConfig = """{ "Button": { "DefaultShadow": "None" } }""";
-            tuiBuilder.ApplyToStaticFacades ();
+        Assert.Equal (ShadowStyles.Transparent, captured.DefaultShadow);
+        Assert.Equal (ShadowStyles.None, ButtonSettings.Current.DefaultShadow);
+        Assert.NotSame (captured, ButtonSettings.Current);
+    }
 
-            Assert.Equal (ShadowStyles.Transparent, captured.DefaultShadow);
-            Assert.Equal (ShadowStyles.None, ButtonSettings.Current.DefaultShadow);
-            Assert.NotSame (captured, ButtonSettings.Current);
-        }
-        finally
-        {
-            ButtonSettings.Current = originalButton;
-            ThemeSettings.Defaults = originalTheme;
-        }
+    // Grok - grok-4.6
+    [Fact]
+    public void SwitchTheme_AppliesOverlay_DoesNotResetActiveThemeToConfigDefault ()
+    {
+        using SettingsFacadeSnapshot snapshot = new ();
+        TuiConfigurationBuilder tuiBuilder = new ();
+
+        tuiBuilder.RuntimeConfig = """
+                                   {
+                                     "Theme": "Default",
+                                     "Button": { "DefaultShadow": "Opaque" },
+                                     "Glyphs": { "CheckStateChecked": "☑" },
+                                     "Themes": {
+                                       "EightBit": {
+                                         "Button": { "DefaultShadow": "None" },
+                                         "Glyphs": { "CheckStateChecked": "X" }
+                                       }
+                                     }
+                                   }
+                                   """;
+
+        tuiBuilder.ApplyToStaticFacades ();
+        Assert.Equal (ShadowStyles.Opaque, ButtonSettings.Current.DefaultShadow);
+
+        MecThemeManager manager = new (tuiBuilder);
+        Assert.True (manager.SwitchTheme ("EightBit"));
+        Assert.Equal ("EightBit", manager.CurrentThemeName);
+        Assert.Equal (ShadowStyles.None, ButtonSettings.Current.DefaultShadow);
+        Assert.Equal ((System.Text.Rune)'X', Glyphs.CheckStateChecked);
+    }
+
+    // Grok - grok-4.6
+    [Fact]
+    public void ApplyToStaticFacades_LegacyArrayThemeShape_AppliesGlyphOverrides ()
+    {
+        using SettingsFacadeSnapshot snapshot = new ();
+        TuiConfigurationBuilder tuiBuilder = new ();
+
+        tuiBuilder.RuntimeConfig = """
+                                   {
+                                     "Theme": "EightBit",
+                                     "Glyphs": { "CheckStateChecked": "☑" },
+                                     "Themes": [
+                                       {
+                                         "EightBit": {
+                                           "Glyphs.CheckStateChecked": "X",
+                                           "Button.DefaultShadow": "None"
+                                         }
+                                       }
+                                     ]
+                                   }
+                                   """;
+
+        tuiBuilder.ApplyToStaticFacades ();
+
+        Assert.Equal ((System.Text.Rune)'X', Glyphs.CheckStateChecked);
+        Assert.Equal (ShadowStyles.None, ButtonSettings.Current.DefaultShadow);
     }
 }

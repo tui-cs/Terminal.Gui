@@ -77,20 +77,11 @@ public class MecSettingsTests
     [Fact]
     public void StaticFacade_CanBeOverridden ()
     {
-        // Save original
-        ButtonSettings original = ButtonSettings.Current;
+        using SettingsFacadeSnapshot snapshot = new ();
+        ButtonSettings custom = new () { DefaultShadow = ShadowStyles.None };
+        ButtonSettings.Current = custom;
 
-        try
-        {
-            ButtonSettings custom = new () { DefaultShadow = ShadowStyles.None };
-            ButtonSettings.Current = custom;
-
-            Assert.Equal (ShadowStyles.None, ButtonSettings.Current.DefaultShadow);
-        }
-        finally
-        {
-            ButtonSettings.Current = original;
-        }
+        Assert.Equal (ShadowStyles.None, ButtonSettings.Current.DefaultShadow);
     }
 
     [Fact]
@@ -160,30 +151,19 @@ public class MecSettingsTests
     [Fact]
     public void TuiConfigurationBuilder_ApplyToStaticFacades_UpdatesDefaults ()
     {
-        // Save originals
-        ApplicationSettings originalApp = ApplicationSettings.Defaults;
-        DriverSettings originalDriver = DriverSettings.Defaults;
+        using SettingsFacadeSnapshot snapshot = new ();
+        TuiConfigurationBuilder tuiBuilder = new ();
 
-        try
-        {
-            TuiConfigurationBuilder tuiBuilder = new ();
+        tuiBuilder.RuntimeConfig = """
+                                   {
+                                     "Application": { "ForceDriver": "dotnet" },
+                                     "Driver": { "Force16Colors": true }
+                                   }
+                                   """;
+        tuiBuilder.ApplyToStaticFacades ();
 
-            tuiBuilder.RuntimeConfig = """
-                                       {
-                                         "Application": { "ForceDriver": "dotnet" },
-                                         "Driver": { "Force16Colors": true }
-                                       }
-                                       """;
-            tuiBuilder.ApplyToStaticFacades ();
-
-            Assert.Equal ("dotnet", ApplicationSettings.Defaults.ForceDriver);
-            Assert.True (DriverSettings.Defaults.Force16Colors);
-        }
-        finally
-        {
-            ApplicationSettings.Defaults = originalApp;
-            DriverSettings.Defaults = originalDriver;
-        }
+        Assert.Equal ("dotnet", ApplicationSettings.Defaults.ForceDriver);
+        Assert.True (DriverSettings.Defaults.Force16Colors);
     }
 
     [Fact]

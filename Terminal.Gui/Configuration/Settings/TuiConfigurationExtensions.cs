@@ -1,5 +1,8 @@
 using System.Reflection;
+using System.Text.Json;
+using System.Text.Json.Nodes;
 using Microsoft.Extensions.Configuration;
+using Terminal.Gui.App;
 
 namespace Terminal.Gui.Configuration;
 
@@ -92,7 +95,9 @@ public static class TuiConfigurationExtensions
         string globalHomePath = Path.Combine (homeDir, TUI_CONFIG_FOLDER, CONFIG_FILENAME);
         string globalCurrentPath = Path.Combine (".", TUI_CONFIG_FOLDER, CONFIG_FILENAME);
 
+        WarnIfLegacyConfigFile (globalHomePath);
         builder.AddJsonFile (globalHomePath, optional: true, reloadOnChange: false);
+        WarnIfLegacyConfigFile (globalCurrentPath);
         builder.AddJsonFile (globalCurrentPath, optional: true, reloadOnChange: false);
 
         if (!string.IsNullOrEmpty (appName))
@@ -100,7 +105,9 @@ public static class TuiConfigurationExtensions
             string appHomePath = Path.Combine (homeDir, TUI_CONFIG_FOLDER, $"{appName}.{CONFIG_FILENAME}");
             string appCurrentPath = Path.Combine (".", TUI_CONFIG_FOLDER, $"{appName}.{CONFIG_FILENAME}");
 
+            WarnIfLegacyConfigFile (appHomePath);
             builder.AddJsonFile (appHomePath, optional: true, reloadOnChange: false);
+            WarnIfLegacyConfigFile (appCurrentPath);
             builder.AddJsonFile (appCurrentPath, optional: true, reloadOnChange: false);
         }
 
@@ -148,5 +155,76 @@ public static class TuiConfigurationExtensions
         builder.AddJsonStream (stream);
 
         return builder;
+    }
+
+    /// <summary>
+    ///     Returns <see langword="true"/> when <paramref name="json"/> uses a pre-MEC shape:
+    ///     top-level dotted keys (e.g. <c>Button.DefaultShadow</c>) or <c>Themes</c>/<c>Schemes</c>
+    ///     as an array of single-key objects.
+    /// </summary>
+    public static bool IsLegacyConfigShape (string json)
+    {
+        if (string.IsNullOrWhiteSpace (json))
+        {
+            return false;
+        }
+
+        JsonNode? node;
+
+        try
+        {
+            node = JsonNode.Parse (json, documentOptions: new () { CommentHandling = JsonCommentHandling.Skip, AllowTrailingCommas = true });
+        }
+        catch (JsonException)
+        {
+            return false;
+        }
+
+        if (node is not JsonObject obj)
+        {
+            return false;
+        }
+
+        foreach (KeyValuePair<string, JsonNode?> pair in obj)
+        {
+            if (pair.Key.Contains ('.'))
+            {
+                return true;
+            }
+
+            if (pair.Key is "Themes" or "Schemes" && pair.Value is JsonArray)
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private static void WarnIfLegacyConfigFile (string path)
+    {
+        if (!File.Exists (path))
+        {
+            return;
+        }
+
+        string text;
+
+        try
+        {
+            text = File.ReadAllText (path);
+        }
+        catch (IOException)
+        {
+            return;
+        }
+
+        if (!IsLegacyConfigShape (text))
+        {
+            return;
+        }
+
+        Logging.Warning (
+                         $"Configuration file \"{path}\" uses a pre-MEC (flat-key or array-Themes) shape and will be ignored for those settings. Convert it with Tools/MigrateConfig. See docfx/docs/migrate-cm-to-mec.md.");
     }
 }

@@ -1187,7 +1187,6 @@ public class ConfigurationMangerTests (ITestOutputHelper output)
             // Spot check by setting some of the config properties
             Application.DefaultKeyBindings! [Command.Quit] = Bind.All (Key.X.WithCtrl);
             FileDialog.MaxSearchResults = 1;
-            Glyphs.Apple = new ('z');
 
             ThrowOnJsonErrors = true;
             Enable (ConfigLocations.HardCoded);
@@ -1195,14 +1194,7 @@ public class ConfigurationMangerTests (ITestOutputHelper output)
             RuntimeConfig = """
                             {
                                 "Application.DefaultKeyBindings": { "Quit": { "All": ["Alt-Q"] } },
-                                "FileDialog.MaxSearchResults":9,
-                                "Themes" : [
-                                    {
-                                        "Default" : {
-                                            "Glyphs.Apple": "a"
-                                        }
-                                    }
-                                ]
+                                "FileDialog.MaxSearchResults":9
                             }
                             """;
             Load (ConfigLocations.Runtime);
@@ -1210,12 +1202,10 @@ public class ConfigurationMangerTests (ITestOutputHelper output)
             Dictionary<Command, PlatformKeyBinding> rtBindings = (Dictionary<Command, PlatformKeyBinding>)Settings! ["Application.DefaultKeyBindings"].PropertyValue!;
             Assert.Equal (Key.Q.WithAlt, rtBindings [Command.Quit].GetCurrentPlatformKeys ().First ());
             Assert.Equal (9, (int)Settings ["FileDialog.MaxSearchResults"].PropertyValue!);
-            Assert.Equal (new Rune ('a'), ThemeManager.GetCurrentTheme () ["Glyphs.Apple"].PropertyValue);
 
             Apply ();
             Assert.Equal (Key.Q.WithAlt, Application.GetDefaultKey (Command.Quit));
             Assert.Equal (9, FileDialog.MaxSearchResults);
-            Assert.Equal (new ('a'), Glyphs.Apple);
         }
         finally
         {

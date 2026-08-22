@@ -11,7 +11,7 @@
 
 Tenets higher in the list have precedence over tenets lower in the list.
 
-* **Users Have Control** - *Terminal.Gui* provides default key bindings consistent with these tenets, but those defaults are configurable by the user. For example, <xref:Terminal.Gui.Configuration.ConfigurationManager> allows users to redefine key bindings for the system, a user, or an application.
+* **Users Have Control** - *Terminal.Gui* provides default key bindings consistent with these tenets, but those defaults are configurable by the user. For example, <xref:Terminal.Gui.Configuration.TuiConfigurationBuilder> allows users to redefine key bindings for the system, a user, or an application.
 
 * **More Editor than Command Line** - Once a *Terminal.Gui* app starts, the user is no longer using the command line. Users expect keyboard idioms in TUI apps to be consistent with GUI apps (such as VS Code, Vim, and Emacs). For example, in almost all GUI apps, `Ctrl+V` is `Paste`. But the Linux shells often use `Shift+Insert`. *Terminal.Gui* binds `Ctrl+V` by default.
 
@@ -393,7 +393,7 @@ injector.InjectKey(Key.F1, options);
 
 ## Configurable Key Bindings
 
-Terminal.Gui uses a layered, platform-aware key binding architecture. All default key bindings are defined declaratively using `PlatformKeyBinding` records and can be overridden via [ConfigurationManager](config.md).
+Terminal.Gui uses a layered, platform-aware key binding architecture. All default key bindings are defined declaratively using `PlatformKeyBinding` records and can be overridden via [TuiConfigurationBuilder](config.md).
 
 ### Three Layers
 
@@ -403,7 +403,7 @@ Key bindings are organized in three layers, applied from lowest to highest prior
 
 2. **`View.DefaultKeyBindings`** - Shared base bindings for all views, covering navigation (cursor keys, Home, End), clipboard (Copy, Cut, Paste), and editing (Undo, Redo, Delete). This is also a `[ConfigurationProperty]`.
 
-3. **Per-view `DefaultKeyBindings`** - View-specific bindings that layer on top of the base. For example, `TextField.DefaultKeyBindings` adds Emacs-style navigation (`Ctrl+B`, `Ctrl+F`), word movement (`Ctrl+CursorLeft`), and kill commands (`Ctrl+K`). These are plain static properties, not configurable via ConfigurationManager.
+3. **Per-view `DefaultKeyBindings`** - View-specific bindings that layer on top of the base. For example, `TextField.DefaultKeyBindings` adds Emacs-style navigation (`Ctrl+B`, `Ctrl+F`), word movement (`Ctrl+CursorLeft`), and kill commands (`Ctrl+K`). These are plain static properties, not configurable via TuiConfigurationBuilder.
 
 Each view's constructor calls `ApplyKeyBindings (View.DefaultKeyBindings, <ViewType>.DefaultKeyBindings)` to combine the layers. Only commands that the view actually supports (via `GetSupportedCommands ()`) are bound. Keys already bound by a lower layer are not overwritten by a higher layer.
 

@@ -1,5 +1,7 @@
 #pragma warning disable CS0618 // Obsolete - MecThemeManager forwards from legacy ThemeManager during transition
 
+using Microsoft.Extensions.Configuration;
+
 namespace Terminal.Gui.Configuration;
 
 /// <summary>
@@ -26,15 +28,35 @@ public class MecThemeManager : IThemeManager
     {
         get
         {
-            // During transition, delegate to existing ThemeManager
-            try
+            List<string> names = [];
+            IConfigurationSection themes = _builder.Configuration.GetSection ("Themes");
+
+            foreach (IConfigurationSection child in themes.GetChildren ())
             {
-                return ThemeManager.GetThemeNames ();
+                if (int.TryParse (child.Key, out _))
+                {
+                    IConfigurationSection? first = child.GetChildren ().FirstOrDefault ();
+
+                    if (first is not null && !names.Contains (first.Key))
+                    {
+                        names.Add (first.Key);
+                    }
+
+                    continue;
+                }
+
+                if (!names.Contains (child.Key))
+                {
+                    names.Add (child.Key);
+                }
             }
-            catch (InvalidOperationException)
+
+            if (!names.Contains (ThemeManager.DEFAULT_THEME_NAME))
             {
-                return [ThemeManager.DEFAULT_THEME_NAME];
+                names.Insert (0, ThemeManager.DEFAULT_THEME_NAME);
             }
+
+            return names;
         }
     }
 
@@ -82,11 +104,13 @@ public class MecThemeManager : IThemeManager
             return false;
         }
 
-        // Verify the theme exists before switching
+        // Verify the theme exists in the MEC configuration (legacy array or nested dictionary).
         if (!ThemeNames.Contains (themeName))
         {
             return false;
         }
+
+        ThemeSettings.Defaults = new () { Theme = themeName };
 
         // During transition, also update the existing ThemeManager. Its setter raises
         // ThemeManager.ThemeChanged, which is forwarded to subscribers via OnLegacyThemeChanged
@@ -97,19 +121,14 @@ public class MecThemeManager : IThemeManager
         }
         catch (InvalidOperationException)
         {
-            return false;
         }
         catch (KeyNotFoundException)
         {
-            return false;
         }
 
-        // Re-apply all ThemeScope POCOs from configuration. This may rebind the scalar "Theme" key
-        // from config, so the switched theme is recorded afterwards to ensure the selection persists.
-        _builder.ApplyToStaticFacades ();
-
-        // Record the switched theme on success, overriding any value the config re-apply may have set.
-        ThemeSettings.Defaults.Theme = themeName;
+        // Re-apply ThemeScope overlays for the already-selected theme. Do not rebind the
+        // scalar Theme key from configuration — that would reset activeTheme to the JSON default.
+        _builder.ApplyToStaticFacades (rebindSelectedTheme: false);
 
         return true;
     }

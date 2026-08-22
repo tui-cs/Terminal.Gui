@@ -24,13 +24,13 @@ public sealed record GlyphSettings
     public Rune Null { get; init; } = (Rune)'␀';
 
     /// <summary>Checked indicator.</summary>
-    public Rune CheckStateChecked { get; init; } = (Rune)'☒';
+    public Rune CheckStateChecked { get; init; } = (Rune)'☑';
 
     /// <summary>Not Checked indicator.</summary>
     public Rune CheckStateUnChecked { get; init; } = (Rune)'☐';
 
     /// <summary>Null Checked indicator.</summary>
-    public Rune CheckStateNone { get; init; } = (Rune)'□';
+    public Rune CheckStateNone { get; init; } = (Rune)'⬛';
 
     /// <summary>Selected indicator.</summary>
     public Rune Selected { get; init; } = (Rune)'◉';

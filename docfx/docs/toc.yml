@@ -30,6 +30,8 @@
   href: command-diagrams.md
 - name: Configuration
   href: config.md
+- name: Migrating ConfigurationManager
+  href: migrate-cm-to-mec.md
 - name: Cursor
   href: cursor.md
 - name: Dim.Auto

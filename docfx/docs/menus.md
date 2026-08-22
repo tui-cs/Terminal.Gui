@@ -677,16 +677,12 @@ For menus specifically:
 Menu appearance can be customized via themes:
 
 ```csharp
-// Set default border style for menus
-Menu.DefaultBorderStyle = LineStyle.Single;
+// Menu appearance is configured via Settings POCOs (or config.json).
+MenuSettings.Current = MenuSettings.Current with { DefaultBorderStyle = LineStyle.Single };
+MenuBarSettings.Current = MenuBarSettings.Current with { DefaultBorderStyle = LineStyle.None };
 
-// Set default border style for menu bars
-MenuBar.DefaultBorderStyle = LineStyle.None;
-
-// Set default activation key for menu bars
+// Activation keys remain settable on the view facades:
 MenuBar.DefaultKey = Key.F10;
-
-// Set default activation key for popover menus
 PopoverMenu.DefaultKey = Key.F10.WithShift;
 ```
 

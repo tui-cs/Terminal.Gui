@@ -4,7 +4,8 @@
 | **Apply** | Apply the configuration to the application; copies settings from configuration properties to corresponding `static` `[ConfigProperty]` properties. |
 | **ConfigProperty** | A property decorated with `[ConfigProperty]` that can be configured via the configuration system. |
 | **Configuration** | A collection of settings defining application behavior and appearance. |
-| **ConfigurationManager** | System that loads and manages application runtime settings from external sources. |
+| **TuiConfigurationBuilder** | Builds the Microsoft.Extensions.Configuration source chain and applies settings to static facades. |
+| **Settings POCO** | Bind target for a JSON section (`ButtonSettings`, `GlyphSettings`, …). |
 | **Load** | Load configuration from given location(s), updating with new values. Loading doesn't apply settings automatically. |
 | **Location** | Storage location for configuration (e.g., user's home directory, application directory). |
 | **Reset** | Reset configuration to current values or hard-coded defaults. Does not load configuration. |

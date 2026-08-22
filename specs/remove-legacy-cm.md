@@ -191,13 +191,14 @@ TuiConfigurationBuilder.Build()
   └─ ... one Configure<T> per POCO
 
 TuiConfigurationBuilder.ApplyToStaticFacades()
-  └─ ButtonSettings.Defaults  = options.Get<ButtonSettings>()
-  └─ DialogSettings.Defaults  = options.Get<DialogSettings>()
-  └─ ... per POCO
-  └─ Hook IOptionsMonitor<T>.OnChange(newValue => XxxSettings.Defaults = newValue)
+  └─ ButtonSettings.Current  = bound ButtonSettings (root + Themes:{active}:Button overlay)
+  └─ DialogSettings.Current  = bound DialogSettings
+  └─ GlyphSettings.Current   = bound GlyphSettings
+  └─ ... per ThemeScope POCO
+  └─ ApplicationSettings.Defaults / DriverSettings.Defaults / ... for SettingsScope POCOs
 ```
 
-`ButtonSettings.Defaults` (and peers) remain the **static facade** used by all views per D‑01. The only change versus #5411 is that the facade is now updated *only* by the MEC monitor — never by `ConfigurationManager.Apply`.
+`ButtonSettings.Current` (and peers) are the **static facade** used by all views per D‑01. The compile-time `Default` snapshot is immutable; `Current` is swapped atomically. The only writer is `TuiConfigurationBuilder.ApplyToStaticFacades` — never `ConfigurationManager.Apply`.
 
 ### 5.2 ThemeManager / SchemeManager: from event-bridging wrapper to data owner (A2)
 

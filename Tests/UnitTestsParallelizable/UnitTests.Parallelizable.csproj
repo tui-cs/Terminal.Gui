@@ -26,6 +26,7 @@
 
   <ItemGroup>
     <Compile Include="..\UnitTests.Legacy\OutputAssert.cs" Link="OutputAssert.cs" />
+    <Compile Include="..\..\Tools\MigrateConfig\ConfigJsonMigrator.cs" Link="Configuration\ConfigJsonMigrator.cs" />
   </ItemGroup>
 
   <ItemGroup>
