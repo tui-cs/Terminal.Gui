@@ -155,6 +155,66 @@ public class OutputBaseTests
         Assert.Equal (0, output.Writes);
     }
 
+    // CoPilot - GPT-5.6
+    [Fact]
+    public void Write_SparseBorderFrame_MovesCursorOncePerDirtyRun ()
+    {
+        const int COLS = 270;
+        const int ROWS = 72;
+        CountingOutput output = new ();
+        OutputBufferImpl buffer = new ();
+        buffer.SetSize (COLS, ROWS);
+        output.Write (buffer);
+        output.ResetCounters ();
+
+        for (var row = 0; row < ROWS; row++)
+        {
+            buffer.Contents! [row, 0].IsDirty = true;
+            buffer.Contents [row, COLS - 1].IsDirty = true;
+            buffer.DirtyLines [row] = true;
+        }
+
+        output.Write (buffer);
+
+        Assert.Equal (ROWS * 2, output.CursorMoves);
+        Assert.Equal (ROWS * 2, output.Writes);
+
+        for (var row = 0; row < ROWS; row++)
+        {
+            Assert.Equal (new Point (0, row), output.CursorPositions [row * 2]);
+            Assert.Equal (new Point (COLS - 1, row), output.CursorPositions [row * 2 + 1]);
+            Assert.False (buffer.Contents! [row, 0].IsDirty);
+            Assert.False (buffer.Contents [row, COLS - 1].IsDirty);
+            Assert.False (buffer.DirtyLines [row]);
+        }
+    }
+
+    // CoPilot - GPT-5.6
+    [Fact]
+    public void Write_MultipleDirtyRuns_SkipsLeadingInteriorAndTrailingCleanCells ()
+    {
+        CountingOutput output = new ();
+        OutputBufferImpl buffer = new ();
+        buffer.SetSize (10, 1);
+        output.Write (buffer);
+        output.ResetCounters ();
+
+        buffer.Contents! [0, 2].IsDirty = true;
+        buffer.Contents [0, 3].IsDirty = true;
+        buffer.Contents [0, 8].IsDirty = true;
+        buffer.DirtyLines [0] = true;
+
+        output.Write (buffer);
+
+        Point [] expectedCursorPositions = [new (0, 0), new (2, 0), new (8, 0)];
+        Assert.Equal (expectedCursorPositions, output.CursorPositions);
+        Assert.Equal (2, output.Writes);
+        Assert.False (buffer.Contents [0, 2].IsDirty);
+        Assert.False (buffer.Contents [0, 3].IsDirty);
+        Assert.False (buffer.Contents [0, 8].IsDirty);
+        Assert.False (buffer.DirtyLines [0]);
+    }
+
     // CoPilot - GPT-5
     [Fact]
     public void FillRect_MarksDirtyLine_AfterPreviousFlush ()
@@ -1965,18 +2025,22 @@ public class OutputBaseTests
 
     private sealed class CountingOutput : OutputBase
     {
+        public List<Point> CursorPositions { get; } = [];
+
         public int CursorMoves { get; private set; }
 
         public int Writes { get; private set; }
 
         public void ResetCounters ()
         {
+            CursorPositions.Clear ();
             CursorMoves = 0;
             Writes = 0;
         }
 
         protected override bool SetCursorPositionImpl (int screenPositionX, int screenPositionY)
         {
+            CursorPositions.Add (new Point (screenPositionX, screenPositionY));
             CursorMoves++;
 
             return true;
