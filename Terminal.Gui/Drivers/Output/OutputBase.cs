@@ -202,11 +202,15 @@ public abstract class OutputBase
 
                 // Position the cursor once at the beginning of each dirty run. Clean gaps
                 // are skipped without emitting one cursor-position sequence per cell.
-                if (outputWidth == 0 && col != lastCol)
-                {
-                    SetCursorPositionImpl (col, row);
-                    lastCol = col;
-                }
+if (outputWidth == 0 && col != lastCol)
+{
+    if (!SetCursorPositionImpl (col, row))
+    {
+        return;
+    }
+
+    lastCol = col;
+}
 
                 // Handle URL hyperlink state changes
                 if (!IsLegacyConsole)
