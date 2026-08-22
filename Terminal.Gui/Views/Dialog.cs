@@ -62,7 +62,7 @@ public class Dialog : Dialog<int>
 {
     /// <summary>
     ///     The default border style for new <see cref="Dialog"/> instances. Can be configured via
-    ///     <see cref="ConfigurationManager"/> and theme files.
+    ///     <see cref="TuiConfigurationBuilder"/> and theme files.
     /// </summary>
     public static LineStyle DefaultBorderStyle => DialogSettings.Current.DefaultBorderStyle;
 

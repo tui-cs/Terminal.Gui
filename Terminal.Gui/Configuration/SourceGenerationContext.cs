@@ -2,8 +2,6 @@
 using System.Text.Json.Serialization;
 using Terminal.Gui.Input;
 
-#pragma warning disable CS0618 // Obsolete - SourceGenerationContext registers serialization types used during transition
-
 namespace Terminal.Gui.Configuration;
 
 /// <summary>
@@ -33,18 +31,6 @@ namespace Terminal.Gui.Configuration;
 [JsonSerializable (typeof (Dictionary<ColorName16, string>))]
 [JsonSerializable (typeof (Dictionary<string, Color>))]
 
-[JsonSerializable (typeof (Dictionary<string, ConfigProperty>))]
-[JsonSerializable (typeof (ConcurrentDictionary<string, ConfigProperty>))]
-[JsonSerializable (typeof (ConfigProperty))]
-
-[JsonSerializable (typeof (Scope<string>))]
-[JsonSerializable (typeof (AppSettingsScope))]
-[JsonSerializable (typeof (SettingsScope))]
-[JsonSerializable (typeof (ThemeScope))]
-[JsonSerializable (typeof (Scope<ThemeScope>))]
-[JsonSerializable (typeof (Scope<AppSettingsScope>))]
-[JsonSerializable (typeof (Scope<SettingsScope>))]
-[JsonSerializable (typeof (ConcurrentDictionary<string, ThemeScope>))]
 [JsonSerializable (typeof (Scheme))]
 [JsonSerializable (typeof (Dictionary<string, Scheme>))]
 [JsonSerializable (typeof (ThemeDefinition))]

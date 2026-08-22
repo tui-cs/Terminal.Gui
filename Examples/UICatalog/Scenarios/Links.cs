@@ -1,4 +1,4 @@
-﻿#nullable enable
+#nullable enable
 
 namespace UICatalog.Scenarios;
 
@@ -9,7 +9,6 @@ public class Links : Scenario
 {
     public override void Main ()
     {
-        ConfigurationManager.Enable (ConfigLocations.All);
         using IApplication app = Application.Create ();
         app.Init ();
 

@@ -183,7 +183,6 @@ public readonly partial record struct Color : ISpanParsable<Color>, IUtf8SpanPar
     public Color () => Argb = 0u;
 
     /// <summary>Gets or sets the 3-byte/6-character hexadecimal value for each of the legacy 16-color values.</summary>
-    [ConfigurationProperty (Scope = typeof (SettingsScope), OmitClassName = true)]
     public static Dictionary<ColorName16, string> Colors16
     {
         get =>

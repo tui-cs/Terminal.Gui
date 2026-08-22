@@ -443,7 +443,6 @@ public class MenuBar : Menu, IDesignable
     public new static LineStyle DefaultBorderStyle => MenuBarSettings.Current.DefaultBorderStyle;
 
     /// <summary>The default key for activating menu bars.</summary>
-    [ConfigurationProperty (Scope = typeof (SettingsScope))]
     public static Key DefaultKey
     {
         get => MenuBarSettings.Current.DefaultKey;

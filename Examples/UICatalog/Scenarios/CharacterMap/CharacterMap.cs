@@ -54,7 +54,6 @@ public class CharacterMap : Scenario
     // Don't create a Window, just return the top-level view
     public override void Main ()
     {
-        ConfigurationManager.Enable (ConfigLocations.All);
         using IApplication app = Application.Create ();
         app.Init ();
 

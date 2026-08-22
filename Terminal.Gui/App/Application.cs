@@ -15,16 +15,11 @@ global using Terminal.Gui.Time;
 global using Terminal.Gui.ViewBase;
 global using Terminal.Gui.Views;
 global using Attribute = Terminal.Gui.Drawing.Attribute;
-#pragma warning disable CS0618 // Obsolete - ConfigurationManager alias still used internally during transition
-global using CM = Terminal.Gui.Configuration.ConfigurationManager;
-#pragma warning restore CS0618
 global using Color = Terminal.Gui.Drawing.Color;
 using System.Globalization;
 using System.Reflection;
 using System.Resources;
 using Terminal.Gui.Tracing;
-
-#pragma warning disable CS0618 // Obsolete - Application still uses ConfigurationPropertyAttribute/SettingsScope during transition
 
 namespace Terminal.Gui.App;
 
@@ -239,7 +234,6 @@ public static partial class Application
     ///         application interacts with the terminal buffer.
     ///     </para>
     /// </remarks>
-    [ConfigurationProperty (Scope = typeof (SettingsScope))]
     public static AppModel AppModel
     {
         get => ApplicationSettings.Defaults.AppModel;
@@ -269,7 +263,6 @@ public static partial class Application
     }
 
     /// <inheritdoc cref="IApplication.ForceDriver"/>
-    [ConfigurationProperty (Scope = typeof (SettingsScope))]
     public static string ForceDriver
     {
         get => ApplicationSettings.Defaults.ForceDriver;
@@ -297,7 +290,6 @@ public static partial class Application
     ///         Do not set in parallelizable unit tests.
     ///     </para>
     /// </summary>
-    [ConfigurationProperty (Scope = typeof (SettingsScope))]
     public static Dictionary<Command, PlatformKeyBinding>? DefaultKeyBindings
     {
         get;

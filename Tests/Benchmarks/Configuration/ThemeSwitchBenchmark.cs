@@ -27,12 +27,8 @@ public class ThemeSwitchBenchmark
     {
         get
         {
-            ConfigurationManager.Disable (true);
-            ConfigurationManager.Enable (ConfigLocations.LibraryResources);
 
             IEnumerable<string> names = ThemeManager.GetThemeNames ();
-
-            ConfigurationManager.Disable (true);
 
             return names;
         }
@@ -42,8 +38,6 @@ public class ThemeSwitchBenchmark
     [GlobalSetup]
     public void Setup ()
     {
-        ConfigurationManager.Disable (true);
-        ConfigurationManager.Enable (ConfigLocations.LibraryResources);
     }
 
     /// <summary>
@@ -56,16 +50,13 @@ public class ThemeSwitchBenchmark
     public void SwitchTheme ()
     {
         ThemeManager.Theme = ThemeManager.DEFAULT_THEME_NAME;
-        ConfigurationManager.Apply ();
 
         ThemeManager.Theme = ThemeName;
-        ConfigurationManager.Apply ();
     }
 
     /// <summary>Ensures ConfigurationManager is disabled after all iterations.</summary>
     [GlobalCleanup]
     public void Cleanup ()
     {
-        ConfigurationManager.Disable (true);
     }
 }

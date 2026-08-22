@@ -55,7 +55,7 @@ public static class MessageBox
 {
     /// <summary>
     ///     Defines the default border styling for <see cref="MessageBox"/>. Can be configured via
-    ///     <see cref="ConfigurationManager"/>.
+    ///     <see cref="TuiConfigurationBuilder"/>.
     /// </summary>
     public static LineStyle DefaultBorderStyle => MessageBoxSettings.Current.DefaultBorderStyle;
 

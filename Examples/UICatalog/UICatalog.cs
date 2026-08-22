@@ -1,4 +1,4 @@
-﻿global using Attribute = Terminal.Gui.Drawing.Attribute;
+global using Attribute = Terminal.Gui.Drawing.Attribute;
 global using Color = Terminal.Gui.Drawing.Color;
 global using Terminal.Gui.App;
 global using Terminal.Gui.ViewBase;
@@ -293,7 +293,6 @@ public class UICatalog
         if (!Options.DontEnableConfigurationManagement)
         {
             runner.SetRuntimeConfig (options.Driver, options.Force16Colors);
-            ConfigurationManager.Enable (ConfigLocations.All);
         }
         else
         {

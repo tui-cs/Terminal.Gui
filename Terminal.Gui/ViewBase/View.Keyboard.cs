@@ -655,7 +655,6 @@ public partial class View // Keyboard APIs
     ///         Do not set in parallelizable unit tests.
     ///     </para>
     /// </summary>
-    [ConfigurationProperty (Scope = typeof (SettingsScope))]
     public static Dictionary<Command, PlatformKeyBinding>? DefaultKeyBindings
     {
         get;
@@ -711,7 +710,6 @@ public partial class View // Keyboard APIs
     ///         Do not set in parallelizable unit tests.
     ///     </para>
     /// </summary>
-    [ConfigurationProperty (Scope = typeof (SettingsScope))]
     public static Dictionary<string, Dictionary<Command, PlatformKeyBinding>>? ViewKeyBindings { get; set; }
 
     /// <summary>

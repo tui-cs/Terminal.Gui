@@ -8,7 +8,7 @@ namespace Terminal.Gui.Configuration;
 
 /// <summary>
 ///     Extension methods for <see cref="IConfigurationBuilder"/> that add Terminal.Gui configuration sources
-///     in the correct precedence order (matching the existing <see cref="SourcesManager"/> behavior).
+///     in the correct precedence order (matching MEC provider order).
 /// </summary>
 public static class TuiConfigurationExtensions
 {

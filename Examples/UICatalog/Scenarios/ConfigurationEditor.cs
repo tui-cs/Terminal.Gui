@@ -20,7 +20,6 @@ public class ConfigurationEditor : Scenario
 
     public override void Main ()
     {
-        ConfigurationManager.Enable (ConfigLocations.All);
         using IApplication app = Application.Create ();
         app.Init ();
         _app = app;
@@ -48,7 +47,7 @@ public class ConfigurationEditor : Scenario
 
         win.Add (_tabs, statusBar);
 
-        ConfigurationManager.Applied += ConfigurationManagerOnApplied;
+        ThemeChanges.ThemeChanged += ConfigurationManagerOnApplied;
         Open ();
 
         _tabs.Disposing += (_, _) =>
@@ -59,7 +58,7 @@ public class ConfigurationEditor : Scenario
 
         return;
 
-        void ConfigurationManagerOnApplied (object? sender, ConfigurationManagerEventArgs e) => _app?.TopRunnableView?.SetNeedsDraw ();
+        void ConfigurationManagerOnApplied (object? sender, EventArgs<string> e) => _app?.TopRunnableView?.SetNeedsDraw ();
     }
 
     public void Save ()
@@ -72,37 +71,32 @@ public class ConfigurationEditor : Scenario
 
     private void Open ()
     {
-        foreach (KeyValuePair<ConfigLocations, string> config in ConfigurationManager.SourcesManager!.Sources)
-        {
-            var homeDir = $"{Environment.GetFolderPath (Environment.SpecialFolder.UserProfile)}";
-            FileInfo fileInfo = new (config.Value.Replace ("~", homeDir));
+        string homeDir = Environment.GetFolderPath (Environment.SpecialFolder.UserProfile);
+        string userPath = Path.Combine (homeDir, TuiConfigurationExtensions.TUI_CONFIG_FOLDER, TuiConfigurationExtensions.CONFIG_FILENAME);
 
+        (string Title, FileInfo File) [] sources =
+        [
+            ("Library", new ("[Terminal.Gui]config.json")),
+            ("User", new (userPath)),
+            ("Runtime", new ("RuntimeConfig"))
+        ];
+
+        foreach ((string title, FileInfo fileInfo) in sources)
+        {
             ConfigEditorView editor = new ()
             {
-                Title = config.Value.StartsWith ("resource://", StringComparison.Ordinal) ? fileInfo.Name : config.Value,
+                Title = title,
                 Width = Dim.Fill (),
                 Height = Dim.Fill (),
                 FileInfo = fileInfo
             };
 
-            if (config.Value == "HardCoded")
-            {
-                editor.Title = "HardCoded";
-            }
-
-            View tab = new () { Title = config.Key.ToString () };
+            View tab = new () { Title = title };
             tab.Add (editor);
-
             _tabs?.Add (tab);
-
             editor.Read ();
-
-            editor.Disposing += (_, _) =>
-                                {
-                                    editor.Document!.Changed -= OnEditorDocumentChanged;
-                                };
+            editor.Disposing += (_, _) => { editor.Document!.Changed -= OnEditorDocumentChanged; };
             editor.Document!.Changed += OnEditorDocumentChanged;
-
             _lenShortcut?.Title = $"{editor.Title}";
         }
 
@@ -191,7 +185,7 @@ public class ConfigurationEditor : Scenario
             if (FileInfo!.FullName.Contains ("[Terminal.Gui]"))
             {
                 // Library resources
-                assembly = typeof (ConfigurationManager).Assembly;
+                assembly = typeof (TuiConfigurationBuilder).Assembly;
             }
             else if (FileInfo.FullName.Contains ("[UICatalog]"))
             {
@@ -217,19 +211,13 @@ public class ConfigurationEditor : Scenario
                 return;
             }
 
-            if (FileInfo!.FullName.Contains ("HardCoded"))
+            if (FileInfo!.FullName.Contains ("RuntimeConfig"))
             {
-                Text = ConfigurationManager.GetHardCodedConfig ();
-                ReadOnly = true;
-            }
-            else if (FileInfo!.FullName.Contains ("RuntimeConfig"))
-            {
-                Text = ConfigurationManager.RuntimeConfig!;
+                Text = TuiConfigurationBuilder.Shared.RuntimeConfig ?? "{}";
             }
             else if (!FileInfo.Exists)
             {
-                // Create empty config file
-                Text = ConfigurationManager.GetEmptyConfig ();
+                Text = "{}";
             }
             else
             {
@@ -244,7 +232,8 @@ public class ConfigurationEditor : Scenario
         {
             if (FileInfo!.FullName.Contains ("RuntimeConfig"))
             {
-                ConfigurationManager.RuntimeConfig = Text;
+                TuiConfigurationBuilder.Shared.RuntimeConfig = Text;
+                TuiConfigurationBuilder.Shared.ApplyToStaticFacades ();
                 Document!.UndoStack.ClearAll ();
                 Document!.UndoStack.MarkAsOriginalFile ();
 

@@ -1,4 +1,4 @@
-﻿#nullable enable
+#nullable enable
 
 using System.IO.Abstractions;
 using System.Text;
@@ -33,7 +33,6 @@ public class TreeViewFileSystem : Scenario
 
     public override void Main ()
     {
-        ConfigurationManager.Enable (ConfigLocations.All);
 
         using IApplication app = Application.Create ();
         app.Init ();

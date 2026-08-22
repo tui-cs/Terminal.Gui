@@ -1,98 +1,71 @@
-﻿using System.Collections.Immutable;
-using System.Diagnostics;
+// Grok - grok-4.6
+using System.Collections.Immutable;
 using System.Diagnostics.CodeAnalysis;
-using System.Text.Json.Serialization;
-
-#pragma warning disable CS0618 // Obsolete - SchemeManager still uses ConfigurationManager/ConfigProperty/ThemeScope internally during transition
+using System.Text.Json;
+using System.Text.Json.Nodes;
+using Microsoft.Extensions.Configuration;
 
 namespace Terminal.Gui.Configuration;
 
 /// <summary>
-///     Holds the <see cref="Drawing.Scheme"/>s that define the <see cref="System.Attribute"/>s that are used by views to
-///     render
-///     themselves. A Scheme is a mapping from <see cref="Drawing.VisualRole"/>s (such as
-///     <see cref="Drawing.VisualRole.Focus"/>) to <see cref="System.Attribute"/>s.
-///     A Scheme defines how a `View` should look based on its purpose (e.g. Menu or Dialog).
+///     Holds the <see cref="Drawing.Scheme"/>s that define the <see cref="Attribute"/>s views use to render.
+///     A Scheme maps <see cref="Drawing.VisualRole"/>s to <see cref="Attribute"/>s.
 /// </summary>
-public sealed class SchemeManager // : INotifyCollectionChanged, IDictionary<string, Scheme?>
+public sealed class SchemeManager
 {
-#pragma warning disable IDE1006 // Naming Styles
     private static readonly Lock _schemesLock = new ();
-#pragma warning restore IDE1006 // Naming Styles
+    private static Dictionary<string, Scheme?> _schemes = HardCodedDictionary ();
 
-    /// <summary>
-    ///     INTERNAL: Gets the hard-coded schemes defined by <see cref="View"/>. These are not loaded from the configuration
-    ///     files,
-    ///     but are hard-coded in the source code. Used for unit testing when ConfigurationManager is not initialized.
-    /// </summary>
-    /// <returns></returns>
-    internal static ImmutableSortedDictionary<string, Scheme?> GetHardCodedSchemes () => Scheme.GetHardCodedSchemes ()!;
+    /// <summary>INTERNAL: Hard-coded schemes used before configuration is applied and as the overlay base.</summary>
+    internal static ImmutableSortedDictionary<string, Scheme?> GetHardCodedSchemes ()
+    {
+        ImmutableSortedDictionary<string, Scheme> hardCoded = Scheme.GetHardCodedSchemes ()!;
 
-    /// <summary>
-    ///     Use <see cref="AddScheme"/>, <see cref="GetScheme(Drawing.Schemes)"/>, <see cref="GetSchemeNames"/>,
-    ///     <see cref="GetSchemesForCurrentTheme"/>, etc... instead.
-    /// </summary>
-    [ConfigurationProperty (Scope = typeof (ThemeScope), OmitClassName = true)]
-    [JsonConverter (typeof (DictionaryJsonConverter<Scheme?>))]
-    [UsedImplicitly]
-    public static Dictionary<string, Scheme?>? Schemes
+        return hardCoded.ToImmutableSortedDictionary (
+                                                      kv => kv.Key,
+                                                      kv => (Scheme?)kv.Value,
+                                                      StringComparer.InvariantCultureIgnoreCase);
+    }
+
+    private static Dictionary<string, Scheme?> HardCodedDictionary () =>
+        GetHardCodedSchemes ().ToDictionary (StringComparer.InvariantCultureIgnoreCase);
+
+    /// <summary>Gets the dictionary of defined schemes for the current theme.</summary>
+    public static Dictionary<string, Scheme?> Schemes
     {
         get => GetSchemes ();
-        private set => SetSchemes (value);
+        private set => ReplaceSchemes (value);
     }
 
-    /// <summary>INTERNAL: Gets the dictionary of defined <see cref="Scheme"/>s. The get method for <see cref="Schemes"/>.</summary>
     internal static Dictionary<string, Scheme?> GetSchemes ()
-    {
-        if (!ConfigurationManager.IsInitialized ())
-        {
-            // We're being called from the module initializer.
-            // Hard coded default value
-            return GetHardCodedSchemes ().ToDictionary (StringComparer.InvariantCultureIgnoreCase);
-        }
-
-        return GetSchemesForCurrentTheme ();
-    }
-
-    /// <summary>INTERNAL: The set method for <see cref="Schemes"/>.</summary>
-    internal static void SetSchemes (Dictionary<string, Scheme?>? value)
     {
         lock (_schemesLock)
         {
-            if (!ConfigurationManager.IsInitialized ())
-            {
-                throw new InvalidOperationException ("Schemes cannot be set before ConfigurationManager is initialized.");
-            }
-
-            Debug.Assert (value is { });
-
-            // Update the backing store
-            ThemeManager.GetCurrentTheme () ["Schemes"].UpdateFrom (value);
+            return _schemes;
         }
+    }
 
-        //Instance.OnThemeChanged (previousValue);
+    /// <summary>Replaces the current theme's scheme dictionary (called from configuration apply).</summary>
+    internal static void ReplaceSchemes (Dictionary<string, Scheme?> schemes)
+    {
+        lock (_schemesLock)
+        {
+            _schemes = new (schemes, StringComparer.InvariantCultureIgnoreCase);
+        }
     }
 
     /// <summary>
-    ///     Adds a new <see cref="Scheme"/> to <see cref="SchemeManager"/>. If the Scheme has already been added,
-    ///     it will be updated to <paramref name="scheme"/>.
+    ///     Adds a new <see cref="Scheme"/>. If the name already exists, it is updated.
     /// </summary>
-    /// <param name="schemeName">The name of the Scheme. This must be unique.</param>
-    /// <param name="scheme"></param>
-    /// <returns></returns>
     public static void AddScheme (string schemeName, Scheme scheme)
     {
-        if (!GetSchemes ().TryAdd (schemeName, scheme))
+        lock (_schemesLock)
         {
-            GetSchemes () [schemeName] = scheme;
+            _schemes [schemeName] = scheme;
         }
     }
 
-    /// <summary>
-    ///     Removes a Scheme from <see cref="SchemeManager"/>.
-    /// </summary>
-    /// <param name="schemeName"></param>
-    /// <exception cref="InvalidOperationException">If the scheme is a built-in Scheme or was not previously added.</exception>
+    /// <summary>Removes a previously added (non-built-in) scheme.</summary>
     public static void RemoveScheme (string schemeName)
     {
         if (SchemeNameToSchemes (schemeName) is { })
@@ -100,74 +73,34 @@ public sealed class SchemeManager // : INotifyCollectionChanged, IDictionary<str
             throw new InvalidOperationException ($@"{schemeName}: Cannot remove a built-in Scheme.");
         }
 
-        if (!GetSchemes ().TryGetValue (schemeName, out _))
+        lock (_schemesLock)
         {
-            throw new InvalidOperationException ($@"{schemeName}: Does not exist in Schemes.");
+            if (!_schemes.Remove (schemeName))
+            {
+                throw new InvalidOperationException ($@"{schemeName}: Does not exist in Schemes.");
+            }
         }
-
-        GetSchemes ().Remove (schemeName);
     }
 
-    /// <summary>
-    ///     Gets the <see cref="Scheme"/> for the specified <see cref="Drawing.Schemes"/>.
-    /// </summary>
-    /// <param name="schemeName"></param>
-    /// <returns></returns>
-    /// <exception cref="ArgumentException"></exception>
+    /// <summary>Gets the <see cref="Scheme"/> for a built-in <see cref="Schemes"/> value.</summary>
     public static Scheme GetScheme (Schemes schemeName)
     {
-        // Convert schemeName to string via Enum api
         string? schemeNameString = SchemesToSchemeName (schemeName);
 
-        return schemeNameString is null ? throw new ArgumentException ($"Invalid scheme name: {schemeName}") : GetSchemesForCurrentTheme () [schemeNameString]!;
+        return schemeNameString is null
+                   ? throw new ArgumentException ($"Invalid scheme name: {schemeName}")
+                   : GetSchemesForCurrentTheme () [schemeNameString]!;
     }
 
-    /// <summary>
-    ///     Gets the <see cref="Scheme"/> for the specified string.
-    /// </summary>
-    /// <param name="schemeName"></param>
-    /// <returns></returns>
-    /// <exception cref="KeyNotFoundException">If <paramref name="schemeName"/> is not found in the current theme.</exception>
+    /// <summary>Gets the <see cref="Scheme"/> for the specified name.</summary>
     public static Scheme GetScheme (string schemeName) => GetSchemesForCurrentTheme () [schemeName]!;
 
-    /// <summary>
-    ///     Attempts to get the <see cref="Scheme"/> for the specified name without throwing.
-    ///     Returns <see langword="false"/> and sets <paramref name="scheme"/> to <see langword="null"/> if the scheme is
-    ///     not found, or if the configuration is not in a state where schemes can be resolved.
-    /// </summary>
-    /// <param name="schemeName">The name of the scheme to retrieve.</param>
-    /// <param name="scheme">
-    ///     When this method returns <see langword="true"/>, contains the resolved <see cref="Scheme"/>; otherwise
-    ///     <see langword="null"/>.
-    /// </param>
-    /// <returns><see langword="true"/> if the scheme was found; otherwise <see langword="false"/>.</returns>
+    /// <summary>Attempts to get a scheme without throwing.</summary>
     public static bool TryGetScheme (string schemeName, [NotNullWhen (true)] out Scheme? scheme)
     {
         lock (_schemesLock)
         {
-            Dictionary<string, Scheme?> schemes;
-
-            if (!ConfigurationManager.IsInitialized ())
-            {
-                // Module initializer / unit-test path — fall back to hard-coded defaults.
-                ImmutableSortedDictionary<string, Scheme?> hardCoded = GetHardCodedSchemes ();
-
-                schemes = hardCoded.ToDictionary (StringComparer.InvariantCultureIgnoreCase);
-            }
-            else
-            {
-                // Avoid GetSchemesForCurrentTheme() — it throws if the Schemes property is absent.
-                if (ThemeManager.GetCurrentTheme () ["Schemes"].PropertyValue is not Dictionary<string, Scheme?> themeSchemes)
-                {
-                    scheme = null;
-
-                    return false;
-                }
-
-                schemes = themeSchemes;
-            }
-
-            if (schemes.TryGetValue (schemeName, out Scheme? s) && s is { })
+            if (_schemes.TryGetValue (schemeName, out Scheme? s) && s is { })
             {
                 scheme = s;
 
@@ -180,19 +113,10 @@ public sealed class SchemeManager // : INotifyCollectionChanged, IDictionary<str
         }
     }
 
-    /// <summary>
-    ///     Gets the name of the specified <see cref="Schemes"/>. Will throw an exception if <paramref name="schemeName"/>
-    ///     is not a built-in Scheme.
-    /// </summary>
-    /// <param name="schemeName"></param>
-    /// <returns>The name of scheme.</returns>
+    /// <summary>Gets the name of a built-in <see cref="Schemes"/> value.</summary>
     public static string? SchemesToSchemeName (Schemes schemeName) => Enum.GetName (typeof (Schemes), schemeName);
 
-    /// <summary>
-    ///     Converts a string to a <see cref="Schemes"/> enum value.
-    /// </summary>
-    /// <param name="schemeName"><see langword="null"/> if the schemeName is not a built-in Scheme name.</param>
-    /// <returns><see langword="null"/> if <paramref name="schemeName"/> is not the name of a built-in Scheme.</returns>
+    /// <summary>Converts a string to a built-in scheme name, or <see langword="null"/>.</summary>
     public static string? SchemeNameToSchemes (string schemeName)
     {
         if (Enum.TryParse (typeof (Schemes), schemeName, out object? value))
@@ -203,45 +127,118 @@ public sealed class SchemeManager // : INotifyCollectionChanged, IDictionary<str
         return null;
     }
 
-    /// <summary>
-    ///     Get the dictionary of schemes from the current theme. Current means active.
-    /// </summary>
-    /// <returns></returns>
+    /// <summary>Gets the dictionary of schemes for the active theme.</summary>
     public static Dictionary<string, Scheme?> GetSchemesForCurrentTheme ()
     {
         lock (_schemesLock)
         {
-            if (!ConfigurationManager.IsInitialized ())
-            {
-                throw new InvalidOperationException ("CM Must be Initialized");
-            }
-
-            if (ThemeManager.GetCurrentTheme () ["Schemes"].PropertyValue is not Dictionary<string, Scheme?> schemes)
-            {
-                // Most likely because "Schemes": was left out of the config
-                throw new InvalidOperationException ("Current Theme does not have a Scheme.");
-            }
-
-            return schemes;
+            return _schemes;
         }
     }
 
-    /// <summary>
-    ///     Convenience method to get the names of the schemes.
-    /// </summary>
-    /// <returns></returns>
+    /// <summary>Gets the names of the schemes in the current theme.</summary>
     public static ImmutableList<string> GetSchemeNames ()
     {
         lock (_schemesLock)
         {
-            return GetSchemes ().Keys.ToImmutableList ();
+            return _schemes.Keys.ToImmutableList ();
         }
     }
 
-    internal static void LoadToHardCodedDefaults () =>
+    internal static void LoadToHardCodedDefaults () => ReplaceSchemes (HardCodedDictionary ());
 
-        // BUGBUG: SchemeManager is broken and needs to be fixed to not have the hard coded schemes get overwritten.
-        // BUGBUG: This is a partial workaround
-        // BUGBUG: See https://github.com/tui-cs/Terminal.Gui/issues/4288
-        SetSchemes (GetHardCodedSchemes ().ToDictionary ());
+    /// <summary>
+    ///     Overlays <paramref name="themeName"/>'s <c>Schemes</c> section from <paramref name="config"/> onto
+    ///     hard-coded schemes and publishes the result.
+    /// </summary>
+    internal static void ApplyFromConfiguration (IConfiguration config, string themeName)
+    {
+        Dictionary<string, Scheme?> next = HardCodedDictionary ();
+        IConfigurationSection themes = config.GetSection ("Themes");
+        IConfigurationSection named = themes.GetSection (themeName);
+
+        if (!named.Exists ())
+        {
+            foreach (IConfigurationSection child in themes.GetChildren ())
+            {
+                IConfigurationSection candidate = child.GetSection (themeName);
+
+                if (candidate.Exists ())
+                {
+                    named = candidate;
+
+                    break;
+                }
+            }
+        }
+
+        IConfigurationSection schemesSection = named.Exists () ? named.GetSection ("Schemes") : config.GetSection ("Schemes");
+
+        foreach (IConfigurationSection schemeChild in schemesSection.GetChildren ())
+        {
+            Scheme? parsed = TryBindScheme (schemeChild);
+
+            if (parsed is not null)
+            {
+                next [schemeChild.Key] = parsed;
+            }
+        }
+
+        ReplaceSchemes (next);
+    }
+
+    private static Scheme? TryBindScheme (IConfigurationSection section)
+    {
+        try
+        {
+            Dictionary<string, string?> flattened = [];
+
+            foreach (KeyValuePair<string, string?> pair in section.AsEnumerable (makePathsRelative: true))
+            {
+                if (pair.Value is not null)
+                {
+                    flattened [pair.Key] = pair.Value;
+                }
+            }
+
+            if (flattened.Count == 0)
+            {
+                return null;
+            }
+
+            // Rebuild a JSON object from the flattened MEC paths (Normal:Foreground → nested).
+            JsonObject root = [];
+
+            foreach (KeyValuePair<string, string?> pair in flattened)
+            {
+                MergePath (root, pair.Key.Split (':'), pair.Value);
+            }
+
+            Scheme? scheme = JsonSerializer.Deserialize (root.ToJsonString (), TuiSerializerContext.Instance.Scheme);
+
+            return scheme;
+        }
+        catch (JsonException)
+        {
+            return null;
+        }
+    }
+
+    private static void MergePath (JsonObject cursor, string [] parts, string? value)
+    {
+        for (var i = 0; i < parts.Length - 1; i++)
+        {
+            string part = parts [i];
+
+            if (cursor [part] is not JsonObject next)
+            {
+                next = [];
+                cursor [part] = next;
+            }
+
+            cursor = next;
+        }
+
+        cursor [parts [^1]] = JsonValue.Create (value);
+    }
 }

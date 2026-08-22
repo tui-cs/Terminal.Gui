@@ -7,7 +7,7 @@ namespace Terminal.Gui.Configuration;
 /// <summary>
 ///     MEC-backed implementation of <see cref="IThemeManager"/>.
 ///     During the transition period (PR #5411), this delegates writes to the legacy static <see cref="ThemeManager"/>
-///     because the runtime theme/scheme dictionary is still owned by <see cref="ConfigurationManager.Settings"/>.
+///     because the runtime theme/scheme dictionary is still owned by <see cref="TuiConfigurationBuilder"/>.
 ///     The Phase A2 work in #5416 will let this type own the theme/scheme data directly.
 /// </summary>
 public class MecThemeManager : IThemeManager
@@ -118,22 +118,7 @@ public class MecThemeManager : IThemeManager
         // Button.DefaultShadow / Glyphs.* observe the new theme.
         _builder.ApplyToStaticFacades (rebindSelectedTheme: false);
         _themeChanged?.Invoke (this, new App.EventArgs<string> (canonical));
-
-        // During transition, also update the existing ThemeManager. Its setter raises
-        // ThemeManager.ThemeChanged (and thus ThemeChanges). If CM does not know the
-        // theme, raise ThemeChanges directly so view facades still refresh.
-        try
-        {
-            ThemeManager.Theme = canonical;
-        }
-        catch (InvalidOperationException)
-        {
-            ThemeChanges.Raise (canonical);
-        }
-        catch (KeyNotFoundException)
-        {
-            ThemeChanges.Raise (canonical);
-        }
+        ThemeManager.RaiseThemeChanged (canonical);
 
         return true;
     }

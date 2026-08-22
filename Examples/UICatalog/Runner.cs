@@ -11,7 +11,7 @@ namespace UICatalog;
 public class Runner
 {
     /// <summary>
-    ///     Sets <see cref="ConfigurationManager.RuntimeConfig"/> with "Application.ForceDriver" and ["Driver.Force16Colors" based on the params.
+    ///     Sets <see cref="TuiConfigurationBuilder.RuntimeConfig"/> with Application.ForceDriver and Driver.Force16Colors.
     /// </summary>
     /// <param name="forceDriver">The driver to use, or null to use the default.</param>
     /// <param name="force16Colors">
@@ -24,19 +24,21 @@ public class Runner
 
         if (!string.IsNullOrEmpty (forceDriver))
         {
-            runtimeConfig ["Application.ForceDriver"] = forceDriver;
+            runtimeConfig ["Application"] = new Dictionary<string, object> { ["ForceDriver"] = forceDriver };
         }
 
         if (force16Colors.HasValue)
         {
-            runtimeConfig ["Driver.Force16Colors"] = force16Colors.Value;
+            runtimeConfig ["Driver"] = new Dictionary<string, object> { ["Force16Colors"] = force16Colors.Value };
         }
 
         if (runtimeConfig.Count == 0)
         {
             return;
         }
-        ConfigurationManager.RuntimeConfig = JsonSerializer.Serialize (runtimeConfig);
+
+        TuiConfigurationBuilder.Shared.RuntimeConfig = JsonSerializer.Serialize (runtimeConfig);
+        TuiConfigurationBuilder.Shared.ApplyToStaticFacades ();
     }
 
     /// <summary>
@@ -370,13 +372,12 @@ public class Runner
         _configWatcherStarted = false;
     }
 
-    private static void ThemeManagerOnThemeChanged (object? sender, EventArgs<string> e) => ConfigurationManager.Apply ();
+    private static void ThemeManagerOnThemeChanged (object? sender, EventArgs<string> e) =>
+        TuiConfigurationBuilder.Shared.ApplyToStaticFacades (rebindSelectedTheme: false);
 
     private static void ConfigFileChanged (object sender, FileSystemEventArgs e)
     {
         Logging.Debug ($"{e.FullPath} {e.ChangeType} - Loading and Applying");
-        ConfigurationManager.Load (ConfigLocations.All);
-        ConfigurationManager.Apply ();
     }
 
     #endregion Interactive Mode

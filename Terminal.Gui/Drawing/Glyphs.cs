@@ -8,7 +8,7 @@ namespace Terminal.Gui.Drawing;
 ///         <see cref="Glyphs"/>).
 ///     </para>
 ///     <para>
-///         The default glyphs can be changed per-<see cref="ThemeScope"/> in <see cref="ConfigurationManager"/>. Within a <c>config.json</c>
+///         The default glyphs can be changed per-theme overlay in <see cref="TuiConfigurationBuilder"/>. Within a <c>config.json</c>
 ///         file the Json property name is the property name prefixed with "Glyphs.".
 ///     </para>
 ///     <para>

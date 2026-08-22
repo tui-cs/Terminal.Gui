@@ -104,7 +104,6 @@ public static class Program
                                   if (!disableCm)
                                   {
                                       runner.SetRuntimeConfig (driver, force16 ? true : null);
-                                      ConfigurationManager.Enable (ConfigLocations.All);
                                   }
 
                                   Scenario? scenario = FindScenario (scenarioName);
@@ -155,7 +154,6 @@ public static class Program
                                         {
                                             // Pass force16 only if explicitly set
                                             runner.SetRuntimeConfig (driver, force16 ? true : null);
-                                            ConfigurationManager.Enable (ConfigLocations.All);
                                         }
 
                                         List<BenchmarkResults> results;

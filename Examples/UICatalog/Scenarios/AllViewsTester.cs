@@ -27,7 +27,6 @@ public class AllViewsTester : Scenario
     public override void Main ()
     {
         // Don't create a sub-win (Scenario.Win); just use Application.TopRunnable
-        ConfigurationManager.Enable (ConfigLocations.All);
         using IApplication app = Application.Create ();
         app.Init ();
 

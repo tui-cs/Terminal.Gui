@@ -1,8 +1,7 @@
 using System.Diagnostics;
+using Terminal.Gui.Configuration;
 using Wcwidth;
 using Trace = Terminal.Gui.Tracing.Trace;
-
-#pragma warning disable CS0618 // Obsolete - ConfigurationManager still used internally during transition
 
 namespace Terminal.Gui.App;
 
@@ -185,8 +184,7 @@ internal partial class ApplicationImpl
         // ResetState handles the case where Initialized is false
         ResetState ();
 
-        // Configuration manager diagnostics
-        ConfigurationManager.PrintJsonErrors ();
+        TuiJsonErrors.Print ();
 
         // Raise the initialized changed event to notify shutdown
         if (wasInitialized)

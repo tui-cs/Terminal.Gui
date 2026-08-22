@@ -34,7 +34,7 @@ public class FrameView : View
 
     /// <summary>
     ///     Defines the default border styling for <see cref="FrameView"/>. Can be configured via
-    ///     <see cref="ConfigurationManager"/>.
+    ///     <see cref="TuiConfigurationBuilder"/>.
     /// </summary>
     /// <remarks>
     ///     This property can be set in a Theme to change the default <see cref="LineStyle"/> for all

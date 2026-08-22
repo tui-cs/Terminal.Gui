@@ -8,7 +8,6 @@ public partial class BorderView
     ///     Gets or sets mouse bindings unique to <see cref="BorderView"/>.
     ///     Shared bindings come from <see cref="View.DefaultMouseBindings"/>.
     /// </summary>
-    [ConfigurationProperty (Scope = typeof (SettingsScope))]
     public new static Dictionary<Command, PlatformMouseBinding>? DefaultMouseBindings { get; set; } = new ()
     {
         [Command.Arrange] = BindMouse.All (MouseFlags.LeftButtonPressed)

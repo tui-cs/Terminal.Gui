@@ -20,7 +20,6 @@ public class TextInputControls : Scenario
 
     public override void Main ()
     {
-        ConfigurationManager.Enable (ConfigLocations.All);
 
         // Init
         using IApplication app = Application.Create ();
@@ -381,7 +380,7 @@ public class TextInputControls : Scenario
 
         win.Accepting += WinOnAccept;
 
-        ConfigurationManager.Applied += ConfigurationManagerOnApplied;
+        ThemeChanges.ThemeChanged += ConfigurationManagerOnApplied;
 
         app.Run (win);
 
@@ -407,7 +406,7 @@ public class TextInputControls : Scenario
                       });
         }
 
-        void ConfigurationManagerOnApplied (object? sender, ConfigurationManagerEventArgs e) => win.SetNeedsDraw ();
+        void ConfigurationManagerOnApplied (object? sender, EventArgs<string> e) => win.SetNeedsDraw ();
     }
 
     private void TimeChanged (object? sender, ValueChangedEventArgs<TimeSpan> e)

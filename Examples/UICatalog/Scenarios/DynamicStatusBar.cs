@@ -16,7 +16,6 @@ public class DynamicStatusBar : Scenario
 
     public override void Main ()
     {
-        ConfigurationManager.Enable (ConfigLocations.All);
         using IApplication app = Application.Create ();
         _app = app;
         _app.Init ();

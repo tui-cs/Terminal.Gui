@@ -1,4 +1,4 @@
-﻿using System.Diagnostics;
+using System.Diagnostics;
 using UICatalog;
 
 namespace StressTests;
@@ -30,8 +30,6 @@ public class ScenariosStressTests
     {
         Assert.Null (_timeoutLock);
         _timeoutLock = new object ();
-
-        ConfigurationManager.Disable (true);
 
         // If a previous test failed, this will ensure that the Application is in a clean state
         Application.ResetState (true);

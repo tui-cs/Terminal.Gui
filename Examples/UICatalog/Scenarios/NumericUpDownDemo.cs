@@ -1,4 +1,4 @@
-﻿#nullable enable
+#nullable enable
 namespace UICatalog.Scenarios;
 
 [ScenarioMetadata ("NumericUpDown", "Demonstrates the NumericUpDown View")]
@@ -7,7 +7,6 @@ public class NumericUpDownDemo : Scenario
 {
     public override void Main ()
     {
-        ConfigurationManager.Enable (ConfigLocations.All);
         using IApplication app = Application.Create ();
         app.Init ();
 

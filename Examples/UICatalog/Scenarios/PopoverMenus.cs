@@ -1,4 +1,4 @@
-﻿#nullable enable
+#nullable enable
 using System.Globalization;
 
 // ReSharper disable AccessToDisposedClosure
@@ -21,7 +21,6 @@ public class PopoverMenus : Scenario
     public override void Main ()
     {
         // Init
-        ConfigurationManager.Enable (ConfigLocations.All);
 
         // Prepping for modern app model
         using IApplication app = Application.Create ();

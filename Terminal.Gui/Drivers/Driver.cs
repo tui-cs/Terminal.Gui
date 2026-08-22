@@ -1,4 +1,4 @@
-﻿namespace Terminal.Gui.Drivers;
+namespace Terminal.Gui.Drivers;
 
 /// <summary>
 ///     Holds global driver settings and cross-driver utility methods.
@@ -12,7 +12,6 @@ public sealed class Driver
     ///     Determines if driver instances should use 16 colors instead of the default TrueColors.
     /// </summary>
     /// <seealso cref="IDriver.Force16Colors"/>
-    [ConfigurationProperty (Scope = typeof (SettingsScope))]
     public static bool Force16Colors
     {
         get => DriverSettings.Defaults.Force16Colors;
@@ -37,7 +36,6 @@ public sealed class Driver
     ///     an ANSI <c>CSI 18t</c> query instead.
     /// </summary>
     /// <seealso cref="SizeDetectionMode"/>
-    [ConfigurationProperty (Scope = typeof (SettingsScope))]
     public static SizeDetectionMode SizeDetection
     {
         get => DriverSettings.Defaults.SizeDetection;

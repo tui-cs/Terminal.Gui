@@ -1,1501 +1,1765 @@
 {
-  // Specifies the "source of truth" for default values for all Terminal.Gui settings managed by
-  // ConfigurationManager. It is automatically loaded, and applied, each time Application.Init
-  // is run (via the ConfigurationManager.Reset method).
-  //
-  // In other words, initial values set in the the codebase are always overwritten by the contents of this 
-  // resource embedded in the Terminal.Gui.dll assembly.
-  //
-  // The Unit Test method "ConfigurationManagerTests.SaveDefaults" can be used to re-create the base of this file, but
-  // note that not all values here will be recreated (e.g. the Light and Dark themes and any property initialized
-  // null).
-  //
+  // Nested MEC-native Terminal.Gui configuration (v2.5).
+  // Convert pre-2.5 flat-key files with: dotnet run --project Tools/MigrateConfig -- <in> <out>
   "$schema": "https://tui-cs.github.io/Terminal.Gui/schemas/tui-config-schema.json",
-
-  // Set this to true in a .config file to be loaded to cause JSON parsing errors
-  // to throw exceptions.
-  "ConfigurationManager.ThrowOnJsonErrors": false,
-
-  // --------------- Tracing ----------------------------
-  //"Trace.EnabledCategories": "Lifecycle",
-
-  // --------------- Application Settings ---------------
-  "Key.Separator": "+",
-
-  "Driver.Force16Colors": false,
-  //"Application.ForceDriver": "", // TODO: ForceDriver should be nullable
-  "Application.IsMouseDisabled": false,
-
-  // --------------- Colors ---------------
-
-
-  // --------------- View Specific Settings ---------------
-  "PopoverMenu.DefaultKey": "Shift+F10",
-
-  // --------------- Themes -----------------
-  "Themes": [
-    // We do not override any hard-coded properties for Default here; 
-    // Default is by definition the same as hard-coded.
-    //{
-    //  "Default": {
-    //  }
-    //},
-    {
-      "TurboPascal 5": {
-        "Schemes": [
-          {
-            "Accent": {
-              "Normal": {
-                "Foreground": "White",
-                "Background": "Blue"
-              }
-            }
-          },
-          {
-            "Base": {
-              "Normal": {
-                "Foreground": "Yellow",
-                "Background": "Blue"
-              },
-              "Code": { "Foreground": "Yellow", "Background": "Blue", "Style": "None" },
-              "CodeComment": { "Foreground": "LightGray", "Background": "None", "Style": "None" },
-              "CodeKeyword": { "Foreground": "White", "Background": "None", "Style": "None" },
-              "CodeString": { "Foreground": "LightCyan", "Background": "None", "Style": "None" },
-              "CodeNumber": { "Foreground": "LightGreen", "Background": "None", "Style": "None" },
-              "CodeOperator": { "Foreground": "White", "Background": "None", "Style": "None" },
-              "CodeType": { "Foreground": "Magenta", "Background": "None", "Style": "None" },
-              "CodePreprocessor": { "Foreground": "BrightRed", "Background": "None", "Style": "None" },
-              "CodeIdentifier": { "Foreground": "Yellow", "Background": "None", "Style": "None" },
-              "CodeConstant": { "Foreground": "LightGreen", "Background": "None", "Style": "None" },
-              "CodePunctuation": { "Foreground": "White", "Background": "None", "Style": "None" },
-              "CodeFunctionName": { "Foreground": "LightYellow", "Background": "None", "Style": "None" },
-              "CodeAttribute": { "Foreground": "LightCyan", "Background": "None", "Style": "None" }
-            }
-          },
-          {
-            "Dialog": {
-              "Normal": {
-                "Foreground": "Black",
-                "Background": "LightGray"
-              }
-            }
-          },
-          {
-            "Menu": {
-              "Normal": {
-                "Foreground": "Black",
-                "Background": "Cyan",
-                "Style": "None"
-              },
-              "Focus": {
-                "Foreground": "Black",
-                "Background": "LightGray",
-                "Style": "None"
-              },
-              "HotNormal": {
-                "Foreground": "BrightRed",
-                "Background": "Cyan",
-                "Style": "None"
-              },
-              "HotFocus": {
-                "Foreground": "BrightRed",
-                "Background": "LightGray",
-                "Style": "None"
-              },
-              "Disabled": {
-                "Foreground": "DarkGray",
-                "Background": "Cyan",
-                "Style": "None"
-              }
-            }
-          },
-          {
-            "Error": {
-              "Normal": {
-                "Foreground": "BrightRed",
-                "Background": "LightGray",
-                "Style": "None"
-              }
-            }
+  "Key": {
+    "Separator": "+"
+  },
+  "Driver": {
+    "Force16Colors": false
+  },
+  "Application": {
+    "IsMouseDisabled": false
+  },
+  "PopoverMenu": {
+    "DefaultKey": "Shift+F10"
+  },
+  "Themes": {
+    "TurboPascal 5": {
+      "Schemes": {
+        "Accent": {
+          "Normal": {
+            "Foreground": "White",
+            "Background": "Blue"
           }
-        ],
-        "Glyphs.CheckStateChecked": "☑",
-        "Glyphs.CheckStateNone": "⬛",
-        "Glyphs.CheckStateUnChecked": "☐",
-        "Glyphs.LeftBracket": "[",
-        "Glyphs.RightBracket": "]"
+        },
+        "Base": {
+          "Normal": {
+            "Foreground": "Yellow",
+            "Background": "Blue"
+          },
+          "Code": {
+            "Foreground": "Yellow",
+            "Background": "Blue",
+            "Style": "None"
+          },
+          "CodeComment": {
+            "Foreground": "LightGray",
+            "Background": "None",
+            "Style": "None"
+          },
+          "CodeKeyword": {
+            "Foreground": "White",
+            "Background": "None",
+            "Style": "None"
+          },
+          "CodeString": {
+            "Foreground": "LightCyan",
+            "Background": "None",
+            "Style": "None"
+          },
+          "CodeNumber": {
+            "Foreground": "LightGreen",
+            "Background": "None",
+            "Style": "None"
+          },
+          "CodeOperator": {
+            "Foreground": "White",
+            "Background": "None",
+            "Style": "None"
+          },
+          "CodeType": {
+            "Foreground": "Magenta",
+            "Background": "None",
+            "Style": "None"
+          },
+          "CodePreprocessor": {
+            "Foreground": "BrightRed",
+            "Background": "None",
+            "Style": "None"
+          },
+          "CodeIdentifier": {
+            "Foreground": "Yellow",
+            "Background": "None",
+            "Style": "None"
+          },
+          "CodeConstant": {
+            "Foreground": "LightGreen",
+            "Background": "None",
+            "Style": "None"
+          },
+          "CodePunctuation": {
+            "Foreground": "White",
+            "Background": "None",
+            "Style": "None"
+          },
+          "CodeFunctionName": {
+            "Foreground": "LightYellow",
+            "Background": "None",
+            "Style": "None"
+          },
+          "CodeAttribute": {
+            "Foreground": "LightCyan",
+            "Background": "None",
+            "Style": "None"
+          }
+        },
+        "Dialog": {
+          "Normal": {
+            "Foreground": "Black",
+            "Background": "LightGray"
+          }
+        },
+        "Menu": {
+          "Normal": {
+            "Foreground": "Black",
+            "Background": "Cyan",
+            "Style": "None"
+          },
+          "Focus": {
+            "Foreground": "Black",
+            "Background": "LightGray",
+            "Style": "None"
+          },
+          "HotNormal": {
+            "Foreground": "BrightRed",
+            "Background": "Cyan",
+            "Style": "None"
+          },
+          "HotFocus": {
+            "Foreground": "BrightRed",
+            "Background": "LightGray",
+            "Style": "None"
+          },
+          "Disabled": {
+            "Foreground": "DarkGray",
+            "Background": "Cyan",
+            "Style": "None"
+          }
+        },
+        "Error": {
+          "Normal": {
+            "Foreground": "BrightRed",
+            "Background": "LightGray",
+            "Style": "None"
+          }
+        }
+      },
+      "Glyphs": {
+        "CheckStateChecked": "☑",
+        "CheckStateNone": "⬛",
+        "CheckStateUnChecked": "☐",
+        "LeftBracket": "[",
+        "RightBracket": "]"
       }
     },
-    {
-      "Anders": {
-        "Schemes": [
-          {
-            "Accent": {
-              "Normal": {
-                "Foreground": "WhiteSmoke",
-                "Background": "DimGray"
-              }
-            }
-          },
-          {
-            "Base": {
-              "Normal": {
-                "Foreground": "White",
-                "Background": "DarkBlue"
-              },
-              "Code": { "Foreground": "White", "Background": "DarkBlue", "Style": "None" },
-              "CodeComment": { "Foreground": "#8fbc8f", "Background": "None", "Style": "None" },
-              "CodeKeyword": { "Foreground": "#87cefa", "Background": "None", "Style": "None" },
-              "CodeString": { "Foreground": "#f0e68c", "Background": "None", "Style": "None" },
-              "CodeNumber": { "Foreground": "#98fb98", "Background": "None", "Style": "None" },
-              "CodeOperator": { "Foreground": "White", "Background": "None", "Style": "None" },
-              "CodeType": { "Foreground": "#40e0d0", "Background": "None", "Style": "None" },
-              "CodePreprocessor": { "Foreground": "#dda0dd", "Background": "None", "Style": "None" },
-              "CodeIdentifier": { "Foreground": "White", "Background": "None", "Style": "None" },
-              "CodeConstant": { "Foreground": "#87cefa", "Background": "None", "Style": "None" },
-              "CodePunctuation": { "Foreground": "White", "Background": "None", "Style": "None" },
-              "CodeFunctionName": { "Foreground": "#fffacd", "Background": "None", "Style": "None" },
-              "CodeAttribute": { "Foreground": "#add8e6", "Background": "None", "Style": "None" }
-            }
-          },
-          {
-            "Dialog": {
-              "Normal": {
-                "Foreground": "BrightBlue",
-                "Background": "LightGray"
-              }
-            }
-          },
-          {
-            "Menu": {
-              "Normal": {
-                "Foreground": "White",
-                "Background": "Blue",
-                "Style": "Bold"
-              }
-            }
-          },
-          {
-            "Error": {
-              "Normal": {
-                "Foreground": "Red",
-                "Background": "WhiteSmoke",
-                "Style": "Italic"
-              }
-            }
+    "Anders": {
+      "Schemes": {
+        "Accent": {
+          "Normal": {
+            "Foreground": "WhiteSmoke",
+            "Background": "DimGray"
           }
-        ],
-        "Glyphs.CheckStateChecked": "☑",
-        "Glyphs.CheckStateNone": "⬛",
-        "Glyphs.CheckStateUnChecked": "☐",
-        "Glyphs.LeftBracket": "[",
-        "Glyphs.RightBracket": "]"
+        },
+        "Base": {
+          "Normal": {
+            "Foreground": "White",
+            "Background": "DarkBlue"
+          },
+          "Code": {
+            "Foreground": "White",
+            "Background": "DarkBlue",
+            "Style": "None"
+          },
+          "CodeComment": {
+            "Foreground": "#8fbc8f",
+            "Background": "None",
+            "Style": "None"
+          },
+          "CodeKeyword": {
+            "Foreground": "#87cefa",
+            "Background": "None",
+            "Style": "None"
+          },
+          "CodeString": {
+            "Foreground": "#f0e68c",
+            "Background": "None",
+            "Style": "None"
+          },
+          "CodeNumber": {
+            "Foreground": "#98fb98",
+            "Background": "None",
+            "Style": "None"
+          },
+          "CodeOperator": {
+            "Foreground": "White",
+            "Background": "None",
+            "Style": "None"
+          },
+          "CodeType": {
+            "Foreground": "#40e0d0",
+            "Background": "None",
+            "Style": "None"
+          },
+          "CodePreprocessor": {
+            "Foreground": "#dda0dd",
+            "Background": "None",
+            "Style": "None"
+          },
+          "CodeIdentifier": {
+            "Foreground": "White",
+            "Background": "None",
+            "Style": "None"
+          },
+          "CodeConstant": {
+            "Foreground": "#87cefa",
+            "Background": "None",
+            "Style": "None"
+          },
+          "CodePunctuation": {
+            "Foreground": "White",
+            "Background": "None",
+            "Style": "None"
+          },
+          "CodeFunctionName": {
+            "Foreground": "#fffacd",
+            "Background": "None",
+            "Style": "None"
+          },
+          "CodeAttribute": {
+            "Foreground": "#add8e6",
+            "Background": "None",
+            "Style": "None"
+          }
+        },
+        "Dialog": {
+          "Normal": {
+            "Foreground": "BrightBlue",
+            "Background": "LightGray"
+          }
+        },
+        "Menu": {
+          "Normal": {
+            "Foreground": "White",
+            "Background": "Blue",
+            "Style": "Bold"
+          }
+        },
+        "Error": {
+          "Normal": {
+            "Foreground": "Red",
+            "Background": "WhiteSmoke",
+            "Style": "Italic"
+          }
+        }
+      },
+      "Glyphs": {
+        "CheckStateChecked": "☑",
+        "CheckStateNone": "⬛",
+        "CheckStateUnChecked": "☐",
+        "LeftBracket": "[",
+        "RightBracket": "]"
       }
     },
-    {
-      "Dark": {
-        "Dialog.DefaultButtonAlignment": "End",
-        "Dialog.DefaultButtonAlignmentModes": "AddSpaceBetweenItems",
-        "Dialog.DefaultBorderStyle": "Heavy",
-        "Dialog.DefaultShadow": "Transparent",
-        "FrameView.DefaultBorderStyle": "Single",
-        "Window.DefaultBorderStyle": "Single",
-        "MessageBox.DefaultButtonAlignment": "Center",
-        "MessageBox.DefaultBorderStyle": "Heavy",
-        "Button.DefaultShadow": "Opaque",
-        "Schemes": [
-          {
-            "Accent": {
-              "Normal": {
-                "Foreground": "LightGray",
-                "Background": "Onyx",
-                "Style": "None"
-              },
-              "Focus": {
-                "Foreground": "White",
-                "Background": "Charcoal",
-                "Style": "None"
-              },
-              "HotNormal": {
-                "Foreground": "Silver",
-                "Background": "Onyx",
-                "Style": "Underline"
-              },
-              "Disabled": {
-                "Foreground": "DarkGray",
-                "Background": "Onyx",
-                "Style": "Faint"
-              },
-              "HotFocus": {
-                "Foreground": "White",
-                "Background": "Charcoal",
-                "Style": "Underline"
-              },
-              "Active": {
-                "Foreground": "White",
-                "Background": "Onyx",
-                "Style": "Bold"
-              },
-              "HotActive": {
-                "Foreground": "White",
-                "Background": "Onyx",
-                "Style": "Underline"
-              },
-              "Highlight": {
-                "Foreground": "White",
-                "Background": "OuterSpace",
-                "Style": "None"
-              },
-              "Editable": {
-                "Foreground": "LightYellow",
-                "Background": "Onyx",
-                "Style": "None"
-              },
-              "ReadOnly": {
-                "Foreground": "Gray",
-                "Background": "Onyx",
-                "Style": "Italic"
-              }
-            }
+    "Dark": {
+      "Dialog": {
+        "DefaultButtonAlignment": "End",
+        "DefaultButtonAlignmentModes": "AddSpaceBetweenItems",
+        "DefaultBorderStyle": "Heavy",
+        "DefaultShadow": "Transparent"
+      },
+      "FrameView": {
+        "DefaultBorderStyle": "Single"
+      },
+      "Window": {
+        "DefaultBorderStyle": "Single"
+      },
+      "MessageBox": {
+        "DefaultButtonAlignment": "Center",
+        "DefaultBorderStyle": "Heavy"
+      },
+      "Button": {
+        "DefaultShadow": "Opaque"
+      },
+      "Schemes": {
+        "Accent": {
+          "Normal": {
+            "Foreground": "LightGray",
+            "Background": "Onyx",
+            "Style": "None"
           },
-          {
-            "Base": {
-              "Normal": {
-                "Foreground": "LightGray",
-                "Background": "None",
-                "Style": "None"
-              },
-              "Focus": {
-                "Foreground": "White",
-                "Background": "Charcoal",
-                "Style": "None"
-              },
-              "HotNormal": {
-                "Foreground": "Silver",
-                "Background": "None",
-                "Style": "Underline"
-              },
-              "Disabled": {
-                "Foreground": "DarkGray",
-                "Background": "None",
-                "Style": "Faint"
-              },
-              "HotFocus": {
-                "Foreground": "White",
-                "Background": "Charcoal",
-                "Style": "Underline"
-              },
-              "Active": {
-                "Foreground": "White",
-                "Background": "Onyx"
-              },
-              "HotActive": {
-                "Foreground": "White",
-                "Background": "Onyx",
-                "Style": "Underline"
-              },
-              "Highlight": {
-                "Foreground": "White",
-                "Background": "OuterSpace",
-                "Style": "None"
-              },
-              "Editable": {
-                "Foreground": "Gray",
-                "Background": "None",
-                "Style": "None"
-              },
-              "ReadOnly": {
-                "Foreground": "Gray",
-                "Background": "None",
-                "Style": "Italic"
-              },
-              "Code": { "Foreground": "LightGray", "Background": "Onyx", "Style": "None" },
-              "CodeComment": { "Foreground": "#6a9955", "Background": "None", "Style": "None" },
-              "CodeKeyword": { "Foreground": "#569cd6", "Background": "None", "Style": "None" },
-              "CodeString": { "Foreground": "#ce9178", "Background": "None", "Style": "None" },
-              "CodeNumber": { "Foreground": "#b5cea8", "Background": "None", "Style": "None" },
-              "CodeOperator": { "Foreground": "#d4d4d4", "Background": "None", "Style": "None" },
-              "CodeType": { "Foreground": "#4ec9b0", "Background": "None", "Style": "None" },
-              "CodePreprocessor": { "Foreground": "#c586c0", "Background": "None", "Style": "None" },
-              "CodeIdentifier": { "Foreground": "#9cdcfe", "Background": "None", "Style": "None" },
-              "CodeConstant": { "Foreground": "#569cd6", "Background": "None", "Style": "None" },
-              "CodePunctuation": { "Foreground": "#d4d4d4", "Background": "None", "Style": "None" },
-              "CodeFunctionName": { "Foreground": "#dcdcaa", "Background": "None", "Style": "None" },
-              "CodeAttribute": { "Foreground": "#9cdcfe", "Background": "None", "Style": "None" }
-            }
+          "Focus": {
+            "Foreground": "White",
+            "Background": "Charcoal",
+            "Style": "None"
           },
-          {
-            "Dialog": {
-              "Normal": {
-                "Foreground": "LightGray",
-                "Background": "Charcoal",
-                "Style": "None"
-              },
-              "Focus": {
-                "Foreground": "White",
-                "Background": "SlateGray",
-                "Style": "None"
-              },
-              "HotNormal": {
-                "Foreground": "Silver",
-                "Background": "Charcoal",
-                "Style": "Underline"
-              },
-              "Disabled": {
-                "Foreground": "DarkGray",
-                "Background": "Charcoal",
-                "Style": "Faint"
-              },
-              "HotFocus": {
-                "Foreground": "White",
-                "Background": "SlateGray",
-                "Style": "Underline"
-              },
-              "Active": {
-                "Foreground": "White",
-                "Background": "OuterSpace",
-                "Style": "Bold"
-              },
-              "HotActive": {
-                "Foreground": "White",
-                "Background": "OuterSpace",
-                "Style": "Underline,Bold"
-              },
-              "Highlight": {
-                "Foreground": "White",
-                "Background": "Onyx",
-                "Style": "None"
-              },
-              "Editable": {
-                "Foreground": "Gray",
-                "Background": "Charcoal",
-                "Style": "None"
-              },
-              "ReadOnly": {
-                "Foreground": "Gray",
-                "Background": "Charcoal",
-                "Style": "Italic"
-              }
-            }
+          "HotNormal": {
+            "Foreground": "Silver",
+            "Background": "Onyx",
+            "Style": "Underline"
           },
-          {
-            "Menu": {
-              "Normal": {
-                "Foreground": "White",
-                "Background": "Onyx",
-                "Style": "Bold"
-              },
-              "Focus": {
-                "Foreground": "White",
-                "Background": "Charcoal",
-                "Style": "Bold"
-              },
-              "HotNormal": {
-                "Foreground": "Silver",
-                "Background": "Onyx",
-                "Style": "Underline,Bold"
-              },
-              "Disabled": {
-                "Foreground": "DarkGray",
-                "Background": "Charcoal",
-                "Style": "Faint"
-              },
-              "HotFocus": {
-                "Foreground": "White",
-                "Background": "Charcoal",
-                "Style": "Underline,Bold"
-              },
-              "Active": {
-                "Foreground": "White",
-                "Background": "OuterSpace",
-                "Style": "Bold"
-              },
-              "HotActive": {
-                "Foreground": "White",
-                "Background": "OuterSpace",
-                "Style": "Underline,Bold"
-              },
-              "Highlight": {
-                "Foreground": "White",
-                "Background": "SlateGray",
-                "Style": "None"
-              },
-              "Editable": {
-                "Foreground": "Gray",
-                "Background": "Onyx",
-                "Style": "None"
-              },
-              "ReadOnly": {
-                "Foreground": "Gray",
-                "Background": "Onyx",
-                "Style": "Italic"
-              }
-            }
+          "Disabled": {
+            "Foreground": "DarkGray",
+            "Background": "Onyx",
+            "Style": "Faint"
           },
-          {
-            "Error": {
-              "Normal": {
-                "Foreground": "IndianRed",
-                "Background": "Black",
-                "Style": "None"
-              },
-              "Focus": {
-                "Foreground": "White",
-                "Background": "IndianRed",
-                "Style": "None"
-              },
-              "HotNormal": {
-                "Foreground": "LightCoral",
-                "Background": "Black",
-                "Style": "Underline"
-              },
-              "Disabled": {
-                "Foreground": "DarkGray",
-                "Background": "Black",
-                "Style": "Faint"
-              },
-              "HotFocus": {
-                "Foreground": "White",
-                "Background": "IndianRed",
-                "Style": "Underline"
-              },
-              "Active": {
-                "Foreground": "White",
-                "Background": "LightCoral",
-                "Style": "Bold"
-              },
-              "HotActive": {
-                "Foreground": "White",
-                "Background": "LightCoral",
-                "Style": "Underline,Bold"
-              },
-              "Highlight": {
-                "Foreground": "White",
-                "Background": "IndianRed",
-                "Style": "None"
-              },
-              "Editable": {
-                "Foreground": "Gray",
-                "Background": "Black",
-                "Style": "None"
-              },
-              "ReadOnly": {
-                "Foreground": "Gray",
-                "Background": "Black",
-                "Style": "Italic"
-              }
-            }
+          "HotFocus": {
+            "Foreground": "White",
+            "Background": "Charcoal",
+            "Style": "Underline"
+          },
+          "Active": {
+            "Foreground": "White",
+            "Background": "Onyx",
+            "Style": "Bold"
+          },
+          "HotActive": {
+            "Foreground": "White",
+            "Background": "Onyx",
+            "Style": "Underline"
+          },
+          "Highlight": {
+            "Foreground": "White",
+            "Background": "OuterSpace",
+            "Style": "None"
+          },
+          "Editable": {
+            "Foreground": "LightYellow",
+            "Background": "Onyx",
+            "Style": "None"
+          },
+          "ReadOnly": {
+            "Foreground": "Gray",
+            "Background": "Onyx",
+            "Style": "Italic"
           }
-        ]
+        },
+        "Base": {
+          "Normal": {
+            "Foreground": "LightGray",
+            "Background": "None",
+            "Style": "None"
+          },
+          "Focus": {
+            "Foreground": "White",
+            "Background": "Charcoal",
+            "Style": "None"
+          },
+          "HotNormal": {
+            "Foreground": "Silver",
+            "Background": "None",
+            "Style": "Underline"
+          },
+          "Disabled": {
+            "Foreground": "DarkGray",
+            "Background": "None",
+            "Style": "Faint"
+          },
+          "HotFocus": {
+            "Foreground": "White",
+            "Background": "Charcoal",
+            "Style": "Underline"
+          },
+          "Active": {
+            "Foreground": "White",
+            "Background": "Onyx"
+          },
+          "HotActive": {
+            "Foreground": "White",
+            "Background": "Onyx",
+            "Style": "Underline"
+          },
+          "Highlight": {
+            "Foreground": "White",
+            "Background": "OuterSpace",
+            "Style": "None"
+          },
+          "Editable": {
+            "Foreground": "Gray",
+            "Background": "None",
+            "Style": "None"
+          },
+          "ReadOnly": {
+            "Foreground": "Gray",
+            "Background": "None",
+            "Style": "Italic"
+          },
+          "Code": {
+            "Foreground": "LightGray",
+            "Background": "Onyx",
+            "Style": "None"
+          },
+          "CodeComment": {
+            "Foreground": "#6a9955",
+            "Background": "None",
+            "Style": "None"
+          },
+          "CodeKeyword": {
+            "Foreground": "#569cd6",
+            "Background": "None",
+            "Style": "None"
+          },
+          "CodeString": {
+            "Foreground": "#ce9178",
+            "Background": "None",
+            "Style": "None"
+          },
+          "CodeNumber": {
+            "Foreground": "#b5cea8",
+            "Background": "None",
+            "Style": "None"
+          },
+          "CodeOperator": {
+            "Foreground": "#d4d4d4",
+            "Background": "None",
+            "Style": "None"
+          },
+          "CodeType": {
+            "Foreground": "#4ec9b0",
+            "Background": "None",
+            "Style": "None"
+          },
+          "CodePreprocessor": {
+            "Foreground": "#c586c0",
+            "Background": "None",
+            "Style": "None"
+          },
+          "CodeIdentifier": {
+            "Foreground": "#9cdcfe",
+            "Background": "None",
+            "Style": "None"
+          },
+          "CodeConstant": {
+            "Foreground": "#569cd6",
+            "Background": "None",
+            "Style": "None"
+          },
+          "CodePunctuation": {
+            "Foreground": "#d4d4d4",
+            "Background": "None",
+            "Style": "None"
+          },
+          "CodeFunctionName": {
+            "Foreground": "#dcdcaa",
+            "Background": "None",
+            "Style": "None"
+          },
+          "CodeAttribute": {
+            "Foreground": "#9cdcfe",
+            "Background": "None",
+            "Style": "None"
+          }
+        },
+        "Dialog": {
+          "Normal": {
+            "Foreground": "LightGray",
+            "Background": "Charcoal",
+            "Style": "None"
+          },
+          "Focus": {
+            "Foreground": "White",
+            "Background": "SlateGray",
+            "Style": "None"
+          },
+          "HotNormal": {
+            "Foreground": "Silver",
+            "Background": "Charcoal",
+            "Style": "Underline"
+          },
+          "Disabled": {
+            "Foreground": "DarkGray",
+            "Background": "Charcoal",
+            "Style": "Faint"
+          },
+          "HotFocus": {
+            "Foreground": "White",
+            "Background": "SlateGray",
+            "Style": "Underline"
+          },
+          "Active": {
+            "Foreground": "White",
+            "Background": "OuterSpace",
+            "Style": "Bold"
+          },
+          "HotActive": {
+            "Foreground": "White",
+            "Background": "OuterSpace",
+            "Style": "Underline,Bold"
+          },
+          "Highlight": {
+            "Foreground": "White",
+            "Background": "Onyx",
+            "Style": "None"
+          },
+          "Editable": {
+            "Foreground": "Gray",
+            "Background": "Charcoal",
+            "Style": "None"
+          },
+          "ReadOnly": {
+            "Foreground": "Gray",
+            "Background": "Charcoal",
+            "Style": "Italic"
+          }
+        },
+        "Menu": {
+          "Normal": {
+            "Foreground": "White",
+            "Background": "Onyx",
+            "Style": "Bold"
+          },
+          "Focus": {
+            "Foreground": "White",
+            "Background": "Charcoal",
+            "Style": "Bold"
+          },
+          "HotNormal": {
+            "Foreground": "Silver",
+            "Background": "Onyx",
+            "Style": "Underline,Bold"
+          },
+          "Disabled": {
+            "Foreground": "DarkGray",
+            "Background": "Charcoal",
+            "Style": "Faint"
+          },
+          "HotFocus": {
+            "Foreground": "White",
+            "Background": "Charcoal",
+            "Style": "Underline,Bold"
+          },
+          "Active": {
+            "Foreground": "White",
+            "Background": "OuterSpace",
+            "Style": "Bold"
+          },
+          "HotActive": {
+            "Foreground": "White",
+            "Background": "OuterSpace",
+            "Style": "Underline,Bold"
+          },
+          "Highlight": {
+            "Foreground": "White",
+            "Background": "SlateGray",
+            "Style": "None"
+          },
+          "Editable": {
+            "Foreground": "Gray",
+            "Background": "Onyx",
+            "Style": "None"
+          },
+          "ReadOnly": {
+            "Foreground": "Gray",
+            "Background": "Onyx",
+            "Style": "Italic"
+          }
+        },
+        "Error": {
+          "Normal": {
+            "Foreground": "IndianRed",
+            "Background": "Black",
+            "Style": "None"
+          },
+          "Focus": {
+            "Foreground": "White",
+            "Background": "IndianRed",
+            "Style": "None"
+          },
+          "HotNormal": {
+            "Foreground": "LightCoral",
+            "Background": "Black",
+            "Style": "Underline"
+          },
+          "Disabled": {
+            "Foreground": "DarkGray",
+            "Background": "Black",
+            "Style": "Faint"
+          },
+          "HotFocus": {
+            "Foreground": "White",
+            "Background": "IndianRed",
+            "Style": "Underline"
+          },
+          "Active": {
+            "Foreground": "White",
+            "Background": "LightCoral",
+            "Style": "Bold"
+          },
+          "HotActive": {
+            "Foreground": "White",
+            "Background": "LightCoral",
+            "Style": "Underline,Bold"
+          },
+          "Highlight": {
+            "Foreground": "White",
+            "Background": "IndianRed",
+            "Style": "None"
+          },
+          "Editable": {
+            "Foreground": "Gray",
+            "Background": "Black",
+            "Style": "None"
+          },
+          "ReadOnly": {
+            "Foreground": "Gray",
+            "Background": "Black",
+            "Style": "Italic"
+          }
+        }
       }
     },
-    {
-      "Light": {
-        "Dialog.DefaultButtonAlignment": "End",
-        "Dialog.DefaultButtonAlignmentModes": "AddSpaceBetweenItems",
-        "Dialog.DefaultBorderStyle": "Heavy",
-        "Dialog.DefaultShadow": "Transparent",
-        "FrameView.DefaultBorderStyle": "Single",
-        "Window.DefaultBorderStyle": "Single",
-        "MessageBox.DefaultButtonAlignment": "Center",
-        "MessageBox.DefaultBorderStyle": "Heavy",
-        "Button.DefaultShadow": "Opaque",
-        "Schemes": [
-          {
-            "Accent": {
-              "Normal": {
-                "Foreground": "DimGray",
-                "Background": "WhiteSmoke",
-                "Style": "None"
-              },
-              "Focus": {
-                "Foreground": "Black",
-                "Background": "Gainsboro",
-                "Style": "None"
-              },
-              "HotNormal": {
-                "Foreground": "Gray",
-                "Background": "WhiteSmoke",
-                "Style": "Underline"
-              },
-              "Disabled": {
-                "Foreground": "LightGray",
-                "Background": "WhiteSmoke",
-                "Style": "Faint"
-              },
-              "HotFocus": {
-                "Foreground": "Black",
-                "Background": "Gainsboro",
-                "Style": "Underline"
-              },
-              "Active": {
-                "Foreground": "Black",
-                "Background": "White",
-                "Style": "Bold"
-              },
-              "HotActive": {
-                "Foreground": "Black",
-                "Background": "White",
-                "Style": "Underline,Bold"
-              },
-              "Highlight": {
-                "Foreground": "Black",
-                "Background": "LightGray",
-                "Style": "None"
-              },
-              "Editable": {
-                "Foreground": "Black",
-                "Background": "LemonChiffon",
-                "Style": "None"
-              },
-              "ReadOnly": {
-                "Foreground": "Gray",
-                "Background": "WhiteSmoke",
-                "Style": "Italic"
-              }
-            }
+    "Light": {
+      "Dialog": {
+        "DefaultButtonAlignment": "End",
+        "DefaultButtonAlignmentModes": "AddSpaceBetweenItems",
+        "DefaultBorderStyle": "Heavy",
+        "DefaultShadow": "Transparent"
+      },
+      "FrameView": {
+        "DefaultBorderStyle": "Single"
+      },
+      "Window": {
+        "DefaultBorderStyle": "Single"
+      },
+      "MessageBox": {
+        "DefaultButtonAlignment": "Center",
+        "DefaultBorderStyle": "Heavy"
+      },
+      "Button": {
+        "DefaultShadow": "Opaque"
+      },
+      "Schemes": {
+        "Accent": {
+          "Normal": {
+            "Foreground": "DimGray",
+            "Background": "WhiteSmoke",
+            "Style": "None"
           },
-          {
-            "Base": {
-              "Normal": {
-                "Foreground": "Gray",
-                "Background": "None",
-                "Style": "None"
-              },
-              "Focus": {
-                "Foreground": "Black",
-                "Background": "Gainsboro",
-                "Style": "None"
-              },
-              "HotNormal": {
-                "Foreground": "Silver",
-                "Background": "None",
-                "Style": "Underline"
-              },
-              "Disabled": {
-                "Foreground": "LightGray",
-                "Background": "None",
-                "Style": "Faint"
-              },
-              "HotFocus": {
-                "Foreground": "Black",
-                "Background": "Gainsboro",
-                "Style": "Underline"
-              },
-              "Active": {
-                "Foreground": "Black",
-                "Background": "White",
-                "Style": "Bold"
-              },
-              "HotActive": {
-                "Foreground": "Black",
-                "Background": "White",
-                "Style": "Underline,Bold"
-              },
-              "Highlight": {
-                "Foreground": "Black",
-                "Background": "LightGray",
-                "Style": "None"
-              },
-              "Editable": {
-                "Foreground": "Black",
-                "Background": "LemonChiffon",
-                "Style": "None"
-              },
-              "ReadOnly": {
-                "Foreground": "Gray",
-                "Background": "None",
-                "Style": "Italic"
-              },
-              "Code": { "Foreground": "Black", "Background": "WhiteSmoke", "Style": "None" },
-              "CodeComment": { "Foreground": "#008000", "Background": "None", "Style": "None" },
-              "CodeKeyword": { "Foreground": "#0000ff", "Background": "None", "Style": "None" },
-              "CodeString": { "Foreground": "#a31515", "Background": "None", "Style": "None" },
-              "CodeNumber": { "Foreground": "#098658", "Background": "None", "Style": "None" },
-              "CodeOperator": { "Foreground": "#000000", "Background": "None", "Style": "None" },
-              "CodeType": { "Foreground": "#267f99", "Background": "None", "Style": "None" },
-              "CodePreprocessor": { "Foreground": "#0000ff", "Background": "None", "Style": "None" },
-              "CodeIdentifier": { "Foreground": "#001080", "Background": "None", "Style": "None" },
-              "CodeConstant": { "Foreground": "#0000ff", "Background": "None", "Style": "None" },
-              "CodePunctuation": { "Foreground": "#000000", "Background": "None", "Style": "None" },
-              "CodeFunctionName": { "Foreground": "#795e26", "Background": "None", "Style": "None" },
-              "CodeAttribute": { "Foreground": "#ff0000", "Background": "None", "Style": "None" }
-            }
+          "Focus": {
+            "Foreground": "Black",
+            "Background": "Gainsboro",
+            "Style": "None"
           },
-          {
-            "Dialog": {
-              "Normal": {
-                "Foreground": "DimGray",
-                "Background": "WhiteSmoke",
-                "Style": "None"
-              },
-              "Focus": {
-                "Foreground": "Black",
-                "Background": "Gainsboro",
-                "Style": "None"
-              },
-              "HotNormal": {
-                "Foreground": "Gray",
-                "Background": "WhiteSmoke",
-                "Style": "Underline"
-              },
-              "Disabled": {
-                "Foreground": "LightGray",
-                "Background": "WhiteSmoke",
-                "Style": "Faint"
-              },
-              "HotFocus": {
-                "Foreground": "Black",
-                "Background": "Gainsboro",
-                "Style": "Underline"
-              },
-              "Active": {
-                "Foreground": "Black",
-                "Background": "White",
-                "Style": "Bold"
-              },
-              "HotActive": {
-                "Foreground": "Black",
-                "Background": "White",
-                "Style": "Underline,Bold"
-              },
-              "Highlight": {
-                "Foreground": "Black",
-                "Background": "LightGray",
-                "Style": "None"
-              },
-              "Editable": {
-                "Foreground": "Black",
-                "Background": "LemonChiffon",
-                "Style": "None"
-              },
-              "ReadOnly": {
-                "Foreground": "Gray",
-                "Background": "WhiteSmoke",
-                "Style": "Italic"
-              }
-            }
+          "HotNormal": {
+            "Foreground": "Gray",
+            "Background": "WhiteSmoke",
+            "Style": "Underline"
           },
-          {
-            "Menu": {
-              "Normal": {
-                "Foreground": "DimGray",
-                "Background": "White",
-                "Style": "Bold"
-              },
-              "Focus": {
-                "Foreground": "Black",
-                "Background": "Gainsboro",
-                "Style": "Bold"
-              },
-              "HotNormal": {
-                "Foreground": "Gray",
-                "Background": "White",
-                "Style": "Underline,Bold"
-              },
-              "Disabled": {
-                "Foreground": "LightGray",
-                "Background": "WhiteSmoke",
-                "Style": "Faint"
-              },
-              "HotFocus": {
-                "Foreground": "Black",
-                "Background": "Gainsboro",
-                "Style": "Underline,Bold"
-              },
-              "Active": {
-                "Foreground": "Black",
-                "Background": "WhiteSmoke",
-                "Style": "Bold"
-              },
-              "HotActive": {
-                "Foreground": "Black",
-                "Background": "WhiteSmoke",
-                "Style": "Underline,Bold"
-              },
-              "Highlight": {
-                "Foreground": "Black",
-                "Background": "LemonChiffon",
-                "Style": "None"
-              },
-              "Editable": {
-                "Foreground": "DimGray",
-                "Background": "White",
-                "Style": "None"
-              },
-              "ReadOnly": {
-                "Foreground": "Gray",
-                "Background": "White",
-                "Style": "Italic"
-              }
-            }
+          "Disabled": {
+            "Foreground": "LightGray",
+            "Background": "WhiteSmoke",
+            "Style": "Faint"
           },
-          {
-            "Error": {
-              "Normal": {
-                "Foreground": "FireBrick",
-                "Background": "WhiteSmoke",
-                "Style": "None"
-              },
-              "Focus": {
-                "Foreground": "WhiteSmoke",
-                "Background": "FireBrick",
-                "Style": "None"
-              },
-              "HotNormal": {
-                "Foreground": "LightCoral",
-                "Background": "WhiteSmoke",
-                "Style": "Underline"
-              },
-              "Disabled": {
-                "Foreground": "LightGray",
-                "Background": "WhiteSmoke",
-                "Style": "Faint"
-              },
-              "HotFocus": {
-                "Foreground": "WhiteSmoke",
-                "Background": "FireBrick",
-                "Style": "Underline"
-              },
-              "Active": {
-                "Foreground": "WhiteSmoke",
-                "Background": "LightCoral",
-                "Style": "Bold"
-              },
-              "HotActive": {
-                "Foreground": "WhiteSmoke",
-                "Background": "LightCoral",
-                "Style": "Underline,Bold"
-              },
-              "Highlight": {
-                "Foreground": "WhiteSmoke",
-                "Background": "FireBrick",
-                "Style": "None"
-              },
-              "Editable": {
-                "Foreground": "Black",
-                "Background": "WhiteSmoke",
-                "Style": "None"
-              },
-              "ReadOnly": {
-                "Foreground": "Gray",
-                "Background": "WhiteSmoke",
-                "Style": "Italic"
-              }
-            }
+          "HotFocus": {
+            "Foreground": "Black",
+            "Background": "Gainsboro",
+            "Style": "Underline"
+          },
+          "Active": {
+            "Foreground": "Black",
+            "Background": "White",
+            "Style": "Bold"
+          },
+          "HotActive": {
+            "Foreground": "Black",
+            "Background": "White",
+            "Style": "Underline,Bold"
+          },
+          "Highlight": {
+            "Foreground": "Black",
+            "Background": "LightGray",
+            "Style": "None"
+          },
+          "Editable": {
+            "Foreground": "Black",
+            "Background": "LemonChiffon",
+            "Style": "None"
+          },
+          "ReadOnly": {
+            "Foreground": "Gray",
+            "Background": "WhiteSmoke",
+            "Style": "Italic"
           }
-        ]
+        },
+        "Base": {
+          "Normal": {
+            "Foreground": "Gray",
+            "Background": "None",
+            "Style": "None"
+          },
+          "Focus": {
+            "Foreground": "Black",
+            "Background": "Gainsboro",
+            "Style": "None"
+          },
+          "HotNormal": {
+            "Foreground": "Silver",
+            "Background": "None",
+            "Style": "Underline"
+          },
+          "Disabled": {
+            "Foreground": "LightGray",
+            "Background": "None",
+            "Style": "Faint"
+          },
+          "HotFocus": {
+            "Foreground": "Black",
+            "Background": "Gainsboro",
+            "Style": "Underline"
+          },
+          "Active": {
+            "Foreground": "Black",
+            "Background": "White",
+            "Style": "Bold"
+          },
+          "HotActive": {
+            "Foreground": "Black",
+            "Background": "White",
+            "Style": "Underline,Bold"
+          },
+          "Highlight": {
+            "Foreground": "Black",
+            "Background": "LightGray",
+            "Style": "None"
+          },
+          "Editable": {
+            "Foreground": "Black",
+            "Background": "LemonChiffon",
+            "Style": "None"
+          },
+          "ReadOnly": {
+            "Foreground": "Gray",
+            "Background": "None",
+            "Style": "Italic"
+          },
+          "Code": {
+            "Foreground": "Black",
+            "Background": "WhiteSmoke",
+            "Style": "None"
+          },
+          "CodeComment": {
+            "Foreground": "#008000",
+            "Background": "None",
+            "Style": "None"
+          },
+          "CodeKeyword": {
+            "Foreground": "#0000ff",
+            "Background": "None",
+            "Style": "None"
+          },
+          "CodeString": {
+            "Foreground": "#a31515",
+            "Background": "None",
+            "Style": "None"
+          },
+          "CodeNumber": {
+            "Foreground": "#098658",
+            "Background": "None",
+            "Style": "None"
+          },
+          "CodeOperator": {
+            "Foreground": "#000000",
+            "Background": "None",
+            "Style": "None"
+          },
+          "CodeType": {
+            "Foreground": "#267f99",
+            "Background": "None",
+            "Style": "None"
+          },
+          "CodePreprocessor": {
+            "Foreground": "#0000ff",
+            "Background": "None",
+            "Style": "None"
+          },
+          "CodeIdentifier": {
+            "Foreground": "#001080",
+            "Background": "None",
+            "Style": "None"
+          },
+          "CodeConstant": {
+            "Foreground": "#0000ff",
+            "Background": "None",
+            "Style": "None"
+          },
+          "CodePunctuation": {
+            "Foreground": "#000000",
+            "Background": "None",
+            "Style": "None"
+          },
+          "CodeFunctionName": {
+            "Foreground": "#795e26",
+            "Background": "None",
+            "Style": "None"
+          },
+          "CodeAttribute": {
+            "Foreground": "#ff0000",
+            "Background": "None",
+            "Style": "None"
+          }
+        },
+        "Dialog": {
+          "Normal": {
+            "Foreground": "DimGray",
+            "Background": "WhiteSmoke",
+            "Style": "None"
+          },
+          "Focus": {
+            "Foreground": "Black",
+            "Background": "Gainsboro",
+            "Style": "None"
+          },
+          "HotNormal": {
+            "Foreground": "Gray",
+            "Background": "WhiteSmoke",
+            "Style": "Underline"
+          },
+          "Disabled": {
+            "Foreground": "LightGray",
+            "Background": "WhiteSmoke",
+            "Style": "Faint"
+          },
+          "HotFocus": {
+            "Foreground": "Black",
+            "Background": "Gainsboro",
+            "Style": "Underline"
+          },
+          "Active": {
+            "Foreground": "Black",
+            "Background": "White",
+            "Style": "Bold"
+          },
+          "HotActive": {
+            "Foreground": "Black",
+            "Background": "White",
+            "Style": "Underline,Bold"
+          },
+          "Highlight": {
+            "Foreground": "Black",
+            "Background": "LightGray",
+            "Style": "None"
+          },
+          "Editable": {
+            "Foreground": "Black",
+            "Background": "LemonChiffon",
+            "Style": "None"
+          },
+          "ReadOnly": {
+            "Foreground": "Gray",
+            "Background": "WhiteSmoke",
+            "Style": "Italic"
+          }
+        },
+        "Menu": {
+          "Normal": {
+            "Foreground": "DimGray",
+            "Background": "White",
+            "Style": "Bold"
+          },
+          "Focus": {
+            "Foreground": "Black",
+            "Background": "Gainsboro",
+            "Style": "Bold"
+          },
+          "HotNormal": {
+            "Foreground": "Gray",
+            "Background": "White",
+            "Style": "Underline,Bold"
+          },
+          "Disabled": {
+            "Foreground": "LightGray",
+            "Background": "WhiteSmoke",
+            "Style": "Faint"
+          },
+          "HotFocus": {
+            "Foreground": "Black",
+            "Background": "Gainsboro",
+            "Style": "Underline,Bold"
+          },
+          "Active": {
+            "Foreground": "Black",
+            "Background": "WhiteSmoke",
+            "Style": "Bold"
+          },
+          "HotActive": {
+            "Foreground": "Black",
+            "Background": "WhiteSmoke",
+            "Style": "Underline,Bold"
+          },
+          "Highlight": {
+            "Foreground": "Black",
+            "Background": "LemonChiffon",
+            "Style": "None"
+          },
+          "Editable": {
+            "Foreground": "DimGray",
+            "Background": "White",
+            "Style": "None"
+          },
+          "ReadOnly": {
+            "Foreground": "Gray",
+            "Background": "White",
+            "Style": "Italic"
+          }
+        },
+        "Error": {
+          "Normal": {
+            "Foreground": "FireBrick",
+            "Background": "WhiteSmoke",
+            "Style": "None"
+          },
+          "Focus": {
+            "Foreground": "WhiteSmoke",
+            "Background": "FireBrick",
+            "Style": "None"
+          },
+          "HotNormal": {
+            "Foreground": "LightCoral",
+            "Background": "WhiteSmoke",
+            "Style": "Underline"
+          },
+          "Disabled": {
+            "Foreground": "LightGray",
+            "Background": "WhiteSmoke",
+            "Style": "Faint"
+          },
+          "HotFocus": {
+            "Foreground": "WhiteSmoke",
+            "Background": "FireBrick",
+            "Style": "Underline"
+          },
+          "Active": {
+            "Foreground": "WhiteSmoke",
+            "Background": "LightCoral",
+            "Style": "Bold"
+          },
+          "HotActive": {
+            "Foreground": "WhiteSmoke",
+            "Background": "LightCoral",
+            "Style": "Underline,Bold"
+          },
+          "Highlight": {
+            "Foreground": "WhiteSmoke",
+            "Background": "FireBrick",
+            "Style": "None"
+          },
+          "Editable": {
+            "Foreground": "Black",
+            "Background": "WhiteSmoke",
+            "Style": "None"
+          },
+          "ReadOnly": {
+            "Foreground": "Gray",
+            "Background": "WhiteSmoke",
+            "Style": "Italic"
+          }
+        }
       }
     },
-    {
-      "Green Phosphor": {
-        "Dialog.DefaultShadow": "None",
-        "FrameView.DefaultBorderStyle": "Single",
-        "Window.DefaultBorderStyle": "Single",
-        "MessageBox.DefaultBorderStyle": "Single",
-        "Button.DefaultShadow": "None",
-        "Menu.DefaultBorderStyle": "Single",
-        "Schemes": [
-          {
-            "Accent": {
-              "Normal": {
-                "Foreground": "GreenPhosphor",
-                "Background": "Charcoal",
-                "Style": "None"
-              },
-              "Active": {
-                "Foreground": "GreenPhosphor",
-                "Background": "Charcoal",
-                "Style": "Bold"
-              },
-              "Highlight": {
-                "Foreground": "GreenPhosphor",
-                "Background": "Charcoal",
-                "Style": "Italic"
-              },
-              "Editable": {
-                "Foreground": "GreenPhosphor",
-                "Background": "Onyx",
-                "Style": "None"
-              },
-              "ReadOnly": {
-                "Foreground": "GreenPhosphor",
-                "Background": "Onyx",
-                "Style": "Faint"
-              }
-            }
+    "Green Phosphor": {
+      "Dialog": {
+        "DefaultShadow": "None"
+      },
+      "FrameView": {
+        "DefaultBorderStyle": "Single"
+      },
+      "Window": {
+        "DefaultBorderStyle": "Single"
+      },
+      "MessageBox": {
+        "DefaultBorderStyle": "Single"
+      },
+      "Button": {
+        "DefaultShadow": "None"
+      },
+      "Menu": {
+        "DefaultBorderStyle": "Single"
+      },
+      "Schemes": {
+        "Accent": {
+          "Normal": {
+            "Foreground": "GreenPhosphor",
+            "Background": "Charcoal",
+            "Style": "None"
           },
-          {
-            "Base": {
-              "Normal": {
-                "Foreground": "GreenPhosphor",
-                "Background": "None",
-                "Style": "None"
-              },
-              "Active": {
-                "Foreground": "GreenPhosphor",
-                "Background": "None",
-                "Style": "Bold"
-              },
-              "Highlight": {
-                "Foreground": "GreenPhosphor",
-                "Background": "None",
-                "Style": "Italic"
-              },
-              "Editable": {
-                "Foreground": "GreenPhosphor",
-                "Background": "Charcoal",
-                "Style": "None"
-              },
-              "ReadOnly": {
-                "Foreground": "GreenPhosphor",
-                "Background": "Charcoal",
-                "Style": "Faint"
-              },
-              "Code": { "Foreground": "GreenPhosphor", "Background": "Charcoal", "Style": "None" },
-              "CodeComment": { "Foreground": "#7cff7c", "Background": "None", "Style": "None" },
-              "CodeKeyword": { "Foreground": "#b6ffb6", "Background": "None", "Style": "None" },
-              "CodeString": { "Foreground": "#9cff9c", "Background": "None", "Style": "None" },
-              "CodeNumber": { "Foreground": "#ccffcc", "Background": "None", "Style": "None" },
-              "CodeOperator": { "Foreground": "GreenPhosphor", "Background": "None", "Style": "None" },
-              "CodeType": { "Foreground": "#80ffd4", "Background": "None", "Style": "None" },
-              "CodePreprocessor": { "Foreground": "#d0ffd0", "Background": "None", "Style": "None" },
-              "CodeIdentifier": { "Foreground": "GreenPhosphor", "Background": "None", "Style": "None" },
-              "CodeConstant": { "Foreground": "#b6ffb6", "Background": "None", "Style": "None" },
-              "CodePunctuation": { "Foreground": "GreenPhosphor", "Background": "None", "Style": "None" },
-              "CodeFunctionName": { "Foreground": "#e0ffe0", "Background": "None", "Style": "None" },
-              "CodeAttribute": { "Foreground": "#80ffd4", "Background": "None", "Style": "None" }
-            }
+          "Active": {
+            "Foreground": "GreenPhosphor",
+            "Background": "Charcoal",
+            "Style": "Bold"
           },
-          {
-            "Dialog": {
-              "Normal": {
-                "Foreground": "Black",
-                "Background": "GreenPhosphor",
-                "Style": "Bold"
-              },
-              "Active": {
-                "Foreground": "Black",
-                "Background": "GreenPhosphor",
-                "Style": "Bold"
-              },
-              "Highlight": {
-                "Foreground": "Black",
-                "Background": "GreenPhosphor",
-                "Style": "None"
-              },
-              "Editable": {
-                "Foreground": "GreenPhosphor",
-                "Background": "Charcoal",
-                "Style": "None"
-              },
-              "ReadOnly": {
-                "Foreground": "GreenPhosphor",
-                "Background": "Charcoal",
-                "Style": "Faint"
-              }
-            }
+          "Highlight": {
+            "Foreground": "GreenPhosphor",
+            "Background": "Charcoal",
+            "Style": "Italic"
           },
-          {
-            "Menu": {
-              "Normal": {
-                "Foreground": "Black",
-                "Background": "GreenPhosphor",
-                "Style": "Bold"
-              },
-              "Active": {
-                "Foreground": "Black",
-                "Background": "GreenPhosphor",
-                "Style": "Bold"
-              },
-              "Highlight": {
-                "Foreground": "Black",
-                "Background": "GreenPhosphor",
-                "Style": "None"
-              },
-              "Editable": {
-                "Foreground": "GreenPhosphor",
-                "Background": "Charcoal",
-                "Style": "None"
-              },
-              "ReadOnly": {
-                "Foreground": "GreenPhosphor",
-                "Background": "Charcoal",
-                "Style": "Faint"
-              }
-            }
+          "Editable": {
+            "Foreground": "GreenPhosphor",
+            "Background": "Onyx",
+            "Style": "None"
           },
-          {
-            "Error": {
-              "Normal": {
-                "Foreground": "GreenPhosphor",
-                "Background": "Black",
-                "Style": "Italic"
-              },
-              "Active": {
-                "Foreground": "GreenPhosphor",
-                "Background": "Black",
-                "Style": "Bold,Italic"
-              },
-              "Highlight": {
-                "Foreground": "GreenPhosphor",
-                "Background": "Black",
-                "Style": "Italic"
-              },
-              "Editable": {
-                "Foreground": "GreenPhosphor",
-                "Background": "Charcoal",
-                "Style": "Italic"
-              },
-              "ReadOnly": {
-                "Foreground": "GreenPhosphor",
-                "Background": "Charcoal",
-                "Style": "Faint,Italic"
-              }
-            }
+          "ReadOnly": {
+            "Foreground": "GreenPhosphor",
+            "Background": "Onyx",
+            "Style": "Faint"
           }
-        ]
+        },
+        "Base": {
+          "Normal": {
+            "Foreground": "GreenPhosphor",
+            "Background": "None",
+            "Style": "None"
+          },
+          "Active": {
+            "Foreground": "GreenPhosphor",
+            "Background": "None",
+            "Style": "Bold"
+          },
+          "Highlight": {
+            "Foreground": "GreenPhosphor",
+            "Background": "None",
+            "Style": "Italic"
+          },
+          "Editable": {
+            "Foreground": "GreenPhosphor",
+            "Background": "Charcoal",
+            "Style": "None"
+          },
+          "ReadOnly": {
+            "Foreground": "GreenPhosphor",
+            "Background": "Charcoal",
+            "Style": "Faint"
+          },
+          "Code": {
+            "Foreground": "GreenPhosphor",
+            "Background": "Charcoal",
+            "Style": "None"
+          },
+          "CodeComment": {
+            "Foreground": "#7cff7c",
+            "Background": "None",
+            "Style": "None"
+          },
+          "CodeKeyword": {
+            "Foreground": "#b6ffb6",
+            "Background": "None",
+            "Style": "None"
+          },
+          "CodeString": {
+            "Foreground": "#9cff9c",
+            "Background": "None",
+            "Style": "None"
+          },
+          "CodeNumber": {
+            "Foreground": "#ccffcc",
+            "Background": "None",
+            "Style": "None"
+          },
+          "CodeOperator": {
+            "Foreground": "GreenPhosphor",
+            "Background": "None",
+            "Style": "None"
+          },
+          "CodeType": {
+            "Foreground": "#80ffd4",
+            "Background": "None",
+            "Style": "None"
+          },
+          "CodePreprocessor": {
+            "Foreground": "#d0ffd0",
+            "Background": "None",
+            "Style": "None"
+          },
+          "CodeIdentifier": {
+            "Foreground": "GreenPhosphor",
+            "Background": "None",
+            "Style": "None"
+          },
+          "CodeConstant": {
+            "Foreground": "#b6ffb6",
+            "Background": "None",
+            "Style": "None"
+          },
+          "CodePunctuation": {
+            "Foreground": "GreenPhosphor",
+            "Background": "None",
+            "Style": "None"
+          },
+          "CodeFunctionName": {
+            "Foreground": "#e0ffe0",
+            "Background": "None",
+            "Style": "None"
+          },
+          "CodeAttribute": {
+            "Foreground": "#80ffd4",
+            "Background": "None",
+            "Style": "None"
+          }
+        },
+        "Dialog": {
+          "Normal": {
+            "Foreground": "Black",
+            "Background": "GreenPhosphor",
+            "Style": "Bold"
+          },
+          "Active": {
+            "Foreground": "Black",
+            "Background": "GreenPhosphor",
+            "Style": "Bold"
+          },
+          "Highlight": {
+            "Foreground": "Black",
+            "Background": "GreenPhosphor",
+            "Style": "None"
+          },
+          "Editable": {
+            "Foreground": "GreenPhosphor",
+            "Background": "Charcoal",
+            "Style": "None"
+          },
+          "ReadOnly": {
+            "Foreground": "GreenPhosphor",
+            "Background": "Charcoal",
+            "Style": "Faint"
+          }
+        },
+        "Menu": {
+          "Normal": {
+            "Foreground": "Black",
+            "Background": "GreenPhosphor",
+            "Style": "Bold"
+          },
+          "Active": {
+            "Foreground": "Black",
+            "Background": "GreenPhosphor",
+            "Style": "Bold"
+          },
+          "Highlight": {
+            "Foreground": "Black",
+            "Background": "GreenPhosphor",
+            "Style": "None"
+          },
+          "Editable": {
+            "Foreground": "GreenPhosphor",
+            "Background": "Charcoal",
+            "Style": "None"
+          },
+          "ReadOnly": {
+            "Foreground": "GreenPhosphor",
+            "Background": "Charcoal",
+            "Style": "Faint"
+          }
+        },
+        "Error": {
+          "Normal": {
+            "Foreground": "GreenPhosphor",
+            "Background": "Black",
+            "Style": "Italic"
+          },
+          "Active": {
+            "Foreground": "GreenPhosphor",
+            "Background": "Black",
+            "Style": "Bold,Italic"
+          },
+          "Highlight": {
+            "Foreground": "GreenPhosphor",
+            "Background": "Black",
+            "Style": "Italic"
+          },
+          "Editable": {
+            "Foreground": "GreenPhosphor",
+            "Background": "Charcoal",
+            "Style": "Italic"
+          },
+          "ReadOnly": {
+            "Foreground": "GreenPhosphor",
+            "Background": "Charcoal",
+            "Style": "Faint,Italic"
+          }
+        }
       }
     },
-    {
-      "Amber Phosphor": {
-        "Dialog.DefaultShadow": "None",
-        "FrameView.DefaultBorderStyle": "Single",
-        "Window.DefaultBorderStyle": "Single",
-        "MessageBox.DefaultBorderStyle": "Single",
-        "Button.DefaultShadow": "None",
-        "Menu.DefaultBorderStyle": "Single",
-        "Schemes": [
-          {
-            "Accent": {
-              "Normal": {
-                "Foreground": "AmberPhosphor",
-                "Background": "Charcoal",
-                "Style": "None"
-              },
-              "Active": {
-                "Foreground": "AmberPhosphor",
-                "Background": "Charcoal",
-                "Style": "Bold"
-              },
-              "Highlight": {
-                "Foreground": "AmberPhosphor",
-                "Background": "Charcoal",
-                "Style": "Italic"
-              },
-              "Editable": {
-                "Foreground": "AmberPhosphor",
-                "Background": "Onyx",
-                "Style": "None"
-              },
-              "ReadOnly": {
-                "Foreground": "AmberPhosphor",
-                "Background": "Onyx",
-                "Style": "Faint"
-              }
-            }
+    "Amber Phosphor": {
+      "Dialog": {
+        "DefaultShadow": "None"
+      },
+      "FrameView": {
+        "DefaultBorderStyle": "Single"
+      },
+      "Window": {
+        "DefaultBorderStyle": "Single"
+      },
+      "MessageBox": {
+        "DefaultBorderStyle": "Single"
+      },
+      "Button": {
+        "DefaultShadow": "None"
+      },
+      "Menu": {
+        "DefaultBorderStyle": "Single"
+      },
+      "Schemes": {
+        "Accent": {
+          "Normal": {
+            "Foreground": "AmberPhosphor",
+            "Background": "Charcoal",
+            "Style": "None"
           },
-          {
-            "Base": {
-              "Normal": {
-                "Foreground": "AmberPhosphor",
-                "Background": "None",
-                "Style": "None"
-              },
-              "Active": {
-                "Foreground": "AmberPhosphor",
-                "Background": "None",
-                "Style": "Bold"
-              },
-              "Highlight": {
-                "Foreground": "AmberPhosphor",
-                "Background": "None",
-                "Style": "Italic"
-              },
-              "Editable": {
-                "Foreground": "AmberPhosphor",
-                "Background": "Charcoal",
-                "Style": "None"
-              },
-              "ReadOnly": {
-                "Foreground": "AmberPhosphor",
-                "Background": "Charcoal",
-                "Style": "Faint"
-              },
-              "Code": { "Foreground": "AmberPhosphor", "Background": "Charcoal", "Style": "None" },
-              "CodeComment": { "Foreground": "#d08a00", "Background": "None", "Style": "None" },
-              "CodeKeyword": { "Foreground": "#ffd166", "Background": "None", "Style": "None" },
-              "CodeString": { "Foreground": "#ffb000", "Background": "None", "Style": "None" },
-              "CodeNumber": { "Foreground": "#ffe08a", "Background": "None", "Style": "None" },
-              "CodeOperator": { "Foreground": "AmberPhosphor", "Background": "None", "Style": "None" },
-              "CodeType": { "Foreground": "#ffc04d", "Background": "None", "Style": "None" },
-              "CodePreprocessor": { "Foreground": "#ff9f1c", "Background": "None", "Style": "None" },
-              "CodeIdentifier": { "Foreground": "AmberPhosphor", "Background": "None", "Style": "None" },
-              "CodeConstant": { "Foreground": "#ffd166", "Background": "None", "Style": "None" },
-              "CodePunctuation": { "Foreground": "AmberPhosphor", "Background": "None", "Style": "None" },
-              "CodeFunctionName": { "Foreground": "#fff0a6", "Background": "None", "Style": "None" },
-              "CodeAttribute": { "Foreground": "#ffc04d", "Background": "None", "Style": "None" }
-            }
+          "Active": {
+            "Foreground": "AmberPhosphor",
+            "Background": "Charcoal",
+            "Style": "Bold"
           },
-          {
-            "Dialog": {
-              "Normal": {
-                "Foreground": "Black",
-                "Background": "AmberPhosphor",
-                "Style": "Bold"
-              },
-              "Active": {
-                "Foreground": "Black",
-                "Background": "AmberPhosphor",
-                "Style": "Bold"
-              },
-              "Highlight": {
-                "Foreground": "Black",
-                "Background": "AmberPhosphor",
-                "Style": "None"
-              },
-              "Editable": {
-                "Foreground": "AmberPhosphor",
-                "Background": "Charcoal",
-                "Style": "None"
-              },
-              "ReadOnly": {
-                "Foreground": "AmberPhosphor",
-                "Background": "Charcoal",
-                "Style": "Faint"
-              }
-            }
+          "Highlight": {
+            "Foreground": "AmberPhosphor",
+            "Background": "Charcoal",
+            "Style": "Italic"
           },
-          {
-            "Menu": {
-              "Normal": {
-                "Foreground": "Black",
-                "Background": "AmberPhosphor",
-                "Style": "Bold"
-              },
-              "Active": {
-                "Foreground": "Black",
-                "Background": "AmberPhosphor",
-                "Style": "Bold"
-              },
-              "Highlight": {
-                "Foreground": "Black",
-                "Background": "AmberPhosphor",
-                "Style": "None"
-              },
-              "Editable": {
-                "Foreground": "AmberPhosphor",
-                "Background": "Charcoal",
-                "Style": "None"
-              },
-              "ReadOnly": {
-                "Foreground": "AmberPhosphor",
-                "Background": "Charcoal",
-                "Style": "Faint"
-              }
-            }
+          "Editable": {
+            "Foreground": "AmberPhosphor",
+            "Background": "Onyx",
+            "Style": "None"
           },
-          {
-            "Error": {
-              "Normal": {
-                "Foreground": "AmberPhosphor",
-                "Background": "Black",
-                "Style": "Italic"
-              },
-              "Active": {
-                "Foreground": "AmberPhosphor",
-                "Background": "Black",
-                "Style": "Bold,Italic"
-              },
-              "Highlight": {
-                "Foreground": "AmberPhosphor",
-                "Background": "Black",
-                "Style": "Italic"
-              },
-              "Editable": {
-                "Foreground": "AmberPhosphor",
-                "Background": "Charcoal",
-                "Style": "Italic"
-              },
-              "ReadOnly": {
-                "Foreground": "AmberPhosphor",
-                "Background": "Charcoal",
-                "Style": "Faint,Italic"
-              }
-            }
+          "ReadOnly": {
+            "Foreground": "AmberPhosphor",
+            "Background": "Onyx",
+            "Style": "Faint"
           }
-        ]
+        },
+        "Base": {
+          "Normal": {
+            "Foreground": "AmberPhosphor",
+            "Background": "None",
+            "Style": "None"
+          },
+          "Active": {
+            "Foreground": "AmberPhosphor",
+            "Background": "None",
+            "Style": "Bold"
+          },
+          "Highlight": {
+            "Foreground": "AmberPhosphor",
+            "Background": "None",
+            "Style": "Italic"
+          },
+          "Editable": {
+            "Foreground": "AmberPhosphor",
+            "Background": "Charcoal",
+            "Style": "None"
+          },
+          "ReadOnly": {
+            "Foreground": "AmberPhosphor",
+            "Background": "Charcoal",
+            "Style": "Faint"
+          },
+          "Code": {
+            "Foreground": "AmberPhosphor",
+            "Background": "Charcoal",
+            "Style": "None"
+          },
+          "CodeComment": {
+            "Foreground": "#d08a00",
+            "Background": "None",
+            "Style": "None"
+          },
+          "CodeKeyword": {
+            "Foreground": "#ffd166",
+            "Background": "None",
+            "Style": "None"
+          },
+          "CodeString": {
+            "Foreground": "#ffb000",
+            "Background": "None",
+            "Style": "None"
+          },
+          "CodeNumber": {
+            "Foreground": "#ffe08a",
+            "Background": "None",
+            "Style": "None"
+          },
+          "CodeOperator": {
+            "Foreground": "AmberPhosphor",
+            "Background": "None",
+            "Style": "None"
+          },
+          "CodeType": {
+            "Foreground": "#ffc04d",
+            "Background": "None",
+            "Style": "None"
+          },
+          "CodePreprocessor": {
+            "Foreground": "#ff9f1c",
+            "Background": "None",
+            "Style": "None"
+          },
+          "CodeIdentifier": {
+            "Foreground": "AmberPhosphor",
+            "Background": "None",
+            "Style": "None"
+          },
+          "CodeConstant": {
+            "Foreground": "#ffd166",
+            "Background": "None",
+            "Style": "None"
+          },
+          "CodePunctuation": {
+            "Foreground": "AmberPhosphor",
+            "Background": "None",
+            "Style": "None"
+          },
+          "CodeFunctionName": {
+            "Foreground": "#fff0a6",
+            "Background": "None",
+            "Style": "None"
+          },
+          "CodeAttribute": {
+            "Foreground": "#ffc04d",
+            "Background": "None",
+            "Style": "None"
+          }
+        },
+        "Dialog": {
+          "Normal": {
+            "Foreground": "Black",
+            "Background": "AmberPhosphor",
+            "Style": "Bold"
+          },
+          "Active": {
+            "Foreground": "Black",
+            "Background": "AmberPhosphor",
+            "Style": "Bold"
+          },
+          "Highlight": {
+            "Foreground": "Black",
+            "Background": "AmberPhosphor",
+            "Style": "None"
+          },
+          "Editable": {
+            "Foreground": "AmberPhosphor",
+            "Background": "Charcoal",
+            "Style": "None"
+          },
+          "ReadOnly": {
+            "Foreground": "AmberPhosphor",
+            "Background": "Charcoal",
+            "Style": "Faint"
+          }
+        },
+        "Menu": {
+          "Normal": {
+            "Foreground": "Black",
+            "Background": "AmberPhosphor",
+            "Style": "Bold"
+          },
+          "Active": {
+            "Foreground": "Black",
+            "Background": "AmberPhosphor",
+            "Style": "Bold"
+          },
+          "Highlight": {
+            "Foreground": "Black",
+            "Background": "AmberPhosphor",
+            "Style": "None"
+          },
+          "Editable": {
+            "Foreground": "AmberPhosphor",
+            "Background": "Charcoal",
+            "Style": "None"
+          },
+          "ReadOnly": {
+            "Foreground": "AmberPhosphor",
+            "Background": "Charcoal",
+            "Style": "Faint"
+          }
+        },
+        "Error": {
+          "Normal": {
+            "Foreground": "AmberPhosphor",
+            "Background": "Black",
+            "Style": "Italic"
+          },
+          "Active": {
+            "Foreground": "AmberPhosphor",
+            "Background": "Black",
+            "Style": "Bold,Italic"
+          },
+          "Highlight": {
+            "Foreground": "AmberPhosphor",
+            "Background": "Black",
+            "Style": "Italic"
+          },
+          "Editable": {
+            "Foreground": "AmberPhosphor",
+            "Background": "Charcoal",
+            "Style": "Italic"
+          },
+          "ReadOnly": {
+            "Foreground": "AmberPhosphor",
+            "Background": "Charcoal",
+            "Style": "Faint,Italic"
+          }
+        }
       }
     },
-    {
-      "8-Bit": {
-        "Dialog.DefaultShadow": "None",
-        "FrameView.DefaultBorderStyle": "Single",
-        "Window.DefaultBorderStyle": "Single",
-        "MessageBox.DefaultBorderStyle": "Single",
-        "Button.DefaultShadow": "None",
-        "Menu.DefaultBorderStyle": "None",
-        "Glyphs.LeftBracket": "[",
-        "Glyphs.RightBracket": "]",
-        "Glyphs.CheckStateChecked": "X",
-        "Glyphs.CheckStateUnChecked": "O",
-        "Glyphs.CheckStateNone": " ",
-        "Glyphs.Selected": "*",
-        "Glyphs.UnSelected": " ",
-        "Glyphs.RightArrow": ">",
-        "Glyphs.LeftArrow": "<",
-        "Glyphs.DownArrow": "v",
-        "Glyphs.UpArrow": "^",
-        "Glyphs.LeftDefaultIndicator": ">",
-        "Glyphs.RightDefaultIndicator": "<",
-        "Glyphs.BlocksMeterSegment": "#",
-        "Glyphs.ContinuousMeterSegment": " ",
-        "Glyphs.Stipple": ".",
-        "Glyphs.Diamond": "+",
-        "Glyphs.Close": "X",
-        "Glyphs.Minimize": "_",
-        "Glyphs.Maximize": "^",
-        "Glyphs.Dot": ".",
-        "Glyphs.DottedSquare": "#",
-        "Glyphs.BlackCircle": "O",
-        "Glyphs.Expand": "+",
-        "Glyphs.Collapse": "-",
-        "Glyphs.IdenticalTo": "=",
-        "Glyphs.Move": "+",
-        "Glyphs.SizeHorizontal": "-",
-        "Glyphs.SizeVertical": "|",
-        "Glyphs.SizeTopLeft": "/",
-        "Glyphs.SizeTopRight": "\\",
-        "Glyphs.SizeBottomRight": "/",
-        "Glyphs.SizeBottomLeft": "\\",
-        "Glyphs.Apple": "@",
-        "Glyphs.AppleBMP": "@",
-        "Glyphs.HLine": "-",
-        "Glyphs.VLine": "|",
-        "Glyphs.HLineDbl": "=",
-        "Glyphs.VLineDbl": "|",
-        "Glyphs.HLineHvDa2": "-",
-        "Glyphs.VLineHvDa2": "|",
-        "Glyphs.HLineHvDa3": "-",
-        "Glyphs.VLineHvDa3": "|",
-        "Glyphs.HLineHvDa4": "-",
-        "Glyphs.VLineHvDa4": "|",
-        "Glyphs.HLineDa2": "-",
-        "Glyphs.VLineDa2": "|",
-        "Glyphs.HLineDa3": "-",
-        "Glyphs.VLineDa3": "|",
-        "Glyphs.HLineDa4": "-",
-        "Glyphs.VLineDa4": "|",
-        "Glyphs.HLineHv": "=",
-        "Glyphs.VLineHv": "|",
-        "Glyphs.HalfLeftLine": "-",
-        "Glyphs.HalfTopLine": "|",
-        "Glyphs.HalfRightLine": "-",
-        "Glyphs.HalfBottomLine": "|",
-        "Glyphs.HalfLeftLineHv": "-",
-        "Glyphs.HalfTopLineHv": "|",
-        "Glyphs.HalfRightLineHv": "-",
-        "Glyphs.HalfBottomLineLt": "|",
-        "Glyphs.RightSideLineLtHv": "-",
-        "Glyphs.BottomSideLineLtHv": "|",
-        "Glyphs.LeftSideLineHvLt": "-",
-        "Glyphs.TopSideLineHvLt": "|",
-        "Glyphs.ULCorner": "+",
-        "Glyphs.ULCornerDbl": "+",
-        "Glyphs.ULCornerR": "+",
-        "Glyphs.ULCornerHv": "+",
-        "Glyphs.ULCornerHvLt": "+",
-        "Glyphs.ULCornerLtHv": "+",
-        "Glyphs.ULCornerDblSingle": "+",
-        "Glyphs.ULCornerSingleDbl": "+",
-        "Glyphs.LLCorner": "+",
-        "Glyphs.LLCornerHv": "+",
-        "Glyphs.LLCornerHvLt": "+",
-        "Glyphs.LLCornerLtHv": "+",
-        "Glyphs.LLCornerDbl": "+",
-        "Glyphs.LLCornerSingleDbl": "+",
-        "Glyphs.LLCornerDblSingle": "+",
-        "Glyphs.LLCornerR": "+",
-        "Glyphs.URCorner": "+",
-        "Glyphs.URCornerDbl": "+",
-        "Glyphs.URCornerR": "+",
-        "Glyphs.URCornerHv": "+",
-        "Glyphs.URCornerHvLt": "+",
-        "Glyphs.URCornerLtHv": "+",
-        "Glyphs.URCornerDblSingle": "+",
-        "Glyphs.URCornerSingleDbl": "+",
-        "Glyphs.LRCorner": "+",
-        "Glyphs.LRCornerDbl": "+",
-        "Glyphs.LRCornerR": "+",
-        "Glyphs.LRCornerHv": "+",
-        "Glyphs.LRCornerDblSingle": "+",
-        "Glyphs.LRCornerSingleDbl": "+",
-        "Glyphs.LRCornerLtHv": "+",
-        "Glyphs.LRCornerHvLt": "+",
-        "Glyphs.LeftTee": "+",
-        "Glyphs.LeftTeeDblH": "+",
-        "Glyphs.LeftTeeDblV": "+",
-        "Glyphs.LeftTeeDbl": "+",
-        "Glyphs.LeftTeeHvH": "+",
-        "Glyphs.LeftTeeHvV": "+",
-        "Glyphs.LeftTeeHvDblH": "+",
-        "Glyphs.RightTee": "+",
-        "Glyphs.RightTeeDblH": "+",
-        "Glyphs.RightTeeDblV": "+",
-        "Glyphs.RightTeeDbl": "+",
-        "Glyphs.RightTeeHvH": "+",
-        "Glyphs.RightTeeHvV": "+",
-        "Glyphs.RightTeeHvDblH": "+",
-        "Glyphs.TopTee": "+",
-        "Glyphs.TopTeeDblH": "+",
-        "Glyphs.TopTeeDblV": "+",
-        "Glyphs.TopTeeDbl": "+",
-        "Glyphs.TopTeeHvH": "+",
-        "Glyphs.TopTeeHvV": "+",
-        "Glyphs.TopTeeHvDblH": "+",
-        "Glyphs.BottomTee": "+",
-        "Glyphs.BottomTeeDblH": "+",
-        "Glyphs.BottomTeeDblV": "+",
-        "Glyphs.BottomTeeDbl": "+",
-        "Glyphs.BottomTeeHvH": "+",
-        "Glyphs.BottomTeeHvV": "+",
-        "Glyphs.BottomTeeHvDblH": "+",
-        "Glyphs.Cross": "+",
-        "Glyphs.CrossDblH": "+",
-        "Glyphs.CrossDblV": "+",
-        "Glyphs.CrossDbl": "+",
-        "Glyphs.CrossHvH": "+",
-        "Glyphs.CrossHvV": "+",
-        "Glyphs.CrossHv": "+",
-        "Glyphs.ShadowVerticalStart": "|",
-        "Glyphs.ShadowVertical": "|",
-        "Glyphs.ShadowHorizontalStart": "-",
-        "Glyphs.ShadowHorizontal": "-",
-        "Glyphs.ShadowHorizontalEnd": "-",
-        "Schemes": [
-          {
-            "Accent": {
-              "Normal": {
-                "Foreground": "White",
-                "Background": "Black"
-              },
-              "Focus": {
-                "Foreground": "Black",
-                "Background": "White"
-              },
-              "HotNormal": {
-                "Foreground": "Black",
-                "Background": "White"
-              },
-              "HotFocus": {
-                "Foreground": "White",
-                "Background": "Black"
-              },
-              "Disabled": {
-                "Foreground": "Black",
-                "Background": "Black"
-              },
-              "Active": {
-                "Foreground": "Black",
-                "Background": "White"
-              },
-              "HotActive": {
-                "Foreground": "White",
-                "Background": "Black"
-              },
-              "Highlight": {
-                "Foreground": "Black",
-                "Background": "White"
-              },
-              "Editable": {
-                "Foreground": "White",
-                "Background": "Black"
-              },
-              "ReadOnly": {
-                "Foreground": "White",
-                "Background": "Black"
-              }
-            }
+    "8-Bit": {
+      "Dialog": {
+        "DefaultShadow": "None"
+      },
+      "FrameView": {
+        "DefaultBorderStyle": "Single"
+      },
+      "Window": {
+        "DefaultBorderStyle": "Single"
+      },
+      "MessageBox": {
+        "DefaultBorderStyle": "Single"
+      },
+      "Button": {
+        "DefaultShadow": "None"
+      },
+      "Menu": {
+        "DefaultBorderStyle": "None"
+      },
+      "Glyphs": {
+        "LeftBracket": "[",
+        "RightBracket": "]",
+        "CheckStateChecked": "X",
+        "CheckStateUnChecked": "O",
+        "CheckStateNone": " ",
+        "Selected": "*",
+        "UnSelected": " ",
+        "RightArrow": ">",
+        "LeftArrow": "<",
+        "DownArrow": "v",
+        "UpArrow": "^",
+        "LeftDefaultIndicator": ">",
+        "RightDefaultIndicator": "<",
+        "BlocksMeterSegment": "#",
+        "ContinuousMeterSegment": " ",
+        "Stipple": ".",
+        "Diamond": "+",
+        "Close": "X",
+        "Minimize": "_",
+        "Maximize": "^",
+        "Dot": ".",
+        "DottedSquare": "#",
+        "BlackCircle": "O",
+        "Expand": "+",
+        "Collapse": "-",
+        "IdenticalTo": "=",
+        "Move": "+",
+        "SizeHorizontal": "-",
+        "SizeVertical": "|",
+        "SizeTopLeft": "/",
+        "SizeTopRight": "\\",
+        "SizeBottomRight": "/",
+        "SizeBottomLeft": "\\",
+        "Apple": "@",
+        "AppleBMP": "@",
+        "HLine": "-",
+        "VLine": "|",
+        "HLineDbl": "=",
+        "VLineDbl": "|",
+        "HLineHvDa2": "-",
+        "VLineHvDa2": "|",
+        "HLineHvDa3": "-",
+        "VLineHvDa3": "|",
+        "HLineHvDa4": "-",
+        "VLineHvDa4": "|",
+        "HLineDa2": "-",
+        "VLineDa2": "|",
+        "HLineDa3": "-",
+        "VLineDa3": "|",
+        "HLineDa4": "-",
+        "VLineDa4": "|",
+        "HLineHv": "=",
+        "VLineHv": "|",
+        "HalfLeftLine": "-",
+        "HalfTopLine": "|",
+        "HalfRightLine": "-",
+        "HalfBottomLine": "|",
+        "HalfLeftLineHv": "-",
+        "HalfTopLineHv": "|",
+        "HalfRightLineHv": "-",
+        "HalfBottomLineLt": "|",
+        "RightSideLineLtHv": "-",
+        "BottomSideLineLtHv": "|",
+        "LeftSideLineHvLt": "-",
+        "TopSideLineHvLt": "|",
+        "ULCorner": "+",
+        "ULCornerDbl": "+",
+        "ULCornerR": "+",
+        "ULCornerHv": "+",
+        "ULCornerHvLt": "+",
+        "ULCornerLtHv": "+",
+        "ULCornerDblSingle": "+",
+        "ULCornerSingleDbl": "+",
+        "LLCorner": "+",
+        "LLCornerHv": "+",
+        "LLCornerHvLt": "+",
+        "LLCornerLtHv": "+",
+        "LLCornerDbl": "+",
+        "LLCornerSingleDbl": "+",
+        "LLCornerDblSingle": "+",
+        "LLCornerR": "+",
+        "URCorner": "+",
+        "URCornerDbl": "+",
+        "URCornerR": "+",
+        "URCornerHv": "+",
+        "URCornerHvLt": "+",
+        "URCornerLtHv": "+",
+        "URCornerDblSingle": "+",
+        "URCornerSingleDbl": "+",
+        "LRCorner": "+",
+        "LRCornerDbl": "+",
+        "LRCornerR": "+",
+        "LRCornerHv": "+",
+        "LRCornerDblSingle": "+",
+        "LRCornerSingleDbl": "+",
+        "LRCornerLtHv": "+",
+        "LRCornerHvLt": "+",
+        "LeftTee": "+",
+        "LeftTeeDblH": "+",
+        "LeftTeeDblV": "+",
+        "LeftTeeDbl": "+",
+        "LeftTeeHvH": "+",
+        "LeftTeeHvV": "+",
+        "LeftTeeHvDblH": "+",
+        "RightTee": "+",
+        "RightTeeDblH": "+",
+        "RightTeeDblV": "+",
+        "RightTeeDbl": "+",
+        "RightTeeHvH": "+",
+        "RightTeeHvV": "+",
+        "RightTeeHvDblH": "+",
+        "TopTee": "+",
+        "TopTeeDblH": "+",
+        "TopTeeDblV": "+",
+        "TopTeeDbl": "+",
+        "TopTeeHvH": "+",
+        "TopTeeHvV": "+",
+        "TopTeeHvDblH": "+",
+        "BottomTee": "+",
+        "BottomTeeDblH": "+",
+        "BottomTeeDblV": "+",
+        "BottomTeeDbl": "+",
+        "BottomTeeHvH": "+",
+        "BottomTeeHvV": "+",
+        "BottomTeeHvDblH": "+",
+        "Cross": "+",
+        "CrossDblH": "+",
+        "CrossDblV": "+",
+        "CrossDbl": "+",
+        "CrossHvH": "+",
+        "CrossHvV": "+",
+        "CrossHv": "+",
+        "ShadowVerticalStart": "|",
+        "ShadowVertical": "|",
+        "ShadowHorizontalStart": "-",
+        "ShadowHorizontal": "-",
+        "ShadowHorizontalEnd": "-"
+      },
+      "Schemes": {
+        "Accent": {
+          "Normal": {
+            "Foreground": "White",
+            "Background": "Black"
           },
-          {
-            "Base": {
-              "Normal": {
-                "Foreground": "White",
-                "Background": "Black"
-              },
-              "Focus": {
-                "Foreground": "Black",
-                "Background": "White"
-              },
-              "HotNormal": {
-                "Foreground": "Black",
-                "Background": "White"
-              },
-              "HotFocus": {
-                "Foreground": "White",
-                "Background": "Black"
-              },
-              "Disabled": {
-                "Foreground": "Black",
-                "Background": "Black"
-              },
-              "Active": {
-                "Foreground": "Black",
-                "Background": "White"
-              },
-              "HotActive": {
-                "Foreground": "White",
-                "Background": "Black"
-              },
-              "Highlight": {
-                "Foreground": "Black",
-                "Background": "White"
-              },
-              "Editable": {
-                "Foreground": "White",
-                "Background": "Black"
-              },
-              "ReadOnly": {
-                "Foreground": "White",
-                "Background": "Black"
-              }
-            }
+          "Focus": {
+            "Foreground": "Black",
+            "Background": "White"
           },
-          {
-            "Dialog": {
-              "Normal": {
-                "Foreground": "Black",
-                "Background": "White"
-              },
-              "Focus": {
-                "Foreground": "White",
-                "Background": "Black"
-              },
-              "HotNormal": {
-                "Foreground": "White",
-                "Background": "Black"
-              },
-              "HotFocus": {
-                "Foreground": "Black",
-                "Background": "White"
-              },
-              "Disabled": {
-                "Foreground": "White",
-                "Background": "White"
-              },
-              "Active": {
-                "Foreground": "White",
-                "Background": "Black"
-              },
-              "HotActive": {
-                "Foreground": "Black",
-                "Background": "White"
-              },
-              "Highlight": {
-                "Foreground": "White",
-                "Background": "Black"
-              },
-              "Editable": {
-                "Foreground": "Black",
-                "Background": "White"
-              },
-              "ReadOnly": {
-                "Foreground": "Black",
-                "Background": "White"
-              }
-            }
+          "HotNormal": {
+            "Foreground": "Black",
+            "Background": "White"
           },
-          {
-            "Menu": {
-              "Normal": {
-                "Foreground": "Black",
-                "Background": "White"
-              },
-              "Focus": {
-                "Foreground": "White",
-                "Background": "Black"
-              },
-              "HotNormal": {
-                "Foreground": "White",
-                "Background": "Black"
-              },
-              "HotFocus": {
-                "Foreground": "Black",
-                "Background": "White"
-              },
-              "Disabled": {
-                "Foreground": "White",
-                "Background": "White"
-              },
-              "Active": {
-                "Foreground": "White",
-                "Background": "Black"
-              },
-              "HotActive": {
-                "Foreground": "Black",
-                "Background": "White"
-              },
-              "Highlight": {
-                "Foreground": "White",
-                "Background": "Black"
-              },
-              "Editable": {
-                "Foreground": "Black",
-                "Background": "White"
-              },
-              "ReadOnly": {
-                "Foreground": "Black",
-                "Background": "White"
-              }
-            }
+          "HotFocus": {
+            "Foreground": "White",
+            "Background": "Black"
           },
-          {
-            "Error": {
-              "Normal": {
-                "Foreground": "White",
-                "Background": "Black"
-              },
-              "Focus": {
-                "Foreground": "Black",
-                "Background": "White"
-              },
-              "HotNormal": {
-                "Foreground": "Black",
-                "Background": "White"
-              },
-              "HotFocus": {
-                "Foreground": "White",
-                "Background": "Black"
-              },
-              "Disabled": {
-                "Foreground": "Black",
-                "Background": "Black"
-              },
-              "Active": {
-                "Foreground": "Black",
-                "Background": "White"
-              },
-              "HotActive": {
-                "Foreground": "White",
-                "Background": "Black"
-              },
-              "Highlight": {
-                "Foreground": "Black",
-                "Background": "White"
-              },
-              "Editable": {
-                "Foreground": "White",
-                "Background": "Black"
-              },
-              "ReadOnly": {
-                "Foreground": "White",
-                "Background": "Black"
-              }
-            }
+          "Disabled": {
+            "Foreground": "Black",
+            "Background": "Black"
+          },
+          "Active": {
+            "Foreground": "Black",
+            "Background": "White"
+          },
+          "HotActive": {
+            "Foreground": "White",
+            "Background": "Black"
+          },
+          "Highlight": {
+            "Foreground": "Black",
+            "Background": "White"
+          },
+          "Editable": {
+            "Foreground": "White",
+            "Background": "Black"
+          },
+          "ReadOnly": {
+            "Foreground": "White",
+            "Background": "Black"
           }
-        ]
-
+        },
+        "Base": {
+          "Normal": {
+            "Foreground": "White",
+            "Background": "Black"
+          },
+          "Focus": {
+            "Foreground": "Black",
+            "Background": "White"
+          },
+          "HotNormal": {
+            "Foreground": "Black",
+            "Background": "White"
+          },
+          "HotFocus": {
+            "Foreground": "White",
+            "Background": "Black"
+          },
+          "Disabled": {
+            "Foreground": "Black",
+            "Background": "Black"
+          },
+          "Active": {
+            "Foreground": "Black",
+            "Background": "White"
+          },
+          "HotActive": {
+            "Foreground": "White",
+            "Background": "Black"
+          },
+          "Highlight": {
+            "Foreground": "Black",
+            "Background": "White"
+          },
+          "Editable": {
+            "Foreground": "White",
+            "Background": "Black"
+          },
+          "ReadOnly": {
+            "Foreground": "White",
+            "Background": "Black"
+          }
+        },
+        "Dialog": {
+          "Normal": {
+            "Foreground": "Black",
+            "Background": "White"
+          },
+          "Focus": {
+            "Foreground": "White",
+            "Background": "Black"
+          },
+          "HotNormal": {
+            "Foreground": "White",
+            "Background": "Black"
+          },
+          "HotFocus": {
+            "Foreground": "Black",
+            "Background": "White"
+          },
+          "Disabled": {
+            "Foreground": "White",
+            "Background": "White"
+          },
+          "Active": {
+            "Foreground": "White",
+            "Background": "Black"
+          },
+          "HotActive": {
+            "Foreground": "Black",
+            "Background": "White"
+          },
+          "Highlight": {
+            "Foreground": "White",
+            "Background": "Black"
+          },
+          "Editable": {
+            "Foreground": "Black",
+            "Background": "White"
+          },
+          "ReadOnly": {
+            "Foreground": "Black",
+            "Background": "White"
+          }
+        },
+        "Menu": {
+          "Normal": {
+            "Foreground": "Black",
+            "Background": "White"
+          },
+          "Focus": {
+            "Foreground": "White",
+            "Background": "Black"
+          },
+          "HotNormal": {
+            "Foreground": "White",
+            "Background": "Black"
+          },
+          "HotFocus": {
+            "Foreground": "Black",
+            "Background": "White"
+          },
+          "Disabled": {
+            "Foreground": "White",
+            "Background": "White"
+          },
+          "Active": {
+            "Foreground": "White",
+            "Background": "Black"
+          },
+          "HotActive": {
+            "Foreground": "Black",
+            "Background": "White"
+          },
+          "Highlight": {
+            "Foreground": "White",
+            "Background": "Black"
+          },
+          "Editable": {
+            "Foreground": "Black",
+            "Background": "White"
+          },
+          "ReadOnly": {
+            "Foreground": "Black",
+            "Background": "White"
+          }
+        },
+        "Error": {
+          "Normal": {
+            "Foreground": "White",
+            "Background": "Black"
+          },
+          "Focus": {
+            "Foreground": "Black",
+            "Background": "White"
+          },
+          "HotNormal": {
+            "Foreground": "Black",
+            "Background": "White"
+          },
+          "HotFocus": {
+            "Foreground": "White",
+            "Background": "Black"
+          },
+          "Disabled": {
+            "Foreground": "Black",
+            "Background": "Black"
+          },
+          "Active": {
+            "Foreground": "Black",
+            "Background": "White"
+          },
+          "HotActive": {
+            "Foreground": "White",
+            "Background": "Black"
+          },
+          "Highlight": {
+            "Foreground": "Black",
+            "Background": "White"
+          },
+          "Editable": {
+            "Foreground": "White",
+            "Background": "Black"
+          },
+          "ReadOnly": {
+            "Foreground": "White",
+            "Background": "Black"
+          }
+        }
       }
     }
-  ]
+  }
 }

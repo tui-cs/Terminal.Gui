@@ -49,7 +49,7 @@ public class FileSystemIconProvider
     ///     <para>
     ///         Gets or sets a flag indicating whether to use Nerd Font icons. Defaults to <see cref="NerdFonts.Enable"/>
     ///         which can be configured by end users from their <c>./.tui/config.json</c> via
-    ///         <see cref="ConfigurationManager"/>.
+    ///         <see cref="TuiConfigurationBuilder"/>.
     ///     </para>
     ///     <remarks>Enabling <see cref="UseNerdIcons"/> implicitly disables <see cref="UseUnicodeCharacters"/>.</remarks>
     /// </summary>

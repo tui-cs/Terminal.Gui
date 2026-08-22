@@ -85,9 +85,9 @@ public class ViewDefaultKeyBindingsTests
 
         Assert.NotNull (property);
 
-        var attr = property.GetCustomAttribute<ConfigurationPropertyAttribute> ();
+        System.Attribute? attr = property.GetCustomAttributes ().FirstOrDefault (a => a.GetType ().Name == "ConfigurationPropertyAttribute");
 
-        Assert.NotNull (attr);
+        Assert.Null (attr);
     }
 
     [Fact]
@@ -103,8 +103,8 @@ public class ViewDefaultKeyBindingsTests
 
         Assert.NotNull (property);
 
-        var attr = property.GetCustomAttribute<ConfigurationPropertyAttribute> ();
+        System.Attribute? attr = property.GetCustomAttributes ().FirstOrDefault (a => a.GetType ().Name == "ConfigurationPropertyAttribute");
 
-        Assert.NotNull (attr);
+        Assert.Null (attr);
     }
 }

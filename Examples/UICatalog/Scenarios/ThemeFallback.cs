@@ -31,7 +31,6 @@ public sealed class ThemeFallback : Scenario
 
     public override void Main ()
     {
-        ConfigurationManager.Enable (ConfigLocations.All);
 
         using IApplication app = Application.Create ();
         app.Init ();
@@ -70,7 +69,6 @@ public sealed class ThemeFallback : Scenario
 
                                           // Strip the leading underscore added for keyboard shortcut.
                                           ThemeManager.Theme = rawLabel [1..];
-                                          ConfigurationManager.Apply ();
 
                                           // Re-add the custom scheme to the newly-active theme so the
                                           // "Default" theme always demonstrates the found case.

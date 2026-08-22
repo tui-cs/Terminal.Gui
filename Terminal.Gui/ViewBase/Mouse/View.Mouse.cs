@@ -19,7 +19,6 @@ public partial class View // Mouse APIs
     ///         Do not set in parallelizable unit tests.
     ///     </para>
     /// </summary>
-    [ConfigurationProperty (Scope = typeof (SettingsScope))]
     public static Dictionary<Command, PlatformMouseBinding>? DefaultMouseBindings
     {
         get;
@@ -48,7 +47,6 @@ public partial class View // Mouse APIs
     ///         Do not set in parallelizable unit tests.
     ///     </para>
     /// </summary>
-    [ConfigurationProperty (Scope = typeof (SettingsScope))]
     public static Dictionary<string, Dictionary<Command, PlatformMouseBinding>>? ViewMouseBindings { get; set; }
 
     private void SetupMouse ()

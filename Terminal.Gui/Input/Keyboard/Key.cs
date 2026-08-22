@@ -1332,7 +1332,6 @@ public class Key : EventArgs, IEquatable<Key>
     #endregion
 
     /// <summary>Gets or sets the separator character used when parsing and printing Keys. E.g. Ctrl+A. The default is '+'.</summary>
-    [ConfigurationProperty (Scope = typeof (SettingsScope))]
     public static Rune Separator
     {
         get => KeySettings.Defaults.Separator;

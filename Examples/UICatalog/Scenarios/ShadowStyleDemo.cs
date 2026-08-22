@@ -1,4 +1,4 @@
-﻿namespace UICatalog.Scenarios;
+namespace UICatalog.Scenarios;
 
 [ScenarioMetadata ("ShadowStyle Demo", "Demonstrates ShadowStyle Effects.")]
 [ScenarioCategory ("Layout")]
@@ -7,7 +7,6 @@ public class ShadowStyleDemo : Scenario
 {
     public override void Main ()
     {
-        ConfigurationManager.Enable (ConfigLocations.All);
 
         using IApplication app = Application.Create ();
         app.Init ();

@@ -1,4 +1,4 @@
-﻿#nullable enable
+#nullable enable
 using System.Collections;
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
@@ -26,7 +26,6 @@ public class ListViewWithSelection : Scenario
     /// <inheritdoc/>
     public override void Main ()
     {
-        ConfigurationManager.Enable (ConfigLocations.All);
         using IApplication app = Application.Create ();
         app.Init ();
 

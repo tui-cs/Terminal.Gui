@@ -10,7 +10,7 @@ namespace Terminal.Gui.Configuration;
 /// </summary>
 /// <remarks>
 ///     <para>
-///         This is the MEC-based replacement for the legacy <see cref="ConfigurationManager"/>.
+///         This is the MEC-based configuration entry point.
 ///         It provides the same multi-source precedence (library defaults → app defaults → user files
 ///         → environment variables → runtime config) using standard Microsoft.Extensions.Configuration.
 ///     </para>
@@ -45,6 +45,11 @@ namespace Terminal.Gui.Configuration;
 /// </remarks>
 public class TuiConfigurationBuilder
 {
+    /// <summary>
+    ///     Process-wide builder used by <see cref="ThemeManager"/> and module initialization.
+    /// </summary>
+    public static TuiConfigurationBuilder Shared { get; } = new ();
+
     private readonly string? _appName;
     private string? _runtimeConfig;
     private IConfiguration? _configuration;
@@ -153,17 +158,19 @@ public class TuiConfigurationBuilder
         BindThemeScope<TextViewSettings> (config, "TextView", activeTheme, s => TextViewSettings.Current = s);
         BindThemeScope<WindowSettings> (config, "Window", activeTheme, s => WindowSettings.Current = s);
         BindThemeScope<GlyphSettings> (config, "Glyphs", activeTheme, s => GlyphSettings.Current = s);
+
+        global::Terminal.Gui.Configuration.SchemeManager.ApplyFromConfiguration (config, activeTheme);
     }
 
     /// <summary>
     ///     Binds a custom application settings section from the configuration to a POCO instance.
-    ///     This is the MEC replacement for the legacy <see cref="AppSettingsScope"/>.
+    ///     This is the MEC replacement for application-specific settings sections.
     /// </summary>
     /// <typeparam name="T">The settings POCO type.</typeparam>
     /// <param name="sectionName">The JSON section name to bind from.</param>
     /// <param name="apply">Action to apply the bound settings (typically update a static Defaults property).</param>
     /// <returns>This builder for chaining.</returns>
-    [UnconditionalSuppressMessage ("Trimming", "IL2026", Justification = "Settings POCOs are simple types preserved by DynamicDependency in ConfigPropertyHostTypes.")]
+    [UnconditionalSuppressMessage ("Trimming", "IL2026", Justification = "Settings POCOs are simple public types; Bind only walks declared properties.")]
     [UnconditionalSuppressMessage ("AOT", "IL3050", Justification = "Settings POCOs are simple types; no generic instantiation needed at runtime.")]
     public TuiConfigurationBuilder BindAppSettings<T> (string sectionName, Action<T> apply) where T : new ()
     {
@@ -174,7 +181,7 @@ public class TuiConfigurationBuilder
         return this;
     }
 
-    [UnconditionalSuppressMessage ("Trimming", "IL2026", Justification = "Settings POCOs are simple types preserved by DynamicDependency in ConfigPropertyHostTypes.")]
+    [UnconditionalSuppressMessage ("Trimming", "IL2026", Justification = "Settings POCOs are simple public types; Bind only walks declared properties.")]
     [UnconditionalSuppressMessage ("AOT", "IL3050", Justification = "Settings POCOs are simple types; no generic instantiation needed at runtime.")]
     private static void BindSection<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicProperties)] T> (IConfiguration config, string sectionName, Action<T> apply) where T : new ()
     {
@@ -202,7 +209,7 @@ public class TuiConfigurationBuilder
     ///     <c>Themes:<paramref name="activeTheme"/>:<paramref name="sectionName"/></c>. Properties not present in the
     ///     overlay JSON retain the root value (property-level merge — matches legacy CM <c>Scope.Apply</c> semantics).
     /// </summary>
-    [UnconditionalSuppressMessage ("Trimming", "IL2026", Justification = "Settings POCOs are simple types preserved by DynamicDependency in ConfigPropertyHostTypes.")]
+    [UnconditionalSuppressMessage ("Trimming", "IL2026", Justification = "Settings POCOs are simple public types; Bind only walks declared properties.")]
     [UnconditionalSuppressMessage ("AOT", "IL3050", Justification = "Settings POCOs are simple types; no generic instantiation needed at runtime.")]
     private static void BindThemeScope<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicProperties)] T> (IConfiguration config, string sectionName, string activeTheme, Action<T> apply) where T : new ()
     {
@@ -298,7 +305,7 @@ public class TuiConfigurationBuilder
     ///     Binds scalar properties whose names match keys on <paramref name="section"/> (no dotted prefix).
     ///     Used after <c>Bind</c> so types MEC does not convert (notably <see cref="Rune"/>) still apply.
     /// </summary>
-    [UnconditionalSuppressMessage ("Trimming", "IL2026", Justification = "Settings POCOs are simple types preserved by DynamicDependency in ConfigPropertyHostTypes.")]
+    [UnconditionalSuppressMessage ("Trimming", "IL2026", Justification = "Settings POCOs are simple public types; Bind only walks declared properties.")]
     [UnconditionalSuppressMessage ("AOT", "IL3050", Justification = "Settings POCOs are simple types; no generic instantiation needed at runtime.")]
     private static void BindDirectProperties<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicProperties)] T> (IConfiguration section, T settings)
     {
