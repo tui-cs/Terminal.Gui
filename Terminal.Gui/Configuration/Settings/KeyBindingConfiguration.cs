@@ -1,5 +1,3 @@
-using System.Text.Json;
-using System.Text.Json.Nodes;
 using Microsoft.Extensions.Configuration;
 using Terminal.Gui.App;
 using Terminal.Gui.Input;
@@ -17,26 +15,58 @@ internal static class KeyBindingConfiguration
     /// <summary>Applies key-binding sections from <paramref name="config"/> to the static facades.</summary>
     public static void Apply (IConfiguration config)
     {
-        Dictionary<Command, PlatformKeyBinding>? appOverlay =
-            DeserializeCommandBindings (config.GetSection ("Application").GetSection ("DefaultKeyBindings"));
+        Dictionary<Command, PlatformKeyBinding>? appOverlay = BindCommands (config, "Application:DefaultKeyBindings");
 
         if (appOverlay is not null)
         {
-            Application.DefaultKeyBindings = OverlayCommandBindings (Application.DefaultKeyBindings, appOverlay);
+            Application.DefaultKeyBindings = Overlay (Application.DefaultKeyBindings, appOverlay);
         }
 
-        Dictionary<Command, PlatformKeyBinding>? viewOverlay =
-            DeserializeCommandBindings (config.GetSection ("View").GetSection ("DefaultKeyBindings"));
+        Dictionary<Command, PlatformKeyBinding>? viewOverlay = BindCommands (config, "View:DefaultKeyBindings");
 
         if (viewOverlay is not null)
         {
-            View.DefaultKeyBindings = OverlayCommandBindings (View.DefaultKeyBindings, viewOverlay);
+            View.DefaultKeyBindings = Overlay (View.DefaultKeyBindings, viewOverlay);
         }
 
-        OverlayViewKeyBindings (DeserializeViewKeyBindings (config.GetSection ("View").GetSection ("ViewKeyBindings")));
+        OverlayViewKeyBindings (BindViewTypes (config));
     }
 
-    private static Dictionary<Command, PlatformKeyBinding>? OverlayCommandBindings (
+    private static Dictionary<Command, PlatformKeyBinding>? BindCommands (IConfiguration config, string path) =>
+        ConfigurationSectionJson.Deserialize<Dictionary<Command, PlatformKeyBinding>> (config.GetSection (path), "Key bindings");
+
+    private static Dictionary<string, Dictionary<Command, PlatformKeyBinding>>? BindViewTypes (IConfiguration config) =>
+        ConfigurationSectionJson.Deserialize<Dictionary<string, Dictionary<Command, PlatformKeyBinding>>> (
+                                                                                                           config.GetSection ("View:ViewKeyBindings"), "ViewKeyBindings");
+
+    private static void OverlayViewKeyBindings (Dictionary<string, Dictionary<Command, PlatformKeyBinding>>? overlay)
+    {
+        if (overlay is null || overlay.Count == 0)
+        {
+            return;
+        }
+
+        Dictionary<string, Dictionary<Command, PlatformKeyBinding>> merged =
+            View.ViewKeyBindings is { } existing
+                ? new (existing, StringComparer.OrdinalIgnoreCase)
+                : new (StringComparer.OrdinalIgnoreCase);
+
+        foreach (KeyValuePair<string, Dictionary<Command, PlatformKeyBinding>> pair in overlay)
+        {
+            Dictionary<Command, PlatformKeyBinding>? next = Overlay (merged.GetValueOrDefault (pair.Key), pair.Value);
+
+            if (next is null)
+            {
+                continue;
+            }
+
+            merged [pair.Key] = next;
+        }
+
+        View.ViewKeyBindings = merged;
+    }
+
+    private static Dictionary<Command, PlatformKeyBinding>? Overlay (
         Dictionary<Command, PlatformKeyBinding>? target,
         Dictionary<Command, PlatformKeyBinding>? overlay)
     {
@@ -53,77 +83,5 @@ internal static class KeyBindingConfiguration
         }
 
         return merged;
-    }
-
-    private static void OverlayViewKeyBindings (Dictionary<string, Dictionary<Command, PlatformKeyBinding>>? overlay)
-    {
-        if (overlay is null || overlay.Count == 0)
-        {
-            return;
-        }
-
-        Dictionary<string, Dictionary<Command, PlatformKeyBinding>> merged =
-            View.ViewKeyBindings is { } existing
-                ? new (existing, StringComparer.OrdinalIgnoreCase)
-                : new (StringComparer.OrdinalIgnoreCase);
-
-        foreach (KeyValuePair<string, Dictionary<Command, PlatformKeyBinding>> typePair in overlay)
-        {
-            if (!merged.TryGetValue (typePair.Key, out Dictionary<Command, PlatformKeyBinding>? typeBindings))
-            {
-                merged [typePair.Key] = new (typePair.Value);
-
-                continue;
-            }
-
-            Dictionary<Command, PlatformKeyBinding> next = new (typeBindings);
-
-            foreach (KeyValuePair<Command, PlatformKeyBinding> commandPair in typePair.Value)
-            {
-                next [commandPair.Key] = commandPair.Value;
-            }
-
-            merged [typePair.Key] = next;
-        }
-
-        View.ViewKeyBindings = merged;
-    }
-
-    private static Dictionary<Command, PlatformKeyBinding>? DeserializeCommandBindings (IConfigurationSection section)
-    {
-        if (ConfigurationSectionJson.ToJson (section) is not JsonObject obj || obj.Count == 0)
-        {
-            return null;
-        }
-
-        try
-        {
-            return JsonSerializer.Deserialize<Dictionary<Command, PlatformKeyBinding>> (obj.ToJsonString (), TuiSerializerContext.Instance.Options);
-        }
-        catch (JsonException ex)
-        {
-            TuiJsonErrors.Add ($"Key bindings ({section.Path}): {ex.Message}");
-
-            return null;
-        }
-    }
-
-    private static Dictionary<string, Dictionary<Command, PlatformKeyBinding>>? DeserializeViewKeyBindings (IConfigurationSection section)
-    {
-        if (ConfigurationSectionJson.ToJson (section) is not JsonObject obj || obj.Count == 0)
-        {
-            return null;
-        }
-
-        try
-        {
-            return JsonSerializer.Deserialize<Dictionary<string, Dictionary<Command, PlatformKeyBinding>>> (obj.ToJsonString (), TuiSerializerContext.Instance.Options);
-        }
-        catch (JsonException ex)
-        {
-            TuiJsonErrors.Add ($"ViewKeyBindings ({section.Path}): {ex.Message}");
-
-            return null;
-        }
     }
 }

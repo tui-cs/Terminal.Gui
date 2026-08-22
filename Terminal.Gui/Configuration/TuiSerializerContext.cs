@@ -32,10 +32,11 @@ internal static class TuiSerializerContext
         AllowTrailingCommas = true,
         Converters =
         {
+            // Custom Rune converter so Glyphs can be specified flexibly.
             new RuneJsonConverter (),
-            new KeyJsonConverter (),
-            // Command keys in DefaultKeyBindings JSON are names ("Quit"), not numbers.
-            new JsonStringEnumConverter ()
+
+            // Custom Key converter so "Ctrl+Q" parses as expected.
+            new KeyJsonConverter ()
         },
 
         // Enables Key to be "Ctrl+Q" vs "Ctrl\u002BQ"

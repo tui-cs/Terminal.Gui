@@ -131,4 +131,25 @@ public class KeyBindingConfigurationTests
         Assert.Equal ("Esc", node ["Quit"]! ["All"]! [0]!.GetValue<string> ());
         Assert.Equal ("Ctrl+Q", node ["Quit"]! ["All"]! [1]!.GetValue<string> ());
     }
+
+    [Fact]
+    public void ToJson_NonContiguousNumericKeys_StayObject ()
+    {
+        TuiConfigurationBuilder builder = new ();
+        builder.RuntimeConfig = """
+                                {
+                                  "Probe": {
+                                    "10": "Esc",
+                                    "2": "Ctrl+Q"
+                                  }
+                                }
+                                """;
+
+        JsonNode? node = ConfigurationSectionJson.ToJson (builder.Configuration.GetSection ("Probe"));
+
+        Assert.NotNull (node);
+        Assert.Equal (JsonValueKind.Object, node.GetValueKind ());
+        Assert.Equal ("Esc", node ["10"]!.GetValue<string> ());
+        Assert.Equal ("Ctrl+Q", node ["2"]!.GetValue<string> ());
+    }
 }
