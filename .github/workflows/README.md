@@ -48,33 +48,17 @@ The repository uses multiple GitHub Actions workflows. What runs and when:
 3. Runs IntegrationTests with diagnostic output
 4. Uploads logs per-OS
 
-### 4) Create Release (`.github/workflows/release.yml`)
-
-- **Triggers**: `workflow_dispatch` (manual trigger from GitHub Actions UI)
-- **Inputs**:
-  - `release_type`: Choose from `beta`, `rc`, or `stable`
-  - `version_override`: (Optional) Specify exact version number, otherwise GitVersion calculates it
-- **Process**:
-  1. Checks out `main` branch
-  2. Determines version using GitVersion or override
-  3. Creates annotated git tag (e.g., `v2.0.1-rc.1` or `v2.1.0`)
-  4. Creates release commit with message
-  5. Pushes tag and commit to repository
-  6. Creates GitHub Release (marked as pre-release if not stable)
-  7. Automatically triggers publish workflow (see below)
-- **Purpose**: Automates the release process to prevent manual errors
-
-### 5) Publish to NuGet (`.github/workflows/publish.yml`)
+### 4) Publish to NuGet (`.github/workflows/publish.yml`)
 
 - **Triggers**: push to `develop` and tags `v*` (ignores `**.md`)
 - Uses GitVersion to compute SemVer, builds Release, packs Terminal.Gui and Terminal.Gui.Interop.Spectre with symbols, and pushes both to NuGet.org using `NUGET_API_KEY`
-- **Automatically triggered** by the Create Release workflow when a new tag is pushed
+- **Automatically triggered** when a `v*` tag is pushed — typically by the **Finalize Release** workflow after a release PR (from **Prepare Release**) is merged into `main`
 - **Additional actions on tag push** (`v*`):
   - Triggers Terminal.Gui.templates repository update via repository_dispatch (requires `TEMPLATE_REPO_TOKEN` secret)
 
-### 6) Build and publish API docs (`.github/workflows/api-docs.yml`)
+### 5) Build and publish API docs (`.github/workflows/api-docs.yml`)
 
-- **Triggers**: push to `main`
+- **Triggers**: push to `develop`, and `workflow_dispatch`
 - Builds DocFX site on Windows and deploys to GitHub Pages
 
 

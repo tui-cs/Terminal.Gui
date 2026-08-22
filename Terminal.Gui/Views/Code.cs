@@ -16,19 +16,11 @@ public class Code : View, IDesignable
     }
 
     /// <summary>Gets or sets the source text to render.</summary>
-    public override string Text
+    protected override void OnTextChanged ()
     {
-        get => base.Text;
-        set
-        {
-            if (base.Text == value)
-            {
-                return;
-            }
+        UpdateStyledLines ();
 
-            base.Text = value;
-            UpdateStyledLines ();
-        }
+        base.OnTextChanged ();
     }
 
     /// <summary>Gets or sets the language hint used for syntax highlighting.</summary>

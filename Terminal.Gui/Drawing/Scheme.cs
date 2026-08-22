@@ -545,6 +545,12 @@ public record Scheme : IEqualityOperators<Scheme, Scheme, bool>
     // Helper method for property _set implementation
     private Attribute? SetAttributeForRoleProperty (Attribute value, VisualRole role)
     {
+        // Reassigning an explicit value must not change the role to implicit.
+        if (TryGetExplicitlySetAttributeForRole (role, out Attribute? explicitValue) && explicitValue == value)
+        {
+            return value;
+        }
+
         // If value is the same as the algorithm value, use null
         if (GetAttributeForRoleCore (role, [], null) == value)
         {

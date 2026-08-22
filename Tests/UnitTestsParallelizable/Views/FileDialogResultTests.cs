@@ -265,6 +265,10 @@ public class FileDialogResultTests
             .Setup (d => d.GetFileSystemInfos ())
             .Returns ([goodFile, badFile, goodDirectory]);
 
+        Mock.Get (directory)
+            .Setup (d => d.EnumerateFileSystemInfos ("*", It.IsAny<EnumerationOptions> ()))
+            .Returns ([goodFile, badFile, goodDirectory]);
+
         using FileDialog fd = new TestableFileDialog (fileSystem);
         fd.OpenMode = OpenMode.Mixed;
 
@@ -288,6 +292,10 @@ public class FileDialogResultTests
             .Setup (d => d.GetDirectories ())
             .Returns ([goodDirectory, badDirectory]);
 
+        Mock.Get (directory)
+            .Setup (d => d.EnumerateDirectories ("*", It.IsAny<EnumerationOptions> ()))
+            .Returns ([goodDirectory, badDirectory]);
+
         using FileDialog fd = new TestableFileDialog (fileSystem);
         fd.OpenMode = OpenMode.Directory;
 
@@ -297,6 +305,185 @@ public class FileDialogResultTests
         Assert.Contains (fd.State!.Children, c => c.Name == "good-dir");
         Assert.Contains (fd.State.Children, c => c.IsParent && c.Name == "..");
         Assert.DoesNotContain (fd.State.Children, c => c.Name == "bad-dir");
+    }
+
+    [Fact]
+    public void FileDialog_MixedMode_WhenEagerListingThrows_StillKeepsReadableEntries ()
+    {
+        IFileSystem fileSystem = CreateFileSystemWithDirectory (out IDirectoryInfo directory);
+        IFileInfo goodFile = CreateFile ("/testdir/good.txt", "good.txt");
+        IDirectoryInfo goodDirectory = CreateDirectory ("/testdir/good-dir", "good-dir", directory);
+
+        Mock.Get (directory)
+            .Setup (d => d.GetFileSystemInfos ())
+            .Throws (new UnauthorizedAccessException ());
+
+        Mock.Get (directory)
+            .Setup (d => d.EnumerateFileSystemInfos ())
+            .Returns ([goodFile, goodDirectory]);
+
+        Mock.Get (directory)
+            .Setup (d => d.EnumerateFileSystemInfos ("*", It.IsAny<EnumerationOptions> ()))
+            .Returns ([goodFile, goodDirectory]);
+
+        using FileDialog fd = new TestableFileDialog (fileSystem);
+        fd.OpenMode = OpenMode.Mixed;
+
+        fd.Path = "/testdir";
+
+        Assert.NotNull (fd.State);
+        Assert.Contains (fd.State!.Children, c => c.Name == "good.txt");
+        Assert.Contains (fd.State.Children, c => c.Name == "good-dir");
+        Assert.Contains (fd.State.Children, c => c.IsParent && c.Name == "..");
+    }
+
+    [Fact]
+    public void FileDialog_DirectoryMode_WhenEagerListingThrows_StillKeepsReadableDirectories ()
+    {
+        IFileSystem fileSystem = CreateFileSystemWithDirectory (out IDirectoryInfo directory);
+        IDirectoryInfo goodDirectory = CreateDirectory ("/testdir/good-dir", "good-dir", directory);
+
+        Mock.Get (directory)
+            .Setup (d => d.GetDirectories ())
+            .Throws (new UnauthorizedAccessException ());
+
+        Mock.Get (directory)
+            .Setup (d => d.EnumerateDirectories ())
+            .Returns ([goodDirectory]);
+
+        Mock.Get (directory)
+            .Setup (d => d.EnumerateDirectories ("*", It.IsAny<EnumerationOptions> ()))
+            .Returns ([goodDirectory]);
+
+        using FileDialog fd = new TestableFileDialog (fileSystem);
+        fd.OpenMode = OpenMode.Directory;
+
+        fd.Path = "/testdir";
+
+        Assert.NotNull (fd.State);
+        Assert.Contains (fd.State!.Children, c => c.Name == "good-dir");
+        Assert.Contains (fd.State.Children, c => c.IsParent && c.Name == "..");
+    }
+
+    // Claude - Opus 4.8
+    [Fact]
+    public void FileDialog_MixedMode_EnumerationDoesNotSkipHiddenOrSystemEntries ()
+    {
+        IFileSystem fileSystem = CreateFileSystemWithDirectory (out IDirectoryInfo directory);
+        IFileInfo hiddenFile = CreateFile ("/testdir/.hidden", ".hidden");
+
+        EnumerationOptions? capturedOptions = null;
+
+        Mock.Get (directory)
+            .Setup (d => d.EnumerateFileSystemInfos ("*", It.IsAny<EnumerationOptions> ()))
+            .Callback<string, EnumerationOptions> ((_, options) => capturedOptions = options)
+            .Returns ([hiddenFile]);
+
+        using FileDialog fd = new TestableFileDialog (fileSystem);
+        fd.OpenMode = OpenMode.Mixed;
+
+        fd.Path = "/testdir";
+
+        Assert.NotNull (capturedOptions);
+        Assert.True (capturedOptions!.IgnoreInaccessible);
+        Assert.Equal (FileAttributes.None, capturedOptions.AttributesToSkip);
+        Assert.Contains (fd.State!.Children, c => c.Name == ".hidden");
+    }
+
+    // Claude - Opus 4.8
+    [Fact]
+    public void FileDialog_DirectoryMode_EnumerationDoesNotSkipHiddenOrSystemEntries ()
+    {
+        IFileSystem fileSystem = CreateFileSystemWithDirectory (out IDirectoryInfo directory);
+        IDirectoryInfo hiddenDirectory = CreateDirectory ("/testdir/.git", ".git", directory);
+
+        EnumerationOptions? capturedOptions = null;
+
+        Mock.Get (directory)
+            .Setup (d => d.EnumerateDirectories ("*", It.IsAny<EnumerationOptions> ()))
+            .Callback<string, EnumerationOptions> ((_, options) => capturedOptions = options)
+            .Returns ([hiddenDirectory]);
+
+        using FileDialog fd = new TestableFileDialog (fileSystem);
+        fd.OpenMode = OpenMode.Directory;
+
+        fd.Path = "/testdir";
+
+        Assert.NotNull (capturedOptions);
+        Assert.True (capturedOptions!.IgnoreInaccessible);
+        Assert.Equal (FileAttributes.None, capturedOptions.AttributesToSkip);
+        Assert.Contains (fd.State!.Children, c => c.Name == ".git");
+    }
+
+    // Claude - Opus 4.8
+    [Fact]
+    public void FileDialog_MixedMode_WhenEnumerationOptionsUnsupported_FallsBackToEagerListing ()
+    {
+        IFileSystem fileSystem = CreateFileSystemWithDirectory (out IDirectoryInfo directory);
+        IFileInfo goodFile = CreateFile ("/testdir/good.txt", "good.txt");
+
+        Mock.Get (directory)
+            .Setup (d => d.EnumerateFileSystemInfos ("*", It.IsAny<EnumerationOptions> ()))
+            .Throws (new NotSupportedException ("The property AttributesToSkip is not yet implemented"));
+
+        Mock.Get (directory)
+            .Setup (d => d.GetFileSystemInfos ())
+            .Returns ([goodFile]);
+
+        using FileDialog fd = new TestableFileDialog (fileSystem);
+        fd.OpenMode = OpenMode.Mixed;
+
+        fd.Path = "/testdir";
+
+        Assert.NotNull (fd.State);
+        Assert.Contains (fd.State!.Children, c => c.Name == "good.txt");
+        Assert.Contains (fd.State.Children, c => c.IsParent && c.Name == "..");
+    }
+
+    // Claude - Opus 4.8
+    [Fact]
+    public void FileDialog_DirectoryMode_WhenEnumerationOptionsUnsupported_FallsBackToEagerListing ()
+    {
+        IFileSystem fileSystem = CreateFileSystemWithDirectory (out IDirectoryInfo directory);
+        IDirectoryInfo goodDirectory = CreateDirectory ("/testdir/good-dir", "good-dir", directory);
+
+        Mock.Get (directory)
+            .Setup (d => d.EnumerateDirectories ("*", It.IsAny<EnumerationOptions> ()))
+            .Throws (new NotSupportedException ("The property AttributesToSkip is not yet implemented"));
+
+        Mock.Get (directory)
+            .Setup (d => d.GetDirectories ())
+            .Returns ([goodDirectory]);
+
+        using FileDialog fd = new TestableFileDialog (fileSystem);
+        fd.OpenMode = OpenMode.Directory;
+
+        fd.Path = "/testdir";
+
+        Assert.NotNull (fd.State);
+        Assert.Contains (fd.State!.Children, c => c.Name == "good-dir");
+        Assert.Contains (fd.State.Children, c => c.IsParent && c.Name == "..");
+    }
+
+    // Claude - Opus 4.8
+    [Fact]
+    public void FileDialog_MixedMode_ListsHiddenAndSystemFiles ()
+    {
+        MockFileSystem fs = new ();
+        fs.AddDirectory ("/testdir");
+        fs.AddFile ("/testdir/visible.txt", new MockFileData ("visible"));
+        fs.AddFile ("/testdir/.hidden", new MockFileData ("hidden") { Attributes = FileAttributes.Hidden });
+        fs.AddFile ("/testdir/system.dat", new MockFileData ("system") { Attributes = FileAttributes.System });
+
+        using FileDialog fd = new TestableFileDialog (fs);
+        fd.OpenMode = OpenMode.Mixed;
+
+        fd.Path = "/testdir";
+
+        Assert.NotNull (fd.State);
+        Assert.Contains (fd.State!.Children, c => c.Name == "visible.txt");
+        Assert.Contains (fd.State.Children, c => c.Name == ".hidden");
+        Assert.Contains (fd.State.Children, c => c.Name == "system.dat");
     }
 
     [Fact]
@@ -418,6 +605,10 @@ public class FileDialogResultTests
         directory.SetupGet (d => d.LastWriteTime).Returns (new DateTime (2026, 1, 1));
         directory.Setup (d => d.GetFileSystemInfos ()).Returns ([]);
         directory.Setup (d => d.GetDirectories ()).Returns ([]);
+        directory.Setup (d => d.EnumerateFileSystemInfos ()).Returns ([]);
+        directory.Setup (d => d.EnumerateDirectories ()).Returns ([]);
+        directory.Setup (d => d.EnumerateFileSystemInfos ("*", It.IsAny<EnumerationOptions> ())).Returns ([]);
+        directory.Setup (d => d.EnumerateDirectories ("*", It.IsAny<EnumerationOptions> ())).Returns ([]);
 
         return directory;
     }

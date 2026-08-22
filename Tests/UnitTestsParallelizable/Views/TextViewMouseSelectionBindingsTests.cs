@@ -9,11 +9,11 @@ public class TextViewMouseSelectionBindingsTests
     {
         TextView textView = new ();
 
-        MouseFlags expectedStartSelection = PlatformDetection.GetCurrentPlatform () == TuiPlatform.Windows
+        MouseFlags expectedStartSelection = OperatingSystem.IsWindows ()
                                                 ? MouseFlags.LeftButtonPressed | MouseFlags.Alt
                                                 : MouseFlags.LeftButtonPressed | MouseFlags.Shift;
 
-        MouseFlags expectedStartRectangleSelection = PlatformDetection.GetCurrentPlatform () == TuiPlatform.Windows
+        MouseFlags expectedStartRectangleSelection = OperatingSystem.IsWindows ()
                                                          ? MouseFlags.LeftButtonPressed | MouseFlags.Alt | MouseFlags.Ctrl
                                                          : MouseFlags.LeftButtonPressed | MouseFlags.Shift | MouseFlags.Ctrl;
 

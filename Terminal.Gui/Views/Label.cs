@@ -29,12 +29,17 @@ public class Label : View, IDesignable
 
     private void Label_TitleChanged (object? sender, EventArgs<string> e)
     {
-        base.Text = e.Value;
+        SetTextDirect (e.Value);
         TextFormatter.HotKeySpecifier = HotKeySpecifier;
     }
 
     /// <inheritdoc/>
-    public override string Text { get => Title; set => base.Text = Title = value; }
+    protected override void OnTextChanged ()
+    {
+        Title = Text;
+
+        base.OnTextChanged ();
+    }
 
     /// <inheritdoc/>
     public override Rune HotKeySpecifier { get => base.HotKeySpecifier; set => TextFormatter.HotKeySpecifier = base.HotKeySpecifier = value; }

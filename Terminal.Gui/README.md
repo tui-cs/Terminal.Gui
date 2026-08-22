@@ -51,7 +51,7 @@ Two workflows handle the release lifecycle:
 **Step 1 — [Prepare Release](../.github/workflows/prepare-release.yml)** (manual trigger):
 1. Go to **Actions → Prepare Release → Run workflow**.
 2. Pick the release type (`beta`, `rc`, `stable`) and optionally override the version.
-3. The workflow creates a `release/vX.Y.Z` branch from `develop`, updates the `GitVersion.yml` label, and opens a PR into `main`.
+3. The workflow creates a `release/<tag>` branch from `develop` — where `<tag>` is the full version tag, e.g. `release/v2.0.0` or `release/v2.0.0-beta.1` — updates the `GitVersion.yml` label, and opens a PR into `main`.
 4. Review the PR — CI runs, branch protections apply.
 
 **Step 2 — [Finalize Release](../.github/workflows/finalize-release.yml)** (automatic on PR merge):
@@ -110,8 +110,7 @@ All workflows are in [`.github/workflows/`](../.github/workflows/):
 |----------|---------|---------|
 | **[prepare-release.yml](../.github/workflows/prepare-release.yml)** | Manual dispatch | Creates a release PR from `develop` → `main` with label updates |
 | **[finalize-release.yml](../.github/workflows/finalize-release.yml)** | Release PR merged to `main` | Creates tag, GitHub Release, back-merge PR to `develop` |
-| **[publish.yml](../.github/workflows/publish.yml)** | Push to `main` or `develop`, version tags | Builds Release config, packs, and publishes to NuGet.org |
-| **[release.yml](../.github/workflows/release.yml)** | Manual dispatch | **(Legacy)** Direct tag-and-release on `main`; superseded by prepare/finalize |
+| **[publish.yml](../.github/workflows/publish.yml)** | Push to `develop`, or `v*` tags | Builds Release config, packs, and publishes to NuGet.org |
 | **[build-validation.yml](../.github/workflows/build-validation.yml)** | Push/PR to `main` or `develop` | Builds all configurations to validate compilation |
 | **[unit-tests.yml](../.github/workflows/unit-tests.yml)** | Push/PR to `main` or `develop` | Runs all unit tests |
 | **[api-docs.yml](../.github/workflows/api-docs.yml)** | Push to `develop` | Builds and deploys API docs to GitHub Pages |
@@ -135,7 +134,7 @@ These branches are **not** configured in `GitVersion.yml` (the config was remove
 ## NuGet Package
 
 - **Package**: [nuget.org/packages/Terminal.Gui](https://www.nuget.org/packages/Terminal.Gui)
-- **Auto-published** on every push to `main` or `develop` (pre-release versions from `develop`, stable versions from `main`)
+- **Auto-published** on every push to `develop` (pre-release versions) and on `v*` tag pushes (stable/pre-release versions tagged on `main`)
 - Pre-release versions (e.g., `2.1.0-develop.42`) are marked as pre-release on NuGet
 
 ### Local Package Development
@@ -154,7 +153,7 @@ dotnet build Terminal.Gui/Terminal.Gui.csproj -c Release
 
 - **Live docs**: [tui-cs.github.io/Terminal.Gui](https://tui-cs.github.io/Terminal.Gui)
 - **DocFX source**: [`docfx/`](../docfx/) — see [`docfx/README.md`](../docfx/README.md) for local generation
-- **API docs** are auto-deployed to GitHub Pages on every push to `main`
+- **API docs** are auto-deployed to GitHub Pages on every push to `develop`
 
 ## Contributing
 

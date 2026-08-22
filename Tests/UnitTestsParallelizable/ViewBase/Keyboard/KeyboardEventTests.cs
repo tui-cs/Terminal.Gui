@@ -249,7 +249,7 @@ public class KeyboardEventTests (ITestOutputHelper output) : TestsAllViews
         public bool CancelVirtualMethods { set; private get; }
         public bool OnKeyDownCalled { get; set; }
         public bool OnProcessKeyDownCalled { get; set; }
-        public override string Text { get; set; }
+        public new string Text { get; set; }
 
         protected override bool OnKeyDown (Key keyEvent)
         {

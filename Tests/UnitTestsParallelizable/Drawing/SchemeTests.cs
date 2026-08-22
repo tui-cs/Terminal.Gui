@@ -232,6 +232,28 @@ public class SchemeTests
     [Fact]
     public void CopyConstructor_Null_Throws () => Assert.Throws<ArgumentNullException> (() => new Scheme (null));
 
+    // Codex - GPT-5
+    [Fact]
+    public void CopyConstructor_Reassigning_Explicit_Role_Same_Value_Preserves_Explicit_Value ()
+    {
+        Attribute editable = new (new Color ("#00FF6A"), new Color ("#292E42"));
+        Scheme baseScheme = new ()
+        {
+            Normal = new Attribute (new Color ("#C0CAF5"), new Color ("#1A1B26")),
+            Editable = editable
+        };
+
+        Scheme copiedScheme = new (baseScheme)
+        {
+            Normal = new Attribute (new Color ("#C0CAF5"), new Color ("#16161E")),
+            Editable = editable
+        };
+
+        Assert.Equal (editable, copiedScheme.Editable);
+        Assert.True (copiedScheme.TryGetExplicitlySetAttributeForRole (VisualRole.Editable, out Attribute? explicitEditable));
+        Assert.Equal (editable, explicitEditable);
+    }
+
     [Fact]
     public void Is_Thread_Safe_For_Concurrent_Reads ()
     {

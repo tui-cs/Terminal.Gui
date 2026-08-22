@@ -161,7 +161,7 @@ public class DateEditor : TextValidateField, IValue<DateTime>, IDesignable
 
     /// <summary>
     ///     Synchronizes the <see cref="DateTime"/> backing field when the base class
-    ///     <see cref="TextValidateField.Text"/> property changes programmatically.
+    ///     <see cref="View.Text"/> property changes programmatically.
     /// </summary>
     protected override void OnValueChanged (ValueChangedEventArgs<string?> args) => _value = DateProvider.DateValue;
 

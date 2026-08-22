@@ -72,5 +72,18 @@ public class FileSystemTreeBuilder : ITreeBuilder<IFileSystemInfo>, IComparer<IF
         }
     }
 
-    internal static bool IsReparsePoint (IFileSystemInfo entry) => (entry.Attributes & FileAttributes.ReparsePoint) == FileAttributes.ReparsePoint;
+    internal static bool IsReparsePoint (IFileSystemInfo entry)
+    {
+        try
+        {
+            return (entry.Attributes & FileAttributes.ReparsePoint) == FileAttributes.ReparsePoint;
+        }
+        catch (Exception)
+        {
+            // Fail closed: if the reparse status cannot be read, treat the entry as a reparse point so
+            // callers do not traverse it — an unreadable symlink/junction could otherwise recreate the
+            // directory-cycle risk this guard exists to prevent.
+            return true;
+        }
+    }
 }

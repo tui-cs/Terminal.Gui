@@ -154,16 +154,26 @@ public class ColorPicker : View, IValue<Color?>, IDesignable
     protected virtual void OnValueChanged (ValueChangedEventArgs<Color?> args) { }
 
     /// <inheritdoc/>
-    public override string Text
+    protected override bool OnTextChanging (string newText)
     {
-        get => SelectedColor.ToString ();
-        set
+        // Reject text that cannot be parsed as a valid color
+        if (!_colorNameResolver.TryParseColor (newText, out _))
         {
-            if (_colorNameResolver.TryParseColor (value, out Color newColor))
-            {
-                SelectedColor = newColor;
-            }
+            return true;
         }
+
+        return base.OnTextChanging (newText);
+    }
+
+    /// <inheritdoc/>
+    protected override void OnTextChanged ()
+    {
+        if (_colorNameResolver.TryParseColor (Text, out Color newColor))
+        {
+            SelectedColor = newColor;
+        }
+
+        base.OnTextChanged ();
     }
 
     /// <summary>
@@ -288,6 +298,9 @@ public class ColorPicker : View, IValue<Color?>, IDesignable
 
             // Do the work
             _selectedColor = value;
+
+            // Keep Text in sync with the new color
+            SetTextDirect (_selectedColor.ToString ());
 
             // CWP: Fire ValueChanged
             ValueChangedEventArgs<Color?> changedArgs = new (oldValue, value);

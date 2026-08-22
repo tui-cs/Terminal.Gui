@@ -14,6 +14,8 @@ internal partial class ApplicationImpl
     /// <inheritdoc/>
     public bool Initialized { get; set; }
 
+    internal SynchronizationContext? SynchronizationContext { get; private set; }
+
     /// <inheritdoc/>
     public event EventHandler<EventArgs<bool>>? InitializedChanged;
 
@@ -79,7 +81,8 @@ internal partial class ApplicationImpl
         RaiseInitializedChanged (this, new EventArgs<bool> (true));
         SubscribeDriverEvents ();
 
-        SynchronizationContext.SetSynchronizationContext (new SynchronizationContext ());
+        SynchronizationContext = new MainLoopSyncContext (this);
+        SynchronizationContext.SetSynchronizationContext (SynchronizationContext);
 
         _result = null;
 

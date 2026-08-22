@@ -127,6 +127,10 @@ public partial class TextView : View, IDesignable
         _model.LinesLoaded += Model_LinesLoaded!;
         _historyText.ChangeText += HistoryText_ChangeText;
 
+        // Initialize the model with at least one empty line
+        _model.LoadString (string.Empty);
+        _historyText.Clear (_model.GetAllLines ());
+
         CreateCommandsAndBindings ();
 
         _currentCulture = Thread.CurrentThread.CurrentUICulture;

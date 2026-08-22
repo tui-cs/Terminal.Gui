@@ -6,6 +6,7 @@ using Terminal.Gui.Configuration;
 namespace ConfigurationTests;
 
 /// <summary>Tests for the MEC-backed theme and scheme manager interfaces.</summary>
+[Collection ("StaticSettingsTests")]
 public class MecThemeTests
 {
     [Fact]

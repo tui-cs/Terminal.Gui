@@ -394,7 +394,7 @@ public class KeyboardTests
         bool? result = keyboard.InvokeCommandsBoundToKey (key);
 
         // Assert — Suspend is NonWindows only, so on Windows this key is unbound
-        if (RuntimeInformation.IsOSPlatform (OSPlatform.Windows))
+        if (OperatingSystem.IsWindows ())
         {
             Assert.Null (result);
         }

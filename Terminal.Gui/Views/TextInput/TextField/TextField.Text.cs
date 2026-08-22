@@ -9,7 +9,7 @@ public partial class TextField
     private string? _lastPastedText;
 
     /// <summary>Raised before <see cref="Text"/> changes. The change can be canceled the text adjusted.</summary>
-    public event EventHandler<ResultEventArgs<string>>? TextChanging;
+    public new event EventHandler<ResultEventArgs<string>>? TextChanging;
 
     /// <summary>
     ///     Tracks whether the text field should be considered "used", that is, that the user has moved in the entry, so
@@ -296,18 +296,6 @@ public partial class TextField
         return proposedIndex >= pasteStart && proposedIndex < pasteEnd;
     }
 
-    /// <summary>Raises the <see cref="TextChanging"/> event, enabling canceling the change or adjusting the text.</summary>
-    /// <param name="args">The event arguments.</param>
-    /// <returns><see langword="true"/> if the event was cancelled or the text was adjusted by the event.</returns>
-    public bool RaiseTextChanging (ResultEventArgs<string> args)
-    {
-        // TODO: CWP: Add an OnTextChanging protected virtual method that can be overridden to handle text changing events.
-
-        TextChanging?.Invoke (this, args);
-
-        return args.Handled;
-    }
-
     private List<string> DeleteSelectedText ()
     {
         SetSelectedStartSelectedLength ();
@@ -390,77 +378,120 @@ public partial class TextField
     /// </summary>
     private List<string> _text;
 
+    /// <summary>
+    ///     Stashes the final text value determined during <see cref="OnTextChanging"/> (after sanitization
+    ///     and possible subscriber modification) for use in <see cref="OnTextChanged"/>.
+    /// </summary>
+    private string? _pendingText;
+
     private void SetText (List<string> newText) => Text = StringExtensions.ToString (newText);
     private void SetText (IEnumerable<string> newText) => SetText (newText.ToList ());
 
-    /// <summary>Sets or gets the text held by the view.</summary>
-    public override string Text
+    /// <inheritdoc/>
+    /// <remarks>
+    ///     <para>
+    ///         TextField overrides this to sanitize text (strip tabs and newlines), fire
+    ///         <see cref="IValue{TValue}.ValueChanging"/>, and raise the TextField-specific
+    ///         <see cref="TextChanging"/> event (which allows subscribers to modify the text).
+    ///     </para>
+    /// </remarks>
+    protected override bool OnTextChanging (string newText)
     {
-        get => StringExtensions.ToString (_text);
-        set
+        // Guard against base constructor calling before _text is initialized
+        // ReSharper disable once ConditionIsAlwaysTrueOrFalseAccordingToNullableAPIContract
+        if (_text is null)
         {
-            // Guard against base constructor calling before _text is initialized
-            // ReSharper disable once ConditionIsAlwaysTrueOrFalseAccordingToNullableAPIContract
-            if (_text is null)
-            {
-                return;
-            }
+            return true;
+        }
 
-            var oldText = StringExtensions.ToString (_text);
+        // Sanitize: single-line, no tabs
+        string sanitized = newText.Replace ("\t", "").Split ("\n") [0];
 
-            if (oldText == value)
-            {
-                return;
-            }
+        var oldText = StringExtensions.ToString (_text);
 
-            string newText = value.Replace ("\t", "").Split ("\n") [0];
+        // After sanitization, check if there is an effective change
+        if (oldText == sanitized)
+        {
+            return true;
+        }
 
-            // Raise IValue<string>.ValueChanging
-            if (RaiseValueChanging (oldText, newText))
-            {
-                return;
-            }
+        // Raise IValue<string>.ValueChanging
+        if (RaiseValueChanging (oldText, sanitized))
+        {
+            return true;
+        }
 
-            ResultEventArgs<string> args = new (newText);
-            RaiseTextChanging (args);
+        ResultEventArgs<string> args = new (sanitized);
+        TextChanging?.Invoke (this, args);
 
-            if (args.Handled)
-            {
-                if (InsertionPoint > _text.Count)
-                {
-                    InsertionPoint = _text.Count;
-                }
-
-                return;
-            }
-
-            ClearAllSelection ();
-
-            // Note we use NewValue here; TextChanging subscribers may have changed it
-            _text = args.Result!.ToStringList ();
-
-            if (!Secret && !_historyText.IsFromHistory)
-            {
-                _historyText.Add ([Cell.ToCellList (oldText)], new Point (InsertionPoint, 0));
-
-                _historyText.Add ([Cell.ToCells (_text)], new Point (InsertionPoint, 0), TextEditingLineStatus.Replaced);
-            }
-
-            OnTextChanged ();
-
-            // Raise IValue<string>.ValueChanged
-            RaiseValueChanged (oldText, StringExtensions.ToString (_text));
-
-            ProcessAutocomplete ();
-
+        if (args.Handled)
+        {
             if (InsertionPoint > _text.Count)
             {
-                InsertionPoint = Math.Max (TextModel.DisplaySize (_text, 0).size - 1, 0);
+                InsertionPoint = _text.Count;
             }
 
-            Adjust ();
-            SetNeedsDraw ();
+            return true;
         }
+
+        // Stash the (possibly subscriber-modified) result for OnTextChanged
+        _pendingText = args.Result;
+
+        if (base.OnTextChanging (newText))
+        {
+            _pendingText = null;
+
+            return true;
+        }
+
+        return false;
+    }
+
+    /// <inheritdoc/>
+    /// <remarks>
+    ///     <para>
+    ///         Syncs the internal grapheme-list editing model from the base <see cref="View.Text"/> value,
+    ///         applying any sanitization or subscriber modifications stashed during <see cref="OnTextChanging"/>.
+    ///     </para>
+    /// </remarks>
+    protected override void OnTextChanged ()
+    {
+        // Use stashed text from OnTextChanging if available; otherwise sanitize base.Text
+        string finalText = _pendingText ?? Text.Replace ("\t", "").Split ("\n") [0];
+        _pendingText = null;
+
+        var oldText = StringExtensions.ToString (_text);
+
+        ClearAllSelection ();
+        _text = finalText.ToStringList ();
+
+        // Ensure base View._text holds the sanitized/modified value
+        if (Text != finalText)
+        {
+            SetTextDirect (finalText);
+        }
+
+        if (!Secret && !_historyText.IsFromHistory)
+        {
+            _historyText.Add ([Cell.ToCellList (oldText)], new Point (InsertionPoint, 0));
+
+            _historyText.Add ([Cell.ToCells (_text)], new Point (InsertionPoint, 0), TextEditingLineStatus.Replaced);
+        }
+
+        base.OnTextChanged ();
+
+        // Raise IValue<string>.ValueChanged
+        RaiseValueChanged (oldText, StringExtensions.ToString (_text));
+
+        ProcessAutocomplete ();
+
+        if (InsertionPoint > _text.Count)
+        {
+            InsertionPoint = Math.Max (TextModel.DisplaySize (_text, 0).size - 1, 0);
+        }
+
+        Adjust ();
+        SetNeedsDraw ();
     }
 
     /// <summary>

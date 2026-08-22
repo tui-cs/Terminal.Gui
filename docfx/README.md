@@ -58,7 +58,7 @@ grep "ClassName" docfx/_site/xrefmap.yml | grep "^- uid:"
 | `Command`, `CommandRouting`, `ICommandContext`, `CommandContext`, `ICommandBinding`, `CommandBridge` | `Terminal.Gui.Input.` |
 | `View` | `Terminal.Gui.ViewBase.View` |
 | All view classes (`Button`, `CheckBox`, `Dialog`, etc.) | `Terminal.Gui.Views.` |
-| `IAcceptTarget` | `Terminal.Gui.` |
+| `IAcceptTarget` | `Terminal.Gui.Input.` |
 
 ### Syntax
 
@@ -85,7 +85,7 @@ grep "ClassName" docfx/_site/xrefmap.yml | grep "^- uid:"
 | `ICommandContext` | `Terminal.Gui.Input.ICommandContext` |
 | `CommandContext` | `Terminal.Gui.Input.CommandContext` |
 | `CommandBridge` | `Terminal.Gui.Input.CommandBridge` |
-| `IAcceptTarget` | `Terminal.Gui.IAcceptTarget` |
+| `IAcceptTarget` | `Terminal.Gui.Input.IAcceptTarget` |
 | `View` | `Terminal.Gui.ViewBase.View` |
 | `View.CommandsToBubbleUp` | `Terminal.Gui.ViewBase.View.CommandsToBubbleUp` |
 | `View.DefaultAcceptView` | `Terminal.Gui.ViewBase.View.DefaultAcceptView` |

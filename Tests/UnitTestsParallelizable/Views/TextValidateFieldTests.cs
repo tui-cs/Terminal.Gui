@@ -787,4 +787,48 @@ public class TextValidateField_Regex_Provider_Tests : TestDriverBase
 
         Assert.Equal (before, field.Text);
     }
+
+    // CoPilot - GPT-5
+    [Fact]
+    public void Draw_FocusedCursor_PreservesEditableColors_AndAddsUnderline ()
+    {
+        using IApplication app = Application.Create ();
+        app.Init (DriverRegistry.Names.ANSI);
+        app.Driver!.SetScreenSize (4, 1);
+
+        Attribute editableAttribute = new (Color.BrightGreen, Color.Blue, TextStyle.Bold);
+        Scheme scheme = new ()
+        {
+            Editable = editableAttribute,
+            Focus = new (Color.BrightRed, Color.Magenta)
+        };
+
+        TextRegexProvider provider = new ("^[0-9]+$")
+        {
+            ValidateOnInput = false
+        };
+        TextValidateField field = new ()
+        {
+            Provider = provider,
+            Width = 4,
+            Height = 1
+        };
+        field.Text = "12";
+        field.SetScheme (scheme);
+
+        using Runnable top = new ();
+        top.Add (field);
+
+        app.Begin (top);
+        field.SetFocus ();
+        app.LayoutAndDraw ();
+
+        Cell cursorCell = app.Driver.Contents! [0, 0];
+        Attribute cursorAttribute = Assert.IsType<Attribute> (cursorCell.Attribute);
+
+        Assert.Equal ("1", cursorCell.Grapheme);
+        Assert.Equal (editableAttribute.Foreground, cursorAttribute.Foreground);
+        Assert.Equal (editableAttribute.Background, cursorAttribute.Background);
+        Assert.Equal (editableAttribute.Style | TextStyle.Underline, cursorAttribute.Style);
+    }
 }

@@ -336,23 +336,21 @@ foreach (Rune rune in text.EnumerateRunes ())
 
 ### Automated Release Workflow
 
-Releases are now automated using GitHub Actions to prevent manual errors. To create a release:
+Releases are automated using GitHub Actions to prevent manual errors. The flow is PR-based: **Prepare Release** opens a release PR from `develop` → `main`, and merging it runs **Finalize Release**. To create a release:
 
 1. **Navigate to Actions tab** in the GitHub repository
-2. **Select "Create Release" workflow** from the left sidebar
+2. **Select "Prepare Release" workflow** from the left sidebar
 3. **Click "Run workflow"** button
 4. **Configure release parameters:**
-   - **Branch:** Ensure `main` is selected
-   - **Release type:** Choose from `prealpha`, `alpha`, `beta`, `rc`, or `stable`
+   - **Release type:** Choose from `beta`, `rc`, or `stable`
    - **Version override:** (Optional) Specify exact version (e.g., `2.0.0`), otherwise GitVersion calculates it automatically
-5. **Click "Run workflow"** to start the automated release process
+5. **Click "Run workflow"** to create the release PR
 
-The workflow will:
-- Create an annotated git tag (e.g., `v2.0.0-prealpha` or `v2.0.0`)
-- Create a release commit on `main`
-- Push the tag and commit to the repository
-- Create a GitHub Release
-- Automatically trigger the publish workflow to push the package to NuGet.org
+Prepare Release creates a `release/<tag>` branch — where `<tag>` is the full version tag, e.g. `release/v2.0.0` for a stable release or `release/v2.0.0-beta.1` for a pre-release — with the GitVersion label updated for the release type, and opens a PR into `main`. After CI passes, **review and merge that PR**. Merging triggers **Finalize Release**, which:
+- Creates an annotated git tag (e.g., `v2.0.0-beta.1` or `v2.0.0`)
+- Creates a GitHub Release with auto-generated notes
+- Opens a back-merge PR from `main` → `develop`
+- Triggers the publish workflow (via the `v*` tag) to push the package to NuGet.org
 
 ## What NOT to Do
 

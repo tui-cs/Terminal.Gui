@@ -86,55 +86,61 @@ public sealed class MarkdownTable : View, IDesignable
     ///     The setter parses the text via <see cref="TableData.TryParse"/> and updates <see cref="TableData"/>.
     ///     Invalid or empty text clears the table.
     /// </summary>
-    public override string Text
+    protected override void OnTextChanged ()
     {
-        get
+        string value = Text;
+
+        if (string.IsNullOrWhiteSpace (value))
         {
-            if (_data.ColumnCount == 0)
-            {
-                return string.Empty;
-            }
-
-            // Reconstruct pipe-delimited table text
-            List<string> lines = [$"| {string.Join (" | ", _data.Headers)} |"];
-
-            // Separator row
-            var seps = new string [_data.ColumnCount];
-
-            for (var i = 0; i < _data.ColumnCount; i++)
-            {
-                seps [i] = _data.ColumnAlignments [i] switch
-                {
-                    Alignment.Center => ":---:",
-                    Alignment.End => "---:",
-                    _ => "---"
-                };
-            }
-
-            lines.Add ($"| {string.Join (" | ", seps)} |");
-
-            foreach (string [] row in _data.Rows)
-            {
-                lines.Add ($"| {string.Join (" | ", row)} |");
-            }
-
-            return string.Join ("\n", lines);
+            TableData = _emptyData;
         }
-        set
+        else
         {
-            // Guard: View base constructor calls Text setter before MarkdownTable() initializes fields.
-
-            if (string.IsNullOrWhiteSpace (value))
-            {
-                TableData = _emptyData;
-
-                return;
-            }
-
             string [] lines = value.Split ('\n', StringSplitOptions.RemoveEmptyEntries);
             TableData? parsed = TableData.TryParse (lines);
             TableData = parsed ?? _emptyData;
         }
+
+        base.OnTextChanged ();
+    }
+
+    /// <inheritdoc/>
+    protected override void UpdateTextFormatterText ()
+    {
+        TextFormatter.Text = string.Empty;
+    }
+
+    private string BuildTableText ()
+    {
+        if (_data.ColumnCount == 0)
+        {
+            return string.Empty;
+        }
+
+        // Reconstruct pipe-delimited table text
+        List<string> lines = [$"| {string.Join (" | ", _data.Headers)} |"];
+
+        // Separator row
+        string [] seps = new string [_data.ColumnCount];
+
+        for (var i = 0; i < _data.ColumnCount; i++)
+        {
+            seps [i] = _data.ColumnAlignments [i] switch
+                       {
+                           Alignment.Center => ":---:",
+                           Alignment.End => "---:",
+                           _ => "---"
+                       };
+        }
+
+        lines.Add ($"| {string.Join (" | ", seps)} |");
+
+        foreach (string [] row in _data.Rows)
+        {
+            lines.Add ($"| {string.Join (" | ", row)} |");
+        }
+
+        return string.Join ("\n", lines);
     }
 
     /// <summary>
@@ -154,6 +160,9 @@ public sealed class MarkdownTable : View, IDesignable
             {
                 _rowSegments [r] = ParseCellSegments (value.Rows [r], MarkdownStyleRole.Normal);
             }
+
+            // Keep Text in sync with TableData
+            SetTextDirect (BuildTableText ());
 
             // Compute initial layout using current Frame width (or a default for standalone use)
             int initialWidth = Frame.Width > 0 ? Frame.Width : 80;

@@ -94,7 +94,7 @@ public class AnsiInput : InputImpl<char>, ITestableInput<char>
             }
 
             // Initialize platform-specific input helpers
-            if (PlatformDetection.IsWindows ())
+            if (OperatingSystem.IsWindows ())
             {
                 _windowsVTInput = new WindowsVTInputHelper ();
 
@@ -111,7 +111,7 @@ public class AnsiInput : InputImpl<char>, ITestableInput<char>
                 }
                 _platform = AnsiPlatform.WindowsVT;
             }
-            else if (PlatformDetection.IsUnixLike ())
+            else
             {
                 try
                 {
@@ -138,10 +138,6 @@ public class AnsiInput : InputImpl<char>, ITestableInput<char>
                                      "Init",
                                      $"Failed to enable Unix raw input mode. libc not available: {ex.Message}. Running in degraded mode.");
                 }
-            }
-            else
-            {
-                Trace.Lifecycle (nameof (AnsiInput), "Init", "Unknown OS platform. Terminal input will not work. Running in degraded mode.");
             }
 
             // NOTE: Output operations (alternate buffer, cursor visibility, mouse events)

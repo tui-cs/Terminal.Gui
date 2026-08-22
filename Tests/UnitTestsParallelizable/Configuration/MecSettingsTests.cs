@@ -6,6 +6,7 @@ using Microsoft.Extensions.Configuration;
 namespace ConfigurationTests;
 
 /// <summary>Tests for the MEC-based settings POCOs and <see cref="TuiConfigurationBuilder"/>.</summary>
+[Collection ("StaticSettingsTests")]
 public class MecSettingsTests
 {
     [Fact]
@@ -24,7 +25,7 @@ public class MecSettingsTests
         DriverSettings settings = new ();
 
         Assert.False (settings.Force16Colors);
-        Assert.Equal (SizeDetectionMode.AnsiQuery, settings.SizeDetection);
+        Assert.Equal (SizeDetectionMode.Polling, settings.SizeDetection);
     }
 
     [Fact]

@@ -70,7 +70,7 @@ internal sealed class WindowsVTOutputHelper : IDisposable
         }
 
         // Only attempt on Windows
-        if (!RuntimeInformation.IsOSPlatform (OSPlatform.Windows))
+        if (!OperatingSystem.IsWindows ())
         {
             return false;
         }

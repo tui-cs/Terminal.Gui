@@ -189,22 +189,21 @@ public abstract class LinearRangeViewBase<TOption, TValue> : View, IOrientation,
     /// <summary>
     ///     Setting the Text of a linear range is a shortcut to setting options. The text is a CSV string of the options.
     /// </summary>
-    public override string Text
+    protected override void OnTextChanged ()
     {
-        // Return labels as a CSV string
-        get => _options is null or { Count: 0 } ? string.Empty : string.Join (",", _options);
-        set
+        string value = Text;
+
+        if (string.IsNullOrEmpty (value))
         {
-            if (string.IsNullOrEmpty (value))
-            {
-                Options = [];
-            }
-            else
-            {
-                IEnumerable<string> list = value.Split (',').Select (x => x.Trim ());
-                Options = list.Select (x => new LinearRangeOption<TOption> { Legend = x }).ToList ();
-            }
+            Options = [];
         }
+        else
+        {
+            IEnumerable<string> list = value.Split (',').Select (x => x.Trim ());
+            Options = list.Select (x => new LinearRangeOption<TOption> { Legend = x }).ToList ();
+        }
+
+        base.OnTextChanged ();
     }
 
     /// <summary>Allow no selection.</summary>
@@ -369,6 +368,10 @@ public abstract class LinearRangeViewBase<TOption, TValue> : View, IOrientation,
 
             // Drop any selected indices that are no longer valid
             _setOptions.RemoveAll (i => i < 0 || i >= _options.Count);
+
+            // Keep Text in sync with Options
+            string csv = _options.Count == 0 ? string.Empty : string.Join (",", _options);
+            SetTextDirect (csv);
 
             if (_options.Count == 0)
             {

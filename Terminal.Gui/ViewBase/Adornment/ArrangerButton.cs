@@ -108,6 +108,7 @@ internal class ArrangerButton : Button, IOrientation
             }
 
             _buttonType = value;
+            SetTextDirect (GetButtonGlyph ());
             ApplyOrientationAndDirection ();
             SetupKeyBindings ();
         }
@@ -123,19 +124,15 @@ internal class ArrangerButton : Button, IOrientation
     public NavigationDirection Direction { get; set; }
 
     /// <inheritdoc/>
-    public override string Text
-    {
-        get =>
-            ButtonType switch
-            {
-                ArrangeButtons.Move => $"{Glyphs.Move}",
-                ArrangeButtons.AllSize => $"{Glyphs.SizeBottomRight}",
-                ArrangeButtons.LeftSize or ArrangeButtons.RightSize => $"{Glyphs.SizeHorizontal}",
-                ArrangeButtons.TopSize or ArrangeButtons.BottomSize => $"{Glyphs.SizeVertical}",
-                _ => base.Text
-            };
-        set => base.Text = value;
-    }
+    private string GetButtonGlyph () =>
+        ButtonType switch
+        {
+            ArrangeButtons.Move => $"{Glyphs.Move}",
+            ArrangeButtons.AllSize => $"{Glyphs.SizeBottomRight}",
+            ArrangeButtons.LeftSize or ArrangeButtons.RightSize => $"{Glyphs.SizeHorizontal}",
+            ArrangeButtons.TopSize or ArrangeButtons.BottomSize => $"{Glyphs.SizeVertical}",
+            _ => Text
+        };
 
     /// <summary>
     ///     Sets <see cref="Orientation"/> and <see cref="Direction"/> based on <see cref="ButtonType"/>.

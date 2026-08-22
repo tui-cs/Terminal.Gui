@@ -5,6 +5,7 @@ using Terminal.Gui.Configuration;
 namespace ConfigurationTests;
 
 /// <summary>Tests for the app-developer <see cref="TuiConfigurationBuilder.BindAppSettings{T}"/> workflow.</summary>
+[Collection ("StaticSettingsTests")]
 public class MecAppSettingsTests
 {
     /// <summary>Example app settings POCO for testing.</summary>

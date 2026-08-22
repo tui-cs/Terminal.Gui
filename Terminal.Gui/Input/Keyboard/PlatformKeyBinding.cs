@@ -66,13 +66,8 @@ public record PlatformKeyBinding
             }
         }
 
-        Key []? platKeys = PlatformDetection.GetCurrentPlatform () switch
-        {
-            TuiPlatform.Windows => Windows,
-            TuiPlatform.Linux => Linux,
-            TuiPlatform.Macos => Macos,
-            _ => null
-        };
+        Key []? platKeys = OperatingSystem.IsWindows () ? Windows :
+            OperatingSystem.IsMacOS () ? Macos : Linux;
 
         if (platKeys is null)
         {

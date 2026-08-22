@@ -33,6 +33,9 @@ public abstract class InputProcessorImpl<TInputRecord> : IInputProcessor, IDispo
     private readonly ITimeProvider _timeProvider;
     private readonly MouseInterpreter _mouseInterpreter;
 
+    /// <summary>Gets the current pipeline time.</summary>
+    protected DateTime CurrentTime => _timeProvider.Now;
+
     /// <summary>
     ///     Thread-safe input queue populated by <see cref="IInput{TInputRecord}"/> on the input thread.
     ///     Dequeued by <see cref="ProcessQueue"/> on the main loop thread.

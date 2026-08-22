@@ -1,3 +1,4 @@
+using System;
 using System.Runtime.InteropServices;
 
 namespace Terminal.Gui.Drivers;
@@ -10,6 +11,7 @@ internal static class SuspendHelper
     /// <returns>True if the suspension was successful.</returns>
     public static bool Suspend ()
     {
+        // TODO: Use (int)PosixSignal.SIGTSTP once baseline moves to .NET 11.0
         int signal = GetSuspendSignal ();
 
         Logging.Information ($"SuspendHelper.Suspend: signal={signal}");
@@ -36,58 +38,39 @@ internal static class SuspendHelper
             return _suspendSignal;
         }
 
-        nint buf = Marshal.AllocHGlobal (8192);
-
-        if (uname (buf) != 0)
+        if (OperatingSystem.IsMacOS () ||
+            OperatingSystem.IsMacCatalyst () ||
+            OperatingSystem.IsIOS () ||
+            OperatingSystem.IsTvOS () ||
+            OperatingSystem.IsWatchOS () ||
+            OperatingSystem.IsFreeBSD () ||
+            RuntimeInformation.IsOSPlatform (OSPlatform.Create ("NETBSD")) ||
+            RuntimeInformation.IsOSPlatform (OSPlatform.Create ("OPENBSD")))
         {
-            Marshal.FreeHGlobal (buf);
+            _suspendSignal = 18;
+        }
+        else if (OperatingSystem.IsLinux () ||
+                 OperatingSystem.IsAndroid ())
+        {
+            _suspendSignal = 20;
+        }
+        else if (RuntimeInformation.IsOSPlatform (OSPlatform.Create ("SOLARIS")) ||
+                 RuntimeInformation.IsOSPlatform (OSPlatform.Create ("ILLUMOS")))
+        {
+            _suspendSignal = 24;
+        }
+        else if (RuntimeInformation.IsOSPlatform (OSPlatform.Create ("HAIKU")))
+        {
+            _suspendSignal = 13;
+        }
+        else
+        {
             _suspendSignal = -1;
-
-            return _suspendSignal;
         }
 
-        try
-        {
-            switch (Marshal.PtrToStringAnsi (buf))
-            {
-                case "Darwin":
-                case "DragonFly":
-                case "FreeBSD":
-                case "NetBSD":
-                case "OpenBSD":
-                    _suspendSignal = 18;
-
-                    break;
-
-                case "Linux":
-                    // TODO: should fetch the machine name and
-                    // if it is MIPS return 24
-                    _suspendSignal = 20;
-
-                    break;
-
-                case "Solaris":
-                    _suspendSignal = 24;
-
-                    break;
-
-                default:
-                    _suspendSignal = -1;
-
-                    break;
-            }
-
-            return _suspendSignal;
-        }
-        finally
-        {
-            Marshal.FreeHGlobal (buf);
-        }
+        return _suspendSignal;
     }
 
     [DllImport ("libc", SetLastError = true)]
     private static extern int killpg (int pgrp, int sig);
-
-    [DllImport ("libc")]
-    private static extern int uname (nint buf);
 }

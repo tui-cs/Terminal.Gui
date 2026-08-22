@@ -165,7 +165,7 @@ public partial class TextView
     ///     The <see cref="View.TextChanged"/> event is fired whenever this property is set. Note, however, that Text is not
     ///     set by <see cref="TextView"/> as the user types.
     /// </remarks>
-    public override string Text
+    public new string Text
     {
         get
         {
@@ -178,6 +178,12 @@ public partial class TextView
         }
         set
         {
+            // Raise View.TextChanging so subscribers holding a View reference can cancel.
+            if (OnTextChanging (value))
+            {
+                return;
+            }
+
             ResetPosition ();
             _model.LoadString (value);
 
@@ -188,11 +194,53 @@ public partial class TextView
                 _lastWrapWidth = Viewport.Width;
             }
 
-            OnTextChanged ();
+            // Keep base View._text in sync
+            SetTextDirect (value);
+
+            _ownSetterActive = true;
+            RaiseTextChanged ();
+            _ownSetterActive = false;
             SetNeedsDraw ();
 
             _historyText.Clear (_model.GetAllLines ());
         }
+    }
+
+    /// <summary>Tracks whether the <c>new Text</c> setter is active to avoid redundant sync in <see cref="OnTextChanged"/>.</summary>
+    private bool _ownSetterActive;
+
+    /// <inheritdoc/>
+    /// <remarks>
+    ///     Syncs the internal <see cref="TextModel"/> when <see cref="View.Text"/> is set through a
+    ///     polymorphic (<see cref="View"/>) reference, ensuring the TextView's editing model stays consistent.
+    /// </remarks>
+    protected override void OnTextChanged ()
+    {
+        // Skip sync when called from our own `new Text` setter — it already updated the model.
+        if (_ownSetterActive)
+        {
+            base.OnTextChanged ();
+
+            return;
+        }
+
+        string baseText = base.Text;
+
+        // Sync when the internal model diverges (polymorphic setter case).
+        ResetPosition ();
+        _model.LoadString (baseText);
+
+        if (_wordWrap)
+        {
+            _wrapManager = new WordWrapManager (_model);
+            _model = _wrapManager.WrapModel (Viewport.Width, out _, out _, out _, out _);
+            _lastWrapWidth = Viewport.Width;
+        }
+
+        _historyText.Clear (_model.GetAllLines ());
+        SetNeedsDraw ();
+
+        base.OnTextChanged ();
     }
 
     /// <summary>

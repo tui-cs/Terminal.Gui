@@ -11,18 +11,12 @@ namespace Terminal.Gui.Configuration;
 public class MecThemeManager : IThemeManager
 {
     private readonly TuiConfigurationBuilder _builder;
+    private readonly object _themeChangedLock = new ();
 
     /// <summary>Initializes a new instance of <see cref="MecThemeManager"/>.</summary>
-    public MecThemeManager (TuiConfigurationBuilder builder)
-    {
-        _builder = builder;
+    public MecThemeManager (TuiConfigurationBuilder builder) { _builder = builder; }
 
-        // Forward legacy ThemeManager.ThemeChanged into the IThemeManager.ThemeChanged event so
-        // consumers of the new API see every theme change, regardless of which API triggered it.
-        ThemeManager.ThemeChanged += OnLegacyThemeChanged;
-    }
-
-    private void OnLegacyThemeChanged (object? sender, App.EventArgs<string> e) => ThemeChanged?.Invoke (this, e);
+    private void OnLegacyThemeChanged (object? sender, App.EventArgs<string> e) => _themeChanged?.Invoke (this, e);
 
     /// <inheritdoc/>
     public string CurrentThemeName => ThemeSettings.Defaults.Theme;
@@ -44,8 +38,41 @@ public class MecThemeManager : IThemeManager
         }
     }
 
+    private EventHandler<App.EventArgs<string>>? _themeChanged;
+
     /// <inheritdoc/>
-    public event EventHandler<App.EventArgs<string>>? ThemeChanged;
+    /// <remarks>
+    ///     Forwarding from the legacy static <see cref="ThemeManager.ThemeChanged"/> event is wired up only while
+    ///     this instance has at least one subscriber. This avoids leaking the instance through the static event
+    ///     (which would otherwise keep every <see cref="MecThemeManager"/> alive for the lifetime of the process).
+    /// </remarks>
+    public event EventHandler<App.EventArgs<string>>? ThemeChanged
+    {
+        add
+        {
+            lock (_themeChangedLock)
+            {
+                if (_themeChanged is null)
+                {
+                    ThemeManager.ThemeChanged += OnLegacyThemeChanged;
+                }
+
+                _themeChanged += value;
+            }
+        }
+        remove
+        {
+            lock (_themeChangedLock)
+            {
+                _themeChanged -= value;
+
+                if (_themeChanged is null)
+                {
+                    ThemeManager.ThemeChanged -= OnLegacyThemeChanged;
+                }
+            }
+        }
+    }
 
     /// <inheritdoc/>
     public bool SwitchTheme (string themeName)
@@ -62,7 +89,8 @@ public class MecThemeManager : IThemeManager
         }
 
         // During transition, also update the existing ThemeManager. Its setter raises
-        // ThemeManager.ThemeChanged, which is forwarded via OnLegacyThemeChanged above.
+        // ThemeManager.ThemeChanged, which is forwarded to subscribers via OnLegacyThemeChanged
+        // (only while this instance has subscribers; see the ThemeChanged event above).
         try
         {
             ThemeManager.Theme = themeName;
@@ -76,11 +104,12 @@ public class MecThemeManager : IThemeManager
             return false;
         }
 
-        // Update the settings POCO only on success
-        ThemeSettings.Defaults.Theme = themeName;
-
-        // Re-apply all ThemeScope POCOs from configuration
+        // Re-apply all ThemeScope POCOs from configuration. This may rebind the scalar "Theme" key
+        // from config, so the switched theme is recorded afterwards to ensure the selection persists.
         _builder.ApplyToStaticFacades ();
+
+        // Record the switched theme on success, overriding any value the config re-apply may have set.
+        ThemeSettings.Defaults.Theme = themeName;
 
         return true;
     }

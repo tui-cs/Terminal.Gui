@@ -64,7 +64,6 @@
     <File Path=".github/workflows/publish.yml" />
     <File Path=".github/workflows/quick-build.yml" />
     <File Path=".github/workflows/README.md" />
-    <File Path=".github/workflows/release.yml" />
     <File Path=".github/workflows/stress-tests.yml" />
     <File Path=".github/workflows/unit-tests.yml" />
     <File Path="copilot-instructions.md" />

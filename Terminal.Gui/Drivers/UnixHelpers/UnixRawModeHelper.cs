@@ -58,7 +58,7 @@ internal sealed class UnixRawModeHelper : IDisposable
         }
 
         // Only attempt on Unix-like platforms
-        if (!PlatformDetection.IsUnixLike ())
+        if (OperatingSystem.IsWindows ())
         {
             return false;
         }

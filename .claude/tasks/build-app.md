@@ -253,8 +253,9 @@ view.BorderStyle = LineStyle.None;       // No border
 ### Colors (via Themes)
 ```csharp
 // Set theme at startup
-ConfigurationManager.RuntimeConfig = """{ "Theme": "Dark" }""";
-ConfigurationManager.Enable (ConfigLocations.All);
+TuiConfigurationBuilder config = new ();
+config.RuntimeConfig = """{ "Theme": "Dark" }""";
+config.ApplyToStaticFacades ();
 ```
 
 Available themes: `Default`, `Dark`, `Light`, `Amber Phosphor`, `Green Phosphor`, `Blue Phosphor`

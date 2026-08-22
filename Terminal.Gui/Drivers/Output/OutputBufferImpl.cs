@@ -458,8 +458,14 @@ public class OutputBufferImpl : IOutputBuffer
             {
                 for (int col = visible.X; col < visible.Right; col++)
                 {
-                    Contents [row, col].IsDirty = isDirty;
-                    DirtyLines [row] |= isDirty;
+                    if (isDirty)
+                    {
+                        MarkDirty (col, row);
+
+                        continue;
+                    }
+
+                    Contents [row, col].IsDirty = false;
                 }
             }
         }
@@ -551,8 +557,6 @@ public class OutputBufferImpl : IOutputBuffer
                 string printableGrapheme = grapheme.MakePrintable ();
                 printableGraphemeWidth = printableGrapheme.GetColumns ();
                 WriteGraphemeByWidth (Col, Row, printableGrapheme, printableGraphemeWidth, clipRect);
-
-                DirtyLines [Row] = true;
             }
 
             // Always advance cursor (even if location was invalid)
@@ -575,7 +579,7 @@ public class OutputBufferImpl : IOutputBuffer
                 if (Contents [Row, Col].Attribute != CurrentAttribute)
                 {
                     Contents [Row, Col].Attribute = CurrentAttribute;
-                    Contents [Row, Col].IsDirty = true;
+                    MarkDirty (Col, Row);
                 }
             }
 
@@ -597,7 +601,18 @@ public class OutputBufferImpl : IOutputBuffer
             return;
         }
         Contents [row, col - 1].Grapheme = _column1ReplacementChar.ToString ();
-        Contents [row, col - 1].IsDirty = true;
+        MarkDirty (col - 1, row);
+    }
+
+    /// <summary>
+    ///     INTERNAL: Marks a cell and its row as dirty.
+    /// </summary>
+    /// <param name="col">The column.</param>
+    /// <param name="row">The row.</param>
+    private void MarkDirty (int col, int row)
+    {
+        Contents! [row, col].IsDirty = true;
+        DirtyLines [row] = true;
     }
 
     /// <summary>
@@ -608,7 +623,7 @@ public class OutputBufferImpl : IOutputBuffer
     private void SetAttributeAndDirty (int col, int row)
     {
         Contents! [row, col].Attribute = CurrentAttribute;
-        Contents [row, col].IsDirty = true;
+        MarkDirty (col, row);
 
         // Update the URL map: store CurrentUrl, or clear any stale entry so cells
         // overdrawn by non-link content are not wrapped in OSC 8 sequences.
@@ -737,7 +752,7 @@ public class OutputBufferImpl : IOutputBuffer
         // Mark the next cell as dirty to ensure proper rendering of adjacent content
         if (col < clipRect.Right - 1 && col + 1 < Cols)
         {
-            Contents [row, col + 1].IsDirty = true;
+            MarkDirty (col + 1, row);
         }
     }
 

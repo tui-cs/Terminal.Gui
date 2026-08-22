@@ -4,6 +4,10 @@ namespace Terminal.Gui.Views;
 
 internal class FileDialogState
 {
+    // AttributesToSkip defaults to Hidden | System; clear it so hidden/system entries (e.g. dotfiles on Unix)
+    // remain visible, matching the behavior of the GetDirectories ()/GetFileSystemInfos () calls this replaced.
+    private static readonly EnumerationOptions _ignoreInaccessibleEnumerationOptions = new () { IgnoreInaccessible = true, AttributesToSkip = FileAttributes.None };
+
     public FileDialogState (IDirectoryInfo dir, FileDialog parent)
     {
         Parent = parent;
@@ -60,17 +64,31 @@ internal class FileDialogState
     {
         try
         {
-            IEnumerable<IFileSystemInfo> entries;
+            foreach (IFileSystemInfo entry in EnumerateReadableEntries (dir))
+            {
+                AddReadableChild (children, entry);
+            }
+        }
+        catch (NotSupportedException)
+        {
+            // Some IFileSystem implementations (e.g. System.IO.Abstractions.TestingHelpers MockFileSystem)
+            // do not support clearing EnumerationOptions.AttributesToSkip; fall back to the eager listing
+            // methods, which never skip hidden/system entries.
+            AddReadableChildrenEagerly (children, dir);
+        }
+        catch (Exception)
+        {
+            // Access permission exceptions, missing directories, etc.
+        }
+    }
 
-            // if directories only
-            if (Parent.OpenMode == OpenMode.Directory)
-            {
-                entries = dir.GetDirectories ();
-            }
-            else
-            {
-                entries = dir.GetFileSystemInfos ();
-            }
+    private void AddReadableChildrenEagerly (List<FileSystemInfoStats> children, IDirectoryInfo dir)
+    {
+        try
+        {
+            IEnumerable<IFileSystemInfo> entries = Parent.OpenMode == OpenMode.Directory
+                                                       ? dir.GetDirectories ()
+                                                       : dir.GetFileSystemInfos ();
 
             foreach (IFileSystemInfo entry in entries)
             {
@@ -81,6 +99,17 @@ internal class FileDialogState
         {
             // Access permission exceptions, missing directories, etc.
         }
+    }
+
+    private IEnumerable<IFileSystemInfo> EnumerateReadableEntries (IDirectoryInfo dir)
+    {
+        // if directories only
+        if (Parent.OpenMode == OpenMode.Directory)
+        {
+            return dir.EnumerateDirectories ("*", _ignoreInaccessibleEnumerationOptions);
+        }
+
+        return dir.EnumerateFileSystemInfos ("*", _ignoreInaccessibleEnumerationOptions);
     }
 
     private void AddReadableChild (List<FileSystemInfoStats> children, IFileSystemInfo entry)
