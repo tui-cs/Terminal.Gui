@@ -152,6 +152,7 @@ public class TuiConfigurationBuilder
         FileDialogStyleSettings.Defaults = BindSection<FileDialogStyleSettings> (config, "FileDialogStyle");
         KeySettings.Defaults = BindSection<KeySettings> (config, "Key");
         TraceSettings.Defaults = BindSection<TraceSettings> (config, "Trace");
+        KeyBindingConfiguration.Apply (config);
         ApplyActiveThemeOverlays ();
 
         string newTheme = ThemeSettings.Defaults.Theme;

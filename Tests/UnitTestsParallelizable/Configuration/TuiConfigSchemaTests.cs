@@ -21,6 +21,7 @@ public class TuiConfigSchemaTests
         JsonElement properties = doc.RootElement.GetProperty ("properties");
 
         Assert.True (properties.TryGetProperty ("Application", out _));
+        Assert.True (properties.TryGetProperty ("View", out _));
         Assert.True (properties.TryGetProperty ("Button", out _));
         Assert.True (properties.TryGetProperty ("Glyphs", out _));
         Assert.True (properties.TryGetProperty ("PopoverMenu", out _));
@@ -31,6 +32,13 @@ public class TuiConfigSchemaTests
         Assert.False (properties.TryGetProperty ("ConfigurationManager.ThrowOnJsonErrors", out _));
         Assert.False (properties.TryGetProperty ("Button.DefaultShadow", out _));
         Assert.False (properties.TryGetProperty ("Key.Separator", out _));
+
+        JsonElement definitions = doc.RootElement.GetProperty ("definitions");
+        JsonElement applicationSettings = definitions.GetProperty ("applicationSettings").GetProperty ("properties");
+        Assert.True (applicationSettings.TryGetProperty ("DefaultKeyBindings", out _));
+        JsonElement viewSettings = definitions.GetProperty ("viewSettings").GetProperty ("properties");
+        Assert.True (viewSettings.TryGetProperty ("DefaultKeyBindings", out _));
+        Assert.True (viewSettings.TryGetProperty ("ViewKeyBindings", out _));
     }
 
     [Fact]

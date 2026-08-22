@@ -4,6 +4,10 @@ namespace Terminal.Gui.Configuration;
 ///     Settings POCO for application-level configuration (SettingsScope).
 ///     These correspond to the static properties on <see cref="Application"/> and related classes.
 /// </summary>
+/// <remarks>
+///     Key bindings are not properties on this POCO. Nested JSON <c>Application.DefaultKeyBindings</c>
+///     overlays <see cref="Application.DefaultKeyBindings"/> when configuration is applied.
+/// </remarks>
 public class ApplicationSettings
 {
     /// <summary>Gets or sets the application model (FullScreen or Inline).</summary>

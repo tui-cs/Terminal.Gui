@@ -649,6 +649,10 @@ public partial class View // Keyboard APIs
     ///     Gets or sets the default key bindings shared across all views. Only commands that a view supports
     ///     (via <see cref="GetSupportedCommands"/>) are actually bound when <see cref="ApplyKeyBindings"/> is called.
     ///     <para>
+    ///         Nested JSON <c>View.DefaultKeyBindings</c> overlays this dictionary by command when
+    ///         <see cref="TuiConfigurationBuilder.ApplyToStaticFacades"/> runs. Unmentioned commands keep these defaults.
+    ///     </para>
+    ///     <para>
     ///         <b>IMPORTANT:</b> This is a process-wide static property. Change with care.
     ///         Do not set in parallelizable unit tests.
     ///     </para>
@@ -703,6 +707,8 @@ public partial class View // Keyboard APIs
     /// <summary>
     ///     Gets or sets per-view key binding overrides from configuration. The outer key is the view type name
     ///     (e.g., "TextField"), the inner dictionary maps commands to platform key bindings.
+    ///     Nested JSON <c>View.ViewKeyBindings</c> overlays this dictionary when
+    ///     <see cref="TuiConfigurationBuilder.ApplyToStaticFacades"/> runs.
     ///     <para>
     ///         <b>IMPORTANT:</b> This is a process-wide static property. Change with care.
     ///         Do not set in parallelizable unit tests.
@@ -728,7 +734,7 @@ public partial class View // Keyboard APIs
             ApplyLayer (layer, supported);
         }
 
-        // Apply user overrides from View.ViewKeyBindings (set in code; not a Settings POCO).
+        // Apply user overrides from View.ViewKeyBindings (config JSON and/or code).
         // Strip generic arity suffix (e.g., "TreeView`1" → "TreeView") so config keys match
         string typeName = GetType ().Name;
         int backtick = typeName.IndexOf ('`');

@@ -233,7 +233,7 @@ public sealed class SchemeManager : ISchemeManager
     {
         foreach (IConfigurationSection schemeChild in schemesSection.GetChildren ())
         {
-            if (SectionToJson (schemeChild) is not JsonObject obj || obj.Count == 0)
+            if (ConfigurationSectionJson.ToJson (schemeChild) is not JsonObject obj || obj.Count == 0)
             {
                 continue;
             }
@@ -280,27 +280,4 @@ public sealed class SchemeManager : ISchemeManager
         }
     }
 
-    private static JsonNode? SectionToJson (IConfigurationSection section)
-    {
-        List<IConfigurationSection> children = [.. section.GetChildren ()];
-
-        if (children.Count == 0)
-        {
-            return section.Value is null ? null : JsonValue.Create (section.Value);
-        }
-
-        JsonObject obj = [];
-
-        foreach (IConfigurationSection child in children)
-        {
-            JsonNode? nested = SectionToJson (child);
-
-            if (nested is not null)
-            {
-                obj [child.Key] = nested;
-            }
-        }
-
-        return obj;
-    }
 }

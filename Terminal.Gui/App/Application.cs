@@ -279,6 +279,10 @@ public static partial class Application
     ///     Each entry maps a <see cref="Command"/> to a <see cref="PlatformKeyBinding"/>
     ///     that specifies the key strings for all platforms or specific ones.
     ///     <para>
+    ///         Nested JSON <c>Application.DefaultKeyBindings</c> overlays this dictionary by command when
+    ///         <see cref="TuiConfigurationBuilder.ApplyToStaticFacades"/> runs. Unmentioned commands keep these defaults.
+    ///     </para>
+    ///     <para>
     ///         To change a single binding and have the change take effect immediately, use
     ///         <see cref="SetDefaultKeyBinding"/> or <see cref="RemoveDefaultKeyBinding"/>
     ///         instead of mutating the dictionary directly. Direct dictionary mutation

@@ -15,6 +15,7 @@
       "description": "Name of the theme applied at startup. Must match a key in Themes."
     },
     "Application": { "$ref": "#/definitions/applicationSettings" },
+    "View": { "$ref": "#/definitions/viewSettings" },
     "Driver": { "$ref": "#/definitions/driverSettings" },
     "Key": { "$ref": "#/definitions/keySettings" },
     "FileDialog": { "$ref": "#/definitions/fileDialogSettings" },
@@ -113,7 +114,47 @@
           "type": "boolean",
           "default": false,
           "description": "When true, mouse events are ignored."
+        },
+        "DefaultKeyBindings": {
+          "$ref": "#/definitions/commandKeyBindings",
+          "description": "Overlays Application.DefaultKeyBindings. Unmentioned commands keep hard-coded defaults."
         }
+      },
+      "additionalProperties": false
+    },
+    "viewSettings": {
+      "type": "object",
+      "description": "Shared view key-binding overlays (process-wide).",
+      "properties": {
+        "DefaultKeyBindings": {
+          "$ref": "#/definitions/commandKeyBindings",
+          "description": "Overlays View.DefaultKeyBindings. Unmentioned commands keep hard-coded defaults."
+        },
+        "ViewKeyBindings": {
+          "type": "object",
+          "description": "Per-view-type overlays. Outer key is the type name (e.g. TextField). Applied last in ApplyKeyBindings.",
+          "additionalProperties": {
+            "$ref": "#/definitions/commandKeyBindings"
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "commandKeyBindings": {
+      "type": "object",
+      "description": "Map of Command name to PlatformKeyBinding.",
+      "additionalProperties": {
+        "$ref": "#/definitions/platformKeyBinding"
+      }
+    },
+    "platformKeyBinding": {
+      "type": "object",
+      "description": "Keys for one command. All applies on every platform; Windows/Linux/Macos are additive.",
+      "properties": {
+        "All": { "type": "array", "items": { "type": "string" } },
+        "Windows": { "type": "array", "items": { "type": "string" } },
+        "Linux": { "type": "array", "items": { "type": "string" } },
+        "Macos": { "type": "array", "items": { "type": "string" } }
       },
       "additionalProperties": false
     },

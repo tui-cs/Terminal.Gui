@@ -74,6 +74,27 @@ A pre-MEC file with `"Button.DefaultShadow": "None"` or `"Themes": [ { "Dark": {
 
 Theme overlays apply only to theme-scoped POCOs. The selected theme name is `ThemeSettings.Defaults.Theme` (JSON scalar `"Theme"`).
 
+Key bindings overlay hard-coded defaults from nested JSON:
+
+```json
+{
+  "Application": {
+    "DefaultKeyBindings": {
+      "Quit": { "All": ["Esc", "Ctrl+Q"] }
+    }
+  },
+  "View": {
+    "ViewKeyBindings": {
+      "TextField": {
+        "CutToEndOfLine": { "All": ["Ctrl+K"] }
+      }
+    }
+  }
+}
+```
+
+Unmentioned commands keep their compile-time bindings. See [Keyboard](keyboard.md#user-overrides-via-configuration).
+
 To change a theme-scoped default in code:
 
 ```csharp

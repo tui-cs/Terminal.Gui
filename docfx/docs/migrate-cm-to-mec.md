@@ -11,6 +11,7 @@ dotnet run --project Tools/MigrateConfig -- ./.tui/config.json ./.tui/config.jso
 The tool:
 
 - Splits top-level dotted keys (`Button.DefaultShadow`) into nested objects (`Button: { DefaultShadow }`)
+- Splits `Application.DefaultKeyBindings`, `View.DefaultKeyBindings`, and `View.ViewKeyBindings` into nested `Application` / `View` sections (still applied in 2.5 — overlay by command; unmentioned commands keep hard-coded defaults)
 - Collapses `Themes` / `Schemes` arrays of single-key objects into dictionaries
 - Treats empty `Themes` / `Schemes` arrays as empty dictionaries (`{}`)
 

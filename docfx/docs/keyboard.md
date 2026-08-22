@@ -399,9 +399,9 @@ Terminal.Gui uses a layered, platform-aware key binding architecture. All defaul
 
 Key bindings are organized in three layers, applied from lowest to highest priority:
 
-1. **`Application.DefaultKeyBindings`** - Application-wide bindings for commands like Quit, Suspend, Arrange, and tab navigation. Set in code.
+1. **`Application.DefaultKeyBindings`** - Application-wide bindings for commands like Quit, Suspend, Arrange, and tab navigation. Overridable in nested JSON under `Application.DefaultKeyBindings`.
 
-2. **`View.DefaultKeyBindings`** - Shared base bindings for all views, covering navigation (cursor keys, Home, End), clipboard (Copy, Cut, Paste), and editing (Undo, Redo, Delete). Set in code.
+2. **`View.DefaultKeyBindings`** - Shared base bindings for all views, covering navigation (cursor keys, Home, End), clipboard (Copy, Cut, Paste), and editing (Undo, Redo, Delete). Overridable under `View.DefaultKeyBindings`.
 
 3. **Per-view `DefaultKeyBindings`** - View-specific bindings that layer on top of the base. For example, `TextField.DefaultKeyBindings` adds Emacs-style navigation (`Ctrl+B`, `Ctrl+F`), word movement (`Ctrl+CursorLeft`), and kill commands (`Ctrl+K`).
 
@@ -436,22 +436,37 @@ The `Bind` helper class provides factory methods:
 | `Bind.NonWindows (...)` | Keys that apply only on Linux and macOS |
 | `Bind.Platform (windows, linux, macos)` | Fully platform-specific, no shared keys |
 
-### User overrides
+### User overrides via configuration
 
-Key-binding dictionaries are not Settings POCOs. Override them in code (before views are constructed):
+Unmentioned commands keep the hard-coded defaults. JSON entries overlay by command name:
 
-```csharp
-Application.DefaultKeyBindings [Command.Quit] = Bind.All (Key.Q.WithCtrl);
-View.ViewKeyBindings = new ()
+```json
 {
-    ["TextField"] = new ()
-    {
-        [Command.Undo] = Bind.All (Key.Z.WithCtrl)
+  "Application": {
+    "DefaultKeyBindings": {
+      "Quit": { "All": ["Esc", "Ctrl+Q"] }
     }
-};
+  },
+  "View": {
+    "DefaultKeyBindings": {
+      "Undo": { "All": ["Ctrl+Z"], "Linux": ["Ctrl+/"], "Macos": ["Ctrl+/"] }
+    },
+    "ViewKeyBindings": {
+      "TextField": {
+        "CutToEndOfLine": { "All": ["Ctrl+K"] }
+      }
+    }
+  }
+}
 ```
 
-`View.ViewKeyBindings` is applied last (highest priority) after `View.DefaultKeyBindings` and per-view `DefaultKeyBindings`. Nested JSON does not currently bind these dictionaries.
+Or in code before views are constructed:
+
+```csharp
+Application.SetDefaultKeyBinding (Command.Quit, Bind.All (Key.Q.WithCtrl));
+```
+
+`View.ViewKeyBindings` is applied last (highest priority) after `View.DefaultKeyBindings` and per-view `DefaultKeyBindings`. The outer key is the view type name (`TextField`, `TreeView`, …).
 
 ### Resolution Order
 
@@ -459,7 +474,7 @@ When a view is created, key bindings are resolved in this order:
 
 1. `View.DefaultKeyBindings` (base layer - navigation, clipboard, editing)
 2. Per-view `DefaultKeyBindings` (e.g., `TextField.DefaultKeyBindings`)
-3. `View.ViewKeyBindings` user overrides (set in code)
+3. `View.ViewKeyBindings` user overrides (from configuration and/or code)
 
 At each layer, only commands supported by the view are bound, and keys already bound by a previous layer are skipped. This means user overrides take effect because they are applied last, after the default layers have established their bindings.
 

@@ -1,5 +1,8 @@
 // Grok - grok-4.6
+using Terminal.Gui.App;
 using Terminal.Gui.Configuration;
+using Terminal.Gui.Input;
+using Terminal.Gui.ViewBase;
 
 namespace ConfigurationTests;
 
@@ -34,6 +37,9 @@ internal sealed class SettingsFacadeSnapshot : IDisposable
     private readonly TextViewSettings _textView = TextViewSettings.Current;
     private readonly WindowSettings _window = WindowSettings.Current;
     private readonly GlyphSettings _glyphs = GlyphSettings.Current;
+    private readonly Dictionary<Command, PlatformKeyBinding>? _applicationKeyBindings = CloneCommandBindings (Application.DefaultKeyBindings);
+    private readonly Dictionary<Command, PlatformKeyBinding>? _viewKeyBindings = CloneCommandBindings (View.DefaultKeyBindings);
+    private readonly Dictionary<string, Dictionary<Command, PlatformKeyBinding>>? _viewTypeKeyBindings = CloneViewKeyBindings (View.ViewKeyBindings);
 
     public void Dispose ()
     {
@@ -62,5 +68,29 @@ internal sealed class SettingsFacadeSnapshot : IDisposable
         TextViewSettings.Current = _textView;
         WindowSettings.Current = _window;
         GlyphSettings.Current = _glyphs;
+        Application.DefaultKeyBindings = CloneCommandBindings (_applicationKeyBindings);
+        View.DefaultKeyBindings = CloneCommandBindings (_viewKeyBindings);
+        View.ViewKeyBindings = CloneViewKeyBindings (_viewTypeKeyBindings);
+    }
+
+    private static Dictionary<Command, PlatformKeyBinding>? CloneCommandBindings (Dictionary<Command, PlatformKeyBinding>? source) =>
+        source is null ? null : new (source);
+
+    private static Dictionary<string, Dictionary<Command, PlatformKeyBinding>>? CloneViewKeyBindings (
+        Dictionary<string, Dictionary<Command, PlatformKeyBinding>>? source)
+    {
+        if (source is null)
+        {
+            return null;
+        }
+
+        Dictionary<string, Dictionary<Command, PlatformKeyBinding>> clone = new (StringComparer.OrdinalIgnoreCase);
+
+        foreach (KeyValuePair<string, Dictionary<Command, PlatformKeyBinding>> pair in source)
+        {
+            clone [pair.Key] = new (pair.Value);
+        }
+
+        return clone;
     }
 }
