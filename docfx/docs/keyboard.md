@@ -399,11 +399,11 @@ Terminal.Gui uses a layered, platform-aware key binding architecture. All defaul
 
 Key bindings are organized in three layers, applied from lowest to highest priority:
 
-1. **`Application.DefaultKeyBindings`** - Application-wide bindings for commands like Quit, Suspend, Arrange, and tab navigation. This is a `[ConfigurationProperty]` and can be overridden via configuration.
+1. **`Application.DefaultKeyBindings`** - Application-wide bindings for commands like Quit, Suspend, Arrange, and tab navigation. Set in code.
 
-2. **`View.DefaultKeyBindings`** - Shared base bindings for all views, covering navigation (cursor keys, Home, End), clipboard (Copy, Cut, Paste), and editing (Undo, Redo, Delete). This is also a `[ConfigurationProperty]`.
+2. **`View.DefaultKeyBindings`** - Shared base bindings for all views, covering navigation (cursor keys, Home, End), clipboard (Copy, Cut, Paste), and editing (Undo, Redo, Delete). Set in code.
 
-3. **Per-view `DefaultKeyBindings`** - View-specific bindings that layer on top of the base. For example, `TextField.DefaultKeyBindings` adds Emacs-style navigation (`Ctrl+B`, `Ctrl+F`), word movement (`Ctrl+CursorLeft`), and kill commands (`Ctrl+K`). These are plain static properties, not configurable via TuiConfigurationBuilder.
+3. **Per-view `DefaultKeyBindings`** - View-specific bindings that layer on top of the base. For example, `TextField.DefaultKeyBindings` adds Emacs-style navigation (`Ctrl+B`, `Ctrl+F`), word movement (`Ctrl+CursorLeft`), and kill commands (`Ctrl+K`).
 
 Each view's constructor calls `ApplyKeyBindings (View.DefaultKeyBindings, <ViewType>.DefaultKeyBindings)` to combine the layers. Only commands that the view actually supports (via `GetSupportedCommands ()`) are bound. Keys already bound by a lower layer are not overwritten by a higher layer.
 
@@ -436,36 +436,22 @@ The `Bind` helper class provides factory methods:
 | `Bind.NonWindows (...)` | Keys that apply only on Linux and macOS |
 | `Bind.Platform (windows, linux, macos)` | Fully platform-specific, no shared keys |
 
-### User Overrides via Configuration
+### User overrides
 
-Users can override key bindings for any view type using `View.ViewKeyBindings` in a configuration file. The outer key is the view type name; the inner dictionary maps command names to `PlatformKeyBinding` objects:
+Key-binding dictionaries are not Settings POCOs. Override them in code (before views are constructed):
 
-```json
+```csharp
+Application.DefaultKeyBindings [Command.Quit] = Bind.All (Key.Q.WithCtrl);
+View.ViewKeyBindings = new ()
 {
-  "View.ViewKeyBindings": {
-    "TextField": {
-      "Undo": { "All": ["Ctrl+Z"] },
-      "CutToEndOfLine": { "All": ["Ctrl+K"] }
-    },
-    "TextView": {
-      "Redo": { "All": ["Ctrl+Shift+Z"], "Windows": ["Ctrl+Y"] }
+    ["TextField"] = new ()
+    {
+        [Command.Undo] = Bind.All (Key.Z.WithCtrl)
     }
-  }
-}
+};
 ```
 
-`ViewKeyBindings` overrides are applied last (highest priority), after both `View.DefaultKeyBindings` and per-view `DefaultKeyBindings`.
-
-Application-level defaults can also be overridden:
-
-```json
-{
-  "Application.DefaultKeyBindings": {
-    "Quit": { "All": ["Ctrl+Q"] },
-    "Suspend": { "Linux": ["Ctrl+Z"], "Macos": ["Ctrl+Z"] }
-  }
-}
-```
+`View.ViewKeyBindings` is applied last (highest priority) after `View.DefaultKeyBindings` and per-view `DefaultKeyBindings`. Nested JSON does not currently bind these dictionaries.
 
 ### Resolution Order
 
@@ -473,7 +459,7 @@ When a view is created, key bindings are resolved in this order:
 
 1. `View.DefaultKeyBindings` (base layer - navigation, clipboard, editing)
 2. Per-view `DefaultKeyBindings` (e.g., `TextField.DefaultKeyBindings`)
-3. `View.ViewKeyBindings` user overrides (from configuration)
+3. `View.ViewKeyBindings` user overrides (set in code)
 
 At each layer, only commands supported by the view are bound, and keys already bound by a previous layer are skipped. This means user overrides take effect because they are applied last, after the default layers have established their bindings.
 
@@ -484,13 +470,13 @@ For debugging keyboard event flow, use the `Trace` class from the `Terminal.Gui.
 ```csharp
 using Terminal.Gui.Tracing;
 
-Trace.KeyboardEnabled = true;
+Trace.EnabledCategories |= TraceCategory.Keyboard;
 ```
 
 When enabled, keyboard events are logged via `Logging.Trace` showing the flow from Driver → Application → View. Enable via:
 
-- **Code**: `Trace.KeyboardEnabled = true;`
-- **Config**: `"Trace.KeyboardEnabled": true`
+- **Code**: `Trace.EnabledCategories |= TraceCategory.Keyboard;`
+- **Config**: `{ "Trace": { "EnabledCategories": "Keyboard" } }`
 - **UICatalog**: Logging menu → Keyboard Trace
 
 See [Logging - View Event Tracing](logging.md#view-event-tracing) for more details.

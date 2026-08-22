@@ -690,15 +690,17 @@ These can also be configured in `config.json`:
 
 ```json
 {
+  "MenuBar": {
+    "DefaultKey": "F10"
+  },
+  "PopoverMenu": {
+    "DefaultKey": "Shift+F10"
+  },
   "Themes": {
     "Default": {
-      "Menu.DefaultBorderStyle": "Single",
-      "MenuBar.DefaultBorderStyle": "None"
+      "Menu": { "DefaultBorderStyle": "Single" },
+      "MenuBar": { "DefaultBorderStyle": "None" }
     }
-  },
-  "Settings": {
-    "MenuBar.DefaultKey": "F10",
-    "PopoverMenu.DefaultKey": "Shift+F10"
   }
 }
 ```

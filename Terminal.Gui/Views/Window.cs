@@ -42,8 +42,7 @@ public class Window : Runnable
     ///// <remarks>
     ///// This property can be set in a Theme to change the default <see cref="LineStyle"/> for all <see cref="Window"/>s.
     ///// </remarks>
-    /////[ConfigurationProperty (Scope = typeof (ThemeScope)), JsonConverter (typeof (JsonStringEnumConverter))]
-    ////public static Scheme DefaultScheme { get; set; } = Colors.Schemes ["Base"];
+
 
     /// <summary>
     ///     The default <see cref="LineStyle"/> for <see cref="Window"/>'s border. The default is

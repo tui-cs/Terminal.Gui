@@ -105,7 +105,7 @@ public class UICatalog
         // Configuration Management
         Option<bool> disableConfigManagement = new ("--disable-cm")
         {
-            Description = "Indicates Configuration Management should not be enabled. Only `ConfigLocations.HardCoded` settings will be loaded."
+            Description = "Skip applying CLI driver / 16-color overlays via TuiConfigurationBuilder.RuntimeConfig. Library defaults still load at assembly load."
         };
         disableConfigManagement.Aliases.Add ("-dcm");
         disableConfigManagement.Aliases.Add ("--dcm");

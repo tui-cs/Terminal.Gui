@@ -1,5 +1,7 @@
 # CM Removal — Pre-Work Inventories & Baselines
 
+> **Status:** Historical inventory used while implementing #5416. Not the live configuration contract.
+
 Companion artifact for [`remove-legacy-cm.md`](./remove-legacy-cm.md).
 Captures the empirical "before" state used by phases **G** (examples sweep),
 **E** (test deletion), and **I** (AOT measurement) so the eventual delta

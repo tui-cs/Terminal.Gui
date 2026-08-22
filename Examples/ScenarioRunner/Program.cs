@@ -36,7 +36,7 @@ public static class Program
         driverOption.AcceptOnlyFromAmong (allowedDrivers!);
         driverOption.Aliases.Add ("-d");
 
-        Option<bool> disableConfigManagement = new ("--disable-cm") { Description = "Indicates Configuration Management should not be enabled." };
+        Option<bool> disableConfigManagement = new ("--disable-cm") { Description = "Skip applying CLI driver / 16-color overlays via TuiConfigurationBuilder.RuntimeConfig." };
         disableConfigManagement.Aliases.Add ("-dcm");
 
         Option<bool> force16Colors = new ("--force-16-colors") { Description = "Forces the driver to use 16-color mode instead of TrueColor." };

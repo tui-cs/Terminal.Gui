@@ -1,7 +1,5 @@
 using Terminal.Gui.Tracing;
 
-#pragma warning disable CS0618 // Obsolete - Menu uses [ConfigurationProperty] for DefaultBorderStyle during transition
-
 namespace Terminal.Gui.Views;
 
 /// <summary>

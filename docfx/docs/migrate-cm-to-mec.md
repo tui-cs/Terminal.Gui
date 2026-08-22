@@ -21,7 +21,7 @@ The library does **not** apply the legacy shape. A `WARN` log names the file and
 | 2.4.x (removed) | 2.5.0 |
 |---|---|
 | `ConfigurationManager.Enable (ConfigLocations.All)` | `new TuiConfigurationBuilder ().ApplyToStaticFacades ()` (already runs at assembly load) |
-| `ConfigurationManager.RuntimeConfig = json` | `builder.RuntimeConfig = json; builder.ApplyToStaticFacades ()` |
+| `ConfigurationManager.RuntimeConfig = json` | `builder.RuntimeConfig = json; builder.ApplyToStaticFacades ()` (nested JSON only) |
 | `ConfigurationManager.Applied += ...` | `ThemeChanges.ThemeChanged += ...` |
 | `ThemeManager.Theme = "Dark"` | `builder.ThemeManager.SwitchTheme ("Dark")` |
 | `Button.DefaultShadow = ShadowStyles.None` | `ButtonSettings.Current = ButtonSettings.Current with { DefaultShadow = ShadowStyles.None }` |

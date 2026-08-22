@@ -1,8 +1,6 @@
 using System.ComponentModel;
 using Terminal.Gui.Tracing;
 
-#pragma warning disable CS0618 // Obsolete - MenuBar uses [ConfigurationProperty] for DefaultBorderStyle/DefaultKey during transition
-
 namespace Terminal.Gui.Views;
 
 /// <summary>

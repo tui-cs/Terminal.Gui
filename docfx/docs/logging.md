@@ -272,7 +272,9 @@ When tracing is enabled, output automatically goes to `Logging.Trace` via the `L
 
 ```json
 {
-  "Trace.EnabledCategories": ["Command", "Mouse"]
+  "Trace": {
+    "EnabledCategories": "Command,Mouse"
+  }
 }
 ```
 
@@ -280,16 +282,13 @@ To enable configuration tracing (useful when diagnosing why a property isn't app
 
 ```json
 {
-  "Trace.EnabledCategories": ["Configuration"]
+  "Trace": {
+    "EnabledCategories": "Configuration"
+  }
 }
 ```
 
-Single values and legacy numeric formats are also supported:
-
-```json
-{ "Trace.EnabledCategories": "Command" }
-{ "Trace.EnabledCategories": 6 }
-```
+`EnabledCategories` is a <xref:Terminal.Gui.Tracing.TraceCategory> flags value: a comma-separated name list (`"Command,Mouse"`) or a single name (`"Configuration"`).
 
 **Via UICatalog:** Toggle in **Logging** menu → **Command Trace** / **Mouse Trace** / **Keyboard Trace**
 

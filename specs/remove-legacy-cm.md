@@ -458,7 +458,7 @@ Static `ThemeManager` remains the process-wide facade (`ThemeManager.Theme =`). 
 
 ### JSON file breaking change
 
-The library `Resources/config.json` is nested MEC. User files and `RuntimeConfig` in the legacy flat-key format (`"Button.DefaultShadow": "..."`) or array-themes format still bind (dotted keys overlay nested library sections) but log a `WARN` pointing at the migration documentation and `Tools/MigrateConfig/`. No library-side auto-migration of on-disk files ships. The hosted JSON schema (`docfx/schemas/tui-config-schema.json`) is updated in this PR (#5631).
+The library `Resources/config.json` is nested MEC. User files and `RuntimeConfig` in the legacy flat-key format (`"Button.DefaultShadow": "..."`) or array-themes format are **not** applied; a `WARN` points at the migration documentation and `Tools/MigrateConfig/`. No library-side auto-migration of on-disk files ships. The hosted JSON schema (`docfx/schemas/tui-config-schema.json`) is updated in this PR (#5631).
 
 ### Migration guide
 

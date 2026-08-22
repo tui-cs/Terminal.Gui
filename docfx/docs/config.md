@@ -63,12 +63,12 @@ A pre-MEC file with `"Button.DefaultShadow": "None"` or `"Themes": [ { "Dark": {
 
 ## Settings POCOs
 
-| Scope | Types | Storage |
+| Kind | Types | Storage |
 |-------|--------|---------|
-| ThemeScope | `ButtonSettings`, `DialogSettings`, `GlyphSettings`, `MenuSettings`, … | Immutable `record` with `Current` swapped atomically |
-| SettingsScope | `ApplicationSettings`, `DriverSettings`, `KeySettings`, `ThemeSettings`, … | Mutable `Defaults` instance |
+| Theme-scoped | `ButtonSettings`, `DialogSettings`, `GlyphSettings`, `MenuSettings`, … | Immutable `record` with `Current` swapped atomically |
+| Process-wide | `ApplicationSettings`, `DriverSettings`, `KeySettings`, `ThemeSettings`, … | Mutable `Defaults` instance |
 
-Theme overlays apply only to ThemeScope POCOs. The selected theme name is `ThemeSettings.Defaults.Theme` (JSON scalar `"Theme"`).
+Theme overlays apply only to theme-scoped POCOs. The selected theme name is `ThemeSettings.Defaults.Theme` (JSON scalar `"Theme"`).
 
 To change a theme-scoped default in code:
 

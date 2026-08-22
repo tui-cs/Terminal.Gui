@@ -41,11 +41,13 @@ The appropriate driver is automatically selected based on the platform when <xre
 
 Explicitly specify a driver in several ways:
 
-Method 1: Set ForceDriver using Configuration Manager
+Method 1: Set ForceDriver via nested configuration
 
 ```json
 {
-  "Application.ForceDriver": "ansi"
+  "Application": {
+    "ForceDriver": "ansi"
+  }
 }
 ```
 
@@ -67,13 +69,13 @@ using (IApplication app = Application.Create())
 }
 ```
 
-### ForceDriver as Configuration Property
+### ForceDriver via configuration
 
-The `ForceDriver` property is a configuration property marked with `[ConfigurationProperty]`, which means:
+`Application.ForceDriver` is backed by <xref:Terminal.Gui.Configuration.ApplicationSettings>.ForceDriver:
 
-- It can be set through the configuration system (e.g., `config.json`)
+- Set it in nested JSON (`Application: { ForceDriver: "ansi" }`) or on `ApplicationSettings.Defaults`
 - Changes raise the `ForceDriverChanged` event
-- It persists across application instances when using the static <xref:Terminal.Gui.App.Application> class
+- Library defaults load when `Terminal.Gui.dll` loads; overlay with `TuiConfigurationBuilder.RuntimeConfig`
 
 ```csharp
 // Subscribe to driver changes
@@ -357,7 +359,7 @@ The main driver interface that the framework uses internally. `IDriver` is organ
 
 #### Size Detection (ANSI Driver)
 
-The ANSI driver's terminal-size detection strategy is controlled by `Driver.SizeDetection` (a `[ConfigurationProperty]`):
+The ANSI driver's terminal-size detection strategy is controlled by `Driver.SizeDetection` (<xref:Terminal.Gui.Configuration.DriverSettings>.SizeDetection):
 
 | Mode | Mechanism | When to use |
 |---|---|---|
@@ -367,7 +369,7 @@ The ANSI driver's terminal-size detection strategy is controlled by `Driver.Size
 Set via JSON configuration:
 
 ```json
-{ "Driver.SizeDetection": "AnsiQuery" }
+{ "Driver": { "SizeDetection": "AnsiQuery" } }
 ```
 
 Or programmatically before `Init()`:

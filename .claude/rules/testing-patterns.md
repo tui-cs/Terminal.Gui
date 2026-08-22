@@ -31,7 +31,7 @@
    - Make them parallelizable and add them to `UnitTestsParallelizable`
 
 5. **Avoid static dependencies**
-   - DO NOT use the legacy/static `Application` API or `ConfigurationManager` in tests unless the tests explicitly test related functionality
+   - DO NOT use the legacy/static `Application` API or mutate process-wide `*Settings` facades in tests unless the tests explicitly test related functionality
 
 6. **Don't use `[AutoInitShutdown]` or `[SetupFakeApplication]`**
    - Legacy pattern, being phased out

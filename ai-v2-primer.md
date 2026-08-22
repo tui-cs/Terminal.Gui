@@ -88,7 +88,7 @@ public sealed class MainWindow : Runnable
 | `Terminal.Gui.Drawing` | `Color`, `Attribute`, `Scheme`, `LineCanvas`, `Glyphs` |
 | `Terminal.Gui.Input` | `Key`, `KeyCode`, `Command`, `KeyBindings`, `MouseBindings` |
 | `Terminal.Gui.Text` | `TextFormatter`, `TextDirection` |
-| `Terminal.Gui.Configuration` | `ConfigurationManager`, themes |
+| `Terminal.Gui.Configuration` | `TuiConfigurationBuilder`, Settings POCOs, themes |
 
 ---
 

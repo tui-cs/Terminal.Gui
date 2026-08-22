@@ -12,7 +12,7 @@ The `Configuration` namespace loads Terminal.Gui settings from JSON using Micros
 - **IThemeManager** / **MecThemeManager** - Theme names and `SwitchTheme`
 - **ISchemeManager** / **SchemeManager** - Named schemes
 - **ThemeChanges** - Process-wide `ThemeChanged` observer
-- **\*Settings** records (`ButtonSettings`, `GlyphSettings`, …) - Bind targets; ThemeScope types expose `Current`
+- **\*Settings** records (`ButtonSettings`, `GlyphSettings`, …) - Bind targets; theme-scoped types expose `Current`
 
 ## Example
 

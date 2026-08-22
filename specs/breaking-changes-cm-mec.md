@@ -1,6 +1,6 @@
 # Breaking-Change Analysis: CM → MEC Migration (#5411 vs #5416)
 
-> Companion to [replace-cm-with-mec.md](./replace-cm-with-mec.md).
+> **Status:** Historical. Companion to [replace-cm-with-mec.md](./replace-cm-with-mec.md). Live contract: [config.md](../docfx/docs/config.md).
 > Tracks the umbrella issue [#4943](https://github.com/gui-cs/Terminal.Gui/issues/4943).
 
 This document records what is **actually** breaking in

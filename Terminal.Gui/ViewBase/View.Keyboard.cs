@@ -1,7 +1,5 @@
 using Terminal.Gui.Tracing;
 
-#pragma warning disable CS0618 // Obsolete - View.Keyboard still uses ConfigurationPropertyAttribute during transition
-
 namespace Terminal.Gui.ViewBase;
 
 public partial class View // Keyboard APIs
@@ -730,7 +728,7 @@ public partial class View // Keyboard APIs
             ApplyLayer (layer, supported);
         }
 
-        // Apply user overrides from View.ViewKeyBindings (CM/MEC bridge)
+        // Apply user overrides from View.ViewKeyBindings (set in code; not a Settings POCO).
         // Strip generic arity suffix (e.g., "TreeView`1" → "TreeView") so config keys match
         string typeName = GetType ().Name;
         int backtick = typeName.IndexOf ('`');

@@ -1,5 +1,3 @@
-#pragma warning disable CS0618 // Obsolete - StatusBar uses [ConfigurationProperty] for DefaultSeparatorLineStyle during transition
-
 namespace Terminal.Gui.Views;
 
 /// <summary>
