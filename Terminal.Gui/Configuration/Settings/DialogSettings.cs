@@ -24,7 +24,7 @@ public sealed record DialogSettings
     public static DialogSettings Current
     {
         get => Volatile.Read (ref _current);
-        internal set => Volatile.Write (ref _current, value);
+        set => Volatile.Write (ref _current, value);
     }
 
     private static DialogSettings _current = Default;

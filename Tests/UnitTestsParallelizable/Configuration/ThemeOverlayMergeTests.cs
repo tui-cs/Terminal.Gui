@@ -136,6 +136,56 @@ public class ThemeOverlayMergeTests
 
     // Grok - grok-4.6
     [Fact]
+    public void SwitchTheme_ThemeChangedHandler_SeesNewOverlay ()
+    {
+        using SettingsFacadeSnapshot snapshot = new ();
+        TuiConfigurationBuilder tuiBuilder = new ();
+
+        tuiBuilder.RuntimeConfig = """
+                                   {
+                                     "Theme": "Default",
+                                     "Button": { "DefaultShadow": "Opaque" },
+                                     "Themes": {
+                                       "EightBit": {
+                                         "Button": { "DefaultShadow": "None" }
+                                       }
+                                     }
+                                   }
+                                   """;
+
+        tuiBuilder.ApplyToStaticFacades ();
+
+        ShadowStyles seenInHandler = ShadowStyles.Opaque;
+        MecThemeManager manager = new (tuiBuilder);
+        manager.ThemeChanged += (_, _) => seenInHandler = ButtonSettings.Current.DefaultShadow;
+
+        Assert.True (manager.SwitchTheme ("EightBit"));
+        Assert.Equal (ShadowStyles.None, seenInHandler);
+    }
+
+    // Grok - grok-4.6
+    [Fact]
+    public void SwitchTheme_IgnoresThemeNameCase ()
+    {
+        using SettingsFacadeSnapshot snapshot = new ();
+        TuiConfigurationBuilder tuiBuilder = new ();
+
+        tuiBuilder.RuntimeConfig = """
+                                   {
+                                     "Theme": "Default",
+                                     "Themes": { "Dark": { "Button": { "DefaultShadow": "None" } } }
+                                   }
+                                   """;
+
+        tuiBuilder.ApplyToStaticFacades ();
+        MecThemeManager manager = new (tuiBuilder);
+
+        Assert.True (manager.SwitchTheme ("dark"));
+        Assert.Equal (ShadowStyles.None, ButtonSettings.Current.DefaultShadow);
+    }
+
+    // Grok - grok-4.6
+    [Fact]
     public void ApplyToStaticFacades_LegacyArrayThemeShape_AppliesGlyphOverrides ()
     {
         using SettingsFacadeSnapshot snapshot = new ();

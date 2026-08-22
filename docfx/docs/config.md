@@ -59,7 +59,7 @@ Settings are **nested objects**, not dotted keys.
 
 `Themes` is a dictionary of theme name → overlay. Each overlay uses the same nested section names as the root (`Button`, `Glyphs`, `Dialog`, …). Properties omitted from an overlay keep the root value.
 
-A pre-MEC file with `"Button.DefaultShadow": "None"` or `"Themes": [ { "Dark": { } } ]` is detected and ignored for those settings. Convert it with `Tools/MigrateConfig`.
+A pre-MEC file with `"Button.DefaultShadow": "None"` or `"Themes": [ { "Dark": { } } ]` is still applied, but a warning is logged. Convert it with `Tools/MigrateConfig`.
 
 ## Settings POCOs
 

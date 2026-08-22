@@ -444,7 +444,7 @@ public sealed record GlyphSettings
     public static GlyphSettings Current
     {
         get => Volatile.Read (ref _current);
-        internal set => Volatile.Write (ref _current, value);
+        set => Volatile.Write (ref _current, value);
     }
 
     private static GlyphSettings _current = Default;

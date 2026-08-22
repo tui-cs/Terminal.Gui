@@ -15,7 +15,7 @@ public sealed record MenuSettings
     public static MenuSettings Current
     {
         get => Volatile.Read (ref _current);
-        internal set => Volatile.Write (ref _current, value);
+        set => Volatile.Write (ref _current, value);
     }
 
     private static MenuSettings _current = Default;

@@ -37,7 +37,7 @@ public class MecThemeManager : IThemeManager
                 {
                     IConfigurationSection? first = child.GetChildren ().FirstOrDefault ();
 
-                    if (first is not null && !names.Contains (first.Key))
+                    if (first is not null && !names.Contains (first.Key, StringComparer.OrdinalIgnoreCase))
                     {
                         names.Add (first.Key);
                     }
@@ -45,13 +45,13 @@ public class MecThemeManager : IThemeManager
                     continue;
                 }
 
-                if (!names.Contains (child.Key))
+                if (!names.Contains (child.Key, StringComparer.OrdinalIgnoreCase))
                 {
                     names.Add (child.Key);
                 }
             }
 
-            if (!names.Contains (ThemeManager.DEFAULT_THEME_NAME))
+            if (!names.Contains (ThemeManager.DEFAULT_THEME_NAME, StringComparer.OrdinalIgnoreCase))
             {
                 names.Insert (0, ThemeManager.DEFAULT_THEME_NAME);
             }
@@ -104,31 +104,36 @@ public class MecThemeManager : IThemeManager
             return false;
         }
 
-        // Verify the theme exists in the MEC configuration (legacy array or nested dictionary).
-        if (!ThemeNames.Contains (themeName))
+        IReadOnlyList<string> names = ThemeNames;
+        string? canonical = names.FirstOrDefault (n => string.Equals (n, themeName, StringComparison.OrdinalIgnoreCase));
+
+        if (canonical is null)
         {
             return false;
         }
 
-        ThemeSettings.Defaults = new () { Theme = themeName };
+        ThemeSettings.Defaults = new () { Theme = canonical };
+
+        // Publish overlays before raising ThemeChanged so handlers that re-read
+        // Button.DefaultShadow / Glyphs.* observe the new theme.
+        _builder.ApplyToStaticFacades (rebindSelectedTheme: false);
+        _themeChanged?.Invoke (this, new App.EventArgs<string> (canonical));
 
         // During transition, also update the existing ThemeManager. Its setter raises
-        // ThemeManager.ThemeChanged, which is forwarded to subscribers via OnLegacyThemeChanged
-        // (only while this instance has subscribers; see the ThemeChanged event above).
+        // ThemeManager.ThemeChanged (and thus ThemeChanges). If CM does not know the
+        // theme, raise ThemeChanges directly so view facades still refresh.
         try
         {
-            ThemeManager.Theme = themeName;
+            ThemeManager.Theme = canonical;
         }
         catch (InvalidOperationException)
         {
+            ThemeChanges.Raise (canonical);
         }
         catch (KeyNotFoundException)
         {
+            ThemeChanges.Raise (canonical);
         }
-
-        // Re-apply ThemeScope overlays for the already-selected theme. Do not rebind the
-        // scalar Theme key from configuration — that would reset activeTheme to the JSON default.
-        _builder.ApplyToStaticFacades (rebindSelectedTheme: false);
 
         return true;
     }

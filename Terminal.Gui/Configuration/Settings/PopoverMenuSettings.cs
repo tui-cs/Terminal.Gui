@@ -15,7 +15,7 @@ public sealed record PopoverMenuSettings
     public static PopoverMenuSettings Current
     {
         get => Volatile.Read (ref _current);
-        internal set => Volatile.Write (ref _current, value);
+        set => Volatile.Write (ref _current, value);
     }
 
     private static PopoverMenuSettings _current = Default;

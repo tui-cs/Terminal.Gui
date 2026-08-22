@@ -18,7 +18,7 @@ public sealed record WindowSettings
     public static WindowSettings Current
     {
         get => Volatile.Read (ref _current);
-        internal set => Volatile.Write (ref _current, value);
+        set => Volatile.Write (ref _current, value);
     }
 
     private static WindowSettings _current = Default;

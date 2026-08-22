@@ -15,7 +15,7 @@ public sealed record CheckBoxSettings
     public static CheckBoxSettings Current
     {
         get => Volatile.Read (ref _current);
-        internal set => Volatile.Write (ref _current, value);
+        set => Volatile.Write (ref _current, value);
     }
 
     private static CheckBoxSettings _current = Default;

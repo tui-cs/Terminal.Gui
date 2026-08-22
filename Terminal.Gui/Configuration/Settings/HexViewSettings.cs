@@ -15,7 +15,7 @@ public sealed record HexViewSettings
     public static HexViewSettings Current
     {
         get => Volatile.Read (ref _current);
-        internal set => Volatile.Write (ref _current, value);
+        set => Volatile.Write (ref _current, value);
     }
 
     private static HexViewSettings _current = Default;

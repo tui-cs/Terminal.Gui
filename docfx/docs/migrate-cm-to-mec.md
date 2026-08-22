@@ -14,7 +14,7 @@ The tool:
 - Collapses `Themes` / `Schemes` arrays of single-key objects into dictionaries
 - Treats empty `Themes` / `Schemes` arrays as empty dictionaries (`{}`)
 
-The library does **not** parse the legacy shape. A `WARN` log names the file and points here. Affected settings fall through to defaults.
+The library still **applies** the legacy shape during this transition. A `WARN` log names the file and points here so you can convert it. Converted nested JSON is the supported contract going forward.
 
 ## Code
 

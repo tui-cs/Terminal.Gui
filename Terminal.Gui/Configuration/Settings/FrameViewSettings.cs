@@ -15,7 +15,7 @@ public sealed record FrameViewSettings
     public static FrameViewSettings Current
     {
         get => Volatile.Read (ref _current);
-        internal set => Volatile.Write (ref _current, value);
+        set => Volatile.Write (ref _current, value);
     }
 
     private static FrameViewSettings _current = Default;
