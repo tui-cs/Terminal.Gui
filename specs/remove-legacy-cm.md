@@ -97,7 +97,7 @@ The exhaustive inventory of what still has to go. Discovered by `grep`ping the w
 
 | Old (post‑#5411) | New | Outcome |
 |------------------|-----|---------|
-| `MecSchemeManager` | `SchemeManager` | **Kept.** Static `SchemeManager` was retained as a MEC-backed facade (`GetScheme`, `AddScheme`). Instance `ISchemeManager.GetScheme` cannot share that name. |
+| `MecSchemeManager` | `SchemeManager` | **Done.** `SchemeManager` implements `ISchemeManager` with explicit `GetScheme`. |
 | `MecThemeManager` | `ThemeManager` | **Kept.** Static `ThemeManager` was retained as a MEC-backed facade (`ThemeManager.Theme =`). A static `ThemeChanged` event cannot coexist with the instance event on `IThemeManager`. |
 | `Tests/UnitTestsParallelizable/Configuration/MecSettingsTests.cs` | `SettingsTests.cs` | Renamed |
 | `Tests/UnitTestsParallelizable/Configuration/MecThemeTests.cs` | `ThemeTests.cs` | Renamed |
@@ -432,7 +432,7 @@ Tests for Phase D: **two** parallelizable tests — one asserts the warning fire
 | Check | Result |
 |-------|--------|
 | `Tests/NativeAotSmoke` `PublishAot=true` `win-arm64` | develop `24,640,512` (23.50 MB) → this PR `24,201,728` (23.08 MB), **−438,784 (−1.78%)** |
-| Dotted RuntimeConfig overlay | `BindFlatDottedKeys` always runs after nested `Bind`, so later dotted keys win over library nested sections |
+| Nested-only binder | Dotted keys and array-Themes are not applied; convert with `Tools/MigrateConfig` |
 | Test matrix | CI on PR #5416 (parallel, non-parallel, integration) |
 | Benchmarks | `TuiConfigurationBuilderBuildBenchmark` replaces `ConfigurationManagerLoadBenchmark`; `ThemeSwitchBenchmark` uses `ThemeManager.Theme =` |
 
@@ -454,7 +454,7 @@ The following public surface is **removed**. Source-incompatible for any consume
 - `Terminal.Gui.Configuration.ScopeJsonConverter<T>`
 - The `Terminal.Gui.Configuration.ConfigurationManager.Applied` / `Updated` events
 
-Static `ThemeManager` and `SchemeManager` remain as MEC-backed facades (`ThemeManager.Theme =`, `SchemeManager.GetScheme`). Instance APIs are `IThemeManager` / `ISchemeManager` (`MecThemeManager` / `MecSchemeManager`).
+Static `ThemeManager` remains the process-wide facade (`ThemeManager.Theme =`). `IThemeManager` is `MecThemeManager` (per-builder). `SchemeManager` is both the static facade and `ISchemeManager`.
 
 ### JSON file breaking change
 

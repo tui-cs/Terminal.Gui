@@ -20,6 +20,38 @@ namespace Terminal.Gui.Configuration;
 /// </summary>
 internal class RuneJsonConverter : JsonConverter<Rune>
 {
+    /// <summary>
+    ///     Parses a configuration string using the same rules as <see cref="Read"/>.
+    /// </summary>
+    internal static bool TryParse (string? value, out Rune result)
+    {
+        result = default;
+
+        if (value is null)
+        {
+            return false;
+        }
+
+        try
+        {
+            byte [] utf8 = JsonSerializer.SerializeToUtf8Bytes (value);
+            Utf8JsonReader reader = new (utf8);
+
+            if (!reader.Read ())
+            {
+                return false;
+            }
+
+            result = new RuneJsonConverter ().Read (ref reader, typeof (Rune), JsonSerializerOptions.Default);
+
+            return true;
+        }
+        catch (JsonException)
+        {
+            return false;
+        }
+    }
+
     public override Rune Read (ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
     {
         switch (reader.TokenType)

@@ -2,6 +2,7 @@
 
 using Terminal.Gui.App;
 using Terminal.Gui.Configuration;
+using Terminal.Gui.Drawing;
 
 namespace ConfigurationTests;
 
@@ -53,9 +54,9 @@ public class ThemeTests
     }
 
     [Fact]
-    public void MecSchemeManager_SchemeNames_DoesNotThrow ()
+    public void SchemeManager_SchemeNames_DoesNotThrow ()
     {
-        MecSchemeManager manager = new ();
+        ISchemeManager manager = new SchemeManager ();
         IReadOnlyList<string> names = manager.SchemeNames;
 
         // Should return a list without throwing (may be empty if CM state is odd in parallel tests)
@@ -63,9 +64,9 @@ public class ThemeTests
     }
 
     [Fact]
-    public void MecSchemeManager_GetScheme_ReturnsNull_ForInvalid ()
+    public void SchemeManager_GetScheme_ReturnsNull_ForInvalid ()
     {
-        MecSchemeManager manager = new ();
+        ISchemeManager manager = new SchemeManager ();
         Scheme? scheme = manager.GetScheme ("NonExistentScheme12345");
         Assert.Null (scheme);
     }
@@ -79,11 +80,11 @@ public class ThemeTests
     }
 
     [Fact]
-    public void ISchemeManager_Interface_IsImplementedByMecSchemeManager ()
+    public void ISchemeManager_Interface_IsImplementedBySchemeManager ()
     {
         TuiConfigurationBuilder builder = new ();
         ISchemeManager manager = builder.SchemeManager;
-        Assert.IsType<MecSchemeManager> (manager);
+        Assert.IsType<SchemeManager> (manager);
     }
 
     // Copilot - Claude Opus 4.7

@@ -14,7 +14,7 @@ The tool:
 - Collapses `Themes` / `Schemes` arrays of single-key objects into dictionaries
 - Treats empty `Themes` / `Schemes` arrays as empty dictionaries (`{}`)
 
-The library still **applies** the legacy shape during this transition. A `WARN` log names the file and points here so you can convert it. Converted nested JSON is the supported contract going forward. Point `$schema` at `https://tui-cs.github.io/Terminal.Gui/schemas/tui-config-schema.json` (nested MEC, 2.5+).
+The library does **not** apply the legacy shape. A `WARN` log names the file and points here so you can convert it. Nested JSON is the supported contract. Point `$schema` at `https://tui-cs.github.io/Terminal.Gui/schemas/tui-config-schema.json` (nested MEC, 2.5+).
 
 ## Code
 

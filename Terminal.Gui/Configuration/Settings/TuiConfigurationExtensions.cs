@@ -225,6 +225,6 @@ public static class TuiConfigurationExtensions
         }
 
         Logging.Warning (
-                         $"Configuration file \"{path}\" uses a pre-MEC (flat-key or array-Themes) shape. It is still applied; convert it with Tools/MigrateConfig. See docfx/docs/migrate-cm-to-mec.md.");
+                         $"Configuration file \"{path}\" uses a pre-MEC (flat-key or array-Themes) shape and is not applied. Convert it with Tools/MigrateConfig. See docfx/docs/migrate-cm-to-mec.md.");
     }
 }

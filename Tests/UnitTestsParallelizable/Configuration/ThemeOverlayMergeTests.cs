@@ -186,7 +186,7 @@ public class ThemeOverlayMergeTests
 
     // Grok - grok-4.6
     [Fact]
-    public void ApplyToStaticFacades_LegacyArrayThemeShape_AppliesGlyphOverrides ()
+    public void ApplyToStaticFacades_LegacyArrayThemeShape_IsNotApplied ()
     {
         using SettingsFacadeSnapshot snapshot = new ();
         TuiConfigurationBuilder tuiBuilder = new ();
@@ -208,7 +208,7 @@ public class ThemeOverlayMergeTests
 
         tuiBuilder.ApplyToStaticFacades ();
 
-        Assert.Equal ((System.Text.Rune)'X', Glyphs.CheckStateChecked);
-        Assert.Equal (ShadowStyles.None, ButtonSettings.Current.DefaultShadow);
+        Assert.Equal ((System.Text.Rune)'☑', Glyphs.CheckStateChecked);
+        Assert.NotEqual (ShadowStyles.None, ButtonSettings.Current.DefaultShadow);
     }
 }

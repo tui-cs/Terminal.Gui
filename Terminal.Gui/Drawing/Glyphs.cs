@@ -8,15 +8,11 @@ namespace Terminal.Gui.Drawing;
 ///         <see cref="Glyphs"/>).
 ///     </para>
 ///     <para>
-///         The default glyphs can be changed per-theme overlay in <see cref="TuiConfigurationBuilder"/>. Within a <c>config.json</c>
-///         file the Json property name is the property name prefixed with "Glyphs.".
+///         Overlay glyphs in nested JSON under <c>Glyphs</c>, or per-theme under <c>Themes:{name}:Glyphs</c>.
 ///     </para>
 ///     <para>
-///         The Json property can be one of:
-///         - unicode glyph in a string (e.g. "â˜‘")
-///         - U+hex format in a string  (e.g. "U+2611")
-///         - \u format in a string (e.g. "\\u2611")
-///         - A decimal number (e.g. 97 for "a")
+///         Values follow <see cref="RuneJsonConverter"/>: a glyph string, U+hex (<c>U+2611</c>),
+///         <c>\u2611</c>, or a decimal code point.
 ///     </para>
 /// </remarks>
 public class Glyphs

@@ -373,7 +373,7 @@ public class Runner
     }
 
     private static void ThemeManagerOnThemeChanged (object? sender, EventArgs<string> e) =>
-        TuiConfigurationBuilder.Shared.ApplyToStaticFacades (rebindSelectedTheme: false);
+        TuiConfigurationBuilder.Shared.ApplyActiveThemeOverlays ();
 
     private static void ConfigFileChanged (object sender, FileSystemEventArgs e)
     {

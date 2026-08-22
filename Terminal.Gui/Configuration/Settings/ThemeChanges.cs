@@ -16,7 +16,4 @@ public static class ThemeChanges
     ///     The <see cref="App.EventArgs{T}.Value"/> is the name of the currently-active theme.
     /// </summary>
     public static event EventHandler<App.EventArgs<string>>? ThemeChanged;
-
-    /// <summary>Raises <see cref="ThemeChanged"/> after overlays have been published.</summary>
-    internal static void Raise (string themeName) => ThemeChanged?.Invoke (null, new App.EventArgs<string> (themeName));
 }

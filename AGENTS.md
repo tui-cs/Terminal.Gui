@@ -256,7 +256,7 @@ See `.claude/cookbook/` for common UI patterns:
 |App/Timeout:{ITimedEvents.cs,LogarithmicTimeout.cs,SmoothAcceleratingTimeout.cs,TimedEvents.cs,Timeout.cs,TimeoutEventArgs.cs}
 |App/Tracing:{ITraceBackend.cs,ListBackend.cs,LoggingBackend.cs,NullBackend.cs,Trace.cs,TraceCategory.cs,TraceEntry.cs,TraceScope.cs}
 |Configuration:{AttributeJsonConverter.cs,ColorJsonConverter.cs,ConcurrentDictionaryJsonConverter.cs,DictionaryJsonConverter.cs,KeyArrayJsonConverter.cs,KeyCodeJsonConverter.cs,KeyJsonConverter.cs,MouseFlagsArrayJsonConverter.cs,RuneJsonConverter.cs,SchemeJsonConverter.cs,SchemeManager.cs,SourceGenerationContext.cs,ThemeManager.cs,TraceCategoryJsonConverter.cs,TuiJsonErrors.cs,TuiSerializerContext.cs}
-|Configuration/Settings:{ApplicationSettings.cs,ButtonSettings.cs,CharMapSettings.cs,CheckBoxSettings.cs,DialogSettings.cs,DriverSettings.cs,FileDialogSettings.cs,FileDialogStyleSettings.cs,FrameViewSettings.cs,GlyphSettings.cs,HexViewSettings.cs,ISchemeManager.cs,IThemeManager.cs,KeySettings.cs,LinearRangeSettings.cs,MecSchemeManager.cs,MecThemeManager.cs,MenuBarSettings.cs,MenuSettings.cs,MessageBoxSettings.cs,NerdFontsSettings.cs,PopoverMenuSettings.cs,SelectorBaseSettings.cs,StatusBarSettings.cs,TextFieldSettings.cs,TextViewSettings.cs,ThemeChanges.cs,ThemeDefinition.cs,ThemeSettings.cs,TraceSettings.cs,TuiConfigurationBuilder.cs,TuiConfigurationExtensions.cs,WindowSettings.cs}
+|Configuration/Settings:{ApplicationSettings.cs,ButtonSettings.cs,CharMapSettings.cs,CheckBoxSettings.cs,DialogSettings.cs,DriverSettings.cs,FileDialogSettings.cs,FileDialogStyleSettings.cs,FrameViewSettings.cs,GlyphSettings.cs,HexViewSettings.cs,ISchemeManager.cs,IThemeManager.cs,KeySettings.cs,LinearRangeSettings.cs,MecThemeManager.cs,MenuBarSettings.cs,MenuSettings.cs,MessageBoxSettings.cs,NerdFontsSettings.cs,PopoverMenuSettings.cs,SelectorBaseSettings.cs,StatusBarSettings.cs,TextFieldSettings.cs,TextViewSettings.cs,ThemeCatalog.cs,ThemeChanges.cs,ThemeSettings.cs,TraceSettings.cs,TuiConfigurationBuilder.cs,TuiConfigurationExtensions.cs,WindowSettings.cs}
 |Drawing:{Attribute.cs,Cell.cs,CellEventArgs.cs,FillPair.cs,Glyphs.cs,Gradient.cs,GradientFill.cs,GraphemeHelper.cs,IFill.cs,Region.cs,RegionOp.cs,Ruler.cs,Scheme.cs,Schemes.cs,SolidFill.cs,TextStyle.cs,Thickness.cs,VisualRole.cs,VisualRoleEventArgs.cs}
 |Drawing/Color:{AnsiColorCode.cs,Color.ColorExtensions.cs,Color.ColorName.cs,Color.ColorParseException.cs,Color.cs,Color.Formatting.cs,Color.Operators.cs,ColorModel.cs,ColorQuantizer.cs,ColorStrings.cs,IColorDistance.cs,IColorNameResolver.cs,ICustomColorFormatter.cs,StandardColor.cs,StandardColors.cs,StandardColorsNameResolver.cs}
 |Drawing/Kitty:{KittyGraphicsEncoder.cs,KittyGraphicsSupportDetector.cs,KittyGraphicsSupportResult.cs}
@@ -485,7 +485,7 @@ Implementing `IValue<T>` requires `ValueChanging`, `ValueChanged`, and `ValueCha
 |ThemeManager|Class|Static facade,Theme,ThemeChanged
 |SchemeManager|Class|Static facade,GetScheme,Schemes
 |MecThemeManager|Class|IThemeManager implementation
-|MecSchemeManager|Class|ISchemeManager implementation
+|SchemeManager|Class|Static facade + ISchemeManager
 |ThemeChanges|Class|ThemeChanged observer
 |TuiJsonErrors|Class|Deferred JSON load errors
 ```
@@ -515,6 +515,7 @@ Implementing `IValue<T>` requires `ValueChanging`, `ValueChanged`, and `ValueCha
 |IFileOperations|Interface|GetFiles,GetDirectories,Exists
 |FileSystemTreeBuilder|Class|Build file trees
 ```
+
 
 
 

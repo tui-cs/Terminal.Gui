@@ -1,6 +1,5 @@
 // Grok - grok-4.6
 using System.Collections.Immutable;
-using Microsoft.Extensions.Configuration;
 
 namespace Terminal.Gui.Configuration;
 
@@ -27,18 +26,7 @@ public static class ThemeManager
                 return;
             }
 
-            string canonical = GetThemeNames ()
-                                   .FirstOrDefault (n => string.Equals (n, value, StringComparison.OrdinalIgnoreCase))
-                               ?? value;
-
-            if (string.Equals (ThemeSettings.Defaults.Theme, canonical, StringComparison.OrdinalIgnoreCase))
-            {
-                return;
-            }
-
-            ThemeSettings.Defaults = new () { Theme = canonical };
-            TuiConfigurationBuilder.Shared.ApplyToStaticFacades (rebindSelectedTheme: false);
-            ThemeChanged?.Invoke (null, new App.EventArgs<string> (canonical));
+            TuiConfigurationBuilder.Shared.TrySwitchTheme (value);
         }
     }
 
@@ -53,47 +41,5 @@ public static class ThemeManager
     public static string GetCurrentThemeName () => Theme;
 
     /// <summary>Gets the available theme names from configuration, with <see cref="DEFAULT_THEME_NAME"/> first.</summary>
-    public static ImmutableList<string> GetThemeNames ()
-    {
-        List<string> names = [];
-        IConfigurationSection themes = TuiConfigurationBuilder.Shared.Configuration.GetSection ("Themes");
-
-        foreach (IConfigurationSection child in themes.GetChildren ())
-        {
-            string name;
-
-            if (int.TryParse (child.Key, out _))
-            {
-                IConfigurationSection? first = child.GetChildren ().FirstOrDefault ();
-
-                if (first is null)
-                {
-                    continue;
-                }
-
-                name = first.Key;
-            }
-            else
-            {
-                name = child.Key;
-            }
-
-            if (!names.Contains (name, StringComparer.OrdinalIgnoreCase))
-            {
-                names.Add (name);
-            }
-        }
-
-        if (!names.Contains (DEFAULT_THEME_NAME, StringComparer.OrdinalIgnoreCase))
-        {
-            names.Insert (0, DEFAULT_THEME_NAME);
-        }
-        else
-        {
-            names.RemoveAll (n => string.Equals (n, DEFAULT_THEME_NAME, StringComparison.OrdinalIgnoreCase));
-            names.Insert (0, DEFAULT_THEME_NAME);
-        }
-
-        return [..names];
-    }
+    public static ImmutableList<string> GetThemeNames () => [.. ThemeCatalog.GetNames (TuiConfigurationBuilder.Shared.Configuration)];
 }

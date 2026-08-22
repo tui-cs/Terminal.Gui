@@ -10,7 +10,7 @@ The `Configuration` namespace loads Terminal.Gui settings from JSON using Micros
 - **TuiConfigurationBuilder** - Builds the source chain and applies values to Settings POCOs
 - **TuiConfigurationExtensions** - `AddTuiLibraryDefaults`, `AddTuiUserFiles`, `AddTuiRuntimeConfig`
 - **IThemeManager** / **MecThemeManager** - Theme names and `SwitchTheme`
-- **ISchemeManager** / **MecSchemeManager** - Named schemes
+- **ISchemeManager** / **SchemeManager** - Named schemes
 - **ThemeChanges** - Process-wide `ThemeChanged` observer
 - **\*Settings** records (`ButtonSettings`, `GlyphSettings`, …) - Bind targets; ThemeScope types expose `Current`
 

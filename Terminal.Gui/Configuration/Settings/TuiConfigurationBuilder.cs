@@ -1,6 +1,7 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using Microsoft.Extensions.Configuration;
+using Terminal.Gui.App;
 
 namespace Terminal.Gui.Configuration;
 
@@ -108,58 +109,104 @@ public class TuiConfigurationBuilder
     /// <summary>
     ///     Gets the MEC-backed scheme manager instance for this builder.
     /// </summary>
-    public ISchemeManager SchemeManager => _schemeManager ??= new MecSchemeManager ();
+    public ISchemeManager SchemeManager => _schemeManager ??= new SchemeManager ();
     private ISchemeManager? _schemeManager;
 
     /// <summary>
-    ///     Applies the current configuration to all static settings facades.
-    ///     Call this after building or rebuilding to push MEC values to the static <c>Defaults</c>/<c>Current</c> properties.
+    ///     Applies configuration sources to SettingsScope facades, then publishes the active theme's overlays.
     /// </summary>
-    /// <param name="rebindSelectedTheme">
-    ///     When <see langword="true"/> (the default), the selected theme is read from configuration.
-    ///     When <see langword="false"/>, the already-selected <see cref="ThemeSettings.Defaults"/>.Theme is kept so
-    ///     <see cref="MecThemeManager.SwitchTheme"/> can re-apply overlays without resetting to the config default.
-    /// </param>
-    public void ApplyToStaticFacades (bool rebindSelectedTheme = true)
+    public void ApplyToStaticFacades ()
     {
-        IConfiguration config = Configuration;
-
-        if (rebindSelectedTheme)
+        if (!string.IsNullOrEmpty (_runtimeConfig) && TuiConfigurationExtensions.IsLegacyConfigShape (_runtimeConfig))
         {
-            BindThemeScalar (config);
+            Logging.Warning (
+                             "RuntimeConfig uses a pre-MEC (flat-key or array-Themes) shape and is not applied. Convert it with Tools/MigrateConfig. See docfx/docs/migrate-cm-to-mec.md.");
         }
 
-        // SettingsScope POCOs
-        BindSection<ApplicationSettings> (config, "Application", s => ApplicationSettings.Defaults = s);
-        BindSection<DriverSettings> (config, "Driver", s => DriverSettings.Defaults = s);
-        BindSection<FileDialogSettings> (config, "FileDialog", s => FileDialogSettings.Defaults = s);
-        BindSection<FileDialogStyleSettings> (config, "FileDialogStyle", s => FileDialogStyleSettings.Defaults = s);
-        BindSection<KeySettings> (config, "Key", s => KeySettings.Defaults = s);
-        BindSection<TraceSettings> (config, "Trace", s => TraceSettings.Defaults = s);
+        IConfiguration config = Configuration;
+        BindThemeScalar (config);
+        ApplicationSettings.Defaults = BindSection<ApplicationSettings> (config, "Application");
+        DriverSettings.Defaults = BindSection<DriverSettings> (config, "Driver");
+        FileDialogSettings.Defaults = BindSection<FileDialogSettings> (config, "FileDialog");
+        FileDialogStyleSettings.Defaults = BindSection<FileDialogStyleSettings> (config, "FileDialogStyle");
+        KeySettings.Defaults = BindSection<KeySettings> (config, "Key");
+        TraceSettings.Defaults = BindSection<TraceSettings> (config, "Trace");
+        ApplyActiveThemeOverlays ();
+    }
 
-        // ThemeScope POCOs: two-pass overlay (root section + Themes:<active>:<section>) writes Current.
-        // TODO(A2): when ThemeSettings converts to record + Current, this becomes an immutable snapshot.
-        string activeTheme = ThemeSettings.Defaults.Theme;
-        BindThemeScope<ButtonSettings> (config, "Button", activeTheme, s => ButtonSettings.Current = s);
-        BindThemeScope<CheckBoxSettings> (config, "CheckBox", activeTheme, s => CheckBoxSettings.Current = s);
-        BindThemeScope<CharMapSettings> (config, "CharMap", activeTheme, s => CharMapSettings.Current = s);
-        BindThemeScope<DialogSettings> (config, "Dialog", activeTheme, s => DialogSettings.Current = s);
-        BindThemeScope<FrameViewSettings> (config, "FrameView", activeTheme, s => FrameViewSettings.Current = s);
-        BindThemeScope<HexViewSettings> (config, "HexView", activeTheme, s => HexViewSettings.Current = s);
-        BindThemeScope<LinearRangeSettings> (config, "LinearRange", activeTheme, s => LinearRangeSettings.Current = s);
-        BindThemeScope<MenuBarSettings> (config, "MenuBar", activeTheme, s => MenuBarSettings.Current = s);
-        BindThemeScope<MenuSettings> (config, "Menu", activeTheme, s => MenuSettings.Current = s);
-        BindThemeScope<MessageBoxSettings> (config, "MessageBox", activeTheme, s => MessageBoxSettings.Current = s);
-        BindThemeScope<NerdFontsSettings> (config, "NerdFonts", activeTheme, s => NerdFontsSettings.Current = s);
-        BindThemeScope<PopoverMenuSettings> (config, "PopoverMenu", activeTheme, s => PopoverMenuSettings.Current = s);
-        BindThemeScope<SelectorBaseSettings> (config, "SelectorBase", activeTheme, s => SelectorBaseSettings.Current = s);
-        BindThemeScope<StatusBarSettings> (config, "StatusBar", activeTheme, s => StatusBarSettings.Current = s);
-        BindThemeScope<TextFieldSettings> (config, "TextField", activeTheme, s => TextFieldSettings.Current = s);
-        BindThemeScope<TextViewSettings> (config, "TextView", activeTheme, s => TextViewSettings.Current = s);
-        BindThemeScope<WindowSettings> (config, "Window", activeTheme, s => WindowSettings.Current = s);
-        BindThemeScope<GlyphSettings> (config, "Glyphs", activeTheme, s => GlyphSettings.Current = s);
+    /// <summary>
+    ///     Publishes ThemeScope <c>Current</c> values and schemes for <see cref="ThemeSettings.Defaults"/>.Theme.
+    ///     Does not re-read the Theme scalar from configuration.
+    /// </summary>
+    public void ApplyActiveThemeOverlays ()
+    {
+        IConfiguration config = Configuration;
+        string activeTheme = ThemeSettings.Defaults.Theme ?? global::Terminal.Gui.Configuration.ThemeManager.DEFAULT_THEME_NAME;
 
+        ButtonSettings button = BindThemeScope<ButtonSettings> (config, "Button", activeTheme);
+        CheckBoxSettings checkBox = BindThemeScope<CheckBoxSettings> (config, "CheckBox", activeTheme);
+        CharMapSettings charMap = BindThemeScope<CharMapSettings> (config, "CharMap", activeTheme);
+        DialogSettings dialog = BindThemeScope<DialogSettings> (config, "Dialog", activeTheme);
+        FrameViewSettings frameView = BindThemeScope<FrameViewSettings> (config, "FrameView", activeTheme);
+        HexViewSettings hexView = BindThemeScope<HexViewSettings> (config, "HexView", activeTheme);
+        LinearRangeSettings linearRange = BindThemeScope<LinearRangeSettings> (config, "LinearRange", activeTheme);
+        MenuBarSettings menuBar = BindThemeScope<MenuBarSettings> (config, "MenuBar", activeTheme);
+        MenuSettings menu = BindThemeScope<MenuSettings> (config, "Menu", activeTheme);
+        MessageBoxSettings messageBox = BindThemeScope<MessageBoxSettings> (config, "MessageBox", activeTheme);
+        NerdFontsSettings nerdFonts = BindThemeScope<NerdFontsSettings> (config, "NerdFonts", activeTheme);
+        PopoverMenuSettings popoverMenu = BindThemeScope<PopoverMenuSettings> (config, "PopoverMenu", activeTheme);
+        SelectorBaseSettings selectorBase = BindThemeScope<SelectorBaseSettings> (config, "SelectorBase", activeTheme);
+        StatusBarSettings statusBar = BindThemeScope<StatusBarSettings> (config, "StatusBar", activeTheme);
+        TextFieldSettings textField = BindThemeScope<TextFieldSettings> (config, "TextField", activeTheme);
+        TextViewSettings textView = BindThemeScope<TextViewSettings> (config, "TextView", activeTheme);
+        WindowSettings window = BindThemeScope<WindowSettings> (config, "Window", activeTheme);
+        GlyphSettings glyphs = BindThemeScope<GlyphSettings> (config, "Glyphs", activeTheme);
+
+        ButtonSettings.Current = button;
+        CheckBoxSettings.Current = checkBox;
+        CharMapSettings.Current = charMap;
+        DialogSettings.Current = dialog;
+        FrameViewSettings.Current = frameView;
+        HexViewSettings.Current = hexView;
+        LinearRangeSettings.Current = linearRange;
+        MenuBarSettings.Current = menuBar;
+        MenuSettings.Current = menu;
+        MessageBoxSettings.Current = messageBox;
+        NerdFontsSettings.Current = nerdFonts;
+        PopoverMenuSettings.Current = popoverMenu;
+        SelectorBaseSettings.Current = selectorBase;
+        StatusBarSettings.Current = statusBar;
+        TextFieldSettings.Current = textField;
+        TextViewSettings.Current = textView;
+        WindowSettings.Current = window;
+        GlyphSettings.Current = glyphs;
         global::Terminal.Gui.Configuration.SchemeManager.ApplyFromConfiguration (config, activeTheme);
+    }
+
+    /// <summary>
+    ///     Sets the active theme, publishes overlays, and raises <see cref="ThemeManager.ThemeChanged"/>.
+    ///     Unknown names are ignored.
+    /// </summary>
+    /// <returns><see langword="true"/> if the theme exists (already active or newly applied).</returns>
+    internal bool TrySwitchTheme (string themeName)
+    {
+        string? canonical = ThemeCatalog.CanonicalName (Configuration, themeName);
+
+        if (canonical is null)
+        {
+            return false;
+        }
+
+        if (string.Equals (ThemeSettings.Defaults.Theme, canonical, StringComparison.OrdinalIgnoreCase))
+        {
+            return true;
+        }
+
+        ThemeSettings.Defaults = new () { Theme = canonical };
+        ApplyActiveThemeOverlays ();
+        global::Terminal.Gui.Configuration.ThemeManager.RaiseThemeChanged (canonical);
+
+        return true;
     }
 
     /// <summary>
@@ -183,95 +230,49 @@ public class TuiConfigurationBuilder
 
     [UnconditionalSuppressMessage ("Trimming", "IL2026", Justification = "Settings POCOs are simple public types; Bind only walks declared properties.")]
     [UnconditionalSuppressMessage ("AOT", "IL3050", Justification = "Settings POCOs are simple types; no generic instantiation needed at runtime.")]
-    private static void BindSection<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicProperties)] T> (IConfiguration config, string sectionName, Action<T> apply) where T : new ()
+    private static T BindSection<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicProperties)] T> (IConfiguration config, string sectionName) where T : new ()
     {
         T settings = new ();
         IConfigurationSection section = config.GetSection (sectionName);
 
-        if (section.Exists ())
+        if (!section.Exists ())
         {
-            // Nested object format: { "Driver": { "Force16Colors": true } }
-            section.Bind (settings);
-            BindDirectProperties (section, settings);
+            return settings;
         }
 
-        // Flat dotted keys (e.g. RuntimeConfig `"Driver.Force16Colors": true`) overlay nested
-        // library sections. MEC stores a literal dot; GetSection ("Driver") does not see them,
-        // so they must always be applied after the nested Bind, not only when the section is missing.
-        BindFlatDottedKeys (config, sectionName, settings);
+        section.Bind (settings);
+        BindDirectProperties (section, settings);
 
-        apply (settings);
+        return settings;
     }
 
     /// <summary>
-    ///     Two-pass overlay bind for ThemeScope POCOs. Binds the root section, then overlays
-    ///     <c>Themes:<paramref name="activeTheme"/>:<paramref name="sectionName"/></c>. Properties not present in the
-    ///     overlay JSON retain the root value (property-level merge — matches legacy CM <c>Scope.Apply</c> semantics).
+    ///     Two-pass overlay bind for ThemeScope POCOs. Binds the nested root section, then overlays
+    ///     <c>Themes:<paramref name="activeTheme"/>:<paramref name="sectionName"/></c>.
     /// </summary>
     [UnconditionalSuppressMessage ("Trimming", "IL2026", Justification = "Settings POCOs are simple public types; Bind only walks declared properties.")]
     [UnconditionalSuppressMessage ("AOT", "IL3050", Justification = "Settings POCOs are simple types; no generic instantiation needed at runtime.")]
-    private static void BindThemeScope<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicProperties)] T> (IConfiguration config, string sectionName, string activeTheme, Action<T> apply) where T : new ()
+    private static T BindThemeScope<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicProperties)] T> (IConfiguration config, string sectionName, string activeTheme) where T : new ()
     {
-        T settings = new ();
-        IConfigurationSection section = config.GetSection (sectionName);
+        T settings = BindSection<T> (config, sectionName);
+        IConfigurationSection? themeObject = ThemeCatalog.Find (config, activeTheme);
 
-        if (section.Exists ())
+        if (themeObject is null)
         {
-            section.Bind (settings);
-            BindDirectProperties (section, settings);
+            return settings;
         }
 
-        BindFlatDottedKeys (config, sectionName, settings);
+        IConfigurationSection overlay = themeObject.GetSection (sectionName);
 
-        IConfigurationSection? themeObject = FindThemeObject (config, activeTheme);
-
-        if (themeObject is not null)
+        if (!overlay.Exists ())
         {
-            IConfigurationSection overlay = themeObject.GetSection (sectionName);
-
-            if (overlay.Exists ())
-            {
-                overlay.Bind (settings);
-                BindDirectProperties (overlay, settings);
-            }
-
-            BindFlatDottedKeys (themeObject, sectionName, settings);
+            return settings;
         }
 
-        apply (settings);
-    }
+        overlay.Bind (settings);
+        BindDirectProperties (overlay, settings);
 
-    /// <summary>
-    ///     Resolves a theme object from either the nested dictionary shape
-    ///     (<c>Themes:{name}</c>) or the legacy array-of-single-key-objects shape
-    ///     (<c>Themes:{index}:{name}</c>).
-    /// </summary>
-    private static IConfigurationSection? FindThemeObject (IConfiguration config, string activeTheme)
-    {
-        if (string.IsNullOrEmpty (activeTheme))
-        {
-            return null;
-        }
-
-        IConfigurationSection themes = config.GetSection ("Themes");
-        IConfigurationSection named = themes.GetSection (activeTheme);
-
-        if (named.Exists ())
-        {
-            return named;
-        }
-
-        foreach (IConfigurationSection child in themes.GetChildren ())
-        {
-            IConfigurationSection candidate = child.GetSection (activeTheme);
-
-            if (candidate.Exists ())
-            {
-                return candidate;
-            }
-        }
-
-        return null;
+        return settings;
     }
 
     /// <summary>
@@ -335,51 +336,12 @@ public class TuiConfigurationBuilder
     }
 
     /// <summary>
-    ///     Binds flat dotted keys (e.g. <c>Driver.Force16Colors</c>) from the configuration root to the
-    ///     corresponding properties on the settings POCO. <typeparamref name="T"/>'s public properties are
-    ///     preserved for trimming via the <see cref="DynamicallyAccessedMembersAttribute"/> on the type parameter.
-    /// </summary>
-    private static void BindFlatDottedKeys<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicProperties)] T> (IConfiguration config, string sectionName, T settings)
-    {
-        string prefix = sectionName + ".";
-
-        foreach (PropertyInfo prop in typeof (T).GetProperties (BindingFlags.Public | BindingFlags.Instance))
-        {
-            if (!prop.CanWrite)
-            {
-                continue;
-            }
-
-            string? value = config [prefix + prop.Name];
-
-            if (value is null)
-            {
-                continue;
-            }
-
-            try
-            {
-                object? converted = ConvertValue (value, prop.PropertyType);
-
-                if (converted is not null)
-                {
-                    prop.SetValue (settings, converted);
-                }
-            }
-            catch (Exception)
-            {
-                // Skip properties whose value cannot be converted to the target type.
-            }
-        }
-    }
-
-    /// <summary>
     ///     Converts a configuration string value to the target property type. Only the scalar types used by the
     ///     settings POCOs are supported, so this path is trim/AOT-safe — it deliberately avoids
     ///     <c>TypeDescriptor.GetConverter</c> (which is <see cref="RequiresUnreferencedCodeAttribute"/> /
     ///     <see cref="RequiresDynamicCodeAttribute"/> and breaks NativeAOT/trimmed consumers). New non-scalar
     ///     settings property types must be added here explicitly. Unsupported types return <see langword="null"/>
-    ///     and are skipped by <see cref="BindFlatDottedKeys{T}"/>.
+    ///     and are skipped by <see cref="BindDirectProperties{T}"/>.
     /// </summary>
     private static object? ConvertValue (string value, Type targetType)
     {
@@ -400,7 +362,12 @@ public class TuiConfigurationBuilder
 
         if (targetType == typeof (Rune))
         {
-            return value.Length > 0 ? new Rune (value [0]) : new Rune ('+');
+            if (uint.TryParse (value, out uint codePoint) && Rune.IsValid (codePoint))
+            {
+                return new Rune (codePoint);
+            }
+
+            return RuneJsonConverter.TryParse (value, out Rune rune) ? rune : null;
         }
 
         if (targetType == typeof (Key))

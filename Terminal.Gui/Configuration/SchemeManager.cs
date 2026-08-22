@@ -11,7 +11,7 @@ namespace Terminal.Gui.Configuration;
 ///     Holds the <see cref="Drawing.Scheme"/>s that define the <see cref="Attribute"/>s views use to render.
 ///     A Scheme maps <see cref="Drawing.VisualRole"/>s to <see cref="Attribute"/>s.
 /// </summary>
-public sealed class SchemeManager
+public sealed class SchemeManager : ISchemeManager
 {
     private static readonly Lock _schemesLock = new ();
     private static Dictionary<string, Scheme?> _schemes = HardCodedDictionary ();
@@ -145,6 +145,12 @@ public sealed class SchemeManager
         }
     }
 
+    IReadOnlyList<string> ISchemeManager.SchemeNames => GetSchemeNames ();
+
+    Scheme? ISchemeManager.GetScheme (string name) => TryGetScheme (name, out Scheme? scheme) ? scheme : null;
+
+    void ISchemeManager.AddScheme (string name, Scheme scheme) => AddScheme (name, scheme);
+
     internal static void LoadToHardCodedDefaults () => ReplaceSchemes (HardCodedDictionary ());
 
     /// <summary>
@@ -154,25 +160,8 @@ public sealed class SchemeManager
     internal static void ApplyFromConfiguration (IConfiguration config, string themeName)
     {
         Dictionary<string, Scheme?> next = HardCodedDictionary ();
-        IConfigurationSection themes = config.GetSection ("Themes");
-        IConfigurationSection named = themes.GetSection (themeName);
-
-        if (!named.Exists ())
-        {
-            foreach (IConfigurationSection child in themes.GetChildren ())
-            {
-                IConfigurationSection candidate = child.GetSection (themeName);
-
-                if (candidate.Exists ())
-                {
-                    named = candidate;
-
-                    break;
-                }
-            }
-        }
-
-        IConfigurationSection schemesSection = named.Exists () ? named.GetSection ("Schemes") : config.GetSection ("Schemes");
+        IConfigurationSection? named = ThemeCatalog.Find (config, themeName);
+        IConfigurationSection schemesSection = named is not null ? named.GetSection ("Schemes") : config.GetSection ("Schemes");
 
         foreach (IConfigurationSection schemeChild in schemesSection.GetChildren ())
         {
@@ -189,34 +178,16 @@ public sealed class SchemeManager
 
     private static Scheme? TryBindScheme (IConfigurationSection section)
     {
+        JsonNode? node = SectionToJson (section);
+
+        if (node is not JsonObject obj || obj.Count == 0)
+        {
+            return null;
+        }
+
         try
         {
-            Dictionary<string, string?> flattened = [];
-
-            foreach (KeyValuePair<string, string?> pair in section.AsEnumerable (makePathsRelative: true))
-            {
-                if (pair.Value is not null)
-                {
-                    flattened [pair.Key] = pair.Value;
-                }
-            }
-
-            if (flattened.Count == 0)
-            {
-                return null;
-            }
-
-            // Rebuild a JSON object from the flattened MEC paths (Normal:Foreground → nested).
-            JsonObject root = [];
-
-            foreach (KeyValuePair<string, string?> pair in flattened)
-            {
-                MergePath (root, pair.Key.Split (':'), pair.Value);
-            }
-
-            Scheme? scheme = JsonSerializer.Deserialize (root.ToJsonString (), TuiSerializerContext.Instance.Scheme);
-
-            return scheme;
+            return JsonSerializer.Deserialize (obj.ToJsonString (), TuiSerializerContext.Instance.Scheme);
         }
         catch (JsonException)
         {
@@ -224,21 +195,27 @@ public sealed class SchemeManager
         }
     }
 
-    private static void MergePath (JsonObject cursor, string [] parts, string? value)
+    private static JsonNode? SectionToJson (IConfigurationSection section)
     {
-        for (var i = 0; i < parts.Length - 1; i++)
+        List<IConfigurationSection> children = [.. section.GetChildren ()];
+
+        if (children.Count == 0)
         {
-            string part = parts [i];
-
-            if (cursor [part] is not JsonObject next)
-            {
-                next = [];
-                cursor [part] = next;
-            }
-
-            cursor = next;
+            return section.Value is null ? null : JsonValue.Create (section.Value);
         }
 
-        cursor [parts [^1]] = JsonValue.Create (value);
+        JsonObject obj = [];
+
+        foreach (IConfigurationSection child in children)
+        {
+            JsonNode? nested = SectionToJson (child);
+
+            if (nested is not null)
+            {
+                obj [child.Key] = nested;
+            }
+        }
+
+        return obj;
     }
 }
