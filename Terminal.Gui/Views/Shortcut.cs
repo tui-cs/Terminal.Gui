@@ -677,6 +677,9 @@ public class Shortcut : View, IOrientation, IDesignable
         HelpView.MouseHighlightStates = MouseState.None;
     }
 
+    /// <inheritdoc/>
+    protected override bool OnDrawingText (DrawContext? context) => true;
+
     /// <summary>
     ///     Gets or sets the help text displayed in the middle of the Shortcut. Identical in function to <see cref="HelpText"/>
     ///     .

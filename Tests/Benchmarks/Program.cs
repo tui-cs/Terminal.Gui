@@ -1,5 +1,6 @@
 ﻿using BenchmarkDotNet.Configs;
 using BenchmarkDotNet.Running;
+using Terminal.Gui.Benchmarks.ConsoleDrivers.OutputBuffer;
 using Terminal.Gui.Benchmarks.ViewBase;
 
 namespace Terminal.Gui.Benchmarks;
@@ -21,6 +22,16 @@ internal class Program
                 case "scenarios":
                 case "scenario":
                     ScenarioMemoryBenchmark.Run ();
+
+                    return;
+
+                case "output-conpty":
+                    if (args.Length < 2)
+                    {
+                        throw new ArgumentException ("Usage: output-conpty <result-path>");
+                    }
+
+                    OutputWriteBenchmark.RunConPty (args [1]);
 
                     return;
             }
