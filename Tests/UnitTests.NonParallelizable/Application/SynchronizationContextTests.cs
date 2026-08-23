@@ -1,36 +1,51 @@
 // Copilot
+// Claude - Fable 5
 #nullable enable
 
 namespace UnitTests.NonParallelizable.ApplicationTests;
 
 /// <summary>
-///     Tests for the <see cref="SynchronizationContext"/> that is set during the Terminal.Gui application lifecycle.
-///     Must run non-concurrently because <see cref="IApplication.Init"/> and <see cref="IDisposable.Dispose"/> mutate
-///     the process-wide <see cref="SynchronizationContext.Current"/>.
+///     Tests for the <see cref="SynchronizationContext"/> contract of the Terminal.Gui application lifecycle.
+///     As of #5636, <see cref="IApplication.Init"/> does NOT install the app's main-loop context as the
+///     thread's ambient context — it becomes ambient only while a session is running (see Begin/Run) —
+///     so an <c>await</c> between <c>Init</c> and <c>Run</c>/<c>RunAsync</c> cannot capture a context
+///     whose continuations would be stranded on a not-yet-running main loop.
 /// </summary>
 public class SynchronizationContextTests
 {
     [Fact]
-    public void Init_SetsSynchronizationContext_Dispose_ClearsIt ()
+    public void Init_LeavesAmbientContext_Dispose_LeavesForeignContext ()
     {
-        IApplication app = Application.Create ();
+        SynchronizationContext? previous = SynchronizationContext.Current;
+        SynchronizationContext marker = new ();
 
         try
         {
-            app.Init (DriverRegistry.Names.ANSI);
+            SynchronizationContext.SetSynchronizationContext (marker);
 
-            Assert.NotNull (SynchronizationContext.Current);
+            IApplication app = Application.Create ();
+
+            try
+            {
+                app.Init (DriverRegistry.Names.ANSI);
+
+                Assert.Same (marker, SynchronizationContext.Current);
+            }
+            finally
+            {
+                app.Dispose ();
+            }
+
+            Assert.Same (marker, SynchronizationContext.Current);
         }
         finally
         {
-            app.Dispose ();
+            SynchronizationContext.SetSynchronizationContext (previous);
         }
-
-        Assert.Null (SynchronizationContext.Current);
     }
 
     [Fact]
-    public void Init_SynchronizationContext_CreateCopy_ReturnsDifferentInstance ()
+    public void App_SynchronizationContext_CreateCopy_ReturnsDifferentInstance ()
     {
         IApplication app = Application.Create ();
 
@@ -38,7 +53,7 @@ public class SynchronizationContextTests
         {
             app.Init (DriverRegistry.Names.ANSI);
 
-            SynchronizationContext context = SynchronizationContext.Current!;
+            SynchronizationContext context = ((ApplicationImpl)app).SynchronizationContext!;
             SynchronizationContext copy = context.CreateCopy ();
 
             Assert.NotNull (copy);

@@ -22,6 +22,21 @@ internal sealed class MainLoopSyncContext : SynchronizationContext
     {
         ArgumentNullException.ThrowIfNull (d);
 
+        // After Shutdown/Dispose no main loop can ever pump this queue; run the callback on the
+        // thread pool instead of stranding it (and any awaiter) forever (#5636).
+        if (!_app.Initialized)
+        {
+            ThreadPool.QueueUserWorkItem (
+                                          static s =>
+                                          {
+                                              (SendOrPostCallback callback, object? callbackState) = ((SendOrPostCallback, object?))s!;
+                                              callback (callbackState);
+                                          },
+                                          (d, state));
+
+            return;
+        }
+
         // Queue the task using the modern architecture
         _app.Invoke (() => d (state));
     }
@@ -31,7 +46,8 @@ internal sealed class MainLoopSyncContext : SynchronizationContext
     {
         ArgumentNullException.ThrowIfNull (d);
 
-        if (_app.MainThreadId == Thread.CurrentThread.ManagedThreadId)
+        // After Shutdown/Dispose no main loop can ever pump the queue; execute inline.
+        if (!_app.Initialized || _app.MainThreadId == Thread.CurrentThread.ManagedThreadId)
         {
             d (state);
 

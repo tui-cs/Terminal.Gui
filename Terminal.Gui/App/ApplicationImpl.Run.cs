@@ -237,47 +237,59 @@ internal partial class ApplicationImpl
             throw new NotInitializedException (@"Init must be called before Run.");
         }
 
-        // Begin the session (adds to stack, raises IsRunningChanging/IsRunningChanged)
+        // Begin installs this app's MainLoopSyncContext as the thread's ambient context for the
+        // duration of the session; restore the caller's context on exit so an await after Run
+        // does not capture a context that is no longer pumping (#5636).
+        SynchronizationContext? previousContext = System.Threading.SynchronizationContext.Current;
 
-        SessionToken? token =
-
-            // Find it on the stack
-            runnable.IsRunning ? SessionStack?.FirstOrDefault (st => st.Runnable == runnable) : Begin (runnable);
-
-        if (token is null)
+        try
         {
-            Logging.Warning (@"Run - Begin session failed or was cancelled.");
+            // Begin the session (adds to stack, raises IsRunningChanging/IsRunningChanged)
 
-            return null;
+            SessionToken? token =
+
+                // Find it on the stack
+                runnable.IsRunning ? SessionStack?.FirstOrDefault (st => st.Runnable == runnable) : Begin (runnable);
+
+            if (token is null)
+            {
+                Logging.Warning (@"Run - Begin session failed or was cancelled.");
+
+                return null;
+            }
+
+            // Loop to handle the case where End is cancelled by an IsRunningChanging handler.
+            // When End is cancelled, IsRunning remains true; we reset StopRequested and re-run the loop.
+            while (true)
+            {
+                try
+                {
+                    // All runnables block until RequestStop() is called
+                    RunLoop (runnable, errorHandler);
+                }
+                finally
+                {
+                    // End the session (raises IsRunningChanging/IsRunningChanged, pops from stack)
+                    End (token);
+                }
+
+                // If End succeeded IsRunning is now false — we are done
+                if (!runnable.IsRunning)
+                {
+                    break;
+                }
+
+                // End was cancelled by an IsRunningChanging handler (e.g., "Are you sure?" veto).
+                // Reset StopRequested so RunLoop can re-enter its while condition correctly.
+                runnable.StopRequested = false;
+            }
+
+            return token.Result;
         }
-
-        // Loop to handle the case where End is cancelled by an IsRunningChanging handler.
-        // When End is cancelled, IsRunning remains true; we reset StopRequested and re-run the loop.
-        while (true)
+        finally
         {
-            try
-            {
-                // All runnables block until RequestStop() is called
-                RunLoop (runnable, errorHandler);
-            }
-            finally
-            {
-                // End the session (raises IsRunningChanging/IsRunningChanged, pops from stack)
-                End (token);
-            }
-
-            // If End succeeded IsRunning is now false — we are done
-            if (!runnable.IsRunning)
-            {
-                break;
-            }
-
-            // End was cancelled by an IsRunningChanging handler (e.g., "Are you sure?" veto).
-            // Reset StopRequested so RunLoop can re-enter its while condition correctly.
-            runnable.StopRequested = false;
+            System.Threading.SynchronizationContext.SetSynchronizationContext (previousContext);
         }
-
-        return token.Result;
     }
 
     /// <inheritdoc/>

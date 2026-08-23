@@ -46,11 +46,24 @@ public class ApplicationImplTests
     }
 
     [Fact]
-    public void Dispose_Resets_SyncContext ()
+    public void Dispose_LeavesForeignAmbientSyncContext ()
     {
-        IApplication app = Application.Create ();
-        app.Dispose ();
-        Assert.Null (SynchronizationContext.Current);
+        SynchronizationContext? previous = SynchronizationContext.Current;
+        SynchronizationContext marker = new ();
+
+        try
+        {
+            SynchronizationContext.SetSynchronizationContext (marker);
+
+            IApplication app = Application.Create ();
+            app.Dispose ();
+
+            Assert.Same (marker, SynchronizationContext.Current);
+        }
+        finally
+        {
+            SynchronizationContext.SetSynchronizationContext (previous);
+        }
     }
 
     [Fact]
@@ -63,12 +76,14 @@ public class ApplicationImplTests
         int? callbackThreadId = null;
         ManualResetEventSlim callbackCalled = new (false);
 
-        SynchronizationContext.Current!.Post (_ =>
-                                              {
-                                                  callbackThreadId = Thread.CurrentThread.ManagedThreadId;
-                                                  callbackCalled.Set ();
-                                              },
-                                              null);
+        // As of #5636 Init no longer installs the app context as the thread's ambient context;
+        // posting to the app's own context before Run still lands on the main thread once the loop runs.
+        ((ApplicationImpl)app).SynchronizationContext!.Post (_ =>
+                                                             {
+                                                                 callbackThreadId = Thread.CurrentThread.ManagedThreadId;
+                                                                 callbackCalled.Set ();
+                                                             },
+                                                             null);
 
         app.AddTimeout (TimeSpan.FromMilliseconds (100),
                         () =>
@@ -128,7 +143,10 @@ public class ApplicationImplTests
 
         Assert.True (callbackCalled.Wait (TimeSpan.FromMilliseconds (200), TestContext.Current.CancellationToken));
         Assert.Equal (mainThreadId1, callbackThreadId1);
-        Assert.Equal (synchronizationContext1, SynchronizationContext.Current);
+
+        // The ambient context observed during app1's run is app1's own context; Run restores the
+        // caller's ambient context on exit (#5636), so compare against the app instance's context.
+        Assert.Same (((ApplicationImpl)app1).SynchronizationContext, synchronizationContext1);
 
         callbackCalled.Reset ();
 
@@ -163,9 +181,8 @@ public class ApplicationImplTests
 
         Assert.True (callbackCalled.Wait (TimeSpan.FromMilliseconds (200), TestContext.Current.CancellationToken));
         Assert.Equal (mainThreadId2, callbackThreadId2);
-        Assert.NotEqual (synchronizationContext1, SynchronizationContext.Current);
-        Assert.Equal (synchronizationContext2, SynchronizationContext.Current);
-        Assert.NotEqual (synchronizationContext1, synchronizationContext2);
+        Assert.Same (((ApplicationImpl)app2).SynchronizationContext, synchronizationContext2);
+        Assert.NotSame (synchronizationContext1, synchronizationContext2);
 
         app1.Dispose ();
         app2.Dispose ();
