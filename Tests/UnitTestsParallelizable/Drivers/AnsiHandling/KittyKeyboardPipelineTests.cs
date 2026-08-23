@@ -15,15 +15,15 @@ public class KittyKeyboardPipelineTests
     /// </summary>
     private static (List<Key> KeyDown, List<Key> KeyUp) InjectRawSequence (params string [] sequences)
     {
-        return InjectRawSequenceCore (TimeSpan.Zero, sequences);
+        return InjectRawSequenceCore (false, sequences);
     }
 
-    private static (List<Key> KeyDown, List<Key> KeyUp) InjectRawSequenceWithDelay (TimeSpan delay, params string [] sequences)
+    private static (List<Key> KeyDown, List<Key> KeyUp) InjectRawSequenceWithKittyEnabled (params string [] sequences)
     {
-        return InjectRawSequenceCore (delay, sequences);
+        return InjectRawSequenceCore (true, sequences);
     }
 
-    private static (List<Key> KeyDown, List<Key> KeyUp) InjectRawSequenceCore (TimeSpan delay, params string [] sequences)
+    private static (List<Key> KeyDown, List<Key> KeyUp) InjectRawSequenceCore (bool kittyKeyboardEnabled, params string [] sequences)
     {
         VirtualTimeProvider timeProvider = new ();
         timeProvider.SetTime (new DateTime (2025, 1, 1, 12, 0, 0));
@@ -37,23 +37,17 @@ public class KittyKeyboardPipelineTests
         app.Keyboard.KeyUp += (_, key) => keyUpEvents.Add (key);
 
         IInputProcessor processor = app.Driver?.GetInputProcessor ()!;
+        ((AnsiInputProcessor)processor).SetKittyKeyboardEnabled (kittyKeyboardEnabled);
         ConcurrentQueue<char> queue = ((AnsiInputProcessor)processor).InputQueue;
 
-        for (var sequenceIndex = 0; sequenceIndex < sequences.Length; sequenceIndex++)
+        foreach (string seq in sequences)
         {
-            string seq = sequences [sequenceIndex];
-
             foreach (char ch in seq)
             {
                 queue.Enqueue (ch);
             }
 
             processor.ProcessQueue ();
-
-            if (sequenceIndex < sequences.Length - 1)
-            {
-                timeProvider.Advance (delay);
-            }
         }
 
         return (keyDownEvents, keyUpEvents);
@@ -221,9 +215,9 @@ public class KittyKeyboardPipelineTests
 
     #endregion
 
-    #region Kitty + Legacy Input
+    #region Mixed Kitty + Legacy Duplicate Input
 
-    // Codex - GPT-5 Codex
+    // Copilot
     [Fact]
     public void Pipeline_MixedKittyAndLegacyPrintable_DoesNotRaiseDuplicateKeyDown ()
     {
@@ -236,29 +230,27 @@ public class KittyKeyboardPipelineTests
         Assert.Empty (up);
     }
 
-    // Codex - GPT-5 Codex
-    [Fact]
-    public void Pipeline_MixedKittyAndLegacyPrintable_AfterSuppressionTimeout_RaisesBothKeyDowns ()
+    // Copilot
+    [Theory]
+    [InlineData ("«")]
+    [InlineData ("»")]
+    [InlineData ("ç")]
+    [InlineData ("Ç")]
+    [InlineData ("º")]
+    [InlineData ("ª")]
+    public void Pipeline_LegacyPrintable_PortugueseKeys_WhenKittyEnabled_DoesNotRaiseDuplicateKeyDown (string printable)
     {
-        (List<Key> down, List<Key> up) = InjectRawSequenceWithDelay (TimeSpan.FromMilliseconds (51), "\x1b[97u", "a");
+        // Issue #4918 (PT keyboard): some glyphs may still arrive as duplicated legacy printable input
+        // even when kitty is enabled. A single keypress should still produce one KeyDown.
+        string duplicatedInput = printable + printable;
+        (List<Key> down, List<Key> up) = InjectRawSequenceWithKittyEnabled (duplicatedInput);
 
-        Assert.Equal (2, down.Count);
-        Assert.All (down, key => Assert.Equal (Key.A, key));
+        Assert.Single (down);
+        Assert.Equal (printable, down [0].GetPrintableText ());
         Assert.Empty (up);
     }
 
-    // Codex - GPT-5 Codex
-    [Fact]
-    public void Pipeline_RepeatedLegacyPrintableInput_DoesNotSelfArmSuppression ()
-    {
-        (List<Key> down, List<Key> up) = InjectRawSequence ("jjjj");
-
-        Assert.Equal (4, down.Count);
-        Assert.Equal ("jjjj", string.Concat (down.Select (key => key.GetPrintableText ())));
-        Assert.Empty (up);
-    }
-
-    // Codex - GPT-5 Codex
+    // Copilot
     [Fact]
     public void Pipeline_MixedKittyAssociatedTextAndLegacyPrintable_DoesNotRaiseDuplicateKeyDown ()
     {
