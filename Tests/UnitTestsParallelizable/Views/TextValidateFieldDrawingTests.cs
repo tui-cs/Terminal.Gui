@@ -18,14 +18,22 @@ public class TextValidateFieldDrawingTests : TestDriverBase
         TextRegexProvider provider = new (".*") { Text = LongText, ValidateOnInput = false };
         TextValidateField field = new () { Width = 20, Provider = provider };
         Label nextRow = new () { Y = 1, Text = "NEXT ROW" };
-        Runnable runnable = new () { Width = 20, Height = 3 };
+        using Runnable runnable = new () { Width = 20, Height = 3 };
 
         runnable.Add (field, nextRow);
-        app.Begin (runnable);
-        app.LayoutAndDraw ();
+        SessionToken token = app.Begin (runnable)!;
 
-        Assert.Equal (1, field.Viewport.Height);
-        Assert.Equal ("NEXT ROW", GetRow (app.Driver, 1, 20).TrimEnd ());
+        try
+        {
+            app.LayoutAndDraw ();
+
+            Assert.Equal (1, field.Viewport.Height);
+            Assert.Equal ("NEXT ROW", GetRow (app.Driver, 1, 20).TrimEnd ());
+        }
+        finally
+        {
+            app.End (token);
+        }
     }
 
     // CoPilot - GPT-5.6
@@ -38,14 +46,22 @@ public class TextValidateFieldDrawingTests : TestDriverBase
 
         TextRegexProvider provider = new (".*") { Text = LongText, ValidateOnInput = false };
         TextValidateField field = new () { Width = 5, Height = 3, Provider = provider };
-        Runnable runnable = new () { Width = 5, Height = 3 };
+        using Runnable runnable = new () { Width = 5, Height = 3 };
 
         runnable.Add (field);
-        app.Begin (runnable);
-        app.LayoutAndDraw ();
+        SessionToken token = app.Begin (runnable)!;
 
-        Assert.Empty (GetRow (app.Driver, 1, 5).TrimEnd ());
-        Assert.Empty (GetRow (app.Driver, 2, 5).TrimEnd ());
+        try
+        {
+            app.LayoutAndDraw ();
+
+            Assert.Empty (GetRow (app.Driver, 1, 5).TrimEnd ());
+            Assert.Empty (GetRow (app.Driver, 2, 5).TrimEnd ());
+        }
+        finally
+        {
+            app.End (token);
+        }
     }
 
     private static string GetRow (IDriver driver, int row, int width)

@@ -15,7 +15,7 @@ public class TextFieldDrawingTests : TestDriverBase
         app.Init (DriverRegistry.Names.ANSI);
         app.Driver!.SetScreenSize (30, 5);
 
-        Runnable runnable = new () { Width = 30, Height = 5 };
+        using Runnable runnable = new () { Width = 30, Height = 5 };
         TextField textField = new ()
         {
             Width = 30,
@@ -24,11 +24,19 @@ public class TextFieldDrawingTests : TestDriverBase
         };
 
         runnable.Add (textField);
-        app.Begin (runnable);
-        app.LayoutAndDraw ();
+        SessionToken token = app.Begin (runnable)!;
 
-        Assert.Equal (1, textField.Viewport.Height);
-        Assert.Equal (3, textField.Frame.Height);
+        try
+        {
+            app.LayoutAndDraw ();
+
+            Assert.Equal (1, textField.Viewport.Height);
+            Assert.Equal (3, textField.Frame.Height);
+        }
+        finally
+        {
+            app.End (token);
+        }
     }
 
     // CoPilot - GPT-5.6
@@ -39,15 +47,23 @@ public class TextFieldDrawingTests : TestDriverBase
         app.Init (DriverRegistry.Names.ANSI);
         app.Driver!.SetScreenSize (30, 3);
 
-        Runnable runnable = new () { Width = 30, Height = 3 };
+        using Runnable runnable = new () { Width = 30, Height = 3 };
         TextField textField = new () { Width = 30, Text = LongText };
         Label nextRow = new () { Y = 1, Text = "NEXT ROW" };
 
         runnable.Add (textField, nextRow);
-        app.Begin (runnable);
-        app.LayoutAndDraw ();
+        SessionToken token = app.Begin (runnable)!;
 
-        Assert.Equal ("NEXT ROW", GetRow (app.Driver, 1, 30).TrimEnd ());
+        try
+        {
+            app.LayoutAndDraw ();
+
+            Assert.Equal ("NEXT ROW", GetRow (app.Driver, 1, 30).TrimEnd ());
+        }
+        finally
+        {
+            app.End (token);
+        }
     }
 
     // CoPilot - GPT-5.6
@@ -58,15 +74,23 @@ public class TextFieldDrawingTests : TestDriverBase
         app.Init (DriverRegistry.Names.ANSI);
         app.Driver!.SetScreenSize (5, 3);
 
-        Runnable runnable = new () { Width = 5, Height = 3 };
+        using Runnable runnable = new () { Width = 5, Height = 3 };
         TextField textField = new () { Width = 5, Height = 3, Text = "abcdefghij" };
 
         runnable.Add (textField);
-        app.Begin (runnable);
-        app.LayoutAndDraw ();
+        SessionToken token = app.Begin (runnable)!;
 
-        Assert.Empty (GetRow (app.Driver, 1, 5).TrimEnd ());
-        Assert.Empty (GetRow (app.Driver, 2, 5).TrimEnd ());
+        try
+        {
+            app.LayoutAndDraw ();
+
+            Assert.Empty (GetRow (app.Driver, 1, 5).TrimEnd ());
+            Assert.Empty (GetRow (app.Driver, 2, 5).TrimEnd ());
+        }
+        finally
+        {
+            app.End (token);
+        }
     }
 
     private static string GetRow (IDriver driver, int row, int width)
