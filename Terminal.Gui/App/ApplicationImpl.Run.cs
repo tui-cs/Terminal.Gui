@@ -136,7 +136,9 @@ internal partial class ApplicationImpl
         // Set the application reference in the runnable
         runnable.SetApp (this);
 
-        // Set the synchronization context to MainLoopSyncContext for this application
+        // Set the synchronization context to MainLoopSyncContext for this application, saving the
+        // caller's context on the token so End can restore it (#5636).
+        token.PreviousSynchronizationContext = System.Threading.SynchronizationContext.Current;
         SynchronizationContext.SetSynchronizationContext (SynchronizationContext);
 
         // Ensure the mouse is ungrabbed
@@ -511,8 +513,33 @@ internal partial class ApplicationImpl
 
         // Clear the Runnable from the token
         token.Runnable = null;
+        HasEndedSession = true;
         SessionEnded?.Invoke (this, new SessionTokenEventArgs (token));
+
+        // Restore the ambient context the caller had at Begin, so an await after a directly-begun
+        // session cannot capture a context that is no longer pumping (#5636). For nested sessions
+        // the previous context is the same app context, so the outermost End restores the caller's.
+        if (System.Threading.SynchronizationContext.Current == SynchronizationContext)
+        {
+            System.Threading.SynchronizationContext.SetSynchronizationContext (token.PreviousSynchronizationContext);
+        }
     }
+
+    /// <summary>
+    ///     INTERNAL: Whether any session has ended. Once true (and no session is running), posts to
+    ///     <see cref="MainLoopSyncContext"/> fall back to the thread pool instead of queueing onto a
+    ///     loop that may never pump again.
+    /// </summary>
+    internal bool HasEndedSession { get; private set; }
+
+    /// <summary>
+    ///     INTERNAL: Whether work posted to <see cref="MainLoopSyncContext"/> can rely on the main
+    ///     loop to pump it: the app is initialized, and either a session is running or none has run
+    ///     to completion yet (posts made between Init and the first Run are pumped by that Run).
+    /// </summary>
+    internal bool CanPumpPostedWork => Initialized && (TopRunnable is { IsRunning: true } || !HasEndedSession);
+
+    internal void ResetHasEndedSession () => HasEndedSession = false;
 
     #endregion Session Lifecycle - End
 

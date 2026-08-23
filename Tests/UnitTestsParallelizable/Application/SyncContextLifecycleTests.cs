@@ -79,6 +79,77 @@ public class SyncContextLifecycleTests
         }
     }
 
+    // The documented Begin/End building-block sequence must restore the caller's ambient context
+    // just like Run does — including nested sessions, where only the outermost End restores it.
+    [Fact]
+    public void Begin_End_RestoresAmbientSyncContext_IncludingNestedSessions ()
+    {
+        SynchronizationContext? previous = SynchronizationContext.Current;
+        SynchronizationContext marker = new ();
+
+        try
+        {
+            SynchronizationContext.SetSynchronizationContext (marker);
+
+            IApplication app = Application.Create ();
+            app.Init (DriverRegistry.Names.ANSI);
+            SynchronizationContext appContext = ((ApplicationImpl)app).SynchronizationContext!;
+
+            using Runnable outer = new ();
+            using Runnable inner = new ();
+
+            SessionToken outerToken = app.Begin (outer)!;
+            Assert.Same (appContext, SynchronizationContext.Current);
+
+            SessionToken innerToken = app.Begin (inner)!;
+            Assert.Same (appContext, SynchronizationContext.Current);
+
+            app.End (innerToken);
+
+            // The outer session is still active; the app context stays ambient.
+            Assert.Same (appContext, SynchronizationContext.Current);
+
+            app.End (outerToken);
+
+            Assert.Same (marker, SynchronizationContext.Current);
+
+            app.Dispose ();
+        }
+        finally
+        {
+            SynchronizationContext.SetSynchronizationContext (previous);
+        }
+    }
+
+    // A continuation that captured the app context during a session can resume after the session
+    // ends; with no loop pumping (and the app still Initialized), it must not be stranded.
+    [Fact]
+    public void Post_AfterSessionEnded_StillExecutesCallback ()
+    {
+        IApplication app = Application.Create ();
+        app.Init (DriverRegistry.Names.ANSI);
+
+        void OnIteration (object? s, EventArgs<IApplication?> a) => app.RequestStop ();
+
+        app.Iteration += OnIteration;
+
+        using (Runnable runnable = new ())
+        {
+            app.Run (runnable);
+        }
+
+        app.Iteration -= OnIteration;
+
+        SynchronizationContext context = ((ApplicationImpl)app).SynchronizationContext!;
+
+        using ManualResetEventSlim callbackCalled = new (false);
+        context.Post (_ => callbackCalled.Set (), null);
+
+        Assert.True (callbackCalled.Wait (TimeSpan.FromSeconds (2), TestContext.Current.CancellationToken));
+
+        app.Dispose ();
+    }
+
     [Fact]
     public void Post_AfterDispose_StillExecutesCallback ()
     {

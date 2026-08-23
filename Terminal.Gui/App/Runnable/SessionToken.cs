@@ -18,4 +18,11 @@ public class SessionToken
     ///     The result of the session. Typically set by the runnable in <see langword="IRunnable.IsRunningChanged"/>
     /// </summary>
     public object? Result { get; set; }
+
+    /// <summary>
+    ///     The ambient <see cref="SynchronizationContext"/> the caller had when
+    ///     <see cref="IApplication.Begin(IRunnable)"/> installed the app's context;
+    ///     restored by <see cref="IApplication.End(SessionToken)"/>.
+    /// </summary>
+    internal SynchronizationContext? PreviousSynchronizationContext { get; set; }
 }

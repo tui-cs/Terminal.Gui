@@ -306,6 +306,7 @@ internal partial class ApplicationImpl
         // === 8. Reset initialization state ===
         Initialized = false;
         MainThreadId = null;
+        ResetHasEndedSession ();
 
         // === 9. Reset synchronization context ===
         // If this app's context is still the thread's ambient context, clear it so later
