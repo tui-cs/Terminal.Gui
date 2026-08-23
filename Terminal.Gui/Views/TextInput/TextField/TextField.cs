@@ -98,7 +98,7 @@ public partial class TextField : View, IDesignable, IValue<string>
 
         ReadOnly = false;
         Autocomplete = new TextFieldAutocomplete ();
-        Height = Dim.Auto (DimAutoStyle.Text, 1);
+        Height = Dim.Auto (DimAutoStyle.Text, minimumContentDim: 1, maximumContentDim: 1);
 
         CanFocus = true;
         Used = true;
