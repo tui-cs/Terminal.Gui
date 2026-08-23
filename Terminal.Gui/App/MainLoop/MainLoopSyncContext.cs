@@ -17,10 +17,28 @@ internal sealed class MainLoopSyncContext : SynchronizationContext
     /// <inheritdoc/>
     public override SynchronizationContext CreateCopy () => new MainLoopSyncContext (_app);
 
+    private bool CanPump => _app is ApplicationImpl { CanPumpPostedWork: true };
+
     /// <inheritdoc/>
     public override void Post (SendOrPostCallback d, object? state)
     {
         ArgumentNullException.ThrowIfNull (d);
+
+        // With no main loop pumping (after Shutdown/Dispose, or after a session ended with none
+        // running), run the callback on the thread pool instead of stranding it — and any awaiter —
+        // forever (#5636). Posts made between Init and the first Run stay queued for that Run.
+        if (!CanPump)
+        {
+            ThreadPool.QueueUserWorkItem (
+                                          static s =>
+                                          {
+                                              (SendOrPostCallback callback, object? callbackState) = ((SendOrPostCallback, object?))s!;
+                                              callback (callbackState);
+                                          },
+                                          (d, state));
+
+            return;
+        }
 
         // Queue the task using the modern architecture
         _app.Invoke (() => d (state));
@@ -31,7 +49,8 @@ internal sealed class MainLoopSyncContext : SynchronizationContext
     {
         ArgumentNullException.ThrowIfNull (d);
 
-        if (_app.MainThreadId == Thread.CurrentThread.ManagedThreadId)
+        // With no main loop pumping, execute inline rather than waiting on a queue nothing drains.
+        if (!CanPump || _app.MainThreadId == Thread.CurrentThread.ManagedThreadId)
         {
             d (state);
 
