@@ -229,7 +229,10 @@ public class ProgressBar : View, IDesignable
         return base.OnTextChanging (newText);
     }
 
-    ///<inheritdoc/>
+    /// <inheritdoc/>
+    protected override bool OnDrawingText (DrawContext? context) => true;
+
+    /// <inheritdoc/>
     protected override bool OnDrawingContent (DrawContext? context)
     {
         SetAttribute (GetAttributeForRole (VisualRole.Normal));

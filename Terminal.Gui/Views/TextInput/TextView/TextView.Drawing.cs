@@ -12,6 +12,9 @@ public partial class TextView
     private bool _isDrawing;
 
     /// <inheritdoc/>
+    protected override bool OnDrawingText (DrawContext? context) => true;
+
+    /// <inheritdoc/>
     protected override bool OnDrawingContent (DrawContext? context)
     {
         _isDrawing = true;
@@ -494,4 +497,3 @@ public partial class TextView
         return GetAttributeForRole (VisualRole.Active);
     }
 }
-

@@ -98,6 +98,9 @@ public class Code : View, IDesignable
     }
 
     /// <inheritdoc/>
+    protected override bool OnDrawingText (DrawContext? context) => true;
+
+    /// <inheritdoc/>
     protected override bool OnDrawingContent (DrawContext? context)
     {
         int endLine = Math.Min (Viewport.Y + Viewport.Height, _lines.Count);
