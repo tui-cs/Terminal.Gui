@@ -224,8 +224,11 @@ public class ThemeOverlayMergeTests
     }
 
     // Claude - Fable 5
+    // Re-applying configuration re-publishes every facade wholesale, so subscribers must be notified
+    // even when the theme NAME is unchanged — a hot reload that edits the current theme's colors
+    // would otherwise update state without anything repainting.
     [Fact]
-    public void ApplyToStaticFacades_ActiveThemeUnchanged_DoesNotRaiseThemeChanged ()
+    public void ApplyToStaticFacades_ActiveThemeUnchanged_StillRaisesThemeChanged ()
     {
         using SettingsFacadeSnapshot snapshot = new ();
         TuiConfigurationBuilder tuiBuilder = new ();
@@ -239,7 +242,7 @@ public class ThemeOverlayMergeTests
 
         tuiBuilder.ApplyToStaticFacades ();
 
-        var raised = false;
+        string? raisedTheme = null;
         MecThemeManager manager = new (tuiBuilder);
         manager.ThemeChanged += Handler;
 
@@ -252,9 +255,9 @@ public class ThemeOverlayMergeTests
             manager.ThemeChanged -= Handler;
         }
 
-        Assert.False (raised);
+        Assert.Equal ("A", raisedTheme);
 
-        void Handler (object? sender, EventArgs<string> e) { raised = true; }
+        void Handler (object? sender, EventArgs<string> e) { raisedTheme = e.Value; }
     }
 
     // Grok - grok-4.6

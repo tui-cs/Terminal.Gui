@@ -1,5 +1,6 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
+using System.Text.Json.Nodes;
 using Microsoft.Extensions.Configuration;
 
 namespace Terminal.Gui.Configuration;
@@ -52,8 +53,10 @@ public class TuiConfigurationBuilder
 
     private readonly string? _appName;
     private readonly string? _currentDirectory;
+    private readonly bool _includeUserSources;
     private string? _runtimeConfig;
     private IConfiguration? _configuration;
+    private JsonObject? _mergedSourceJson;
 
     /// <summary>Initializes a new instance of <see cref="TuiConfigurationBuilder"/>.</summary>
     /// <param name="appName">The application name for app-specific config file discovery. If null, uses entry assembly name.</param>
@@ -62,9 +65,20 @@ public class TuiConfigurationBuilder
     ///     <see cref="Environment.CurrentDirectory"/>.
     /// </param>
     public TuiConfigurationBuilder (string? appName = null, string? currentDirectory = null)
+        : this (appName, currentDirectory, includeUserSources: true)
+    { }
+
+    /// <summary>
+    ///     INTERNAL: Also controls whether user files (<c>~/.tui</c>, <c>./.tui</c>) and the
+    ///     <c>TUI_CONFIG</c> environment variable are loaded. Tests pass
+    ///     <paramref name="includeUserSources"/> <see langword="false"/> so machine-local
+    ///     configuration cannot change test outcomes.
+    /// </summary>
+    internal TuiConfigurationBuilder (string? appName, string? currentDirectory, bool includeUserSources)
     {
         _appName = appName ?? System.Reflection.Assembly.GetEntryAssembly ()?.GetName ().Name;
         _currentDirectory = currentDirectory;
+        _includeUserSources = includeUserSources;
     }
 
     /// <summary>
@@ -98,12 +112,22 @@ public class TuiConfigurationBuilder
     /// <returns>The built configuration root.</returns>
     public IConfiguration Build ()
     {
-        IConfigurationBuilder builder = new ConfigurationBuilder ()
-                                        .AddTuiLibraryDefaults ()
-                                        .AddTuiAppDefaults (_appName)
-                                        .AddTuiUserFiles (_appName, _currentDirectory)
-                                        .AddTuiEnvironmentVariable ()
-                                        .AddTuiRuntimeConfig (_runtimeConfig);
+        // Errors describe the current effective configuration; without this, a watcher re-applying a
+        // persistently malformed source would re-add the identical error on every rebuild.
+        TuiJsonErrors.Clear ();
+
+        List<JsonObject> jsonSources = [];
+        IConfigurationBuilder builder = new ConfigurationBuilder ();
+        TuiConfigurationExtensions.AddTuiLibraryDefaults (builder, jsonSources);
+        TuiConfigurationExtensions.AddTuiAppDefaults (builder, _appName, jsonSources);
+
+        if (_includeUserSources)
+        {
+            TuiConfigurationExtensions.AddTuiUserFiles (builder, _appName, _currentDirectory, jsonSources);
+            TuiConfigurationExtensions.AddTuiEnvironmentVariable (builder, jsonSources);
+        }
+
+        TuiConfigurationExtensions.AddTuiRuntimeConfig (builder, _runtimeConfig, jsonSources);
 
         try
         {
@@ -115,7 +139,31 @@ public class TuiConfigurationBuilder
             _configuration = new ConfigurationBuilder ().AddTuiLibraryDefaults ().Build ();
         }
 
+        JsonObject merged = [];
+
+        foreach (JsonObject source in jsonSources)
+        {
+            JsonMerge.DeepMerge (merged, source);
+        }
+
+        _mergedSourceJson = merged;
+
         return _configuration;
+    }
+
+    /// <summary>
+    ///     Gets a raw-JSON deep merge of all sources (arrays replace wholesale, unlike MEC's per-index
+    ///     merge). Used for sections bound via STJ — key bindings and schemes — where a higher-priority
+    ///     source's array must atomically replace a lower-priority source's.
+    /// </summary>
+    internal JsonObject MergedSourceJson
+    {
+        get
+        {
+            _ = Configuration;
+
+            return _mergedSourceJson!;
+        }
     }
 
     /// <summary>
@@ -138,12 +186,12 @@ public class TuiConfigurationBuilder
 
     /// <summary>
     ///     Applies configuration sources to SettingsScope facades, then publishes the active theme's overlays.
-    ///     If the configuration's <c>Theme</c> key changes the active theme, raises
-    ///     <see cref="ThemeManager.ThemeChanged"/> so subscribers re-render.
+    ///     Always raises <see cref="ThemeManager.ThemeChanged"/> afterwards — the facades were re-published
+    ///     wholesale, so subscribers must re-render even when the theme name is unchanged (e.g. a hot reload
+    ///     that edits the current theme's colors).
     /// </summary>
     public void ApplyToStaticFacades ()
     {
-        string previousTheme = ThemeSettings.Defaults.Theme;
         IConfiguration config = Configuration;
         BindThemeScalar (config);
         ApplicationSettings.Defaults = BindSection<ApplicationSettings> (config, "Application");
@@ -152,15 +200,9 @@ public class TuiConfigurationBuilder
         FileDialogStyleSettings.Defaults = BindSection<FileDialogStyleSettings> (config, "FileDialogStyle");
         KeySettings.Defaults = BindSection<KeySettings> (config, "Key");
         TraceSettings.Defaults = BindSection<TraceSettings> (config, "Trace");
-        KeyBindingConfiguration.Apply (config);
+        KeyBindingConfiguration.Apply (MergedSourceJson);
         ApplyActiveThemeOverlays ();
-
-        string newTheme = ThemeSettings.Defaults.Theme;
-
-        if (!string.Equals (previousTheme, newTheme, StringComparison.OrdinalIgnoreCase))
-        {
-            global::Terminal.Gui.Configuration.ThemeManager.RaiseThemeChanged (newTheme);
-        }
+        global::Terminal.Gui.Configuration.ThemeManager.RaiseThemeChanged (ThemeSettings.Defaults.Theme);
     }
 
     /// <summary>
@@ -209,7 +251,9 @@ public class TuiConfigurationBuilder
         TextViewSettings.Current = textView;
         WindowSettings.Current = window;
         GlyphSettings.Current = glyphs;
-        global::Terminal.Gui.Configuration.SchemeManager.ApplyFromConfiguration (config, activeTheme);
+
+        string? canonicalTheme = ThemeCatalog.CanonicalName (config, activeTheme);
+        global::Terminal.Gui.Configuration.SchemeManager.ApplyFromConfiguration (MergedSourceJson, canonicalTheme);
     }
 
     /// <summary>

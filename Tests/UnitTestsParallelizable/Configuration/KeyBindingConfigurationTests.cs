@@ -20,7 +20,7 @@ public class KeyBindingConfigurationTests
     {
         using SettingsFacadeSnapshot snapshot = new ();
 
-        TuiConfigurationBuilder builder = new ();
+        TuiConfigurationBuilder builder = new (null, null, includeUserSources: false);
         builder.RuntimeConfig = """
                                 {
                                   "Application": {
@@ -42,7 +42,7 @@ public class KeyBindingConfigurationTests
     {
         using SettingsFacadeSnapshot snapshot = new ();
 
-        TuiConfigurationBuilder builder = new ();
+        TuiConfigurationBuilder builder = new (null, null, includeUserSources: false);
         builder.RuntimeConfig = """
                                 {
                                   "View": {
@@ -64,7 +64,7 @@ public class KeyBindingConfigurationTests
     {
         using SettingsFacadeSnapshot snapshot = new ();
 
-        TuiConfigurationBuilder builder = new ();
+        TuiConfigurationBuilder builder = new (null, null, includeUserSources: false);
         builder.RuntimeConfig = """
                                 {
                                   "View": {
@@ -98,7 +98,7 @@ public class KeyBindingConfigurationTests
                         }
                         """;
 
-        TuiConfigurationBuilder builder = new ();
+        TuiConfigurationBuilder builder = new (null, null, includeUserSources: false);
         builder.RuntimeConfig = nested;
         builder.ApplyToStaticFacades ();
 
@@ -111,7 +111,7 @@ public class KeyBindingConfigurationTests
     [Fact]
     public void ToJson_RebuildsMecIndexChildrenAsJsonArrays ()
     {
-        TuiConfigurationBuilder builder = new ();
+        TuiConfigurationBuilder builder = new (null, null, includeUserSources: false);
         builder.RuntimeConfig = """
                                 {
                                   "Application": {
@@ -132,10 +132,85 @@ public class KeyBindingConfigurationTests
         Assert.Equal ("Ctrl+Q", node ["Quit"]! ["All"]! [1]!.GetValue<string> ());
     }
 
+    // Claude - Fable 5
+    // A binding removed from configuration must regain its default on re-apply — "unmentioned
+    // commands keep hard-coded defaults" also holds across Reload, not just at first apply.
+    [Fact]
+    public void ApplyToStaticFacades_RemovedBinding_RestoresDefault ()
+    {
+        using SettingsFacadeSnapshot snapshot = new ();
+
+        TuiConfigurationBuilder builder = new (null, null, includeUserSources: false);
+        builder.RuntimeConfig = """
+                                {
+                                  "Application": {
+                                    "DefaultKeyBindings": {
+                                      "Quit": { "All": ["Ctrl+X"] }
+                                    }
+                                  }
+                                }
+                                """;
+        builder.ApplyToStaticFacades ();
+        Assert.Equal (Key.X.WithCtrl, Application.DefaultKeyBindings! [Command.Quit].All! [0]);
+
+        builder.RuntimeConfig = "{ }";
+        builder.ApplyToStaticFacades ();
+
+        Assert.Equal (Key.Esc, Application.DefaultKeyBindings! [Command.Quit].All! [0]);
+    }
+
+    // Claude - Fable 5
+    // A higher-priority source's array must atomically replace a lower-priority source's array;
+    // MEC's per-index merge would otherwise keep the longer array's tail elements bound.
+    [Fact]
+    public void ApplyToStaticFacades_ShorterArrayInHigherPrioritySource_ReplacesWholesale ()
+    {
+        using SettingsFacadeSnapshot snapshot = new ();
+
+        string root = Directory.CreateTempSubdirectory ("tui-kb-test-").FullName;
+        string tuiDir = Path.Combine (root, TuiConfigurationExtensions.TUI_CONFIG_FOLDER);
+        Directory.CreateDirectory (tuiDir);
+
+        File.WriteAllText (
+                           Path.Combine (tuiDir, TuiConfigurationExtensions.CONFIG_FILENAME),
+                           """
+                           {
+                             "Application": {
+                               "DefaultKeyBindings": {
+                                 "Quit": { "All": ["Esc", "Ctrl+Q"] }
+                               }
+                             }
+                           }
+                           """);
+
+        try
+        {
+            TuiConfigurationBuilder builder = new (appName: null, currentDirectory: root);
+            builder.RuntimeConfig = """
+                                    {
+                                      "Application": {
+                                        "DefaultKeyBindings": {
+                                          "Quit": { "All": ["Ctrl+C"] }
+                                        }
+                                      }
+                                    }
+                                    """;
+            builder.ApplyToStaticFacades ();
+
+            Key [] quitKeys = Application.DefaultKeyBindings! [Command.Quit].All!;
+            Assert.Single (quitKeys);
+            Assert.Equal (Key.C.WithCtrl, quitKeys [0]);
+        }
+        finally
+        {
+            Directory.Delete (root, recursive: true);
+        }
+    }
+
     [Fact]
     public void ToJson_NonContiguousNumericKeys_StayObject ()
     {
-        TuiConfigurationBuilder builder = new ();
+        TuiConfigurationBuilder builder = new (null, null, includeUserSources: false);
         builder.RuntimeConfig = """
                                 {
                                   "Probe": {

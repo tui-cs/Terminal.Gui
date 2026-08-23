@@ -1,4 +1,4 @@
-using Microsoft.Extensions.Configuration;
+using System.Text.Json.Nodes;
 using Terminal.Gui.App;
 using Terminal.Gui.Input;
 using Terminal.Gui.ViewBase;
@@ -6,82 +6,169 @@ using Terminal.Gui.ViewBase;
 namespace Terminal.Gui.Configuration;
 
 /// <summary>
-///     Overlays nested MEC key-binding dictionaries onto
+///     Overlays nested JSON key-binding dictionaries onto
 ///     <see cref="Application.DefaultKeyBindings"/>, <see cref="View.DefaultKeyBindings"/>,
 ///     and <see cref="View.ViewKeyBindings"/>. Unmentioned commands keep hard-coded defaults.
+///     Each apply first reverts the previous configuration overlay, so a binding removed from
+///     configuration regains its prior value on reload instead of persisting until restart.
 /// </summary>
 internal static class KeyBindingConfiguration
 {
-    /// <summary>Applies key-binding sections from <paramref name="config"/> to the static facades.</summary>
-    public static void Apply (IConfiguration config)
+    private static Dictionary<Command, PlatformKeyBinding?>? _appPrior;
+    private static Dictionary<Command, PlatformKeyBinding?>? _viewPrior;
+    private static Dictionary<string, Dictionary<Command, PlatformKeyBinding?>>? _viewTypesPrior;
+
+    /// <summary>Applies key-binding sections from the raw-JSON merged source view to the static facades.</summary>
+    public static void Apply (JsonObject mergedJson)
     {
-        Dictionary<Command, PlatformKeyBinding>? appOverlay = BindCommands (config, "Application:DefaultKeyBindings");
+        Application.DefaultKeyBindings = OverlayTracked (
+                                                         Application.DefaultKeyBindings,
+                                                         BindCommands (mergedJson, "Application"),
+                                                         ref _appPrior);
 
-        if (appOverlay is not null)
-        {
-            Application.DefaultKeyBindings = Overlay (Application.DefaultKeyBindings, appOverlay);
-        }
+        View.DefaultKeyBindings = OverlayTracked (
+                                                  View.DefaultKeyBindings,
+                                                  BindCommands (mergedJson, "View"),
+                                                  ref _viewPrior);
 
-        Dictionary<Command, PlatformKeyBinding>? viewOverlay = BindCommands (config, "View:DefaultKeyBindings");
-
-        if (viewOverlay is not null)
-        {
-            View.DefaultKeyBindings = Overlay (View.DefaultKeyBindings, viewOverlay);
-        }
-
-        OverlayViewKeyBindings (BindViewTypes (config));
+        OverlayViewKeyBindings (BindViewTypes (mergedJson));
     }
 
-    private static Dictionary<Command, PlatformKeyBinding>? BindCommands (IConfiguration config, string path) =>
-        ConfigurationSectionJson.Deserialize<Dictionary<Command, PlatformKeyBinding>> (config.GetSection (path), "Key bindings");
+    /// <summary>INTERNAL: Captures the overlay-revert tracking state (for test snapshot/restore).</summary>
+    internal static (Dictionary<Command, PlatformKeyBinding?>?, Dictionary<Command, PlatformKeyBinding?>?,
+        Dictionary<string, Dictionary<Command, PlatformKeyBinding?>>?) SnapshotOverlayTracking () =>
+        (_appPrior is null ? null : new (_appPrior),
+         _viewPrior is null ? null : new (_viewPrior),
+         _viewTypesPrior?.ToDictionary (p => p.Key, p => new Dictionary<Command, PlatformKeyBinding?> (p.Value), StringComparer.OrdinalIgnoreCase));
 
-    private static Dictionary<string, Dictionary<Command, PlatformKeyBinding>>? BindViewTypes (IConfiguration config) =>
+    /// <summary>INTERNAL: Restores overlay-revert tracking state captured by <see cref="SnapshotOverlayTracking"/>.</summary>
+    internal static void RestoreOverlayTracking (
+        (Dictionary<Command, PlatformKeyBinding?>?, Dictionary<Command, PlatformKeyBinding?>?,
+            Dictionary<string, Dictionary<Command, PlatformKeyBinding?>>?) state)
+    {
+        (_appPrior, _viewPrior, _viewTypesPrior) = state;
+    }
+
+    private static Dictionary<Command, PlatformKeyBinding>? BindCommands (JsonObject mergedJson, string sectionName) =>
+        ConfigurationSectionJson.Deserialize<Dictionary<Command, PlatformKeyBinding>> (
+                                                                                       mergedJson [sectionName]? ["DefaultKeyBindings"] as JsonObject,
+                                                                                       $"Key bindings ({sectionName}:DefaultKeyBindings)");
+
+    private static Dictionary<string, Dictionary<Command, PlatformKeyBinding>>? BindViewTypes (JsonObject mergedJson) =>
         ConfigurationSectionJson.Deserialize<Dictionary<string, Dictionary<Command, PlatformKeyBinding>>> (
-                                                                                                           config.GetSection ("View:ViewKeyBindings"), "ViewKeyBindings");
+                                                                                                            mergedJson ["View"]? ["ViewKeyBindings"] as JsonObject,
+                                                                                                            "ViewKeyBindings (View:ViewKeyBindings)");
 
-    private static void OverlayViewKeyBindings (Dictionary<string, Dictionary<Command, PlatformKeyBinding>>? overlay)
+    /// <summary>
+    ///     Reverts the previous configuration overlay recorded in <paramref name="prior"/>, then overlays
+    ///     <paramref name="overlay"/> and records what each overlaid command replaced. App-code mutations to
+    ///     commands the configuration does not mention are preserved.
+    /// </summary>
+    private static Dictionary<Command, PlatformKeyBinding> OverlayTracked (
+        Dictionary<Command, PlatformKeyBinding>? current,
+        Dictionary<Command, PlatformKeyBinding>? overlay,
+        ref Dictionary<Command, PlatformKeyBinding?>? prior)
     {
-        if (overlay is null || overlay.Count == 0)
+        Dictionary<Command, PlatformKeyBinding> merged = current is { } existing ? new (existing) : [];
+
+        if (prior is { })
         {
-            return;
-        }
-
-        Dictionary<string, Dictionary<Command, PlatformKeyBinding>> merged =
-            View.ViewKeyBindings is { } existing
-                ? new (existing, StringComparer.OrdinalIgnoreCase)
-                : new (StringComparer.OrdinalIgnoreCase);
-
-        foreach (KeyValuePair<string, Dictionary<Command, PlatformKeyBinding>> pair in overlay)
-        {
-            Dictionary<Command, PlatformKeyBinding>? next = Overlay (merged.GetValueOrDefault (pair.Key), pair.Value);
-
-            if (next is null)
+            foreach (KeyValuePair<Command, PlatformKeyBinding?> pair in prior)
             {
-                continue;
+                if (pair.Value is { } previous)
+                {
+                    merged [pair.Key] = previous;
+                }
+                else
+                {
+                    merged.Remove (pair.Key);
+                }
             }
-
-            merged [pair.Key] = next;
         }
 
-        View.ViewKeyBindings = merged;
-    }
+        prior = null;
 
-    private static Dictionary<Command, PlatformKeyBinding>? Overlay (
-        Dictionary<Command, PlatformKeyBinding>? target,
-        Dictionary<Command, PlatformKeyBinding>? overlay)
-    {
         if (overlay is null || overlay.Count == 0)
         {
-            return target;
+            return merged;
         }
 
-        Dictionary<Command, PlatformKeyBinding> merged = target is { } existing ? new (existing) : [];
+        prior = [];
 
         foreach (KeyValuePair<Command, PlatformKeyBinding> pair in overlay)
         {
+            prior [pair.Key] = merged.TryGetValue (pair.Key, out PlatformKeyBinding? replaced) ? replaced : null;
             merged [pair.Key] = pair.Value;
         }
 
         return merged;
+    }
+
+    private static void OverlayViewKeyBindings (Dictionary<string, Dictionary<Command, PlatformKeyBinding>>? overlay)
+    {
+        Dictionary<string, Dictionary<Command, PlatformKeyBinding>> merged =
+            View.ViewKeyBindings is { } existing
+                ? existing.ToDictionary (p => p.Key, p => new Dictionary<Command, PlatformKeyBinding> (p.Value), StringComparer.OrdinalIgnoreCase)
+                : new (StringComparer.OrdinalIgnoreCase);
+
+        if (_viewTypesPrior is { })
+        {
+            foreach (KeyValuePair<string, Dictionary<Command, PlatformKeyBinding?>> typePair in _viewTypesPrior)
+            {
+                if (!merged.TryGetValue (typePair.Key, out Dictionary<Command, PlatformKeyBinding>? typeBindings))
+                {
+                    continue;
+                }
+
+                foreach (KeyValuePair<Command, PlatformKeyBinding?> pair in typePair.Value)
+                {
+                    if (pair.Value is { } previous)
+                    {
+                        typeBindings [pair.Key] = previous;
+                    }
+                    else
+                    {
+                        typeBindings.Remove (pair.Key);
+                    }
+                }
+
+                if (typeBindings.Count == 0)
+                {
+                    merged.Remove (typePair.Key);
+                }
+            }
+        }
+
+        _viewTypesPrior = null;
+
+        if (overlay is null || overlay.Count == 0)
+        {
+            View.ViewKeyBindings = merged.Count == 0 ? null : merged;
+
+            return;
+        }
+
+        _viewTypesPrior = new (StringComparer.OrdinalIgnoreCase);
+
+        foreach (KeyValuePair<string, Dictionary<Command, PlatformKeyBinding>> typePair in overlay)
+        {
+            if (!merged.TryGetValue (typePair.Key, out Dictionary<Command, PlatformKeyBinding>? typeBindings))
+            {
+                typeBindings = [];
+                merged [typePair.Key] = typeBindings;
+            }
+
+            Dictionary<Command, PlatformKeyBinding?> priors = [];
+
+            foreach (KeyValuePair<Command, PlatformKeyBinding> pair in typePair.Value)
+            {
+                priors [pair.Key] = typeBindings.TryGetValue (pair.Key, out PlatformKeyBinding? replaced) ? replaced : null;
+                typeBindings [pair.Key] = pair.Value;
+            }
+
+            _viewTypesPrior [typePair.Key] = priors;
+        }
+
+        View.ViewKeyBindings = merged;
     }
 }

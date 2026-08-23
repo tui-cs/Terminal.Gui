@@ -1,9 +1,7 @@
 // Grok - grok-4.6
 using System.Collections.Immutable;
 using System.Diagnostics.CodeAnalysis;
-using System.Text.Json;
 using System.Text.Json.Nodes;
-using Microsoft.Extensions.Configuration;
 
 namespace Terminal.Gui.Configuration;
 
@@ -56,12 +54,14 @@ public sealed class SchemeManager : ISchemeManager
 
     /// <summary>
     ///     Adds a new <see cref="Scheme"/>. If the name already exists, it is updated.
+    ///     Schemes added or updated here survive theme switches and configuration re-application.
     /// </summary>
     public static void AddScheme (string schemeName, Scheme scheme)
     {
         lock (_schemesLock)
         {
             _schemes [schemeName] = scheme;
+            _runtimeSchemes [schemeName] = scheme;
         }
     }
 
@@ -79,6 +79,8 @@ public sealed class SchemeManager : ISchemeManager
             {
                 throw new InvalidOperationException ($@"{schemeName}: Does not exist in Schemes.");
             }
+
+            _runtimeSchemes.Remove (schemeName);
         }
     }
 
@@ -151,70 +153,65 @@ public sealed class SchemeManager : ISchemeManager
 
     void ISchemeManager.AddScheme (string name, Scheme scheme) => AddScheme (name, scheme);
 
-    private static HashSet<string> _configSourcedSchemeNames = new (StringComparer.InvariantCultureIgnoreCase);
+    private static Dictionary<string, Scheme?> _runtimeSchemes = new (StringComparer.InvariantCultureIgnoreCase);
 
-    /// <summary>INTERNAL: Gets a copy of the scheme names the last configuration apply sourced (for tests).</summary>
-    internal static HashSet<string> GetConfigSourcedSchemeNames ()
+    /// <summary>INTERNAL: Gets a copy of the schemes added or updated at runtime via <see cref="AddScheme"/> (for tests).</summary>
+    internal static Dictionary<string, Scheme?> GetRuntimeSchemes ()
     {
         lock (_schemesLock)
         {
-            return new (_configSourcedSchemeNames, StringComparer.InvariantCultureIgnoreCase);
+            return new (_runtimeSchemes, StringComparer.InvariantCultureIgnoreCase);
         }
     }
 
-    /// <summary>INTERNAL: Replaces the config-sourced scheme name set (for tests).</summary>
-    internal static void SetConfigSourcedSchemeNames (IEnumerable<string> names)
+    /// <summary>INTERNAL: Replaces the runtime-added scheme dictionary (for tests).</summary>
+    internal static void SetRuntimeSchemes (Dictionary<string, Scheme?> schemes)
     {
         lock (_schemesLock)
         {
-            _configSourcedSchemeNames = new (names, StringComparer.InvariantCultureIgnoreCase);
+            _runtimeSchemes = new (schemes, StringComparer.InvariantCultureIgnoreCase);
         }
     }
 
     internal static void LoadToHardCodedDefaults ()
     {
         ReplaceSchemes (HardCodedDictionary ());
-        SetConfigSourcedSchemeNames ([]);
+        SetRuntimeSchemes (new (StringComparer.InvariantCultureIgnoreCase));
     }
 
     /// <summary>
-    ///     Publishes the schemes for <paramref name="themeName"/>: hard-coded defaults, plus schemes added
-    ///     at runtime via <see cref="AddScheme"/>, plus the root <c>Schemes</c> section deep-merged with the
-    ///     theme's <c>Schemes</c> overlay (the root-then-overlay contract every ThemeScope section follows).
+    ///     Publishes the schemes for <paramref name="canonicalThemeName"/> from the raw-JSON merged source
+    ///     view: hard-coded defaults, overlaid by the root <c>Schemes</c> section deep-merged with the theme's
+    ///     <c>Schemes</c> overlay (the root-then-overlay contract every ThemeScope section follows), overlaid
+    ///     by schemes the app added or updated at runtime via <see cref="AddScheme"/> (app wins until changed,
+    ///     matching the documented "If the name already exists, it is updated" contract).
     /// </summary>
-    internal static void ApplyFromConfiguration (IConfiguration config, string themeName)
+    internal static void ApplyFromConfiguration (JsonObject mergedJson, string? canonicalThemeName)
     {
         Dictionary<string, Scheme?> next = HardCodedDictionary ();
 
-        // Preserve schemes added at runtime via AddScheme: anything currently present that is neither
-        // hard-coded nor sourced from configuration by a prior apply.
-        lock (_schemesLock)
+        JsonObject combined = [];
+
+        if (mergedJson ["Schemes"] is JsonObject rootSchemes)
         {
-            foreach (KeyValuePair<string, Scheme?> pair in _schemes)
+            JsonMerge.DeepMerge (combined, rootSchemes);
+        }
+
+        if (canonicalThemeName is { } && mergedJson ["Themes"]? [canonicalThemeName]? ["Schemes"] is JsonObject themeSchemes)
+        {
+            JsonMerge.DeepMerge (combined, themeSchemes);
+        }
+
+        foreach (KeyValuePair<string, JsonNode?> pair in combined)
+        {
+            if (pair.Value is not JsonObject schemeJson || schemeJson.Count == 0)
             {
-                if (next.ContainsKey (pair.Key) || _configSourcedSchemeNames.Contains (pair.Key))
-                {
-                    continue;
-                }
-
-                next [pair.Key] = pair.Value;
+                continue;
             }
-        }
 
-        Dictionary<string, JsonObject> merged = new (StringComparer.InvariantCultureIgnoreCase);
-        MergeSchemesSection (merged, config.GetSection ("Schemes"));
-        IConfigurationSection? named = ThemeCatalog.Find (config, themeName);
-
-        if (named is not null)
-        {
-            MergeSchemesSection (merged, named.GetSection ("Schemes"));
-        }
-
-        HashSet<string> configSourced = new (StringComparer.InvariantCultureIgnoreCase);
-
-        foreach (KeyValuePair<string, JsonObject> pair in merged)
-        {
-            Scheme? parsed = TryBindScheme (pair.Key, pair.Value);
+            // One bad value must not silently revert the user's whole scheme to hard-coded colors
+            // with zero diagnostics; Deserialize collects the error for printing at shutdown.
+            Scheme? parsed = ConfigurationSectionJson.Deserialize<Scheme> (schemeJson, $"Scheme \"{pair.Key}\"");
 
             if (parsed is null)
             {
@@ -222,62 +219,16 @@ public sealed class SchemeManager : ISchemeManager
             }
 
             next [pair.Key] = parsed;
-            configSourced.Add (pair.Key);
+        }
+
+        lock (_schemesLock)
+        {
+            foreach (KeyValuePair<string, Scheme?> pair in _runtimeSchemes)
+            {
+                next [pair.Key] = pair.Value;
+            }
         }
 
         ReplaceSchemes (next);
-        SetConfigSourcedSchemeNames (configSourced);
     }
-
-    private static void MergeSchemesSection (Dictionary<string, JsonObject> merged, IConfigurationSection schemesSection)
-    {
-        foreach (IConfigurationSection schemeChild in schemesSection.GetChildren ())
-        {
-            if (ConfigurationSectionJson.ToJson (schemeChild) is not JsonObject obj || obj.Count == 0)
-            {
-                continue;
-            }
-
-            if (merged.TryGetValue (schemeChild.Key, out JsonObject? existing))
-            {
-                DeepMerge (existing, obj);
-
-                continue;
-            }
-
-            merged [schemeChild.Key] = obj;
-        }
-    }
-
-    private static void DeepMerge (JsonObject target, JsonObject source)
-    {
-        foreach (KeyValuePair<string, JsonNode?> pair in source)
-        {
-            if (target [pair.Key] is JsonObject existingChild && pair.Value is JsonObject incomingChild)
-            {
-                DeepMerge (existingChild, incomingChild);
-
-                continue;
-            }
-
-            target [pair.Key] = pair.Value is null ? null : JsonNode.Parse (pair.Value.ToJsonString ());
-        }
-    }
-
-    private static Scheme? TryBindScheme (string name, JsonObject obj)
-    {
-        try
-        {
-            return JsonSerializer.Deserialize (obj.ToJsonString (), TuiSerializerContext.Instance.Scheme);
-        }
-        catch (JsonException ex)
-        {
-            // One bad value must not silently revert the user's whole scheme to hard-coded colors
-            // with zero diagnostics; the error is printed at shutdown.
-            TuiJsonErrors.Add ($"Scheme \"{name}\": {ex.Message}");
-
-            return null;
-        }
-    }
-
 }

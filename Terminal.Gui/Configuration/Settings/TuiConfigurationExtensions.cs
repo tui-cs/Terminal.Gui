@@ -27,19 +27,24 @@ public static class TuiConfigurationExtensions
     /// </summary>
     /// <param name="builder">The configuration builder.</param>
     /// <returns>The builder for chaining.</returns>
-    public static IConfigurationBuilder AddTuiLibraryDefaults (this IConfigurationBuilder builder)
+    public static IConfigurationBuilder AddTuiLibraryDefaults (this IConfigurationBuilder builder) => AddTuiLibraryDefaults (builder, null);
+
+    internal static IConfigurationBuilder AddTuiLibraryDefaults (IConfigurationBuilder builder, List<JsonObject>? jsonSources)
     {
         Assembly libraryAssembly = typeof (TuiConfigurationExtensions).Assembly;
         string resourceName = $"Terminal.Gui.Resources.{CONFIG_FILENAME}";
 
         Stream? stream = libraryAssembly.GetManifestResourceStream (resourceName);
 
-        if (stream is not null)
+        if (stream is null)
         {
-            builder.AddJsonStream (stream);
+            return builder;
         }
 
-        return builder;
+        using StreamReader reader = new (stream);
+        string json = reader.ReadToEnd ();
+
+        return AddTuiInlineJson (builder, json, $"Embedded resource \"{resourceName}\"", jsonSources);
     }
 
     /// <summary>
@@ -48,7 +53,10 @@ public static class TuiConfigurationExtensions
     /// <param name="builder">The configuration builder.</param>
     /// <param name="appName">The application name (used for app-specific config files).</param>
     /// <returns>The builder for chaining.</returns>
-    public static IConfigurationBuilder AddTuiAppDefaults (this IConfigurationBuilder builder, string? appName = null)
+    public static IConfigurationBuilder AddTuiAppDefaults (this IConfigurationBuilder builder, string? appName = null) =>
+        AddTuiAppDefaults (builder, appName, null);
+
+    internal static IConfigurationBuilder AddTuiAppDefaults (IConfigurationBuilder builder, string? appName, List<JsonObject>? jsonSources)
     {
         Assembly? entryAssembly = Assembly.GetEntryAssembly ();
 
@@ -76,7 +84,7 @@ public static class TuiConfigurationExtensions
         using StreamReader reader = new (stream);
         string json = reader.ReadToEnd ();
 
-        return AddTuiInlineJson (builder, json, $"Embedded resource \"{resourceName}\"");
+        return AddTuiInlineJson (builder, json, $"Embedded resource \"{resourceName}\"", jsonSources);
     }
 
     /// <summary>
@@ -88,8 +96,8 @@ public static class TuiConfigurationExtensions
     ///         <item><c>./.tui/{appName}.config.json</c> (AppCurrent)</item>
     ///     </list>
     ///     Files are optional — missing files are silently skipped. Later files override earlier ones.
-    ///     Files that fail to load are collected in <see cref="TuiJsonErrors"/> and skipped; legacy-shaped
-    ///     files are warned about and skipped.
+    ///     Files that fail to read or parse are collected in <see cref="TuiJsonErrors"/> and skipped;
+    ///     legacy-shaped files are warned about and skipped.
     /// </summary>
     /// <param name="builder">The configuration builder.</param>
     /// <param name="appName">The application name for app-specific config files. If null, app-specific files are skipped.</param>
@@ -98,20 +106,21 @@ public static class TuiConfigurationExtensions
     ///     <see cref="Environment.CurrentDirectory"/> (never the app's install directory).
     /// </param>
     /// <returns>The builder for chaining.</returns>
-    public static IConfigurationBuilder AddTuiUserFiles (this IConfigurationBuilder builder, string? appName = null, string? currentDirectory = null)
+    public static IConfigurationBuilder AddTuiUserFiles (this IConfigurationBuilder builder, string? appName = null, string? currentDirectory = null) =>
+        AddTuiUserFiles (builder, appName, currentDirectory, null);
+
+    internal static IConfigurationBuilder AddTuiUserFiles (IConfigurationBuilder builder, string? appName, string? currentDirectory, List<JsonObject>? jsonSources)
     {
         string homeDir = Environment.GetFolderPath (Environment.SpecialFolder.UserProfile);
         string currentDir = Path.GetFullPath (currentDirectory ?? Environment.CurrentDirectory);
 
-        builder.SetFileLoadExceptionHandler (HandleFileLoadException);
-
-        AddUserFile (builder, Path.Combine (homeDir, TUI_CONFIG_FOLDER, CONFIG_FILENAME));
-        AddUserFile (builder, Path.Combine (currentDir, TUI_CONFIG_FOLDER, CONFIG_FILENAME));
+        AddUserFile (builder, Path.Combine (homeDir, TUI_CONFIG_FOLDER, CONFIG_FILENAME), jsonSources);
+        AddUserFile (builder, Path.Combine (currentDir, TUI_CONFIG_FOLDER, CONFIG_FILENAME), jsonSources);
 
         if (!string.IsNullOrEmpty (appName))
         {
-            AddUserFile (builder, Path.Combine (homeDir, TUI_CONFIG_FOLDER, $"{appName}.{CONFIG_FILENAME}"));
-            AddUserFile (builder, Path.Combine (currentDir, TUI_CONFIG_FOLDER, $"{appName}.{CONFIG_FILENAME}"));
+            AddUserFile (builder, Path.Combine (homeDir, TUI_CONFIG_FOLDER, $"{appName}.{CONFIG_FILENAME}"), jsonSources);
+            AddUserFile (builder, Path.Combine (currentDir, TUI_CONFIG_FOLDER, $"{appName}.{CONFIG_FILENAME}"), jsonSources);
         }
 
         return builder;
@@ -123,7 +132,9 @@ public static class TuiConfigurationExtensions
     /// </summary>
     /// <param name="builder">The configuration builder.</param>
     /// <returns>The builder for chaining.</returns>
-    public static IConfigurationBuilder AddTuiEnvironmentVariable (this IConfigurationBuilder builder)
+    public static IConfigurationBuilder AddTuiEnvironmentVariable (this IConfigurationBuilder builder) => AddTuiEnvironmentVariable (builder, null);
+
+    internal static IConfigurationBuilder AddTuiEnvironmentVariable (IConfigurationBuilder builder, List<JsonObject>? jsonSources)
     {
         string? envConfig = Environment.GetEnvironmentVariable (TUI_CONFIG_ENV);
 
@@ -132,7 +143,7 @@ public static class TuiConfigurationExtensions
             return builder;
         }
 
-        return AddTuiInlineJson (builder, envConfig, $"{TUI_CONFIG_ENV} environment variable");
+        return AddTuiInlineJson (builder, envConfig, $"{TUI_CONFIG_ENV} environment variable", jsonSources);
     }
 
     /// <summary>
@@ -142,39 +153,56 @@ public static class TuiConfigurationExtensions
     /// <param name="builder">The configuration builder.</param>
     /// <param name="json">A JSON string containing configuration overrides.</param>
     /// <returns>The builder for chaining.</returns>
-    public static IConfigurationBuilder AddTuiRuntimeConfig (this IConfigurationBuilder builder, string? json)
+    public static IConfigurationBuilder AddTuiRuntimeConfig (this IConfigurationBuilder builder, string? json) =>
+        AddTuiRuntimeConfig (builder, json, null);
+
+    internal static IConfigurationBuilder AddTuiRuntimeConfig (IConfigurationBuilder builder, string? json, List<JsonObject>? jsonSources)
     {
         if (string.IsNullOrEmpty (json))
         {
             return builder;
         }
 
-        return AddTuiInlineJson (builder, json, "RuntimeConfig");
+        return AddTuiInlineJson (builder, json, "RuntimeConfig", jsonSources);
     }
 
     /// <summary>
-    ///     Adds inline JSON as a stream source after validating it. Legacy-shaped JSON is warned about
-    ///     and skipped; malformed JSON is collected in <see cref="TuiJsonErrors"/> and skipped. A source
-    ///     must never crash the build — it runs from a module initializer.
+    ///     Adds inline JSON as a stream source after validating it (parsed exactly once). Malformed JSON and
+    ///     non-object roots are collected in <see cref="TuiJsonErrors"/> and skipped; legacy-shaped JSON is
+    ///     warned about and skipped. A source must never crash the build — it runs from a module initializer.
+    ///     When <paramref name="jsonSources"/> is provided, the parsed root object is appended to it so callers
+    ///     can build a raw-JSON merged view of all sources (atomic array overrides).
     /// </summary>
-    internal static IConfigurationBuilder AddTuiInlineJson (IConfigurationBuilder builder, string json, string sourceName)
+    internal static IConfigurationBuilder AddTuiInlineJson (IConfigurationBuilder builder, string json, string sourceName, List<JsonObject>? jsonSources = null)
     {
-        if (IsLegacyConfigShape (json))
-        {
-            Logging.Warning (
-                             $"{sourceName} uses a pre-MEC (flat-key or array-Themes) shape and is not applied. Convert it with Tools/MigrateConfig. See docfx/docs/migrate-cm-to-mec.md.");
-
-            return builder;
-        }
+        JsonObject obj;
 
         try
         {
-            using JsonDocument document = JsonDocument.Parse (
-                                                              json,
-                                                              new JsonDocumentOptions { CommentHandling = JsonCommentHandling.Skip, AllowTrailingCommas = true });
+            JsonNode? node = JsonNode.Parse (json, documentOptions: new () { CommentHandling = JsonCommentHandling.Skip, AllowTrailingCommas = true });
+
+            if (node is not JsonObject parsed)
+            {
+                TuiJsonErrors.Add ($"{sourceName}: The top-level JSON element must be an object.");
+
+                return builder;
+            }
+
+            if (IsLegacyShape (parsed))
+            {
+                Logging.Warning (
+                                 $"{sourceName} uses a pre-MEC (flat-key or array-Themes) shape and is not applied. Convert it with Tools/MigrateConfig. See docfx/docs/migrate-cm-to-mec.md.");
+
+                return builder;
+            }
+
+            obj = parsed;
         }
-        catch (JsonException ex)
+        catch (Exception ex) when (ex is JsonException or ArgumentException or InvalidOperationException)
         {
+            // ArgumentException/InvalidOperationException: JsonObject materialization rejects duplicate
+            // keys (which MEC's own parser would also reject — but inside builder.Build(), past every
+            // per-source handler). Skip the source here so one bad source cannot discard the rest.
             TuiJsonErrors.Add ($"{sourceName}: {ex.Message}");
 
             return builder;
@@ -183,24 +211,34 @@ public static class TuiConfigurationExtensions
         byte [] bytes = System.Text.Encoding.UTF8.GetBytes (json);
         MemoryStream stream = new (bytes);
         builder.AddJsonStream (stream);
+        jsonSources?.Add (obj);
 
         return builder;
     }
 
-    private static void AddUserFile (IConfigurationBuilder builder, string path)
+    private static void AddUserFile (IConfigurationBuilder builder, string path, List<JsonObject>? jsonSources)
     {
-        if (IsLegacyConfigFile (path))
+        if (!File.Exists (path))
         {
             return;
         }
 
-        builder.AddJsonFile (path, optional: true, reloadOnChange: false);
-    }
+        string text;
 
-    private static void HandleFileLoadException (FileLoadExceptionContext context)
-    {
-        TuiJsonErrors.Add ($"Configuration file \"{context.Provider.Source.Path}\": {context.Exception.Message}");
-        context.Ignore = true;
+        try
+        {
+            text = File.ReadAllText (path);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or System.Security.SecurityException)
+        {
+            // An unreadable file must not crash the build (it runs from a module initializer);
+            // the error is printed at shutdown.
+            TuiJsonErrors.Add ($"Configuration file \"{path}\": {ex.Message}");
+
+            return;
+        }
+
+        AddTuiInlineJson (builder, text, $"Configuration file \"{path}\"", jsonSources);
     }
 
     /// <summary>
@@ -231,6 +269,11 @@ public static class TuiConfigurationExtensions
             return false;
         }
 
+        return IsLegacyShape (obj);
+    }
+
+    private static bool IsLegacyShape (JsonObject obj)
+    {
         foreach (KeyValuePair<string, JsonNode?> pair in obj)
         {
             if (pair.Key.Contains ('.'))
@@ -245,36 +288,5 @@ public static class TuiConfigurationExtensions
         }
 
         return false;
-    }
-
-    private static bool IsLegacyConfigFile (string path)
-    {
-        if (!File.Exists (path))
-        {
-            return false;
-        }
-
-        string text;
-
-        try
-        {
-            text = File.ReadAllText (path);
-        }
-        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or System.Security.SecurityException)
-        {
-            // Cannot inspect the shape here. If MEC cannot read it either, the load-exception
-            // handler collects the error; the build must not crash (it runs from a module initializer).
-            return false;
-        }
-
-        if (!IsLegacyConfigShape (text))
-        {
-            return false;
-        }
-
-        Logging.Warning (
-                         $"Configuration file \"{path}\" uses a pre-MEC (flat-key or array-Themes) shape and is not applied. Convert it with Tools/MigrateConfig. See docfx/docs/migrate-cm-to-mec.md.");
-
-        return true;
     }
 }

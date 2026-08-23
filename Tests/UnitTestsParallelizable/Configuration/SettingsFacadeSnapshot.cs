@@ -41,6 +41,9 @@ internal sealed class SettingsFacadeSnapshot : IDisposable
     private readonly Dictionary<Command, PlatformKeyBinding>? _viewKeyBindings = CloneCommandBindings (View.DefaultKeyBindings);
     private readonly Dictionary<string, Dictionary<Command, PlatformKeyBinding>>? _viewTypeKeyBindings = CloneViewKeyBindings (View.ViewKeyBindings);
 
+    private readonly (Dictionary<Command, PlatformKeyBinding?>?, Dictionary<Command, PlatformKeyBinding?>?,
+        Dictionary<string, Dictionary<Command, PlatformKeyBinding?>>?) _keyBindingOverlayTracking = KeyBindingConfiguration.SnapshotOverlayTracking ();
+
     public void Dispose ()
     {
         ApplicationSettings.Defaults = _application;
@@ -71,6 +74,7 @@ internal sealed class SettingsFacadeSnapshot : IDisposable
         Application.DefaultKeyBindings = CloneCommandBindings (_applicationKeyBindings);
         View.DefaultKeyBindings = CloneCommandBindings (_viewKeyBindings);
         View.ViewKeyBindings = CloneViewKeyBindings (_viewTypeKeyBindings);
+        KeyBindingConfiguration.RestoreOverlayTracking (_keyBindingOverlayTracking);
     }
 
     private static Dictionary<Command, PlatformKeyBinding>? CloneCommandBindings (Dictionary<Command, PlatformKeyBinding>? source) =>

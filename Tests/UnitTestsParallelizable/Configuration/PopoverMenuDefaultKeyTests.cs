@@ -4,12 +4,12 @@ using Terminal.Gui.Configuration;
 namespace ConfigurationTests;
 
 /// <summary>
-///     <see cref="MenuBar.DefaultKey"/> has a public setter (as does <see cref="PopoverMenu.DefaultKey"/>).
-///     An app-set value must survive theme switches and configuration re-application, matching the legacy
-///     SettingsScope behavior where theme switches never reset it.
+///     <see cref="PopoverMenu.DefaultKey"/> has a public setter, like <see cref="MenuBar.DefaultKey"/>.
+///     An app-set value must survive theme switches and configuration re-application
+///     (<see cref="PopoverMenuSettings.Current"/> is wholesale-replaced on each apply).
 /// </summary>
 [Collection ("StaticSettingsTests")]
-public class MenuBarDefaultKeyTests
+public class PopoverMenuDefaultKeyTests
 {
     [Fact]
     public void DefaultKey_SetByApp_SurvivesThemeOverlayReapply ()
@@ -18,17 +18,17 @@ public class MenuBarDefaultKeyTests
 
         try
         {
-            MenuBar.DefaultKey = Key.F12;
+            PopoverMenu.DefaultKey = Key.F9;
 
             TuiConfigurationBuilder tuiBuilder = new ();
             tuiBuilder.RuntimeConfig = """{ "Theme": "Dark", "Themes": { "Dark": {} } }""";
             tuiBuilder.ApplyToStaticFacades ();
 
-            Assert.Equal (Key.F12, MenuBar.DefaultKey);
+            Assert.Equal (Key.F9, PopoverMenu.DefaultKey);
         }
         finally
         {
-            MenuBar.ResetDefaultKeyOverride ();
+            PopoverMenu.ResetDefaultKeyOverride ();
         }
     }
 
@@ -39,7 +39,7 @@ public class MenuBarDefaultKeyTests
 
         try
         {
-            MenuBar.DefaultKey = Key.F12;
+            PopoverMenu.DefaultKey = Key.F9;
 
             TuiConfigurationBuilder tuiBuilder = new ();
             tuiBuilder.RuntimeConfig = """{ "Themes": { "Dark": {} } }""";
@@ -48,11 +48,11 @@ public class MenuBarDefaultKeyTests
             MecThemeManager manager = new (tuiBuilder);
             Assert.True (manager.SwitchTheme ("Dark"));
 
-            Assert.Equal (Key.F12, MenuBar.DefaultKey);
+            Assert.Equal (Key.F9, PopoverMenu.DefaultKey);
         }
         finally
         {
-            MenuBar.ResetDefaultKeyOverride ();
+            PopoverMenu.ResetDefaultKeyOverride ();
         }
     }
 
@@ -61,11 +61,11 @@ public class MenuBarDefaultKeyTests
     {
         using SettingsFacadeSnapshot snapshot = new ();
 
-        MenuBar.ResetDefaultKeyOverride ();
+        PopoverMenu.ResetDefaultKeyOverride ();
         TuiConfigurationBuilder tuiBuilder = new ();
-        tuiBuilder.RuntimeConfig = """{ "MenuBar": { "DefaultKey": "F11" } }""";
+        tuiBuilder.RuntimeConfig = """{ "PopoverMenu": { "DefaultKey": "F11" } }""";
         tuiBuilder.ApplyToStaticFacades ();
 
-        Assert.Equal (Key.F11, MenuBar.DefaultKey);
+        Assert.Equal (Key.F11, PopoverMenu.DefaultKey);
     }
 }

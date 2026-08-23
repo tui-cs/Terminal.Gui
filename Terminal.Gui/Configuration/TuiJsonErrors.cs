@@ -26,6 +26,19 @@ public static class TuiJsonErrors
         }
     }
 
+    /// <summary>
+    ///     INTERNAL: Clears collected errors. Called at the start of each configuration build so the
+    ///     list describes the current effective configuration instead of accumulating across rebuilds
+    ///     (e.g. from a file watcher re-applying a persistently malformed source).
+    /// </summary>
+    internal static void Clear ()
+    {
+        lock (_lock)
+        {
+            _errors.Clear ();
+        }
+    }
+
     /// <summary>Gets a snapshot of collected errors.</summary>
     public static IReadOnlyList<string> GetErrors ()
     {

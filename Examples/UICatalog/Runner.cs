@@ -369,17 +369,46 @@ public class Runner
         _homeDirWatcher.EnableRaisingEvents = false;
         _homeDirWatcher.Changed -= ConfigFileChanged;
 
+        lock (_configReloadLock)
+        {
+            _configReloadTimer?.Dispose ();
+            _configReloadTimer = null;
+        }
+
         _configWatcherStarted = false;
     }
 
     private static void ThemeManagerOnThemeChanged (object? sender, EventArgs<string> e) =>
         TuiConfigurationBuilder.Shared.ApplyActiveThemeOverlays ();
 
+    private static readonly Lock _configReloadLock = new ();
+    private static Timer? _configReloadTimer;
+
     private static void ConfigFileChanged (object sender, FileSystemEventArgs e)
     {
-        Logging.Debug ($"{e.FullPath} {e.ChangeType} - Loading and Applying");
-        TuiConfigurationBuilder.Shared.Reload ();
-        TuiConfigurationBuilder.Shared.ApplyToStaticFacades ();
+        Logging.Debug ($"{e.FullPath} {e.ChangeType} - scheduling reload");
+
+        // Editors fire several Changed events per save (and may still hold the file mid-write);
+        // debounce so one settled reload runs instead of a rebuild per event.
+        lock (_configReloadLock)
+        {
+            _configReloadTimer ??= new (ReloadConfig);
+            _configReloadTimer.Change (250, System.Threading.Timeout.Infinite);
+        }
+    }
+
+    private static void ReloadConfig (object? state)
+    {
+        // Never let a bad config value kill the process from the watcher thread — collect and log instead.
+        try
+        {
+            TuiConfigurationBuilder.Shared.Reload ();
+            TuiConfigurationBuilder.Shared.ApplyToStaticFacades ();
+        }
+        catch (Exception ex)
+        {
+            Logging.Warning ($"Configuration reload failed: {ex.Message}");
+        }
     }
 
     #endregion Interactive Mode

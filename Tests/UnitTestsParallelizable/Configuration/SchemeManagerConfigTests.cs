@@ -1,13 +1,14 @@
 // Claude - Fable 5
-using Microsoft.Extensions.Configuration;
+using System.Text.Json.Nodes;
 using Terminal.Gui.Configuration;
 
 namespace ConfigurationTests;
 
 /// <summary>
-///     Tests for <see cref="SchemeManager.ApplyFromConfiguration"/>: runtime-added schemes survive theme
-///     switches, root <c>Schemes</c> customizations merge with theme overlays (matching the root-then-overlay
-///     contract of every other ThemeScope section), and invalid scheme JSON is reported, not swallowed.
+///     Tests for <see cref="SchemeManager.ApplyFromConfiguration"/>: runtime-added and runtime-updated
+///     schemes survive theme switches, root <c>Schemes</c> customizations merge with theme overlays
+///     (matching the root-then-overlay contract of every other ThemeScope section), and invalid scheme
+///     JSON is reported, not swallowed.
 /// </summary>
 [Collection ("StaticSettingsTests")]
 public class SchemeManagerConfigTests
@@ -16,17 +17,16 @@ public class SchemeManagerConfigTests
     private sealed class SchemeSnapshot : IDisposable
     {
         private readonly Dictionary<string, Scheme?> _schemes = new (SchemeManager.GetSchemes (), StringComparer.InvariantCultureIgnoreCase);
-        private readonly HashSet<string> _configSourced = SchemeManager.GetConfigSourcedSchemeNames ();
+        private readonly Dictionary<string, Scheme?> _runtime = SchemeManager.GetRuntimeSchemes ();
 
         public void Dispose ()
         {
             SchemeManager.ReplaceSchemes (_schemes);
-            SchemeManager.SetConfigSourcedSchemeNames (_configSourced);
+            SchemeManager.SetRuntimeSchemes (_runtime);
         }
     }
 
-    private static IConfiguration BuildConfig (string json) =>
-        new ConfigurationBuilder ().AddTuiRuntimeConfig (json).Build ();
+    private static JsonObject MergedJson (string json) => JsonNode.Parse (json)!.AsObject ();
 
     [Fact]
     public void ApplyFromConfiguration_PreservesRuntimeAddedSchemes ()
@@ -36,11 +36,26 @@ public class SchemeManagerConfigTests
         Scheme custom = new () { Normal = new (Color.White, Color.Blue) };
         SchemeManager.AddScheme ("MyScheme", custom);
 
-        IConfiguration config = BuildConfig ("""{ "Themes": { "Dark": {} } }""");
-        SchemeManager.ApplyFromConfiguration (config, "Dark");
+        SchemeManager.ApplyFromConfiguration (MergedJson ("""{ "Themes": { "Dark": {} } }"""), "Dark");
 
         Assert.True (SchemeManager.TryGetScheme ("MyScheme", out Scheme? survived));
         Assert.Equal (Color.White, survived!.Normal.Foreground);
+    }
+
+    // A runtime UPDATE to an existing scheme must survive re-apply just like a runtime ADD; the
+    // documented AddScheme contract is "If the name already exists, it is updated".
+    [Fact]
+    public void ApplyFromConfiguration_PreservesRuntimeUpdatedBuiltInScheme ()
+    {
+        using SchemeSnapshot snapshot = new ();
+
+        Scheme custom = new () { Normal = new (Color.White, Color.Magenta) };
+        SchemeManager.AddScheme ("Base", custom);
+
+        SchemeManager.ApplyFromConfiguration (MergedJson ("""{ "Themes": { "Dark": {} } }"""), "Dark");
+
+        Assert.True (SchemeManager.TryGetScheme ("Base", out Scheme? survived));
+        Assert.Equal (Color.Magenta, survived!.Normal.Background);
     }
 
     [Fact]
@@ -48,16 +63,16 @@ public class SchemeManagerConfigTests
     {
         using SchemeSnapshot snapshot = new ();
 
-        IConfiguration config = BuildConfig (
-                                             """
-                                             {
-                                               "Schemes": {
-                                                 "Base": { "Normal": { "Foreground": "White", "Background": "Blue" } }
-                                               },
-                                               "Themes": { "Dark": {} }
-                                             }
-                                             """);
-        SchemeManager.ApplyFromConfiguration (config, "Dark");
+        JsonObject merged = MergedJson (
+                                        """
+                                        {
+                                          "Schemes": {
+                                            "Base": { "Normal": { "Foreground": "White", "Background": "Blue" } }
+                                          },
+                                          "Themes": { "Dark": {} }
+                                        }
+                                        """);
+        SchemeManager.ApplyFromConfiguration (merged, "Dark");
 
         Assert.True (SchemeManager.TryGetScheme ("Base", out Scheme? baseScheme));
         Assert.Equal (Color.White, baseScheme!.Normal.Foreground);
@@ -69,22 +84,22 @@ public class SchemeManagerConfigTests
     {
         using SchemeSnapshot snapshot = new ();
 
-        IConfiguration config = BuildConfig (
-                                             """
-                                             {
-                                               "Schemes": {
-                                                 "Base": { "Normal": { "Foreground": "White", "Background": "Blue" } }
-                                               },
-                                               "Themes": {
-                                                 "Dark": {
-                                                   "Schemes": {
-                                                     "Error": { "Normal": { "Foreground": "Red", "Background": "Black" } }
-                                                   }
-                                                 }
-                                               }
-                                             }
-                                             """);
-        SchemeManager.ApplyFromConfiguration (config, "Dark");
+        JsonObject merged = MergedJson (
+                                        """
+                                        {
+                                          "Schemes": {
+                                            "Base": { "Normal": { "Foreground": "White", "Background": "Blue" } }
+                                          },
+                                          "Themes": {
+                                            "Dark": {
+                                              "Schemes": {
+                                                "Error": { "Normal": { "Foreground": "Red", "Background": "Black" } }
+                                              }
+                                            }
+                                          }
+                                        }
+                                        """);
+        SchemeManager.ApplyFromConfiguration (merged, "Dark");
 
         Assert.True (SchemeManager.TryGetScheme ("Base", out Scheme? baseScheme));
         Assert.Equal (Color.White, baseScheme!.Normal.Foreground);
@@ -97,22 +112,22 @@ public class SchemeManagerConfigTests
     {
         using SchemeSnapshot snapshot = new ();
 
-        IConfiguration config = BuildConfig (
-                                             """
-                                             {
-                                               "Schemes": {
-                                                 "Base": { "Normal": { "Foreground": "White", "Background": "Blue" } }
-                                               },
-                                               "Themes": {
-                                                 "Dark": {
-                                                   "Schemes": {
-                                                     "Base": { "Focus": { "Foreground": "Black", "Background": "Gray" } }
-                                                   }
-                                                 }
-                                               }
-                                             }
-                                             """);
-        SchemeManager.ApplyFromConfiguration (config, "Dark");
+        JsonObject merged = MergedJson (
+                                        """
+                                        {
+                                          "Schemes": {
+                                            "Base": { "Normal": { "Foreground": "White", "Background": "Blue" } }
+                                          },
+                                          "Themes": {
+                                            "Dark": {
+                                              "Schemes": {
+                                                "Base": { "Focus": { "Foreground": "Black", "Background": "Gray" } }
+                                              }
+                                            }
+                                          }
+                                        }
+                                        """);
+        SchemeManager.ApplyFromConfiguration (merged, "Dark");
 
         Assert.True (SchemeManager.TryGetScheme ("Base", out Scheme? baseScheme));
 
@@ -128,15 +143,15 @@ public class SchemeManagerConfigTests
         using SchemeSnapshot snapshot = new ();
         TuiJsonErrors.Print ();
 
-        IConfiguration config = BuildConfig (
-                                             """
-                                             {
-                                               "Schemes": {
-                                                 "Base": { "Normal": { "Foreground": "NotAColor", "Background": "Blue" } }
-                                               }
-                                             }
-                                             """);
-        SchemeManager.ApplyFromConfiguration (config, "Default");
+        JsonObject merged = MergedJson (
+                                        """
+                                        {
+                                          "Schemes": {
+                                            "Base": { "Normal": { "Foreground": "NotAColor", "Background": "Blue" } }
+                                          }
+                                        }
+                                        """);
+        SchemeManager.ApplyFromConfiguration (merged, "Default");
 
         Scheme hardCodedBase = SchemeManager.GetHardCodedSchemes () ["Base"]!;
         Assert.True (SchemeManager.TryGetScheme ("Base", out Scheme? baseScheme));
@@ -149,19 +164,18 @@ public class SchemeManagerConfigTests
     {
         using SchemeSnapshot snapshot = new ();
 
-        IConfiguration withScheme = BuildConfig (
-                                                 """
-                                                 {
-                                                   "Schemes": {
-                                                     "FromConfig": { "Normal": { "Foreground": "White", "Background": "Blue" } }
-                                                   }
-                                                 }
-                                                 """);
+        JsonObject withScheme = MergedJson (
+                                            """
+                                            {
+                                              "Schemes": {
+                                                "FromConfig": { "Normal": { "Foreground": "White", "Background": "Blue" } }
+                                              }
+                                            }
+                                            """);
         SchemeManager.ApplyFromConfiguration (withScheme, "Default");
         Assert.True (SchemeManager.TryGetScheme ("FromConfig", out _));
 
-        IConfiguration without = BuildConfig ("""{ }""");
-        SchemeManager.ApplyFromConfiguration (without, "Default");
+        SchemeManager.ApplyFromConfiguration (MergedJson ("""{ }"""), "Default");
 
         Assert.False (SchemeManager.TryGetScheme ("FromConfig", out _));
     }

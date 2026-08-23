@@ -72,6 +72,74 @@ public class ConfigErrorHandlingTests
         Assert.Empty (config.GetChildren ());
     }
 
+    // Claude - Fable 5
+    // A non-object root parses as valid JSON but would throw inside builder.Build(), past every
+    // per-source handler — discarding ALL sources. It must be skipped at add time instead.
+    [Fact]
+    public void AddTuiInlineJson_NonObjectRoot_IsSkipped_AndCollectsError ()
+    {
+        TuiJsonErrors.Print ();
+
+        IConfigurationBuilder builder = new ConfigurationBuilder ();
+        TuiConfigurationExtensions.AddTuiInlineJson (builder, "[]", "TUI_CONFIG");
+        IConfiguration config = builder.Build ();
+
+        Assert.Empty (config.GetChildren ());
+        Assert.Contains (TuiJsonErrors.GetErrors (), e => e.Contains ("TUI_CONFIG"));
+    }
+
+    // Claude - Fable 5
+    // Duplicate top-level keys would throw inside MEC's parser at builder.Build(), past every
+    // per-source handler; the source must be skipped at add time instead.
+    [Fact]
+    public void AddTuiInlineJson_DuplicateKeys_IsSkipped_AndCollectsError ()
+    {
+        TuiJsonErrors.Print ();
+
+        IConfigurationBuilder builder = new ConfigurationBuilder ();
+        TuiConfigurationExtensions.AddTuiInlineJson (builder, """{ "Theme": "A", "Theme": "B" }""", "TUI_CONFIG");
+        IConfiguration config = builder.Build ();
+
+        Assert.Empty (config.GetChildren ());
+        Assert.Contains (TuiJsonErrors.GetErrors (), e => e.Contains ("TUI_CONFIG"));
+    }
+
+    // Claude - Fable 5
+    [Fact]
+    public void ApplyToStaticFacades_NonObjectRuntimeConfig_OtherSourcesStillApply ()
+    {
+        using SettingsFacadeSnapshot snapshot = new ();
+        TuiJsonErrors.Print ();
+        TuiConfigurationBuilder tuiBuilder = new (null, null, includeUserSources: false);
+        tuiBuilder.RuntimeConfig = "[]";
+
+        tuiBuilder.ApplyToStaticFacades ();
+
+        // The library's embedded config.json still applied.
+        Assert.True (tuiBuilder.Configuration.GetSection ("Themes").Exists ());
+        Assert.Contains (TuiJsonErrors.GetErrors (), e => e.Contains ("RuntimeConfig"));
+    }
+
+    // Claude - Fable 5
+    // Each build clears previously collected errors, so a watcher re-applying a persistently
+    // malformed source reports it once per effective configuration, not once per rebuild.
+    [Fact]
+    public void Reload_PersistentlyMalformedSource_DoesNotAccumulateDuplicateErrors ()
+    {
+        using SettingsFacadeSnapshot snapshot = new ();
+        TuiJsonErrors.Print ();
+        TuiConfigurationBuilder tuiBuilder = new (null, null, includeUserSources: false);
+        tuiBuilder.RuntimeConfig = "{ this is not json";
+
+        _ = tuiBuilder.Configuration;
+        tuiBuilder.Reload ();
+        _ = tuiBuilder.Configuration;
+        tuiBuilder.Reload ();
+        _ = tuiBuilder.Configuration;
+
+        Assert.Equal (1, TuiJsonErrors.GetErrors ().Count (e => e.Contains ("RuntimeConfig")));
+    }
+
     // A theme whose name is numeric (e.g. "2077") is a legitimate nested MEC theme. Legacy array
     // shapes can no longer leak numeric section keys in, so numeric names must not be filtered out.
     [Fact]

@@ -58,7 +58,23 @@ internal static class ConfigurationSectionJson
     [UnconditionalSuppressMessage ("AOT", "IL3050", Justification = "T is a JsonSerializable type registered on SourceGenerationContext.")]
     public static T? Deserialize<T> (IConfigurationSection section, string errorLabel) where T : class
     {
-        if (ToJson (section) is not JsonObject obj || obj.Count == 0)
+        if (ToJson (section) is not JsonObject obj)
+        {
+            return null;
+        }
+
+        return Deserialize<T> (obj, $"{errorLabel} ({section.Path})");
+    }
+
+    /// <summary>
+    ///     Deserializes <paramref name="obj"/> as <typeparamref name="T"/> via STJ.
+    ///     Null or empty objects return <see langword="null"/>. JSON errors are collected in <see cref="TuiJsonErrors"/>.
+    /// </summary>
+    [UnconditionalSuppressMessage ("Trimming", "IL2026", Justification = "T is a JsonSerializable type registered on SourceGenerationContext.")]
+    [UnconditionalSuppressMessage ("AOT", "IL3050", Justification = "T is a JsonSerializable type registered on SourceGenerationContext.")]
+    public static T? Deserialize<T> (JsonObject? obj, string errorLabel) where T : class
+    {
+        if (obj is null || obj.Count == 0)
         {
             return null;
         }
@@ -69,7 +85,7 @@ internal static class ConfigurationSectionJson
         }
         catch (JsonException ex)
         {
-            TuiJsonErrors.Add ($"{errorLabel} ({section.Path}): {ex.Message}");
+            TuiJsonErrors.Add ($"{errorLabel}: {ex.Message}");
 
             return null;
         }
