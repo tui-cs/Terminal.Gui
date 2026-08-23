@@ -39,8 +39,9 @@ namespace Terminal.Gui.Drivers;
 /// </summary>
 public class AnsiInputProcessor : InputProcessorImpl<char>
 {
-    private bool _isKittyKeyboardEnabled;
-    private string _pendingPrintableSuppression = string.Empty;
+    private long _inputPosition;
+    private string _pendingKittyPrintableSuppression = string.Empty;
+    private long _pendingKittyPrintableSuppressionStartPosition;
 
     /// <inheritdoc/>
     /// <param name="inputBuffer">The input buffer to process.</param>
@@ -53,6 +54,9 @@ public class AnsiInputProcessor : InputProcessorImpl<char>
     /// <inheritdoc/>
     protected override void Process (char input)
     {
+        _inputPosition++;
+        InvalidatePendingKittyPrintableSuppression (input);
+
         foreach (Tuple<char, char> released in Parser.ProcessInput (Tuple.Create (input, input)))
         {
             ProcessAfterParsing (released.Item2);
@@ -60,11 +64,16 @@ public class AnsiInputProcessor : InputProcessorImpl<char>
     }
 
     /// <inheritdoc/>
-    protected override Key OnKeyboardEventParsed (Key keyEvent)
+    private protected override Key OnKeyboardEventParsed (AnsiKeyboardParserPattern pattern, Key keyEvent)
     {
-        _pendingPrintableSuppression = string.Empty;
+        keyEvent = base.OnKeyboardEventParsed (pattern, keyEvent);
+        ClearPendingKittyPrintableSuppression ();
 
-        if (keyEvent.EventType != KeyEventType.Press || keyEvent.IsAlt || keyEvent.IsCtrl || keyEvent.IsModifierOnly)
+        if (pattern is not KittyKeyboardPattern
+            || keyEvent.EventType != KeyEventType.Press
+            || keyEvent.IsAlt
+            || keyEvent.IsCtrl
+            || keyEvent.IsModifierOnly)
         {
             return keyEvent;
         }
@@ -73,7 +82,8 @@ public class AnsiInputProcessor : InputProcessorImpl<char>
 
         if (!string.IsNullOrEmpty (printableText))
         {
-            _pendingPrintableSuppression = printableText;
+            _pendingKittyPrintableSuppression = printableText;
+            _pendingKittyPrintableSuppressionStartPosition = _inputPosition + 1;
         }
 
         return keyEvent;
@@ -82,29 +92,46 @@ public class AnsiInputProcessor : InputProcessorImpl<char>
     /// <inheritdoc/>
     protected override bool ShouldSuppressFallbackKeyDown (Key key)
     {
-        if (string.IsNullOrEmpty (_pendingPrintableSuppression))
+        string printableText = key.GetPrintableText ();
+        string pendingPrintableText = _pendingKittyPrintableSuppression;
+        long pendingStartPosition = _pendingKittyPrintableSuppressionStartPosition;
+        ClearPendingKittyPrintableSuppression ();
+
+        if (string.IsNullOrEmpty (pendingPrintableText))
         {
-            if (_isKittyKeyboardEnabled)
-            {
-                string fallbackPrintableText = key.GetPrintableText ();
-
-                if (!string.IsNullOrEmpty (fallbackPrintableText))
-                {
-                    _pendingPrintableSuppression = fallbackPrintableText;
-                }
-            }
-
             return false;
         }
 
-        string printableText = key.GetPrintableText ();
-        bool suppress = string.Equals (printableText, _pendingPrintableSuppression, StringComparison.Ordinal);
-        _pendingPrintableSuppression = string.Empty;
+        long expectedLastPosition = pendingStartPosition + pendingPrintableText.Length - 1;
 
-        return suppress;
+        return _inputPosition == expectedLastPosition
+               && string.Equals (printableText, pendingPrintableText, StringComparison.Ordinal);
     }
 
-    internal void SetKittyKeyboardEnabled (bool enabled) => _isKittyKeyboardEnabled = enabled;
+    private void InvalidatePendingKittyPrintableSuppression (char input)
+    {
+        if (string.IsNullOrEmpty (_pendingKittyPrintableSuppression))
+        {
+            return;
+        }
+
+        long offset = _inputPosition - _pendingKittyPrintableSuppressionStartPosition;
+
+        if (offset >= 0
+            && offset < _pendingKittyPrintableSuppression.Length
+            && input == _pendingKittyPrintableSuppression [(int)offset])
+        {
+            return;
+        }
+
+        ClearPendingKittyPrintableSuppression ();
+    }
+
+    private void ClearPendingKittyPrintableSuppression ()
+    {
+        _pendingKittyPrintableSuppression = string.Empty;
+        _pendingKittyPrintableSuppressionStartPosition = 0;
+    }
 
     /// <inheritdoc/>
     public override void InjectKeyDownEvent (Key key)

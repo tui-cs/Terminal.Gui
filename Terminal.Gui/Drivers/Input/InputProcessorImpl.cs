@@ -78,19 +78,19 @@ public abstract class InputProcessorImpl<TInputRecord> : IInputProcessor, IDispo
 
         Parser.Paste += (_, text) => RaisePasteEvent (text);
 
-        Parser.Keyboard += (_, keyEvent) =>
-                           {
-                               Key normalizedKeyEvent = OnKeyboardEventParsed (keyEvent);
+        Parser.KeyboardPatternMatched += (pattern, keyEvent) =>
+                                         {
+                                             Key normalizedKeyEvent = OnKeyboardEventParsed (pattern, keyEvent);
 
-                               if (normalizedKeyEvent.EventType == KeyEventType.Release)
-                               {
-                                   RaiseKeyUpEvent (normalizedKeyEvent);
-                               }
-                               else
-                               {
-                                   RaiseKeyDownEvent (normalizedKeyEvent);
-                               }
-                           };
+                                             if (normalizedKeyEvent.EventType == KeyEventType.Release)
+                                             {
+                                                 RaiseKeyUpEvent (normalizedKeyEvent);
+                                             }
+                                             else
+                                             {
+                                                 RaiseKeyDownEvent (normalizedKeyEvent);
+                                             }
+                                         };
 
         // Configure unexpected response handler
         Parser.UnexpectedResponseHandler = str =>
@@ -221,6 +221,15 @@ public abstract class InputProcessorImpl<TInputRecord> : IInputProcessor, IDispo
     /// <param name="keyEvent">The parsed key event.</param>
     /// <returns>The key event to forward.</returns>
     protected virtual Key OnKeyboardEventParsed (Key keyEvent) => keyEvent;
+
+    /// <summary>
+    ///     Called when the ANSI parser raises a keyboard event before it is forwarded to <see cref="KeyDown"/> or
+    ///     <see cref="KeyUp"/> subscribers.
+    /// </summary>
+    /// <param name="pattern">The parser pattern that recognized the input.</param>
+    /// <param name="keyEvent">The parsed key event.</param>
+    /// <returns>The key event to forward.</returns>
+    private protected virtual Key OnKeyboardEventParsed (AnsiKeyboardParserPattern pattern, Key keyEvent) => OnKeyboardEventParsed (keyEvent);
 
     /// <summary>
     ///     Gives derived processors a chance to suppress keydown events that come from fallback stream processing

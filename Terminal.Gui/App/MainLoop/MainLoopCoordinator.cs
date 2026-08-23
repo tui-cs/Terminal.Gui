@@ -222,11 +222,6 @@ internal class MainLoopCoordinator<TInputRecord> : IMainLoopCoordinator where TI
                                           {
                                               if (!result.IsSupported)
                                               {
-                                                  if (_inputProcessor is AnsiInputProcessor unsupportedAnsiInputProcessor)
-                                                  {
-                                                      unsupportedAnsiInputProcessor.SetKittyKeyboardEnabled (false);
-                                                  }
-
                                                   Trace.Lifecycle (app?.MainThreadId?.ToString (), "KittyKeyboard", "Kitty keyboard mode not enabled");
 
                                                   return;
@@ -234,12 +229,6 @@ internal class MainLoopCoordinator<TInputRecord> : IMainLoopCoordinator where TI
 
                                               // Kitty is supported. Store the capabilities and set the flags we care about.
                                               _driver?.SetKittyKeyboardCapabilities (result);
-
-                                              if (_inputProcessor is AnsiInputProcessor supportedAnsiInputProcessor)
-                                              {
-                                                  supportedAnsiInputProcessor.SetKittyKeyboardEnabled (true);
-                                              }
-
                                               kittyKeyboardDetector.Enable (EscSeqUtils.KittyKeyboardRequestedFlags);
 
                                               Trace.Lifecycle (app?.MainThreadId?.ToString (),
