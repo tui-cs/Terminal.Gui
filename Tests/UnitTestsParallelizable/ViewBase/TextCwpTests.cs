@@ -205,6 +205,30 @@ public class TextCwpTests
         Assert.False (textView.IsDirty);
     }
 
+    // Codex - GPT-5.6
+    [Fact]
+    public void TextView_TextChanged_Reentrant_Polymorphic_Set_Syncs_Internal_Model ()
+    {
+        TextView textView = new ();
+        bool reentered = false;
+
+        textView.TextChanged += (_, _) =>
+                                {
+                                    if (reentered)
+                                    {
+                                        return;
+                                    }
+
+                                    reentered = true;
+                                    ((View)textView).Text = "second";
+                                };
+
+        textView.Text = "first";
+
+        Assert.Equal ("second", ((View)textView).Text);
+        Assert.Equal ("second", textView.Text);
+    }
+
     /// <summary>
     ///     CR Issue 4: A newly constructed <see cref="ProgressBar"/> should have <see cref="View.Text"/>
     ///     set to "0%" so that <see cref="ProgressBarFormat.SimplePlusPercentage"/> renders the percentage

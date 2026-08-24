@@ -199,7 +199,7 @@ public partial class TextView
             SetNeedsDraw ();
             _historyText.Clear (_model.GetAllLines ());
 
-            _ownSetterActive = true;
+            _skipNextTextChangedSync = true;
 
             try
             {
@@ -207,13 +207,13 @@ public partial class TextView
             }
             finally
             {
-                _ownSetterActive = false;
+                _skipNextTextChangedSync = false;
             }
         }
     }
 
-    /// <summary>Tracks whether the <c>new Text</c> setter is active to avoid redundant sync in <see cref="OnTextChanged"/>.</summary>
-    private bool _ownSetterActive;
+    /// <summary>Tracks whether the next <see cref="OnTextChanged"/> call should skip redundant model synchronization.</summary>
+    private bool _skipNextTextChangedSync;
 
     /// <inheritdoc/>
     /// <remarks>
@@ -223,8 +223,10 @@ public partial class TextView
     protected override void OnTextChanged ()
     {
         // Skip sync when called from our own `new Text` setter — it already updated the model.
-        if (_ownSetterActive)
+        if (_skipNextTextChangedSync)
         {
+            // Consume before TextChanged subscribers run so reentrant polymorphic sets synchronize normally.
+            _skipNextTextChangedSync = false;
             base.OnTextChanged ();
 
             return;
