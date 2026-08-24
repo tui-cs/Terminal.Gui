@@ -270,6 +270,29 @@ public class KittyKeyboardPipelineTests
 
     // Codex - GPT-5.6
     [Fact]
+    public void Pipeline_KittyPrintable_InterveningParsedKey_PreservesLaterMatchingFallbackKey ()
+    {
+        (List<Key> down, List<Key> up) = InjectRawSequence ("\x1b[97u\x1b[Aa");
+
+        Assert.Equal ([Key.A, Key.CursorUp, Key.A], down);
+        Assert.Empty (up);
+    }
+
+    // Codex - GPT-5.6
+    [Theory]
+    [InlineData ("\x1b[<0;10;20M")]
+    [InlineData ("\x1b[?1;2c")]
+    [InlineData ("\x1b[200~x\x1b[201~")]
+    public void Pipeline_KittyPrintable_InterveningAnsiInput_PreservesLaterMatchingFallbackKey (string interveningInput)
+    {
+        (List<Key> down, List<Key> up) = InjectRawSequence ($"\x1b[97u{interveningInput}a");
+
+        Assert.Equal ([Key.A, Key.A], down);
+        Assert.Empty (up);
+    }
+
+    // Codex - GPT-5.6
+    [Fact]
     public void Pipeline_LegacyShiftTabFollowedByTab_RaisesBothKeyDowns ()
     {
         (List<Key> down, List<Key> up) = InjectRawSequence ("\x1b[Z\t");

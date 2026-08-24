@@ -39,7 +39,9 @@ namespace Terminal.Gui.Drivers;
 /// </summary>
 public class AnsiInputProcessor : InputProcessorImpl<char>
 {
+    private long _inputPosition;
     private string _pendingKittyPrintableSuppression = string.Empty;
+    private long _pendingKittyPrintableSuppressionStartPosition;
 
     /// <inheritdoc/>
     /// <param name="inputBuffer">The input buffer to process.</param>
@@ -52,6 +54,9 @@ public class AnsiInputProcessor : InputProcessorImpl<char>
     /// <inheritdoc/>
     protected override void Process (char input)
     {
+        _inputPosition++;
+        InvalidatePendingKittyPrintableSuppression (input);
+
         foreach (Tuple<char, char> released in Parser.ProcessInput (Tuple.Create (input, input)))
         {
             ProcessAfterParsing (released.Item2);
@@ -62,7 +67,7 @@ public class AnsiInputProcessor : InputProcessorImpl<char>
     private protected override Key OnKeyboardEventParsed (AnsiKeyboardParserPattern pattern, Key keyEvent)
     {
         keyEvent = base.OnKeyboardEventParsed (pattern, keyEvent);
-        _pendingKittyPrintableSuppression = string.Empty;
+        ClearPendingKittyPrintableSuppression ();
 
         if (pattern is not KittyKeyboardPattern
             || keyEvent.EventType != KeyEventType.Press
@@ -78,6 +83,7 @@ public class AnsiInputProcessor : InputProcessorImpl<char>
         if (!string.IsNullOrEmpty (printableText))
         {
             _pendingKittyPrintableSuppression = printableText;
+            _pendingKittyPrintableSuppressionStartPosition = _inputPosition + 1;
         }
 
         return keyEvent;
@@ -86,16 +92,45 @@ public class AnsiInputProcessor : InputProcessorImpl<char>
     /// <inheritdoc/>
     protected override bool ShouldSuppressFallbackKeyDown (Key key)
     {
+        string printableText = key.GetPrintableText ();
         string pendingPrintableText = _pendingKittyPrintableSuppression;
-        _pendingKittyPrintableSuppression = string.Empty;
+        long pendingStartPosition = _pendingKittyPrintableSuppressionStartPosition;
+        ClearPendingKittyPrintableSuppression ();
 
         if (string.IsNullOrEmpty (pendingPrintableText))
         {
             return false;
         }
 
-        string printableText = key.GetPrintableText ();
-        return string.Equals (printableText, pendingPrintableText, StringComparison.Ordinal);
+        long expectedLastPosition = pendingStartPosition + pendingPrintableText.Length - 1;
+
+        return _inputPosition == expectedLastPosition
+               && string.Equals (printableText, pendingPrintableText, StringComparison.Ordinal);
+    }
+
+    private void InvalidatePendingKittyPrintableSuppression (char input)
+    {
+        if (string.IsNullOrEmpty (_pendingKittyPrintableSuppression))
+        {
+            return;
+        }
+
+        long offset = _inputPosition - _pendingKittyPrintableSuppressionStartPosition;
+
+        if (offset >= 0
+            && offset < _pendingKittyPrintableSuppression.Length
+            && input == _pendingKittyPrintableSuppression [(int)offset])
+        {
+            return;
+        }
+
+        ClearPendingKittyPrintableSuppression ();
+    }
+
+    private void ClearPendingKittyPrintableSuppression ()
+    {
+        _pendingKittyPrintableSuppression = string.Empty;
+        _pendingKittyPrintableSuppressionStartPosition = 0;
     }
 
     /// <inheritdoc/>
