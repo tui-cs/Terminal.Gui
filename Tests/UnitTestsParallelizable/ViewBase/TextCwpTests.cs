@@ -207,7 +207,7 @@ public class TextCwpTests
 
     // Codex - GPT-5.6
     [Fact]
-    public void TextView_TextChanged_Reentrant_Polymorphic_Set_Syncs_Internal_Model ()
+    public void TextView_TextChanged_ReentrantPolymorphicSet_SyncsInternalModel ()
     {
         TextView textView = new ();
         bool reentered = false;
