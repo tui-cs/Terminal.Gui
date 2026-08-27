@@ -90,6 +90,9 @@ internal partial class WindowsOutput : OutputBase, IOutput
     private readonly ConsoleColor _foreground;
     private readonly ConsoleColor _background;
 
+    // Reusable buffer for UTF-8 → UTF-16 decode in Write(ReadOnlySpan<byte>).
+    private char []? _utf16DecodeBuffer;
+
     public WindowsOutput ()
     {
         //Logging.Information ($"Creating {nameof (WindowsOutput)}");
@@ -464,12 +467,45 @@ internal partial class WindowsOutput : OutputBase, IOutput
     }
 
     /// <inheritdoc/>
-    protected override void AppendOrWriteAttribute (StringBuilder output, Attribute attr, TextStyle redrawTextStyle)
+    protected override void Write (ReadOnlySpan<byte> output)
+    {
+        base.Write (output);
+
+        if (!IsAttachedToTerminal || output.IsEmpty)
+        {
+            return;
+        }
+
+        if (!OperatingSystem.IsWindows ())
+        {
+            return;
+        }
+
+        // Decode UTF-8 to UTF-16 using a reusable buffer, then write via WriteConsole.
+        int maxCharCount = Encoding.UTF8.GetMaxCharCount (output.Length);
+
+        if (_utf16DecodeBuffer is null || _utf16DecodeBuffer.Length < maxCharCount)
+        {
+            _utf16DecodeBuffer = new char [maxCharCount];
+        }
+
+        int charCount = Encoding.UTF8.GetChars (output, _utf16DecodeBuffer);
+        ReadOnlySpan<char> charSpan = _utf16DecodeBuffer.AsSpan (0, charCount);
+        nint handle = !IsLegacyConsole ? _outputHandle : _screenBuffer;
+
+        if (!WriteConsole (handle, charSpan, (uint)charCount, out _, nint.Zero))
+        {
+            // Don't throw in unit tests
+        }
+    }
+
+    /// <inheritdoc/>
+    protected override void AppendOrWriteAttribute (Utf8Buffer output, Attribute attr, TextStyle redrawTextStyle)
     {
         if (Force16Colors && IsLegacyConsole)
         {
             // Legacy Windows console doesn't support ANSI — use Win32 API directly
-            Write (output);
+            Write (output.AsSpan ());
             output.Clear ();
             var as16ColorInt = (ushort)((int)attr.Foreground.GetClosestNamedColor16 () | ((int)attr.Background.GetClosestNamedColor16 () << 4));
             SetConsoleTextAttribute (_screenBuffer, as16ColorInt);

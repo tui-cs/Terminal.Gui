@@ -816,6 +816,35 @@ public static class EscSeqUtils
             return;
         }
 
+        List<int> sgr = ComputeTextStyleSgrCodes (prev, next);
+
+        output.Append ("\x1b[");
+        output.Append (string.Join (';', sgr));
+        output.Append ('m');
+    }
+
+    /// <summary>
+    ///     Builds the SGR escape sequence for a text style change as a string (ASCII).
+    ///     Used by Utf8Buffer-based output path.
+    /// </summary>
+    internal static string CSI_BuildTextStyleChange (TextStyle prev, TextStyle next)
+    {
+        if (prev == next)
+        {
+            return string.Empty;
+        }
+
+        List<int> sgr = ComputeTextStyleSgrCodes (prev, next);
+
+        return $"\x1b[{string.Join (';', sgr)}m";
+    }
+
+    /// <summary>
+    ///     Computes the SGR parameter codes for a text style change.
+    ///     Shared by <see cref="CSI_AppendTextStyleChange"/> and <see cref="CSI_BuildTextStyleChange"/>.
+    /// </summary>
+    private static List<int> ComputeTextStyleSgrCodes (TextStyle prev, TextStyle next)
+    {
         // Bitwise operations to determine flag changes. A ^ B are the flags different between two flag sets. These different flags that exist in the next flag
         // set (diff & next) are the ones that were enabled in the switch, those that exist in the previous flag set (diff & prev) are the ones that were
         // disabled.
@@ -915,9 +944,7 @@ public static class EscSeqUtils
             }
         }
 
-        output.Append ("\x1b[");
-        output.Append (string.Join (';', sgr));
-        output.Append ('m');
+        return sgr;
     }
 
     #endregion Text Styles

@@ -110,6 +110,26 @@ public class NetOutput : OutputBase, IOutput
         }
     }
 
+    /// <inheritdoc/>
+    protected override void Write (ReadOnlySpan<byte> output)
+    {
+        base.Write (output);
+
+        if (!IsAttachedToTerminal)
+        {
+            return;
+        }
+
+        try
+        {
+            Console.Out.Write (Encoding.UTF8.GetString (output));
+        }
+        catch (IOException)
+        {
+            // Not connected to a terminal; do nothing
+        }
+    }
+
     private Cursor _currentCursor = new ();
 
     /// <inheritdoc/>

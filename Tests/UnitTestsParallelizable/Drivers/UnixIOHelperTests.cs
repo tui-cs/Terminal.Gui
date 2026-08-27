@@ -23,6 +23,7 @@ public class UnixIOHelperTests
 
         bool result = UnixIOHelper.TryWriteAll (1,
                                                 payload,
+                                                payload.Length,
                                                 (_, _, _) =>
                                                 {
                                                     calls++;
@@ -43,6 +44,7 @@ public class UnixIOHelperTests
 
         bool result = UnixIOHelper.TryWriteAll (1,
                                                 payload,
+                                                payload.Length,
                                                 (_, buffer, count) =>
                                                 {
                                                     counts.Add (count);
