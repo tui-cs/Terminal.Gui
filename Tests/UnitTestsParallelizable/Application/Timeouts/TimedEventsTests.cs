@@ -7,6 +7,801 @@ namespace ApplicationTests.TimedEventTests;
 [Collection("Application Timer Tests")]
 public class TimedEventsTests
 {
+    // CoPilot - GPT-5
+    [Fact]
+    public async Task RunTimers_Callback_Does_Not_Block_Add_From_Other_Thread ()
+    {
+        TimedEvents timedEvents = new ();
+        CancellationToken cancellationToken = TestContext.Current.CancellationToken;
+        using ManualResetEventSlim addStarted = new ();
+        using ManualResetEventSlim addCompleted = new ();
+        Task? addTask = null;
+        var addStartedBeforeCallbackReturned = false;
+        var addCompletedBeforeCallbackReturned = false;
+
+        timedEvents.Add (
+                         TimeSpan.Zero,
+                         () =>
+                         {
+                             addTask = RunOnDedicatedThread (
+                                                             () =>
+                                                             {
+                                                                 try
+                                                                 {
+                                                                     addStarted.Set ();
+                                                                     timedEvents.Add (TimeSpan.FromHours (1), () => false);
+                                                                 }
+                                                                 finally
+                                                                 {
+                                                                     addCompleted.Set ();
+                                                                 }
+                                                             });
+                             addStartedBeforeCallbackReturned = addStarted.Wait (
+                                                                                 TimeSpan.FromSeconds (5),
+                                                                                 cancellationToken);
+                             addCompletedBeforeCallbackReturned = addCompleted.Wait (
+                                                                                     TimeSpan.FromSeconds (5),
+                                                                                     cancellationToken);
+
+                             return false;
+                         });
+
+        timedEvents.RunTimers ();
+        await addTask!;
+
+        Assert.True (addStartedBeforeCallbackReturned, "The Add task should start before the callback returns.");
+        Assert.True (addCompletedBeforeCallbackReturned, "Add should complete before the callback returns.");
+    }
+
+    // CoPilot - GPT-5
+    [Fact]
+    public async Task RunTimers_Callback_Does_Not_Block_Invoke_From_Other_Thread ()
+    {
+        IApplication app = Application.Create ();
+        app.Init (DriverRegistry.Names.ANSI);
+        CancellationToken cancellationToken = TestContext.Current.CancellationToken;
+        using ManualResetEventSlim invokeStarted = new ();
+        using ManualResetEventSlim invokeCompleted = new ();
+        Task? invokeTask = null;
+        Exception? invokeError = null;
+        var invokeStartedBeforeCallbackCompleted = false;
+        var invokeReturnedBeforeCallbackCompleted = false;
+        var invoked = false;
+
+        app.AddTimeout (
+                        TimeSpan.Zero,
+                        () =>
+                        {
+                            invokeTask = RunOnDedicatedThread (
+                                                                () =>
+                                                                {
+                                                                    try
+                                                                    {
+                                                                        invokeStarted.Set ();
+                                                                        app.Invoke (() => invoked = true);
+                                                                    }
+                                                                    catch (Exception ex)
+                                                                    {
+                                                                        invokeError = ex;
+                                                                    }
+                                                                    finally
+                                                                    {
+                                                                        invokeCompleted.Set ();
+                                                                    }
+                                                                });
+                            invokeStartedBeforeCallbackCompleted = invokeStarted.Wait (
+                                                                                       TimeSpan.FromSeconds (5),
+                                                                                       cancellationToken);
+                            invokeReturnedBeforeCallbackCompleted = invokeCompleted.Wait (
+                                                                                           TimeSpan.FromSeconds (5),
+                                                                                           cancellationToken);
+
+                            return false;
+                        });
+
+        try
+        {
+            app.TimedEvents!.RunTimers ();
+
+            if (invokeCompleted.Wait (TimeSpan.FromSeconds (5), cancellationToken))
+            {
+                app.TimedEvents.RunTimers ();
+            }
+        }
+        finally
+        {
+            app.Dispose ();
+        }
+
+        await invokeTask!;
+
+        Assert.NotNull (invokeTask);
+        Assert.Null (invokeError);
+        Assert.True (invokeStartedBeforeCallbackCompleted, "The Invoke task should start before the callback returns.");
+        Assert.True (invokeReturnedBeforeCallbackCompleted, "Invoke should enqueue before the callback returns.");
+        Assert.True (invoked);
+    }
+
+    // CoPilot - GPT-5
+    [Fact]
+    public async Task RunTimers_Callback_Does_Not_Block_SynchronizationContext_Post ()
+    {
+        IApplication app = Application.Create ();
+        app.Init (DriverRegistry.Names.ANSI);
+        CancellationToken cancellationToken = TestContext.Current.CancellationToken;
+        SynchronizationContext context = new MainLoopSyncContext (app);
+        using ManualResetEventSlim postStarted = new ();
+        using ManualResetEventSlim postCompleted = new ();
+        Task? postTask = null;
+        Exception? postError = null;
+        var postStartedBeforeCallbackCompleted = false;
+        var postReturnedBeforeCallbackCompleted = false;
+        var posted = false;
+
+        app.AddTimeout (
+                        TimeSpan.Zero,
+                        () =>
+                        {
+                            postTask = RunOnDedicatedThread (
+                                                              () =>
+                                                              {
+                                                                  try
+                                                                  {
+                                                                      postStarted.Set ();
+                                                                      context.Post (_ => posted = true, null);
+                                                                  }
+                                                                  catch (Exception ex)
+                                                                  {
+                                                                      postError = ex;
+                                                                  }
+                                                                  finally
+                                                                  {
+                                                                      postCompleted.Set ();
+                                                                  }
+                                                              });
+                            postStartedBeforeCallbackCompleted = postStarted.Wait (
+                                                                                   TimeSpan.FromSeconds (5),
+                                                                                   cancellationToken);
+                            postReturnedBeforeCallbackCompleted = postCompleted.Wait (
+                                                                                       TimeSpan.FromSeconds (5),
+                                                                                       cancellationToken);
+
+                            return false;
+                        });
+
+        try
+        {
+            app.TimedEvents!.RunTimers ();
+
+            if (postCompleted.Wait (TimeSpan.FromSeconds (5), cancellationToken))
+            {
+                app.TimedEvents.RunTimers ();
+            }
+        }
+        finally
+        {
+            app.Dispose ();
+        }
+
+        await postTask!;
+
+        Assert.NotNull (postTask);
+        Assert.Null (postError);
+        Assert.True (postStartedBeforeCallbackCompleted, "The Post task should start before the callback returns.");
+        Assert.True (postReturnedBeforeCallbackCompleted, "Post should enqueue before the callback returns.");
+        Assert.True (posted);
+    }
+
+    // CoPilot - GPT-5
+    [Fact]
+    public async Task RunTimers_Callback_Does_Not_Block_SynchronizationContext_Send_Enqueue ()
+    {
+        IApplication app = Application.Create ();
+        app.Init (DriverRegistry.Names.ANSI);
+        CancellationToken cancellationToken = TestContext.Current.CancellationToken;
+        SynchronizationContext context = new MainLoopSyncContext (app);
+        using ManualResetEventSlim sendStarted = new ();
+        using ManualResetEventSlim sendQueued = new ();
+        using ManualResetEventSlim sendReturned = new ();
+        Task? sendTask = null;
+        Exception? sendError = null;
+        var sendStartedBeforeCallbackCompleted = false;
+        var sendQueuedBeforeCallbackCompleted = false;
+        var sendQueuedAfterCallbackCompleted = false;
+        var sendReturnedAfterCallback = false;
+        var sent = false;
+        EventHandler<TimeoutEventArgs> handler = (_, _) => sendQueued.Set ();
+
+        app.AddTimeout (
+                        TimeSpan.Zero,
+                        () =>
+                        {
+                            sendTask = RunOnDedicatedThread (
+                                                              () =>
+                                                              {
+                                                                  try
+                                                                  {
+                                                                      sendStarted.Set ();
+                                                                      context.Send (_ => sent = true, null);
+                                                                  }
+                                                                  catch (Exception ex)
+                                                                  {
+                                                                      sendError = ex;
+                                                                  }
+                                                                  finally
+                                                                  {
+                                                                      sendReturned.Set ();
+                                                                  }
+                                                              });
+                            sendStartedBeforeCallbackCompleted = sendStarted.Wait (
+                                                                                   TimeSpan.FromSeconds (5),
+                                                                                   cancellationToken);
+                            sendQueuedBeforeCallbackCompleted = sendQueued.Wait (
+                                                                                 TimeSpan.FromSeconds (5),
+                                                                                 cancellationToken);
+
+                            return false;
+                        });
+
+        app.TimedEvents!.Added += handler;
+
+        try
+        {
+            app.TimedEvents.RunTimers ();
+            sendQueuedAfterCallbackCompleted = sendQueued.Wait (TimeSpan.FromSeconds (5), cancellationToken);
+
+            if (sendQueuedAfterCallbackCompleted && !sendReturned.IsSet)
+            {
+                app.TimedEvents.RunTimers ();
+            }
+
+            sendReturnedAfterCallback = sendReturned.Wait (TimeSpan.FromSeconds (5), cancellationToken);
+        }
+        finally
+        {
+            if (sendTask is not null && !sendReturned.IsSet)
+            {
+                sendQueuedAfterCallbackCompleted = WaitForCleanup (sendQueued);
+
+                if (sendQueuedAfterCallbackCompleted)
+                {
+                    app.TimedEvents.RunTimers ();
+                    sendReturnedAfterCallback = WaitForCleanup (sendReturned);
+                }
+            }
+
+            app.TimedEvents.Added -= handler;
+            app.Dispose ();
+
+            if (sendTask is not null)
+            {
+                await sendTask;
+            }
+        }
+
+        Assert.NotNull (sendTask);
+        Assert.Null (sendError);
+        Assert.True (sendStartedBeforeCallbackCompleted, "The Send task should start before the callback returns.");
+        Assert.True (sendQueuedBeforeCallbackCompleted, "Send should enqueue before the callback returns.");
+        Assert.True (sendQueuedAfterCallbackCompleted, "Send should enqueue before cleanup times out.");
+        Assert.True (sendReturnedAfterCallback, "Send should return after its callback runs on the timer runner.");
+        Assert.True (sent);
+    }
+
+    // CoPilot - GPT-5
+    [Fact]
+    public async Task RunTimers_Callback_Does_Not_Block_Remove_From_Other_Thread ()
+    {
+        TimedEvents timedEvents = new ();
+        CancellationToken cancellationToken = TestContext.Current.CancellationToken;
+        object timeoutToRemove = timedEvents.Add (TimeSpan.FromHours (1), () => false);
+        using ManualResetEventSlim removeStarted = new ();
+        using ManualResetEventSlim removeCompleted = new ();
+        Task<bool>? removeTask = null;
+        var removeStartedBeforeCallbackReturned = false;
+        var removeCompletedBeforeCallbackReturned = false;
+
+        timedEvents.Add (
+                         TimeSpan.Zero,
+                         () =>
+                         {
+                             removeTask = RunOnDedicatedThread (
+                                                                () =>
+                                                                {
+                                                                    try
+                                                                    {
+                                                                        removeStarted.Set ();
+
+                                                                        return timedEvents.Remove (timeoutToRemove);
+                                                                    }
+                                                                    finally
+                                                                    {
+                                                                        removeCompleted.Set ();
+                                                                    }
+                                                                });
+                             removeStartedBeforeCallbackReturned = removeStarted.Wait (
+                                                                                       TimeSpan.FromSeconds (5),
+                                                                                       cancellationToken);
+                             removeCompletedBeforeCallbackReturned = removeCompleted.Wait (
+                                                                                           TimeSpan.FromSeconds (5),
+                                                                                           cancellationToken);
+
+                             return false;
+                         });
+
+        timedEvents.RunTimers ();
+        bool removed = await removeTask!;
+
+        Assert.True (removeStartedBeforeCallbackReturned, "The Remove task should start before the callback returns.");
+        Assert.True (removeCompletedBeforeCallbackReturned, "Remove should complete before the callback returns.");
+        Assert.True (removed);
+    }
+
+    // CoPilot - GPT-5
+    [Fact]
+    public async Task RunTimers_Concurrent_Callers_Do_Not_Execute_Callbacks_Concurrently ()
+    {
+        TimedEvents timedEvents = new ();
+        CancellationToken cancellationToken = TestContext.Current.CancellationToken;
+        using ManualResetEventSlim firstCallbackStarted = new ();
+        using ManualResetEventSlim releaseFirstCallback = new ();
+        using ManualResetEventSlim concurrentCallbackStarted = new ();
+        var activeCallbacks = 0;
+        var callbackCount = 0;
+        var firstCallbackReleased = false;
+
+        Func<bool> callback = () =>
+                              {
+                                  if (Interlocked.Increment (ref activeCallbacks) > 1)
+                                  {
+                                      concurrentCallbackStarted.Set ();
+                                  }
+
+                                  int currentCallback = Interlocked.Increment (ref callbackCount);
+
+                                  if (currentCallback == 1)
+                                  {
+                                      firstCallbackStarted.Set ();
+                                      firstCallbackReleased = releaseFirstCallback.Wait (
+                                                                                         TimeSpan.FromSeconds (5),
+                                                                                         cancellationToken);
+                                  }
+
+                                  Interlocked.Decrement (ref activeCallbacks);
+
+                                  return false;
+                              };
+
+        timedEvents.Add (TimeSpan.Zero, callback);
+        timedEvents.Add (TimeSpan.Zero, callback);
+
+        Task firstRunner = RunOnDedicatedThread (timedEvents.RunTimers);
+        Task? secondRunner = null;
+        var firstCallbackStartedBeforeTimeout = false;
+        var secondRunnerReturned = false;
+        var callbacksRanConcurrently = false;
+
+        try
+        {
+            firstCallbackStartedBeforeTimeout = firstCallbackStarted.Wait (
+                                                                            TimeSpan.FromSeconds (5),
+                                                                            cancellationToken);
+
+            if (firstCallbackStartedBeforeTimeout)
+            {
+                secondRunner = RunOnDedicatedThread (timedEvents.RunTimers);
+                secondRunnerReturned = await CompletesWithinAsync (
+                                                                    secondRunner,
+                                                                    cancellationToken);
+                callbacksRanConcurrently = concurrentCallbackStarted.IsSet;
+            }
+        }
+        finally
+        {
+            releaseFirstCallback.Set ();
+        }
+
+        await firstRunner;
+
+        if (secondRunner is not null)
+        {
+            await secondRunner;
+        }
+
+        Assert.True (firstCallbackStartedBeforeTimeout, "The first callback should start.");
+        Assert.True (firstCallbackReleased, "The first callback should be released before its wait times out.");
+        Assert.True (secondRunnerReturned, "A competing RunTimers caller should return while another runner is active.");
+        Assert.False (callbacksRanConcurrently);
+        Assert.Equal (2, callbackCount);
+    }
+
+    // CoPilot - GPT-5
+    [Fact]
+    public async Task Added_Handler_Does_Not_Block_Add_From_Other_Thread ()
+    {
+        TimedEvents timedEvents = new ();
+        CancellationToken cancellationToken = TestContext.Current.CancellationToken;
+        using ManualResetEventSlim addStarted = new ();
+        using ManualResetEventSlim addCompleted = new ();
+        Task? addTask = null;
+        var addStartedBeforeHandlerReturned = false;
+        var addCompletedBeforeHandlerReturned = false;
+        EventHandler<TimeoutEventArgs>? handler = null;
+
+        handler = (_, _) =>
+                  {
+                      timedEvents.Added -= handler;
+                      addTask = RunOnDedicatedThread (
+                                                        () =>
+                                                        {
+                                                            try
+                                                            {
+                                                                addStarted.Set ();
+                                                                timedEvents.Add (TimeSpan.FromHours (1), () => false);
+                                                            }
+                                                            finally
+                                                            {
+                                                                addCompleted.Set ();
+                                                            }
+                                                        });
+                      addStartedBeforeHandlerReturned = addStarted.Wait (
+                                                                         TimeSpan.FromSeconds (5),
+                                                                         cancellationToken);
+                      addCompletedBeforeHandlerReturned = addCompleted.Wait (
+                                                                             TimeSpan.FromSeconds (5),
+                                                                             cancellationToken);
+                  };
+        timedEvents.Added += handler;
+
+        timedEvents.Add (TimeSpan.FromHours (1), () => false);
+        await addTask!;
+
+        Assert.True (addStartedBeforeHandlerReturned, "The Add task should start before the Added handler returns.");
+        Assert.True (addCompletedBeforeHandlerReturned, "Add should complete before the Added handler returns.");
+    }
+
+    // CoPilot - GPT-5
+    [Fact]
+    public async Task RunTimers_Remove_Active_Repeating_Timeout_Prevents_Reschedule ()
+    {
+        TimedEvents timedEvents = new ();
+        CancellationToken cancellationToken = TestContext.Current.CancellationToken;
+        using ManualResetEventSlim callbackStarted = new ();
+        using ManualResetEventSlim releaseCallback = new ();
+        var callbackReleased = false;
+        object timeout = timedEvents.Add (
+                                                 TimeSpan.Zero,
+                                                 () =>
+                                                 {
+                                                     callbackStarted.Set ();
+                                                     callbackReleased = releaseCallback.Wait (
+                                                                                              TimeSpan.FromSeconds (5),
+                                                                                              cancellationToken);
+
+                                                     return true;
+                                                 });
+        Task runnerTask = RunOnDedicatedThread (timedEvents.RunTimers);
+        Task<bool>? removeTask = null;
+        var callbackStartedBeforeTimeout = false;
+        var removeReturnedBeforeCallback = false;
+
+        try
+        {
+            callbackStartedBeforeTimeout = callbackStarted.Wait (
+                                                                 TimeSpan.FromSeconds (5),
+                                                                 cancellationToken);
+
+            if (callbackStartedBeforeTimeout)
+            {
+                removeTask = RunOnDedicatedThread (() => timedEvents.Remove (timeout));
+                removeReturnedBeforeCallback = await CompletesWithinAsync (
+                                                                           removeTask,
+                                                                           cancellationToken);
+            }
+        }
+        finally
+        {
+            releaseCallback.Set ();
+        }
+
+        await runnerTask;
+        bool removed = removeTask is not null && await removeTask;
+
+        Assert.True (callbackStartedBeforeTimeout, "The repeating callback should start.");
+        Assert.True (callbackReleased, "The repeating callback should be released before its wait times out.");
+        Assert.True (removeReturnedBeforeCallback, "Remove should return while the callback is active.");
+        Assert.True (removed);
+        Assert.Empty (timedEvents.Timeouts);
+    }
+
+    // CoPilot - GPT-5
+    [Fact]
+    public async Task RunTimers_StopAll_During_Active_Repeating_Timeout_Prevents_Reschedule ()
+    {
+        TimedEvents timedEvents = new ();
+        CancellationToken cancellationToken = TestContext.Current.CancellationToken;
+        using ManualResetEventSlim callbackStarted = new ();
+        using ManualResetEventSlim releaseCallback = new ();
+        var callbackReleased = false;
+
+        timedEvents.Add (
+                         TimeSpan.Zero,
+                         () =>
+                         {
+                             callbackStarted.Set ();
+                             callbackReleased = releaseCallback.Wait (TimeSpan.FromSeconds (5), cancellationToken);
+
+                             return true;
+                         });
+
+        Task runnerTask = RunOnDedicatedThread (timedEvents.RunTimers);
+        Task? stopAllTask = null;
+        var callbackStartedBeforeTimeout = false;
+        var stopAllReturnedBeforeCallback = false;
+
+        try
+        {
+            callbackStartedBeforeTimeout = callbackStarted.Wait (
+                                                                 TimeSpan.FromSeconds (5),
+                                                                 cancellationToken);
+
+            if (callbackStartedBeforeTimeout)
+            {
+                stopAllTask = RunOnDedicatedThread (timedEvents.StopAll);
+                stopAllReturnedBeforeCallback = await CompletesWithinAsync (
+                                                                            stopAllTask,
+                                                                            cancellationToken);
+            }
+        }
+        finally
+        {
+            releaseCallback.Set ();
+        }
+
+        await runnerTask;
+
+        if (stopAllTask is not null)
+        {
+            await stopAllTask;
+        }
+
+        Assert.True (callbackStartedBeforeTimeout, "The repeating callback should start.");
+        Assert.True (callbackReleased, "The repeating callback should be released before its wait times out.");
+        Assert.True (stopAllReturnedBeforeCallback, "StopAll should return while the callback is active.");
+        Assert.Empty (timedEvents.Timeouts);
+    }
+
+    // CoPilot - GPT-5
+    [Fact]
+    public async Task RunTimers_Competing_Caller_Requests_Follow_Up_Run ()
+    {
+        CancellationToken cancellationToken = TestContext.Current.CancellationToken;
+        long currentTicks = DateTime.UnixEpoch.Ticks;
+        var timeReadCount = 0;
+        var callbackCount = 0;
+        using ManualResetEventSlim dueCheckStarted = new ();
+        using ManualResetEventSlim releaseDueCheck = new ();
+        var dueCheckReleased = false;
+
+        DateTime GetCurrentTime ()
+        {
+            long capturedTicks = Interlocked.Read (ref currentTicks);
+
+            if (Interlocked.Increment (ref timeReadCount) == 2)
+            {
+                dueCheckStarted.Set ();
+                dueCheckReleased = releaseDueCheck.Wait (TimeSpan.FromSeconds (5), cancellationToken);
+            }
+
+            return new (capturedTicks, DateTimeKind.Utc);
+        }
+
+        TimedEvents timedEvents = new (new FuncTimeProvider (GetCurrentTime));
+        timedEvents.Add (
+                         TimeSpan.FromSeconds (1),
+                         () =>
+                         {
+                             Interlocked.Increment (ref callbackCount);
+
+                             return false;
+                         });
+
+        Task firstRunner = RunOnDedicatedThread (timedEvents.RunTimers);
+        Task? secondRunner = null;
+        var dueCheckStartedBeforeTimeout = false;
+        var secondRunnerReturned = false;
+
+        try
+        {
+            dueCheckStartedBeforeTimeout = dueCheckStarted.Wait (
+                                                                 TimeSpan.FromSeconds (5),
+                                                                 cancellationToken);
+
+            if (dueCheckStartedBeforeTimeout)
+            {
+                Interlocked.Exchange (ref currentTicks, DateTime.UnixEpoch.AddSeconds (2).Ticks);
+                secondRunner = RunOnDedicatedThread (timedEvents.RunTimers);
+                secondRunnerReturned = await CompletesWithinAsync (
+                                                                    secondRunner,
+                                                                    cancellationToken);
+            }
+        }
+        finally
+        {
+            releaseDueCheck.Set ();
+        }
+
+        await firstRunner;
+
+        if (secondRunner is not null)
+        {
+            await secondRunner;
+        }
+
+        Assert.True (dueCheckStartedBeforeTimeout, "The first runner should reach the due-time check.");
+        Assert.True (dueCheckReleased, "The due-time check should be released before its wait times out.");
+        Assert.True (secondRunnerReturned, "The competing RunTimers call should return while the runner is active.");
+        Assert.Equal (1, callbackCount);
+        Assert.Empty (timedEvents.Timeouts);
+    }
+
+    // CoPilot - GPT-5
+    [Fact]
+    public async Task RunTimers_Competing_Caller_Requests_Follow_Up_Run_When_Callback_Throws ()
+    {
+        TimedEvents timedEvents = new ();
+        CancellationToken cancellationToken = TestContext.Current.CancellationToken;
+        using ManualResetEventSlim callbackStarted = new ();
+        using ManualResetEventSlim releaseCallback = new ();
+        InvalidOperationException expectedException = new ("Expected callback failure.");
+        var followUpCallbackCount = 0;
+        var callbackReleased = false;
+
+        timedEvents.Add (
+                         TimeSpan.Zero,
+                         () =>
+                         {
+                             callbackStarted.Set ();
+                             callbackReleased = releaseCallback.Wait (TimeSpan.FromSeconds (5), cancellationToken);
+
+                             throw expectedException;
+                         });
+        timedEvents.Add (
+                         TimeSpan.Zero,
+                         () =>
+                         {
+                             Interlocked.Increment (ref followUpCallbackCount);
+
+                             return false;
+                         });
+
+        Task firstRunner = RunOnDedicatedThread (timedEvents.RunTimers);
+        Task? secondRunner = null;
+        var callbackStartedBeforeTimeout = false;
+        var secondRunnerReturned = false;
+
+        try
+        {
+            callbackStartedBeforeTimeout = callbackStarted.Wait (TimeSpan.FromSeconds (5), cancellationToken);
+
+            if (callbackStartedBeforeTimeout)
+            {
+                secondRunner = RunOnDedicatedThread (timedEvents.RunTimers);
+                secondRunnerReturned = await CompletesWithinAsync (secondRunner, cancellationToken);
+            }
+        }
+        finally
+        {
+            releaseCallback.Set ();
+        }
+
+        InvalidOperationException actualException = await Assert.ThrowsAsync<InvalidOperationException> (
+            async () => await firstRunner);
+
+        if (secondRunner is not null)
+        {
+            await secondRunner;
+        }
+
+        Assert.True (callbackStartedBeforeTimeout, "The throwing callback should start.");
+        Assert.True (callbackReleased, "The throwing callback should be released before its wait times out.");
+        Assert.True (secondRunnerReturned, "The competing RunTimers call should return while the runner is active.");
+        Assert.Same (expectedException, actualException);
+        Assert.Equal (1, followUpCallbackCount);
+        Assert.Empty (timedEvents.Timeouts);
+    }
+
+    // CoPilot - GPT-5
+    [Fact]
+    public void RunTimers_StopAll_Cancels_Duplicate_Active_Timeout_Occurrences ()
+    {
+        VirtualTimeProvider timeProvider = new ();
+        TimedEvents timedEvents = new (timeProvider);
+        var callbackCount = 0;
+        Terminal.Gui.App.Timeout timeout = new () { Span = TimeSpan.FromSeconds (1) };
+
+        timeout.Callback = () =>
+                           {
+                               callbackCount++;
+
+                               if (callbackCount == 1)
+                               {
+                                   timedEvents.RunTimers ();
+
+                                   return true;
+                               }
+
+                               timedEvents.StopAll ();
+
+                               return true;
+                           };
+
+        timedEvents.Add (timeout);
+        timedEvents.Add (timeout);
+        timeProvider.Advance (TimeSpan.FromSeconds (2));
+
+        timedEvents.RunTimers ();
+
+        Assert.Equal (2, callbackCount);
+        Assert.Empty (timedEvents.Timeouts);
+    }
+
+    // CoPilot - GPT-5
+    [Fact]
+    public async Task RunTimers_Remove_Cancels_Repeating_Duplicate_Active_Timeout_Occurrence ()
+    {
+        VirtualTimeProvider timeProvider = new ();
+        TimedEvents timedEvents = new (timeProvider);
+        CancellationToken cancellationToken = TestContext.Current.CancellationToken;
+        using ManualResetEventSlim removeCompleted = new ();
+        var callbackCount = 0;
+        var removeCompletedBeforeCallbackReturned = false;
+        Task<bool>? removeTask = null;
+        Terminal.Gui.App.Timeout timeout = new () { Span = TimeSpan.FromSeconds (1) };
+
+        timeout.Callback = () =>
+                           {
+                               callbackCount++;
+
+                               if (callbackCount == 1)
+                               {
+                                   timedEvents.RunTimers ();
+
+                                   return true;
+                               }
+
+                               removeTask = RunOnDedicatedThread (
+                                                                  () =>
+                                                                  {
+                                                                      try
+                                                                      {
+                                                                          return timedEvents.Remove (timeout);
+                                                                      }
+                                                                      finally
+                                                                      {
+                                                                          removeCompleted.Set ();
+                                                                      }
+                                                                  });
+                               removeCompletedBeforeCallbackReturned = removeCompleted.Wait (
+                                                                                                TimeSpan.FromSeconds (5),
+                                                                                                cancellationToken);
+
+                               return false;
+                           };
+
+        timedEvents.Add (timeout);
+        timedEvents.Add (timeout);
+        timeProvider.Advance (TimeSpan.FromSeconds (2));
+
+        timedEvents.RunTimers ();
+        bool removed = await removeTask!;
+
+        Assert.Equal (2, callbackCount);
+        Assert.True (removeCompletedBeforeCallbackReturned, "Remove should return while both occurrences are active.");
+        Assert.True (removed);
+        Assert.Empty (timedEvents.Timeouts);
+    }
+
     [Fact]
     public void HighFrequency_Concurrent_Invocations_No_Lost_Timeouts ()
     {
@@ -166,4 +961,34 @@ public class TimedEventsTests
 
         Assert.Equal (0, executeCount);
     }
+
+    private static async Task<bool> CompletesWithinAsync (Task task, CancellationToken cancellationToken)
+    {
+        try
+        {
+            await task.WaitAsync (TimeSpan.FromSeconds (5), cancellationToken).ConfigureAwait (false);
+
+            return true;
+        }
+        catch (TimeoutException)
+        {
+            return false;
+        }
+    }
+
+    private static Task RunOnDedicatedThread (Action action) =>
+        Task.Factory.StartNew (
+                               action,
+                               CancellationToken.None,
+                               TaskCreationOptions.LongRunning,
+                               TaskScheduler.Default);
+
+    private static Task<TResult> RunOnDedicatedThread<TResult> (Func<TResult> action) =>
+        Task.Factory.StartNew (
+                               action,
+                               CancellationToken.None,
+                               TaskCreationOptions.LongRunning,
+                               TaskScheduler.Default);
+
+    private static bool WaitForCleanup (ManualResetEventSlim waitHandle) => waitHandle.Wait (TimeSpan.FromSeconds (5));
 }

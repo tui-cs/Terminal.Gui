@@ -40,8 +40,12 @@ namespace Terminal.Gui.App;
 public class TimedEvents : ITimedEvents
 {
     internal SortedList<long, Timeout> _timeouts = new ();
+    private readonly Dictionary<Timeout, int> _activeTimeouts = new (ReferenceEqualityComparer.Instance);
+    private readonly Dictionary<Timeout, int> _cancelledTimeouts = new (ReferenceEqualityComparer.Instance);
+    private readonly object _runTimersLockToken = new ();
     private readonly object _timeoutsLockToken = new ();
     private readonly ITimeProvider? _timeProvider;
+    private int _runTimersPending;
 
     /// <summary>
     ///     Initializes a new instance of <see cref="TimedEvents"/> with the default system time provider.
@@ -102,11 +106,43 @@ public class TimedEvents : ITimedEvents
     /// <inheritdoc/>
     public void RunTimers ()
     {
-        lock (_timeoutsLockToken)
+        Interlocked.Exchange (ref _runTimersPending, 1);
+        System.Runtime.ExceptionServices.ExceptionDispatchInfo? error = null;
+
+        while (true)
         {
-            if (_timeouts.Count > 0)
+            // A monitor is reentrant, so nested runs on this thread remain supported. A competing thread returns while
+            // the active runner drains the due timeouts.
+            if (!Monitor.TryEnter (_runTimersLockToken))
             {
-                RunTimersImpl ();
+                error?.Throw ();
+
+                return;
+            }
+
+            try
+            {
+                Interlocked.Exchange (ref _runTimersPending, 0);
+
+                try
+                {
+                    RunTimersImpl ();
+                }
+                catch (Exception ex)
+                {
+                    error ??= System.Runtime.ExceptionServices.ExceptionDispatchInfo.Capture (ex);
+                }
+            }
+            finally
+            {
+                Monitor.Exit (_runTimersLockToken);
+            }
+
+            if (Interlocked.Exchange (ref _runTimersPending, 0) == 0)
+            {
+                error?.Throw ();
+
+                return;
             }
         }
     }
@@ -114,19 +150,40 @@ public class TimedEvents : ITimedEvents
     /// <inheritdoc/>
     public bool Remove (object token)
     {
+        Timeout? timeout = token as Timeout;
+
+        if (timeout is null)
+        {
+            return false;
+        }
+
         lock (_timeoutsLockToken)
         {
-            int idx = _timeouts.IndexOfValue ((token as Timeout)!);
+            int idx = _timeouts.IndexOfValue (timeout);
 
-            if (idx == -1)
+            if (idx >= 0)
+            {
+                _timeouts.RemoveAt (idx);
+
+                return true;
+            }
+
+            if (!_activeTimeouts.TryGetValue (timeout, out int activeCount))
             {
                 return false;
             }
 
-            _timeouts.RemoveAt (idx);
-        }
+            _cancelledTimeouts.TryGetValue (timeout, out int cancelledCount);
 
-        return true;
+            if (cancelledCount >= activeCount)
+            {
+                return false;
+            }
+
+            _cancelledTimeouts [timeout] = cancelledCount + 1;
+
+            return true;
+        }
     }
 
     /// <inheritdoc/>
@@ -198,21 +255,31 @@ public class TimedEvents : ITimedEvents
 
     private void AddTimeout (TimeSpan time, Timeout timeout)
     {
+        long k;
+
         lock (_timeoutsLockToken)
         {
-            long k = GetTimestampTicks () + time.Ticks;
-
-            // if user wants to run as soon as possible set timer such that it expires right away (no race conditions)
-            if (time == TimeSpan.Zero)
-            {
-                // Use a more substantial buffer (1ms) to ensure it's truly in the past
-                // even under debugger overhead and extreme timing variations
-                k -= TimeSpan.TicksPerMillisecond;
-            }
-
-            _timeouts.Add (NudgeToUniqueKey (k), timeout);
-            Added?.Invoke (this, new (timeout, k));
+            k = AddTimeoutCore (time, timeout);
         }
+
+        Added?.Invoke (this, new (timeout, k));
+    }
+
+    private long AddTimeoutCore (TimeSpan time, Timeout timeout)
+    {
+        long k = GetTimestampTicks () + time.Ticks;
+
+        // if user wants to run as soon as possible set timer such that it expires right away (no race conditions)
+        if (time == TimeSpan.Zero)
+        {
+            // Use a more substantial buffer (1ms) to ensure it's truly in the past
+            // even under debugger overhead and extreme timing variations
+            k -= TimeSpan.TicksPerMillisecond;
+        }
+
+        _timeouts.Add (NudgeToUniqueKey (k), timeout);
+
+        return k;
     }
 
     /// <summary>
@@ -223,12 +290,9 @@ public class TimedEvents : ITimedEvents
     /// <returns></returns>
     private long NudgeToUniqueKey (long k)
     {
-        lock (_timeoutsLockToken)
+        while (_timeouts.ContainsKey (k))
         {
-            while (_timeouts.ContainsKey (k))
-            {
-                k++;
-            }
+            k++;
         }
 
         return k;
@@ -236,51 +300,96 @@ public class TimedEvents : ITimedEvents
 
     private void RunTimersImpl ()
     {
-        long now = GetTimestampTicks ();
-
         // Process due timeouts one at a time, without blocking the entire queue
         while (true)
         {
-            Timeout? timeoutToExecute = null;
-            long scheduledTime = 0;
+            Timeout timeoutToExecute;
 
             // Find the next due timeout
             lock (_timeoutsLockToken)
             {
                 if (_timeouts.Count == 0)
                 {
-                    break; // No more timeouts
+                    return;
                 }
 
                 // Re-evaluate current time for each iteration
-                now = GetTimestampTicks ();
+                long now = GetTimestampTicks ();
 
                 // Check if the earliest timeout is due
-                scheduledTime = _timeouts.Keys [0];
+                long scheduledTime = _timeouts.Keys [0];
 
                 if (scheduledTime > now)
                 {
-                    // Earliest timeout is not yet due, we're done
-                    break;
+                    return;
                 }
 
                 // This timeout is due - remove it from the queue
                 timeoutToExecute = _timeouts.Values [0];
                 _timeouts.RemoveAt (0);
+                _activeTimeouts.TryGetValue (timeoutToExecute, out int activeCount);
+                _activeTimeouts [timeoutToExecute] = activeCount + 1;
             }
 
             // Execute the callback outside the lock
             // This allows nested Run() calls to access the timeout queue
-            if (timeoutToExecute != null)
-            {
-                bool repeat = timeoutToExecute.Callback! ();
+            bool repeat = false;
 
-                if (repeat)
-                {
-                    AddTimeout (timeoutToExecute.Span, timeoutToExecute);
-                }
+            try
+            {
+                repeat = timeoutToExecute.Callback! ();
+            }
+            finally
+            {
+                CompleteTimeout (timeoutToExecute, repeat);
             }
         }
+    }
+
+    private void CompleteTimeout (Timeout timeout, bool repeat)
+    {
+        long k;
+
+        lock (_timeoutsLockToken)
+        {
+            int activeCount = _activeTimeouts [timeout];
+            int remainingActiveCount = activeCount - 1;
+
+            if (remainingActiveCount == 0)
+            {
+                _activeTimeouts.Remove (timeout);
+            }
+            else
+            {
+                _activeTimeouts [timeout] = remainingActiveCount;
+            }
+
+            _cancelledTimeouts.TryGetValue (timeout, out int cancelledCount);
+            bool cancelled = repeat && cancelledCount > 0;
+
+            if (cancelled && cancelledCount == 1)
+            {
+                _cancelledTimeouts.Remove (timeout);
+            }
+            else if (cancelled && cancelledCount > 1)
+            {
+                _cancelledTimeouts [timeout] = cancelledCount - 1;
+            }
+
+            if (remainingActiveCount == 0)
+            {
+                _cancelledTimeouts.Remove (timeout);
+            }
+
+            if (!repeat || cancelled)
+            {
+                return;
+            }
+
+            k = AddTimeoutCore (timeout.Span, timeout);
+        }
+
+        Added?.Invoke (this, new (timeout, k));
     }
 
     /// <inheritdoc/>
@@ -289,6 +398,11 @@ public class TimedEvents : ITimedEvents
         lock (_timeoutsLockToken)
         {
             _timeouts.Clear ();
+
+            foreach (KeyValuePair<Timeout, int> activeTimeout in _activeTimeouts)
+            {
+                _cancelledTimeouts [activeTimeout.Key] = activeTimeout.Value;
+            }
         }
     }
 }
