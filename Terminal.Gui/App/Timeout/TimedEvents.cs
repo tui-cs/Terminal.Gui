@@ -7,7 +7,6 @@ namespace Terminal.Gui.App;
 ///     <para>
 ///         Allows scheduling of callbacks to be invoked after a specified delay, with optional repetition.
 ///         Timeouts are stored in a sorted list by their scheduled execution time (high-resolution ticks).
-///         Thread-safe for concurrent access.
 ///     </para>
 ///     <para>
 ///         Typical usage:
@@ -29,6 +28,16 @@ namespace Terminal.Gui.App;
 /// </summary>
 /// <remarks>
 ///     <para>
+///         <see cref="Add(TimeSpan, Func{bool})"/>, <see cref="Add(Timeout)"/>, <see cref="Remove"/>,
+///         <see cref="StopAll"/>, <see cref="GetTimeout"/>, <see cref="CheckTimers"/>, and <see cref="RunTimers"/> are
+///         safe to call concurrently from any thread. Callbacks are invoked outside the timeout queue lock, so a
+///         callback can schedule or cancel timeouts without deadlocking.
+///     </para>
+///     <para>
+///         <see cref="Timeouts"/> is the exception: it returns the live queue rather than a snapshot, so reading or
+///         mutating it while another thread schedules timeouts is not synchronized.
+///     </para>
+///     <para>
 ///         By default, uses <see cref="Stopwatch.GetTimestamp"/> for high-resolution timing to provide microsecond-level
 ///         precision and eliminate race conditions from timer resolution issues.
 ///     </para>
@@ -40,6 +49,9 @@ namespace Terminal.Gui.App;
 public class TimedEvents : ITimedEvents
 {
     internal SortedList<long, Timeout> _timeouts = new ();
+
+    // ActiveTimeoutState is a mutable struct, so TryGetValue hands back a copy. Every mutation must be written back
+    // with _activeTimeoutStates [timeout] = state (or the entry removed) before _timeoutsLockToken is released.
     private readonly Dictionary<Timeout, ActiveTimeoutState> _activeTimeoutStates = new (ReferenceEqualityComparer.Instance);
     private readonly object _runTimersLockToken = new ();
     private readonly object _timeoutsLockToken = new ();
@@ -71,6 +83,10 @@ public class TimedEvents : ITimedEvents
     ///     Gets the list of all timeouts sorted by the <see cref="TimeSpan"/> time ticks. A shorter limit time can be
     ///     added at the end, but it will be called before an earlier addition that has a longer limit time.
     /// </summary>
+    /// <remarks>
+    ///     Returns the live queue, not a snapshot, and access to it is not synchronized. A timeout whose callback is
+    ///     currently executing has already been dequeued and is not present.
+    /// </remarks>
     public SortedList<long, Timeout> Timeouts => _timeouts;
 
     /// <inheritdoc/>
@@ -136,6 +152,8 @@ public class TimedEvents : ITimedEvents
         {
             var found = false;
 
+            // The same Timeout instance can be queued more than once, so the whole queue is scanned. Do not replace
+            // this with an early-exiting lookup such as IndexOfValue.
             for (var i = _timeouts.Count - 1; i >= 0; i--)
             {
                 if (!ReferenceEquals (_timeouts.Values [i], timeout))
@@ -180,7 +198,18 @@ public class TimedEvents : ITimedEvents
         return timeout;
     }
 
-    /// <inheritdoc/>
+    /// <summary>
+    ///     Determines whether any timeout is queued and calculates how long the caller may wait before the earliest one
+    ///     is due.
+    /// </summary>
+    /// <param name="waitTimeout">
+    ///     The number of milliseconds until the earliest queued timeout is due, <c>0</c> if one is already due, or
+    ///     <c>-1</c> if no timeout is queued. <c>-1</c> indicates the caller may wait indefinitely.
+    /// </param>
+    /// <returns><see langword="true"/> if at least one timeout is queued; otherwise, <see langword="false"/>.</returns>
+    /// <remarks>
+    ///     A timeout whose callback is currently executing has been dequeued and is therefore not counted.
+    /// </remarks>
     public bool CheckTimers (out int waitTimeout)
     {
         long now = GetTimestampTicks ();
@@ -397,13 +426,33 @@ public class TimedEvents : ITimedEvents
         }
     }
 
+    /// <summary>
+    ///     Identifies a single in-flight execution of a <see cref="Timeout"/>, capturing the cancellation state that was
+    ///     current when the occurrence was dequeued. <see cref="CompleteTimeout"/> reschedules only if both values still
+    ///     match, which is how <see cref="Remove"/> and <see cref="StopAll"/> cancel an active occurrence without
+    ///     affecting occurrences created after them.
+    /// </summary>
     private readonly record struct ActiveTimeoutOccurrence (Timeout Timeout, long StopAllEpoch, long RemovalGeneration);
 
+    /// <summary>
+    ///     Per-<see cref="Timeout"/> cancellation bookkeeping. Mutable; see the comment on
+    ///     <see cref="_activeTimeoutStates"/> for the write-back requirement.
+    /// </summary>
     private struct ActiveTimeoutState
     {
+        /// <summary>Number of occurrences of this timeout that are currently executing.</summary>
         public int ActiveCount { get; set; }
+
+        /// <summary>Incremented by <see cref="Remove"/> to invalidate every occurrence dequeued before it.</summary>
         public long RemovalGeneration { get; set; }
+
+        /// <summary>The <see cref="_stopAllEpoch"/> value that <see cref="UncancelledActiveCount"/> is scoped to.</summary>
         public long StopAllEpoch { get; set; }
+
+        /// <summary>
+        ///     Number of active occurrences still matching <see cref="StopAllEpoch"/> and <see cref="RemovalGeneration"/>,
+        ///     used so <see cref="Remove"/> can report whether it actually cancelled anything.
+        /// </summary>
         public int UncancelledActiveCount { get; set; }
     }
 }

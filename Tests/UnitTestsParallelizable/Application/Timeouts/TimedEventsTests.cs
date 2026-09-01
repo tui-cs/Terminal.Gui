@@ -514,6 +514,70 @@ public class TimedEventsTests
         Assert.Empty (timedEvents.Timeouts);
     }
 
+    // CoPilot - Claude Opus 5
+    [Fact]
+    public async Task Remove_Returns_True_For_Active_Occurrence_And_Does_Not_Interrupt_It ()
+    {
+        // Pins the documented contract: Remove reports true when the only match is an occurrence that has already been
+        // dequeued and is executing, and it neither waits for nor interrupts that callback.
+        TimedEvents timedEvents = new ();
+        CancellationToken cancellationToken = TestContext.Current.CancellationToken;
+        using ManualResetEventSlim callbackStarted = new ();
+        using ManualResetEventSlim releaseCallback = new ();
+        var callbackReleased = false;
+        var callbackCompleted = false;
+
+        object timeout = timedEvents.Add (
+                                          TimeSpan.Zero,
+                                          () =>
+                                          {
+                                              callbackStarted.Set ();
+                                              callbackReleased = releaseCallback.Wait (
+                                                                                       TimeSpan.FromSeconds (5),
+                                                                                       cancellationToken);
+                                              callbackCompleted = true;
+
+                                              return false;
+                                          });
+
+        Task runnerTask = RunOnDedicatedThread (timedEvents.RunTimers);
+        Task<bool>? removeTask = null;
+        var callbackStartedBeforeTimeout = false;
+        var removeReturnedBeforeCallback = false;
+        var queueWasEmptyWhenRemoveRan = false;
+        var callbackStillActiveWhenRemoveReturned = false;
+
+        try
+        {
+            callbackStartedBeforeTimeout = callbackStarted.Wait (TimeSpan.FromSeconds (5), cancellationToken);
+
+            if (callbackStartedBeforeTimeout)
+            {
+                // The occurrence was dequeued before the callback ran, so nothing is left for Remove to unqueue.
+                queueWasEmptyWhenRemoveRan = timedEvents.Timeouts.Count == 0;
+                removeTask = RunOnDedicatedThread (() => timedEvents.Remove (timeout));
+                removeReturnedBeforeCallback = await CompletesWithinAsync (removeTask, cancellationToken);
+                callbackStillActiveWhenRemoveReturned = !callbackCompleted;
+            }
+        }
+        finally
+        {
+            releaseCallback.Set ();
+        }
+
+        await runnerTask;
+        bool removed = removeTask is not null && await removeTask;
+
+        Assert.True (callbackStartedBeforeTimeout, "The callback should start.");
+        Assert.True (queueWasEmptyWhenRemoveRan, "The active occurrence should already be dequeued.");
+        Assert.True (removeReturnedBeforeCallback, "Remove should return while the callback is active.");
+        Assert.True (callbackStillActiveWhenRemoveReturned, "Remove should not wait for the active callback to finish.");
+        Assert.True (removed, "Remove should report true for the cancelled active occurrence.");
+        Assert.True (callbackReleased, "The callback should be released before its wait times out.");
+        Assert.True (callbackCompleted, "Remove should not interrupt the active callback.");
+        Assert.Empty (timedEvents.Timeouts);
+    }
+
     // CoPilot - GPT-5
     [Fact]
     public async Task RunTimers_StopAll_During_Active_Repeating_Timeout_Prevents_Reschedule ()
