@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Runtime.ExceptionServices;
 
 namespace Terminal.Gui.App;
 
@@ -106,7 +107,7 @@ public class TimedEvents : ITimedEvents
     public void RunTimers ()
     {
         Interlocked.Exchange (ref _runTimersPending, 1);
-        System.Runtime.ExceptionServices.ExceptionDispatchInfo? error = null;
+        List<ExceptionDispatchInfo>? errors = null;
 
         while (true)
         {
@@ -114,7 +115,7 @@ public class TimedEvents : ITimedEvents
             // the active runner drains the due timeouts.
             if (!Monitor.TryEnter (_runTimersLockToken))
             {
-                error?.Throw ();
+                ThrowErrors (errors);
 
                 return;
             }
@@ -129,7 +130,8 @@ public class TimedEvents : ITimedEvents
                 }
                 catch (Exception ex)
                 {
-                    error ??= System.Runtime.ExceptionServices.ExceptionDispatchInfo.Capture (ex);
+                    errors ??= [];
+                    errors.Add (ExceptionDispatchInfo.Capture (ex));
                 }
             }
             finally
@@ -139,11 +141,28 @@ public class TimedEvents : ITimedEvents
 
             if (Interlocked.Exchange (ref _runTimersPending, 0) == 0)
             {
-                error?.Throw ();
+                ThrowErrors (errors);
 
                 return;
             }
         }
+    }
+
+    private static void ThrowErrors (List<ExceptionDispatchInfo>? errors)
+    {
+        if (errors is null)
+        {
+            return;
+        }
+
+        if (errors.Count == 1)
+        {
+            errors [0].Throw ();
+
+            return;
+        }
+
+        throw new AggregateException (errors.ConvertAll (error => error.SourceException));
     }
 
     /// <inheritdoc/>

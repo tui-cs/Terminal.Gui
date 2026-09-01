@@ -713,6 +713,67 @@ public class TimedEventsTests
 
     // CoPilot - GPT-5
     [Fact]
+    public async Task RunTimers_Competing_Caller_Aggregates_Follow_Up_Callback_Exception ()
+    {
+        TimedEvents timedEvents = new ();
+        CancellationToken cancellationToken = TestContext.Current.CancellationToken;
+        using ManualResetEventSlim callbackStarted = new ();
+        using ManualResetEventSlim releaseCallback = new ();
+        InvalidOperationException firstException = new ("Expected first callback failure.");
+        ArgumentException followUpException = new ("Expected follow-up callback failure.");
+        var callbackReleased = false;
+
+        timedEvents.Add (
+                         TimeSpan.Zero,
+                         () =>
+                         {
+                             callbackStarted.Set ();
+                             callbackReleased = releaseCallback.Wait (TimeSpan.FromSeconds (5), cancellationToken);
+
+                             throw firstException;
+                         });
+        timedEvents.Add (TimeSpan.Zero, () => throw followUpException);
+
+        Task firstRunner = RunOnDedicatedThread (timedEvents.RunTimers);
+        Task? secondRunner = null;
+        var callbackStartedBeforeTimeout = false;
+        var secondRunnerReturned = false;
+
+        try
+        {
+            callbackStartedBeforeTimeout = callbackStarted.Wait (TimeSpan.FromSeconds (5), cancellationToken);
+
+            if (callbackStartedBeforeTimeout)
+            {
+                secondRunner = RunOnDedicatedThread (timedEvents.RunTimers);
+                secondRunnerReturned = await CompletesWithinAsync (secondRunner, cancellationToken);
+            }
+        }
+        finally
+        {
+            releaseCallback.Set ();
+        }
+
+        AggregateException actualException = await Assert.ThrowsAsync<AggregateException> (
+            async () => await firstRunner);
+
+        if (secondRunner is not null)
+        {
+            await secondRunner;
+        }
+
+        Assert.True (callbackStartedBeforeTimeout, "The first throwing callback should start.");
+        Assert.True (callbackReleased, "The first throwing callback should be released before its wait times out.");
+        Assert.True (secondRunnerReturned, "The competing RunTimers call should request the follow-up pass.");
+        Assert.Collection (
+                           actualException.InnerExceptions,
+                           exception => Assert.Same (firstException, exception),
+                           exception => Assert.Same (followUpException, exception));
+        Assert.Empty (timedEvents.Timeouts);
+    }
+
+    // CoPilot - GPT-5
+    [Fact]
     public void RunTimers_StopAll_Cancels_Duplicate_Active_Timeout_Occurrences ()
     {
         VirtualTimeProvider timeProvider = new ();
