@@ -27,6 +27,10 @@ internal sealed class MainLoopSyncContext : SynchronizationContext
     }
 
     /// <inheritdoc/>
+    /// <remarks>
+    ///     A call from outside the main-loop thread blocks until the main loop executes the callback. As with other
+    ///     synchronous UI dispatch APIs, this can deadlock if the main-loop thread is waiting for the calling thread.
+    /// </remarks>
     public override void Send (SendOrPostCallback d, object? state)
     {
         ArgumentNullException.ThrowIfNull (d);

@@ -573,7 +573,7 @@ public class TimedEventsTests
 
     // CoPilot - GPT-5
     [Fact]
-    public async Task RunTimers_Competing_Caller_Requests_Follow_Up_Run ()
+    public async Task RunTimers_Competing_Caller_Returns_Without_Running_Newly_Due_Timeout ()
     {
         CancellationToken cancellationToken = TestContext.Current.CancellationToken;
         long currentTicks = DateTime.UnixEpoch.Ticks;
@@ -641,31 +641,24 @@ public class TimedEventsTests
         Assert.True (dueCheckStartedBeforeTimeout, "The first runner should reach the due-time check.");
         Assert.True (dueCheckReleased, "The due-time check should be released before its wait times out.");
         Assert.True (secondRunnerReturned, "The competing RunTimers call should return while the runner is active.");
+        Assert.Equal (0, callbackCount);
+        Assert.Single (timedEvents.Timeouts);
+
+        timedEvents.RunTimers ();
+
         Assert.Equal (1, callbackCount);
         Assert.Empty (timedEvents.Timeouts);
     }
 
     // CoPilot - GPT-5
     [Fact]
-    public async Task RunTimers_Competing_Caller_Requests_Follow_Up_Run_When_Callback_Throws ()
+    public void RunTimers_Callback_Exception_Propagates_And_Ends_Pass ()
     {
         TimedEvents timedEvents = new ();
-        CancellationToken cancellationToken = TestContext.Current.CancellationToken;
-        using ManualResetEventSlim callbackStarted = new ();
-        using ManualResetEventSlim releaseCallback = new ();
         InvalidOperationException expectedException = new ("Expected callback failure.");
         var followUpCallbackCount = 0;
-        var callbackReleased = false;
 
-        timedEvents.Add (
-                         TimeSpan.Zero,
-                         () =>
-                         {
-                             callbackStarted.Set ();
-                             callbackReleased = releaseCallback.Wait (TimeSpan.FromSeconds (5), cancellationToken);
-
-                             throw expectedException;
-                         });
+        timedEvents.Add (TimeSpan.Zero, () => throw expectedException);
         timedEvents.Add (
                          TimeSpan.Zero,
                          () =>
@@ -675,100 +668,15 @@ public class TimedEventsTests
                              return false;
                          });
 
-        Task firstRunner = RunOnDedicatedThread (timedEvents.RunTimers);
-        Task? secondRunner = null;
-        var callbackStartedBeforeTimeout = false;
-        var secondRunnerReturned = false;
+        InvalidOperationException actualException = Assert.Throws<InvalidOperationException> (timedEvents.RunTimers);
 
-        try
-        {
-            callbackStartedBeforeTimeout = callbackStarted.Wait (TimeSpan.FromSeconds (5), cancellationToken);
-
-            if (callbackStartedBeforeTimeout)
-            {
-                secondRunner = RunOnDedicatedThread (timedEvents.RunTimers);
-                secondRunnerReturned = await CompletesWithinAsync (secondRunner, cancellationToken);
-            }
-        }
-        finally
-        {
-            releaseCallback.Set ();
-        }
-
-        InvalidOperationException actualException = await Assert.ThrowsAsync<InvalidOperationException> (
-            async () => await firstRunner);
-
-        if (secondRunner is not null)
-        {
-            await secondRunner;
-        }
-
-        Assert.True (callbackStartedBeforeTimeout, "The throwing callback should start.");
-        Assert.True (callbackReleased, "The throwing callback should be released before its wait times out.");
-        Assert.True (secondRunnerReturned, "The competing RunTimers call should return while the runner is active.");
         Assert.Same (expectedException, actualException);
+        Assert.Equal (0, followUpCallbackCount);
+        Assert.Single (timedEvents.Timeouts);
+
+        timedEvents.RunTimers ();
+
         Assert.Equal (1, followUpCallbackCount);
-        Assert.Empty (timedEvents.Timeouts);
-    }
-
-    // CoPilot - GPT-5
-    [Fact]
-    public async Task RunTimers_Competing_Caller_Aggregates_Follow_Up_Callback_Exception ()
-    {
-        TimedEvents timedEvents = new ();
-        CancellationToken cancellationToken = TestContext.Current.CancellationToken;
-        using ManualResetEventSlim callbackStarted = new ();
-        using ManualResetEventSlim releaseCallback = new ();
-        InvalidOperationException firstException = new ("Expected first callback failure.");
-        ArgumentException followUpException = new ("Expected follow-up callback failure.");
-        var callbackReleased = false;
-
-        timedEvents.Add (
-                         TimeSpan.Zero,
-                         () =>
-                         {
-                             callbackStarted.Set ();
-                             callbackReleased = releaseCallback.Wait (TimeSpan.FromSeconds (5), cancellationToken);
-
-                             throw firstException;
-                         });
-        timedEvents.Add (TimeSpan.Zero, () => throw followUpException);
-
-        Task firstRunner = RunOnDedicatedThread (timedEvents.RunTimers);
-        Task? secondRunner = null;
-        var callbackStartedBeforeTimeout = false;
-        var secondRunnerReturned = false;
-
-        try
-        {
-            callbackStartedBeforeTimeout = callbackStarted.Wait (TimeSpan.FromSeconds (5), cancellationToken);
-
-            if (callbackStartedBeforeTimeout)
-            {
-                secondRunner = RunOnDedicatedThread (timedEvents.RunTimers);
-                secondRunnerReturned = await CompletesWithinAsync (secondRunner, cancellationToken);
-            }
-        }
-        finally
-        {
-            releaseCallback.Set ();
-        }
-
-        AggregateException actualException = await Assert.ThrowsAsync<AggregateException> (
-            async () => await firstRunner);
-
-        if (secondRunner is not null)
-        {
-            await secondRunner;
-        }
-
-        Assert.True (callbackStartedBeforeTimeout, "The first throwing callback should start.");
-        Assert.True (callbackReleased, "The first throwing callback should be released before its wait times out.");
-        Assert.True (secondRunnerReturned, "The competing RunTimers call should request the follow-up pass.");
-        Assert.Collection (
-                           actualException.InnerExceptions,
-                           exception => Assert.Same (firstException, exception),
-                           exception => Assert.Same (followUpException, exception));
         Assert.Empty (timedEvents.Timeouts);
     }
 
@@ -905,6 +813,212 @@ public class TimedEventsTests
         Assert.Equal (2, callbackCount);
         Assert.True (removeCompletedBeforeCallbackReturned, "Remove should return while both occurrences are active.");
         Assert.True (removed);
+        Assert.Empty (timedEvents.Timeouts);
+    }
+
+    // CoPilot - GPT-5
+    [Fact]
+    public void Remove_Cancels_Queued_And_Active_Occurrences_With_Same_Token ()
+    {
+        VirtualTimeProvider timeProvider = new ();
+        TimedEvents timedEvents = new (timeProvider);
+        var callbackCount = 0;
+        var removed = false;
+        Terminal.Gui.App.Timeout timeout = new () { Span = TimeSpan.FromSeconds (1) };
+
+        timeout.Callback = () =>
+                           {
+                               callbackCount++;
+                               timedEvents.Add (timeout);
+                               removed = timedEvents.Remove (timeout);
+
+                               return true;
+                           };
+
+        timedEvents.Add (timeout);
+        timeProvider.Advance (TimeSpan.FromSeconds (2));
+
+        timedEvents.RunTimers ();
+
+        Assert.True (removed);
+        Assert.Equal (1, callbackCount);
+        Assert.Empty (timedEvents.Timeouts);
+    }
+
+    // CoPilot - GPT-5
+    [Fact]
+    public void Remove_Cancels_All_Queued_Occurrences_With_Same_Token ()
+    {
+        TimedEvents timedEvents = new ();
+        Terminal.Gui.App.Timeout timeout = new ()
+        {
+            Span = TimeSpan.FromHours (1),
+            Callback = () => false
+        };
+
+        timedEvents.Add (timeout);
+        timedEvents.Add (timeout);
+
+        bool removed = timedEvents.Remove (timeout);
+
+        Assert.True (removed);
+        Assert.Empty (timedEvents.Timeouts);
+    }
+
+    // CoPilot - GPT-5
+    [Fact]
+    public void GetTimeout_Returns_Null_For_Active_Occurrence_That_Remove_Can_Cancel ()
+    {
+        TimedEvents timedEvents = new ();
+        TimeSpan? actualSpan = TimeSpan.MaxValue;
+        var removed = false;
+        object? token = null;
+
+        token = timedEvents.Add (
+                                 TimeSpan.Zero,
+                                 () =>
+                                 {
+                                     actualSpan = timedEvents.GetTimeout (token!);
+                                     removed = timedEvents.Remove (token!);
+
+                                     return true;
+                                 });
+
+        timedEvents.RunTimers ();
+
+        Assert.Null (actualSpan);
+        Assert.True (removed);
+        Assert.Empty (timedEvents.Timeouts);
+    }
+
+    // CoPilot - GPT-5
+    [Fact]
+    public void Remove_Does_Not_Cancel_Same_Timeout_Added_After_Remove ()
+    {
+        VirtualTimeProvider timeProvider = new ();
+        TimedEvents timedEvents = new (timeProvider);
+        var callbackCount = 0;
+        var removed = false;
+        Terminal.Gui.App.Timeout timeout = new () { Span = TimeSpan.FromSeconds (1) };
+
+        timeout.Callback = () =>
+                           {
+                               callbackCount++;
+
+                               if (callbackCount > 1)
+                               {
+                                   return false;
+                               }
+
+                               removed = timedEvents.Remove (timeout);
+                               timedEvents.Add (timeout);
+
+                               return true;
+                           };
+
+        timedEvents.Add (timeout);
+        timeProvider.Advance (TimeSpan.FromSeconds (2));
+        timedEvents.RunTimers ();
+
+        Assert.True (removed);
+        Assert.Single (timedEvents.Timeouts);
+
+        timeProvider.Advance (TimeSpan.FromSeconds (2));
+        timedEvents.RunTimers ();
+
+        Assert.Equal (2, callbackCount);
+        Assert.Empty (timedEvents.Timeouts);
+    }
+
+    // CoPilot - GPT-5
+    [Fact]
+    public void Remove_Does_Not_Cancel_Nested_Active_Occurrence_Added_After_Remove ()
+    {
+        VirtualTimeProvider timeProvider = new ();
+        TimedEvents timedEvents = new (timeProvider);
+        var callbackCount = 0;
+        var removed = false;
+        Terminal.Gui.App.Timeout timeout = new () { Span = TimeSpan.FromSeconds (1) };
+
+        timeout.Callback = () =>
+                           {
+                               callbackCount++;
+
+                               if (callbackCount == 1)
+                               {
+                                   removed = timedEvents.Remove (timeout);
+                                   timedEvents.Add (timeout);
+                                   timeProvider.Advance (TimeSpan.FromSeconds (2));
+                                   timedEvents.RunTimers ();
+
+                                   return true;
+                               }
+
+                               return callbackCount == 2;
+                           };
+
+        timedEvents.Add (timeout);
+        timeProvider.Advance (TimeSpan.FromSeconds (2));
+        timedEvents.RunTimers ();
+
+        Assert.True (removed);
+        Assert.Equal (2, callbackCount);
+        Assert.Single (timedEvents.Timeouts);
+
+        timeProvider.Advance (TimeSpan.FromSeconds (2));
+        timedEvents.RunTimers ();
+
+        Assert.Equal (3, callbackCount);
+        Assert.Empty (timedEvents.Timeouts);
+    }
+
+    // CoPilot - GPT-5
+    [Fact]
+    public void Remove_Returns_False_When_Active_Occurrence_Is_Already_Cancelled ()
+    {
+        TimedEvents timedEvents = new ();
+        var firstRemove = false;
+        var secondRemove = true;
+        object? token = null;
+
+        token = timedEvents.Add (
+                                 TimeSpan.Zero,
+                                 () =>
+                                 {
+                                     firstRemove = timedEvents.Remove (token!);
+                                     secondRemove = timedEvents.Remove (token!);
+
+                                     return true;
+                                 });
+
+        timedEvents.RunTimers ();
+
+        Assert.True (firstRemove);
+        Assert.False (secondRemove);
+        Assert.Empty (timedEvents.Timeouts);
+    }
+
+    // CoPilot - GPT-5
+    [Fact]
+    public void Remove_Returns_False_When_StopAll_Already_Cancelled_Active_Occurrence ()
+    {
+        TimedEvents timedEvents = new ();
+        var removed = true;
+        object? token = null;
+
+        token = timedEvents.Add (
+                                 TimeSpan.Zero,
+                                 () =>
+                                 {
+                                     timedEvents.StopAll ();
+                                     removed = timedEvents.Remove (token!);
+
+                                     return true;
+                                 });
+
+        timedEvents.RunTimers ();
+
+        Assert.False (removed);
         Assert.Empty (timedEvents.Timeouts);
     }
 

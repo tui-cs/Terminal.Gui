@@ -18,29 +18,53 @@ public interface ITimedEvents
     object Add (TimeSpan time, Func<bool> callback);
 
     /// <inheritdoc cref="Add(System.TimeSpan,System.Func{bool})"/>
+    /// <remarks>
+    ///     Adding the same <see cref="Timeout"/> instance more than once creates multiple occurrences that share one
+    ///     cancellation token. Calling <see cref="Remove"/> with that token cancels all matching occurrences that precede
+    ///     the removal operation's synchronization point.
+    /// </remarks>
     object Add (Timeout timeout);
 
     /// <summary>
     ///     Invoked when a new timeout is added. To be used in the case when
     ///     <see cref="IApplication.StopAfterFirstIteration"/> is <see langword="true"/>.
     /// </summary>
+    /// <remarks>
+    ///     The event is raised after the timeout is added and after the timeout queue lock is released. A concurrent
+    ///     <see cref="RunTimers"/> call can execute a due timeout before its <see cref="Added"/> handler runs.
+    /// </remarks>
     event EventHandler<TimeoutEventArgs>? Added;
 
     /// <summary>
-    ///     Removes a previously scheduled timeout.
+    ///     Cancels all timeout occurrences associated with a previously returned token.
     /// </summary>
     /// <remarks>
-    ///     The token parameter is the value returned by <see cref="Add(TimeSpan, Func{bool})"/> or <see cref="Add(Timeout)"/>.
+    ///     <para>
+    ///         The token parameter is the value returned by <see cref="Add(TimeSpan, Func{bool})"/> or
+    ///         <see cref="Add(Timeout)"/>. All matching queued occurrences are removed.
+    ///     </para>
+    ///     <para>
+    ///         A matching callback that is already executing is not interrupted, but it will not be rescheduled if it
+    ///         returns <see langword="true"/>. Occurrences registered after the cancellation takes effect are not affected,
+    ///         including occurrences created by adding the same <see cref="Timeout"/> instance again. A concurrent
+    ///         <see cref="Add(TimeSpan, Func{bool})"/> or <see cref="Add(Timeout)"/> call can be ordered before or after the
+    ///         cancellation.
+    ///     </para>
     /// </remarks>
     /// <returns>
-    ///     <see langword="true"/> if the timeout is successfully removed; otherwise, <see langword="false"/>.
-    ///     This method also returns <see langword="false"/> if the timeout is not found.
+    ///     <see langword="true"/> if at least one queued occurrence was removed or a cancellation request was recorded for
+    ///     at least one active occurrence; otherwise, <see langword="false"/>.
     /// </returns>
     bool Remove (object token);
 
     /// <summary>
-    ///     Runs all timeouts that are due.
+    ///     Runs timeouts that are due.
     /// </summary>
+    /// <remarks>
+    ///     Timeout callbacks are serialized. A nested call on the active runner thread is supported. A call from a
+    ///     competing thread returns without running callbacks; remaining due timeouts are processed by a later successful
+    ///     call. A callback exception propagates directly from the call that executes it and ends that timer pass.
+    /// </remarks>
     void RunTimers ();
 
     /// <summary>
@@ -50,12 +74,23 @@ public interface ITimedEvents
     SortedList<long, Timeout> Timeouts { get; }
 
     /// <summary>
-    ///     Gets the timeout for the specified event.
+    ///     Gets the configured interval for a queued timeout occurrence associated with the specified token.
     /// </summary>
     /// <param name="token">The token of the event.</param>
-    /// <returns>The <see cref="TimeSpan"/> for the event, or <see lang="null"/> if the event is not found.</returns>
+    /// <returns>
+    ///     The <see cref="TimeSpan"/> for a queued occurrence, or <see langword="null"/> if no queued occurrence is found.
+    ///     A callback can be actively executing when this method returns <see langword="null"/>; use <see cref="Remove"/>
+    ///     to prevent an active repeating callback from rescheduling.
+    /// </returns>
     TimeSpan? GetTimeout (object token);
 
     /// <summary>Stops and removes all timed events.</summary>
+    /// <remarks>
+    ///     Removes all queued timeout occurrences and prevents callbacks that are active when this method is called from
+    ///     rescheduling. It does not interrupt callbacks already executing. Timeouts added after the cancellation takes
+    ///     effect are unaffected, including a reused <see cref="Timeout"/> instance. A concurrent
+    ///     <see cref="Add(TimeSpan, Func{bool})"/> or <see cref="Add(Timeout)"/> call can be ordered before or after the
+    ///     cancellation.
+    /// </remarks>
     void StopAll ();
 }

@@ -1,5 +1,4 @@
 using System.Diagnostics;
-using System.Runtime.ExceptionServices;
 
 namespace Terminal.Gui.App;
 
@@ -41,11 +40,11 @@ namespace Terminal.Gui.App;
 public class TimedEvents : ITimedEvents
 {
     internal SortedList<long, Timeout> _timeouts = new ();
-    private readonly List<ActiveTimeoutOccurrence> _activeTimeoutOccurrences = [];
+    private readonly Dictionary<Timeout, ActiveTimeoutState> _activeTimeoutStates = new (ReferenceEqualityComparer.Instance);
     private readonly object _runTimersLockToken = new ();
     private readonly object _timeoutsLockToken = new ();
     private readonly ITimeProvider? _timeProvider;
-    private int _runTimersPending;
+    private long _stopAllEpoch;
 
     /// <summary>
     ///     Initializes a new instance of <see cref="TimedEvents"/> with the default system time provider.
@@ -106,63 +105,21 @@ public class TimedEvents : ITimedEvents
     /// <inheritdoc/>
     public void RunTimers ()
     {
-        Interlocked.Exchange (ref _runTimersPending, 1);
-        List<ExceptionDispatchInfo>? errors = null;
-
-        while (true)
-        {
-            // A monitor is reentrant, so nested runs on this thread remain supported. A competing thread returns while
-            // the active runner drains the due timeouts.
-            if (!Monitor.TryEnter (_runTimersLockToken))
-            {
-                ThrowErrors (errors);
-
-                return;
-            }
-
-            try
-            {
-                Interlocked.Exchange (ref _runTimersPending, 0);
-
-                try
-                {
-                    RunTimersImpl ();
-                }
-                catch (Exception ex)
-                {
-                    errors ??= [];
-                    errors.Add (ExceptionDispatchInfo.Capture (ex));
-                }
-            }
-            finally
-            {
-                Monitor.Exit (_runTimersLockToken);
-            }
-
-            if (Interlocked.Exchange (ref _runTimersPending, 0) == 0)
-            {
-                ThrowErrors (errors);
-
-                return;
-            }
-        }
-    }
-
-    private static void ThrowErrors (List<ExceptionDispatchInfo>? errors)
-    {
-        if (errors is null)
+        // A monitor is reentrant, so nested runs on this thread remain supported. A competing caller returns while the
+        // active runner drains the due timeouts.
+        if (!Monitor.TryEnter (_runTimersLockToken))
         {
             return;
         }
 
-        if (errors.Count == 1)
+        try
         {
-            errors [0].Throw ();
-
-            return;
+            RunTimersImpl ();
         }
-
-        throw new AggregateException (errors.ConvertAll (error => error.SourceException));
+        finally
+        {
+            Monitor.Exit (_runTimersLockToken);
+        }
     }
 
     /// <inheritdoc/>
@@ -177,28 +134,30 @@ public class TimedEvents : ITimedEvents
 
         lock (_timeoutsLockToken)
         {
-            int idx = _timeouts.IndexOfValue (timeout);
+            var found = false;
 
-            if (idx >= 0)
+            for (var i = _timeouts.Count - 1; i >= 0; i--)
             {
-                _timeouts.RemoveAt (idx);
-
-                return true;
-            }
-
-            foreach (ActiveTimeoutOccurrence occurrence in _activeTimeoutOccurrences)
-            {
-                if (!ReferenceEquals (occurrence.Timeout, timeout) || occurrence.IsCancelled)
+                if (!ReferenceEquals (_timeouts.Values [i], timeout))
                 {
                     continue;
                 }
 
-                occurrence.IsCancelled = true;
-
-                return true;
+                _timeouts.RemoveAt (i);
+                found = true;
             }
 
-            return false;
+            if (_activeTimeoutStates.TryGetValue (timeout, out ActiveTimeoutState state)
+                && state.StopAllEpoch == _stopAllEpoch
+                && state.UncancelledActiveCount > 0)
+            {
+                state.RemovalGeneration++;
+                state.UncancelledActiveCount = 0;
+                _activeTimeoutStates [timeout] = state;
+                found = true;
+            }
+
+            return found;
         }
     }
 
@@ -256,16 +215,22 @@ public class TimedEvents : ITimedEvents
     /// <inheritdoc/>
     public TimeSpan? GetTimeout (object token)
     {
+        if (token is not Timeout timeout)
+        {
+            return null;
+        }
+
         lock (_timeoutsLockToken)
         {
-            int idx = _timeouts.IndexOfValue ((token as Timeout)!);
-
-            if (idx == -1)
+            foreach (Timeout queuedTimeout in _timeouts.Values)
             {
-                return null;
+                if (ReferenceEquals (queuedTimeout, timeout))
+                {
+                    return timeout.Span;
+                }
             }
 
-            return _timeouts.Values [idx].Span;
+            return null;
         }
     }
 
@@ -283,6 +248,9 @@ public class TimedEvents : ITimedEvents
 
     private long AddTimeoutCore (TimeSpan time, Timeout timeout)
     {
+        // Caller must hold _timeoutsLockToken.
+        Debug.Assert (Monitor.IsEntered (_timeoutsLockToken));
+
         long k = GetTimestampTicks () + time.Ticks;
 
         // if user wants to run as soon as possible set timer such that it expires right away (no race conditions)
@@ -306,6 +274,9 @@ public class TimedEvents : ITimedEvents
     /// <returns></returns>
     private long NudgeToUniqueKey (long k)
     {
+        // Caller must hold _timeoutsLockToken.
+        Debug.Assert (Monitor.IsEntered (_timeoutsLockToken));
+
         while (_timeouts.ContainsKey (k))
         {
             k++;
@@ -343,12 +314,22 @@ public class TimedEvents : ITimedEvents
                 // This timeout is due - remove it from the queue
                 Timeout timeoutToExecute = _timeouts.Values [0];
                 _timeouts.RemoveAt (0);
-                occurrence = new (timeoutToExecute);
-                _activeTimeoutOccurrences.Add (occurrence);
+                _activeTimeoutStates.TryGetValue (timeoutToExecute, out ActiveTimeoutState state);
+
+                if (state.StopAllEpoch != _stopAllEpoch)
+                {
+                    state.StopAllEpoch = _stopAllEpoch;
+                    state.UncancelledActiveCount = 0;
+                }
+
+                occurrence = new (timeoutToExecute, _stopAllEpoch, state.RemovalGeneration);
+                state.ActiveCount++;
+                state.UncancelledActiveCount++;
+                _activeTimeoutStates [timeoutToExecute] = state;
             }
 
             // Execute the callback outside the lock
-            // This allows nested Run() calls to access the timeout queue
+            // This allows nested RunTimers() calls to access the timeout queue
             bool repeat = false;
 
             try
@@ -368,10 +349,34 @@ public class TimedEvents : ITimedEvents
 
         lock (_timeoutsLockToken)
         {
-            bool removed = _activeTimeoutOccurrences.Remove (occurrence);
-            Debug.Assert (removed);
+            bool found = _activeTimeoutStates.TryGetValue (occurrence.Timeout, out ActiveTimeoutState state);
+            Debug.Assert (found);
 
-            if (!repeat || occurrence.IsCancelled)
+            if (!found)
+            {
+                return;
+            }
+
+            state.ActiveCount--;
+            bool canReschedule = occurrence.StopAllEpoch == _stopAllEpoch
+                                 && occurrence.RemovalGeneration == state.RemovalGeneration;
+
+            if (canReschedule)
+            {
+                state.UncancelledActiveCount--;
+                Debug.Assert (state.UncancelledActiveCount >= 0);
+            }
+
+            if (state.ActiveCount == 0)
+            {
+                _activeTimeoutStates.Remove (occurrence.Timeout);
+            }
+            else
+            {
+                _activeTimeoutStates [occurrence.Timeout] = state;
+            }
+
+            if (!repeat || !canReschedule)
             {
                 return;
             }
@@ -388,23 +393,17 @@ public class TimedEvents : ITimedEvents
         lock (_timeoutsLockToken)
         {
             _timeouts.Clear ();
-
-            foreach (ActiveTimeoutOccurrence occurrence in _activeTimeoutOccurrences)
-            {
-                occurrence.IsCancelled = true;
-            }
+            _stopAllEpoch++;
         }
     }
 
-    private sealed class ActiveTimeoutOccurrence
+    private readonly record struct ActiveTimeoutOccurrence (Timeout Timeout, long StopAllEpoch, long RemovalGeneration);
+
+    private struct ActiveTimeoutState
     {
-        public ActiveTimeoutOccurrence (Timeout timeout)
-        {
-            Timeout = timeout;
-        }
-
-        public bool IsCancelled { get; set; }
-
-        public Timeout Timeout { get; }
+        public int ActiveCount { get; set; }
+        public long RemovalGeneration { get; set; }
+        public long StopAllEpoch { get; set; }
+        public int UncancelledActiveCount { get; set; }
     }
 }
