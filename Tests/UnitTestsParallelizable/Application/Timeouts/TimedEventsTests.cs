@@ -748,6 +748,51 @@ public class TimedEventsTests
 
     // CoPilot - GPT-5
     [Fact]
+    public void RunTimers_StopAll_Cancels_Active_Occurrence_Not_Later_Same_Timeout_Occurrence ()
+    {
+        VirtualTimeProvider timeProvider = new ();
+        TimedEvents timedEvents = new (timeProvider);
+        var callbackCount = 0;
+        Terminal.Gui.App.Timeout timeout = new () { Span = TimeSpan.FromSeconds (1) };
+
+        timeout.Callback = () =>
+                           {
+                               callbackCount++;
+
+                               if (callbackCount == 1)
+                               {
+                                   timedEvents.StopAll ();
+                                   timeout.Span = TimeSpan.FromSeconds (1);
+                                   timedEvents.Add (timeout);
+                                   timeProvider.Advance (TimeSpan.FromSeconds (2));
+                                   timedEvents.RunTimers ();
+
+                                   // Distinguish an incorrect reschedule of this pre-StopAll occurrence.
+                                   timeout.Span = TimeSpan.FromSeconds (10);
+
+                                   return true;
+                               }
+
+                               return callbackCount == 2;
+                           };
+
+        timedEvents.Add (timeout);
+        timeProvider.Advance (TimeSpan.FromSeconds (2));
+
+        timedEvents.RunTimers ();
+
+        Assert.Equal (2, callbackCount);
+        Assert.Single (timedEvents.Timeouts);
+
+        timeProvider.Advance (TimeSpan.FromSeconds (2));
+        timedEvents.RunTimers ();
+
+        Assert.Equal (3, callbackCount);
+        Assert.Empty (timedEvents.Timeouts);
+    }
+
+    // CoPilot - GPT-5
+    [Fact]
     public async Task RunTimers_Remove_Cancels_Repeating_Duplicate_Active_Timeout_Occurrence ()
     {
         VirtualTimeProvider timeProvider = new ();

@@ -40,8 +40,7 @@ namespace Terminal.Gui.App;
 public class TimedEvents : ITimedEvents
 {
     internal SortedList<long, Timeout> _timeouts = new ();
-    private readonly Dictionary<Timeout, int> _activeTimeouts = new (ReferenceEqualityComparer.Instance);
-    private readonly Dictionary<Timeout, int> _cancelledTimeouts = new (ReferenceEqualityComparer.Instance);
+    private readonly List<ActiveTimeoutOccurrence> _activeTimeoutOccurrences = [];
     private readonly object _runTimersLockToken = new ();
     private readonly object _timeoutsLockToken = new ();
     private readonly ITimeProvider? _timeProvider;
@@ -168,21 +167,19 @@ public class TimedEvents : ITimedEvents
                 return true;
             }
 
-            if (!_activeTimeouts.TryGetValue (timeout, out int activeCount))
+            foreach (ActiveTimeoutOccurrence occurrence in _activeTimeoutOccurrences)
             {
-                return false;
+                if (!ReferenceEquals (occurrence.Timeout, timeout) || occurrence.IsCancelled)
+                {
+                    continue;
+                }
+
+                occurrence.IsCancelled = true;
+
+                return true;
             }
 
-            _cancelledTimeouts.TryGetValue (timeout, out int cancelledCount);
-
-            if (cancelledCount >= activeCount)
-            {
-                return false;
-            }
-
-            _cancelledTimeouts [timeout] = cancelledCount + 1;
-
-            return true;
+            return false;
         }
     }
 
@@ -303,7 +300,7 @@ public class TimedEvents : ITimedEvents
         // Process due timeouts one at a time, without blocking the entire queue
         while (true)
         {
-            Timeout timeoutToExecute;
+            ActiveTimeoutOccurrence occurrence;
 
             // Find the next due timeout
             lock (_timeoutsLockToken)
@@ -325,10 +322,10 @@ public class TimedEvents : ITimedEvents
                 }
 
                 // This timeout is due - remove it from the queue
-                timeoutToExecute = _timeouts.Values [0];
+                Timeout timeoutToExecute = _timeouts.Values [0];
                 _timeouts.RemoveAt (0);
-                _activeTimeouts.TryGetValue (timeoutToExecute, out int activeCount);
-                _activeTimeouts [timeoutToExecute] = activeCount + 1;
+                occurrence = new (timeoutToExecute);
+                _activeTimeoutOccurrences.Add (occurrence);
             }
 
             // Execute the callback outside the lock
@@ -337,59 +334,33 @@ public class TimedEvents : ITimedEvents
 
             try
             {
-                repeat = timeoutToExecute.Callback! ();
+                repeat = occurrence.Timeout.Callback! ();
             }
             finally
             {
-                CompleteTimeout (timeoutToExecute, repeat);
+                CompleteTimeout (occurrence, repeat);
             }
         }
     }
 
-    private void CompleteTimeout (Timeout timeout, bool repeat)
+    private void CompleteTimeout (ActiveTimeoutOccurrence occurrence, bool repeat)
     {
         long k;
 
         lock (_timeoutsLockToken)
         {
-            int activeCount = _activeTimeouts [timeout];
-            int remainingActiveCount = activeCount - 1;
+            bool removed = _activeTimeoutOccurrences.Remove (occurrence);
+            Debug.Assert (removed);
 
-            if (remainingActiveCount == 0)
-            {
-                _activeTimeouts.Remove (timeout);
-            }
-            else
-            {
-                _activeTimeouts [timeout] = remainingActiveCount;
-            }
-
-            _cancelledTimeouts.TryGetValue (timeout, out int cancelledCount);
-            bool cancelled = repeat && cancelledCount > 0;
-
-            if (cancelled && cancelledCount == 1)
-            {
-                _cancelledTimeouts.Remove (timeout);
-            }
-            else if (cancelled && cancelledCount > 1)
-            {
-                _cancelledTimeouts [timeout] = cancelledCount - 1;
-            }
-
-            if (remainingActiveCount == 0)
-            {
-                _cancelledTimeouts.Remove (timeout);
-            }
-
-            if (!repeat || cancelled)
+            if (!repeat || occurrence.IsCancelled)
             {
                 return;
             }
 
-            k = AddTimeoutCore (timeout.Span, timeout);
+            k = AddTimeoutCore (occurrence.Timeout.Span, occurrence.Timeout);
         }
 
-        Added?.Invoke (this, new (timeout, k));
+        Added?.Invoke (this, new (occurrence.Timeout, k));
     }
 
     /// <inheritdoc/>
@@ -399,10 +370,22 @@ public class TimedEvents : ITimedEvents
         {
             _timeouts.Clear ();
 
-            foreach (KeyValuePair<Timeout, int> activeTimeout in _activeTimeouts)
+            foreach (ActiveTimeoutOccurrence occurrence in _activeTimeoutOccurrences)
             {
-                _cancelledTimeouts [activeTimeout.Key] = activeTimeout.Value;
+                occurrence.IsCancelled = true;
             }
         }
+    }
+
+    private sealed class ActiveTimeoutOccurrence
+    {
+        public ActiveTimeoutOccurrence (Timeout timeout)
+        {
+            Timeout = timeout;
+        }
+
+        public bool IsCancelled { get; set; }
+
+        public Timeout Timeout { get; }
     }
 }
