@@ -39,9 +39,9 @@ namespace Terminal.Gui.Drivers;
 /// </summary>
 public class AnsiInputProcessor : InputProcessorImpl<char>
 {
-    private static readonly TimeSpan PrintableSuppressionTimeout = TimeSpan.FromMilliseconds (50);
-    private string _pendingParsedPrintableSuppression = string.Empty;
-    private DateTime _pendingParsedPrintableSuppressionExpiresAt;
+    private long _inputPosition;
+    private string _pendingKittyPrintableSuppression = string.Empty;
+    private long _pendingKittyPrintableSuppressionStartPosition;
 
     /// <inheritdoc/>
     /// <param name="inputBuffer">The input buffer to process.</param>
@@ -54,6 +54,9 @@ public class AnsiInputProcessor : InputProcessorImpl<char>
     /// <inheritdoc/>
     protected override void Process (char input)
     {
+        _inputPosition++;
+        InvalidatePendingKittyPrintableSuppression (input);
+
         foreach (Tuple<char, char> released in Parser.ProcessInput (Tuple.Create (input, input)))
         {
             ProcessAfterParsing (released.Item2);
@@ -61,11 +64,13 @@ public class AnsiInputProcessor : InputProcessorImpl<char>
     }
 
     /// <inheritdoc/>
-    protected override Key OnKeyboardEventParsed (Key keyEvent)
+    private protected override Key OnKeyboardEventParsed (AnsiKeyboardParserPattern pattern, Key keyEvent)
     {
-        _pendingParsedPrintableSuppression = string.Empty;
+        keyEvent = base.OnKeyboardEventParsed (pattern, keyEvent);
+        ClearPendingKittyPrintableSuppression ();
 
-        if (keyEvent.EventType != KeyEventType.Press
+        if (pattern is not KittyKeyboardPattern
+            || keyEvent.EventType != KeyEventType.Press
             || keyEvent.IsAlt
             || keyEvent.IsCtrl
             || keyEvent.IsModifierOnly)
@@ -77,8 +82,8 @@ public class AnsiInputProcessor : InputProcessorImpl<char>
 
         if (!string.IsNullOrEmpty (printableText))
         {
-            _pendingParsedPrintableSuppression = printableText;
-            _pendingParsedPrintableSuppressionExpiresAt = CurrentTime + PrintableSuppressionTimeout;
+            _pendingKittyPrintableSuppression = printableText;
+            _pendingKittyPrintableSuppressionStartPosition = _inputPosition + 1;
         }
 
         return keyEvent;
@@ -87,17 +92,45 @@ public class AnsiInputProcessor : InputProcessorImpl<char>
     /// <inheritdoc/>
     protected override bool ShouldSuppressFallbackKeyDown (Key key)
     {
-        string parsedPrintableText = _pendingParsedPrintableSuppression;
-        _pendingParsedPrintableSuppression = string.Empty;
+        string printableText = key.GetPrintableText ();
+        string pendingPrintableText = _pendingKittyPrintableSuppression;
+        long pendingStartPosition = _pendingKittyPrintableSuppressionStartPosition;
+        ClearPendingKittyPrintableSuppression ();
 
-        if (string.IsNullOrEmpty (parsedPrintableText)
-            || CurrentTime > _pendingParsedPrintableSuppressionExpiresAt)
+        if (string.IsNullOrEmpty (pendingPrintableText))
         {
             return false;
         }
 
-        string printableText = key.GetPrintableText ();
-        return string.Equals (printableText, parsedPrintableText, StringComparison.Ordinal);
+        long expectedLastPosition = pendingStartPosition + pendingPrintableText.Length - 1;
+
+        return _inputPosition == expectedLastPosition
+               && string.Equals (printableText, pendingPrintableText, StringComparison.Ordinal);
+    }
+
+    private void InvalidatePendingKittyPrintableSuppression (char input)
+    {
+        if (string.IsNullOrEmpty (_pendingKittyPrintableSuppression))
+        {
+            return;
+        }
+
+        long offset = _inputPosition - _pendingKittyPrintableSuppressionStartPosition;
+
+        if (offset >= 0
+            && offset < _pendingKittyPrintableSuppression.Length
+            && input == _pendingKittyPrintableSuppression [(int)offset])
+        {
+            return;
+        }
+
+        ClearPendingKittyPrintableSuppression ();
+    }
+
+    private void ClearPendingKittyPrintableSuppression ()
+    {
+        _pendingKittyPrintableSuppression = string.Empty;
+        _pendingKittyPrintableSuppressionStartPosition = 0;
     }
 
     /// <inheritdoc/>

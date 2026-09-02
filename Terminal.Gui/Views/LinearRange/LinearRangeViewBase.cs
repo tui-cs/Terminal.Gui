@@ -1008,6 +1008,9 @@ public abstract class LinearRangeViewBase<TOption, TValue> : View, IOrientation,
     #region Drawing
 
     /// <inheritdoc/>
+    protected override bool OnDrawingText (DrawContext? context) => true;
+
+    /// <inheritdoc/>
     protected override bool OnDrawingContent (DrawContext? context)
     {
         // TODO: make this more surgical to reduce repaint

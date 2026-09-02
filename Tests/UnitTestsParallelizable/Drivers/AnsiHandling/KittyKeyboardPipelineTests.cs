@@ -238,12 +238,76 @@ public class KittyKeyboardPipelineTests
 
     // Codex - GPT-5 Codex
     [Fact]
-    public void Pipeline_MixedKittyAndLegacyPrintable_AfterSuppressionTimeout_RaisesBothKeyDowns ()
+    public void Pipeline_MixedKittyAndLegacyPrintable_AcrossDelay_DoesNotRaiseDuplicateKeyDown ()
     {
         (List<Key> down, List<Key> up) = InjectRawSequenceWithDelay (TimeSpan.FromMilliseconds (51), "\x1b[97u", "a");
 
+        Assert.Single (down);
+        Assert.Equal (Key.A, down [0]);
+        Assert.Empty (up);
+    }
+
+    // Codex - GPT-5.6
+    [Fact]
+    public void Pipeline_KittyPortugueseKey_FollowedByTwoLegacyPrintables_SuppressesOnlyFirstFallback ()
+    {
+        (List<Key> down, List<Key> up) = InjectRawSequence ("\x1b[231::59;;231u", "ç", "ç");
+
         Assert.Equal (2, down.Count);
-        Assert.All (down, key => Assert.Equal (Key.A, key));
+        Assert.All (down, key => Assert.Equal ("ç", key.GetPrintableText ()));
+        Assert.Empty (up);
+    }
+
+    // Codex - GPT-5.6
+    [Fact]
+    public void Pipeline_KittyPrintable_FollowedByNonmatchingFallback_ClearsSuppression ()
+    {
+        (List<Key> down, List<Key> up) = InjectRawSequence ("\x1b[97u", "b", "a");
+
+        Assert.Equal ([Key.A, Key.B, Key.A], down);
+        Assert.Empty (up);
+    }
+
+    // Codex - GPT-5.6
+    [Fact]
+    public void Pipeline_KittyPrintable_InterveningParsedKey_PreservesLaterMatchingFallbackKey ()
+    {
+        (List<Key> down, List<Key> up) = InjectRawSequence ("\x1b[97u\x1b[Aa");
+
+        Assert.Equal ([Key.A, Key.CursorUp, Key.A], down);
+        Assert.Empty (up);
+    }
+
+    // Codex - GPT-5.6
+    [Theory]
+    [InlineData ("\x1b[<0;10;20M")]
+    [InlineData ("\x1b[?1;2c")]
+    [InlineData ("\x1b[200~x\x1b[201~")]
+    public void Pipeline_KittyPrintable_InterveningAnsiInput_PreservesLaterMatchingFallbackKey (string interveningInput)
+    {
+        (List<Key> down, List<Key> up) = InjectRawSequence ($"\x1b[97u{interveningInput}a");
+
+        Assert.Equal ([Key.A, Key.A], down);
+        Assert.Empty (up);
+    }
+
+    // Codex - GPT-5.6
+    [Fact]
+    public void Pipeline_LegacyShiftTabFollowedByTab_RaisesBothKeyDowns ()
+    {
+        (List<Key> down, List<Key> up) = InjectRawSequence ("\x1b[Z\t");
+
+        Assert.Equal ([Key.Tab.WithShift, Key.Tab], down);
+        Assert.Empty (up);
+    }
+
+    // Codex - GPT-5.6
+    [Fact]
+    public void Pipeline_KittyTabAndLegacyTab_DoesNotRaiseDuplicateKeyDown ()
+    {
+        (List<Key> down, List<Key> up) = InjectRawSequence ("\x1b[9u\t");
+
+        Assert.Equal ([Key.Tab], down);
         Assert.Empty (up);
     }
 

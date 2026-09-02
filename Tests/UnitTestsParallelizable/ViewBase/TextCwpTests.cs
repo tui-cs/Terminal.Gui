@@ -176,6 +176,59 @@ public class TextCwpTests
         Assert.Equal ("hello", tv.Text);
     }
 
+    // Codex - GPT-5.6
+    [Fact]
+    public void TextView_Text_Set_Survives_Throwing_TextChanged_Subscriber ()
+    {
+        TextView textView = new ();
+        EventHandler thrower = (_, _) => throw new InvalidOperationException ("Subscriber failure.");
+        textView.TextChanged += thrower;
+
+        Assert.Throws<InvalidOperationException> (() => textView.Text = "first");
+
+        textView.TextChanged -= thrower;
+        ((View)textView).Text = "second";
+
+        Assert.Equal ("second", textView.Text);
+    }
+
+    // Codex - GPT-5.6
+    [Fact]
+    public void TextView_Text_Set_Throwing_TextChanged_Subscriber_Clears_History_Baseline ()
+    {
+        TextView textView = new ();
+        textView.TextChanged += (_, _) => throw new InvalidOperationException ("Subscriber failure.");
+
+        Assert.Throws<InvalidOperationException> (() => textView.Text = "first");
+
+        Assert.Equal ("first", textView.Text);
+        Assert.False (textView.IsDirty);
+    }
+
+    // Codex - GPT-5.6
+    [Fact]
+    public void TextView_TextChanged_ReentrantPolymorphicSet_SyncsInternalModel ()
+    {
+        TextView textView = new ();
+        bool reentered = false;
+
+        textView.TextChanged += (_, _) =>
+                                {
+                                    if (reentered)
+                                    {
+                                        return;
+                                    }
+
+                                    reentered = true;
+                                    ((View)textView).Text = "second";
+                                };
+
+        textView.Text = "first";
+
+        Assert.Equal ("second", ((View)textView).Text);
+        Assert.Equal ("second", textView.Text);
+    }
+
     /// <summary>
     ///     CR Issue 4: A newly constructed <see cref="ProgressBar"/> should have <see cref="View.Text"/>
     ///     set to "0%" so that <see cref="ProgressBarFormat.SimplePlusPercentage"/> renders the percentage

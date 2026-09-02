@@ -289,12 +289,9 @@ public class TabsFanOutDiagnosticTests (ITestOutputHelper output) : TestDriverBa
         output.WriteLine ($"Sum of inactive DrawingContent:  {inactiveContentDraws}");
         output.WriteLine ($"Sum of inactive DrawingText:     {inactiveTextDraws}");
 
-        // Issue #5358 fix: inactive tabs' NeedsDraw is no longer set as a side-effect
-        // of the parent entering Draw(). DrawingText is the right metric here because
-        // it's gated on NeedsDraw inside DoDrawText — and Code does NOT override
-        // OnDrawingText (unlike OnClearingViewport / OnDrawingContent which Code
-        // intercepts, suppressing those events). DrawComplete fires unconditionally
-        // for clip-exclusion bookkeeping, so it is informational only.
+        // Code owns text rendering, so the generic DrawingText event must not fire
+        // for either the active or inactive tabs.
+        Assert.Equal (0, activeCounts.DrawingText);
         Assert.Equal (0, inactiveTextDraws);
 
         // Issue #5358 fix: the Tabs container itself no longer clears its viewport
@@ -349,28 +346,19 @@ public class TabsFanOutDiagnosticTests (ITestOutputHelper output) : TestDriverBa
         ViewActivityCounters.Counts tabActiveCounts = tabCounters.Get (active);
         output.WriteLine (tabCounters.Report ("Tabbed scenario (5 scrolls of active tab):"));
 
-        int totalTabTextDraws = tabActiveCounts.DrawingText;
         int totalTabLayouts = tabActiveCounts.SubViewsLaidOut;
 
         for (var i = 1; i < TabCount; i++)
         {
-            totalTabTextDraws += tabCounters.Get (codes [i]).DrawingText;
             totalTabLayouts += tabCounters.Get (codes [i]).SubViewsLaidOut;
         }
 
-        double textDrawFanOut = singleCounts.DrawingText == 0 ? double.NaN : (double)totalTabTextDraws / singleCounts.DrawingText;
         double layoutFanOut = singleCounts.SubViewsLaidOut == 0 ? double.NaN : (double)totalTabLayouts / singleCounts.SubViewsLaidOut;
 
-        output.WriteLine ($"Tabbed total text draws / single text draws = {totalTabTextDraws} / {singleCounts.DrawingText} = {textDrawFanOut:F2}");
         output.WriteLine ($"Tabbed total layouts / single layouts       = {totalTabLayouts} / {singleCounts.SubViewsLaidOut} = {layoutFanOut:F2}");
 
-        Assert.True (singleCounts.DrawingText > 0, "Single-Code baseline must record text-draw activity (NeedsDraw-gated).");
-        Assert.True (tabActiveCounts.DrawingText > 0, "Active tab in tabbed scenario must record text-draw activity.");
-
-        // Issue #5358 fix: tabbed text-draw fan-out is now at parity with the single-Code baseline.
-        // DrawingText is gated on NeedsDraw, so it only fires on tabs whose NeedsDraw was set —
-        // which is just the active tab after the fix.
-        Assert.Equal (1.0, textDrawFanOut);
+        Assert.Equal (0, singleCounts.DrawingText);
+        Assert.Equal (0, tabActiveCounts.DrawingText);
 
         Assert.Equal (1.0, layoutFanOut);
 
@@ -417,8 +405,7 @@ public class TabsFanOutDiagnosticTests (ITestOutputHelper output) : TestDriverBa
         {
             ViewActivityCounters.Counts c = counters.Get (codes [i]);
 
-            // Issue #5358 fix: transparent inactive peers also stay out of NeedsDraw-gated work.
-            // DrawingText is the right per-Code metric (Code intercepts ClearedViewport / DrawingContent).
+            // Code suppresses the generic text pass regardless of transparency.
             Assert.Equal (0, c.DrawingText);
         }
 

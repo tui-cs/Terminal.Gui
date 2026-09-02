@@ -57,7 +57,7 @@ public class TextValidateField : View, IDesignable, IValue<string>
     /// </summary>
     public TextValidateField ()
     {
-        Height = Dim.Auto (minimumContentDim: 1);
+        Height = Dim.Auto (DimAutoStyle.Text, minimumContentDim: 1, maximumContentDim: 1);
         CanFocus = true;
 
         // Things this view knows how to do
@@ -396,6 +396,9 @@ public class TextValidateField : View, IDesignable, IValue<string>
 
         return true;
     }
+
+    /// <inheritdoc/>
+    protected override bool OnDrawingText (DrawContext? context) => true;
 
     /// <inheritdoc/>
     protected override bool OnDrawingContent (DrawContext? context)

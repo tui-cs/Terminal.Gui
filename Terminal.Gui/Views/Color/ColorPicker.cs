@@ -106,6 +106,9 @@ public class ColorPicker : View, IValue<Color?>, IDesignable
     }
 
     /// <inheritdoc/>
+    protected override bool OnDrawingText (DrawContext? context) => true;
+
+    /// <inheritdoc/>
     protected override bool OnDrawingContent (DrawContext? context)
     {
         Attribute normal = GetAttributeForRole (VisualRole.Normal);
