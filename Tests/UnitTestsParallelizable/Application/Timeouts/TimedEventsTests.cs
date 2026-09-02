@@ -1503,13 +1503,14 @@ public class TimedEventsTests
     {
         TimedEvents timedEvents = new (new VirtualTimeProvider ());
         var callbackCount = 0;
+        var stopRepeating = 0;
         object token = timedEvents.Add (
                                         TimeSpan.Zero,
                                         () =>
                                         {
                                             Interlocked.Increment (ref callbackCount);
 
-                                            return true;
+                                            return Volatile.Read (ref stopRepeating) == 0;
                                         });
         Task runner = RunOnDedicatedThread (timedEvents.RunTimers);
         Task completedTask = await Task.WhenAny (
@@ -1526,8 +1527,9 @@ public class TimedEventsTests
             countAfterNextPass = Volatile.Read (ref callbackCount);
         }
 
-        timedEvents.Remove (token);
+        Volatile.Write (ref stopRepeating, 1);
         await runner.WaitAsync (TimeSpan.FromSeconds (5), TestContext.Current.CancellationToken);
+        timedEvents.Remove (token);
 
         Assert.True (returned, "RunTimers should return after the callbacks that were due when the pass started.");
         Assert.Equal (1, countAfterPass);
@@ -1537,35 +1539,47 @@ public class TimedEventsTests
 
     // CoPilot - GPT-5
     [Fact]
-    public void RunTimers_Repeating_Zero_Timeout_Does_Not_Starve_Due_Peer ()
+    public async Task RunTimers_Repeating_Zero_Timeout_Does_Not_Starve_Due_Peer ()
     {
         TimedEvents timedEvents = new (new VirtualTimeProvider ());
         var repeatingCallbackCount = 0;
         var peerCallbackCount = 0;
+        var stopRepeating = 0;
         object repeatingToken = timedEvents.Add (
                                                  TimeSpan.Zero,
                                                  () =>
                                                  {
-                                                     repeatingCallbackCount++;
+                                                     Interlocked.Increment (ref repeatingCallbackCount);
 
-                                                     return true;
+                                                     return Volatile.Read (ref stopRepeating) == 0;
                                                  });
         timedEvents.Add (
                          TimeSpan.Zero,
                          () =>
                          {
-                             peerCallbackCount++;
+                             Interlocked.Increment (ref peerCallbackCount);
 
                              return false;
                          });
 
-        timedEvents.RunTimers ();
+        Task runner = RunOnDedicatedThread (timedEvents.RunTimers);
+        Task completedTask = await Task.WhenAny (
+                                                 runner,
+                                                 Task.Delay (TimeSpan.FromSeconds (1), TestContext.Current.CancellationToken));
+        var returned = ReferenceEquals (completedTask, runner);
+        int repeatingCountAfterPass = Volatile.Read (ref repeatingCallbackCount);
+        int peerCountAfterPass = Volatile.Read (ref peerCallbackCount);
+        SortedList<long, Terminal.Gui.App.Timeout> queuedAfterPass = returned ? timedEvents.Timeouts : [];
+        Terminal.Gui.App.Timeout? queuedTimeoutAfterPass = queuedAfterPass.Count == 1 ? queuedAfterPass.Values [0] : null;
 
-        Assert.Equal (1, repeatingCallbackCount);
-        Assert.Equal (1, peerCallbackCount);
-        Assert.Same (repeatingToken, Assert.Single (timedEvents.Timeouts).Value);
-
+        Volatile.Write (ref stopRepeating, 1);
+        await runner.WaitAsync (TimeSpan.FromSeconds (5), TestContext.Current.CancellationToken);
         timedEvents.Remove (repeatingToken);
+
+        Assert.True (returned, "RunTimers should return after the callbacks that were due when the pass started.");
+        Assert.Equal (1, repeatingCountAfterPass);
+        Assert.Equal (1, peerCountAfterPass);
+        Assert.Same (repeatingToken, queuedTimeoutAfterPass);
     }
 
     [Fact]
