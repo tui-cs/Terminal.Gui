@@ -382,6 +382,8 @@ public class TimedEvents : ITimedEvents
             // Execute the callback outside the lock
             // This allows nested RunTimers() calls to access the timeout queue
             bool repeat = false;
+            bool rescheduled;
+            long rescheduledKey;
 
             try
             {
@@ -389,7 +391,14 @@ public class TimedEvents : ITimedEvents
             }
             finally
             {
-                CompleteTimeout (occurrence, repeat);
+                // Bookkeeping and rescheduling only. Added is raised below rather than here so that a
+                // subscriber cannot throw out of this finally and replace an exception from the callback.
+                rescheduled = CompleteTimeout (occurrence, repeat, out rescheduledKey);
+            }
+
+            if (rescheduled)
+            {
+                Added?.Invoke (this, new (occurrence.Timeout, rescheduledKey));
             }
         }
     }
@@ -421,9 +430,15 @@ public class TimedEvents : ITimedEvents
         return -1;
     }
 
-    private void CompleteTimeout (ActiveTimeoutOccurrence occurrence, bool repeat)
+    /// <summary>
+    ///     Releases the cancellation bookkeeping for a completed occurrence and reschedules it when it repeats and was
+    ///     not cancelled. Called from a <see langword="finally"/>, so it must not raise <see cref="Added"/>: the caller
+    ///     raises it after the callback has returned normally.
+    /// </summary>
+    /// <returns><see langword="true"/> if the timeout was rescheduled; otherwise, <see langword="false"/>.</returns>
+    private bool CompleteTimeout (ActiveTimeoutOccurrence occurrence, bool repeat, out long rescheduledKey)
     {
-        long k;
+        rescheduledKey = 0;
 
         lock (_timeoutsLockToken)
         {
@@ -432,7 +447,7 @@ public class TimedEvents : ITimedEvents
 
             if (!found)
             {
-                return;
+                return false;
             }
 
             state.ActiveCount--;
@@ -456,13 +471,13 @@ public class TimedEvents : ITimedEvents
 
             if (!repeat || !canReschedule)
             {
-                return;
+                return false;
             }
 
-            k = AddTimeoutCore (occurrence.Timeout.Span, occurrence.Timeout);
-        }
+            rescheduledKey = AddTimeoutCore (occurrence.Timeout.Span, occurrence.Timeout);
 
-        Added?.Invoke (this, new (occurrence.Timeout, k));
+            return true;
+        }
     }
 
     /// <inheritdoc/>

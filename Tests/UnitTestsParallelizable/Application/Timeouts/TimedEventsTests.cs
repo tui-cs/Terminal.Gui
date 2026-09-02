@@ -744,6 +744,61 @@ public class TimedEventsTests
         Assert.Empty (timedEvents.Timeouts);
     }
 
+    // Claude - Opus 5
+    [Fact]
+    public void RunTimers_Added_Handler_Exception_Does_Not_Replace_Callback_Exception ()
+    {
+        TimedEvents timedEvents = new ();
+        InvalidOperationException expectedException = new ("Expected callback failure.");
+
+        // A repeating timeout that throws. Added is raised outside the finally that completes the
+        // occurrence, so a throwing subscriber must not be able to displace the callback's exception.
+        timedEvents.Add (TimeSpan.FromMilliseconds (1), () => throw expectedException);
+        timedEvents.Added += (_, _) => throw new NotSupportedException ("Added handler failure.");
+
+        Thread.Sleep (5);
+
+        InvalidOperationException actualException = Assert.Throws<InvalidOperationException> (timedEvents.RunTimers);
+
+        Assert.Same (expectedException, actualException);
+
+        // A throwing callback is not rescheduled, so the queue drains.
+        Assert.Empty (timedEvents.Timeouts);
+    }
+
+    // Claude - Opus 5
+    [Fact]
+    public void RunTimers_Added_Handler_Exception_During_Reschedule_Leaves_Timeout_Scheduled ()
+    {
+        TimedEvents timedEvents = new ();
+        var callbackCount = 0;
+
+        timedEvents.Add (
+                         TimeSpan.FromMilliseconds (1),
+                         () =>
+                         {
+                             Interlocked.Increment (ref callbackCount);
+
+                             return true;
+                         });
+
+        timedEvents.Added += (_, _) => throw new InvalidOperationException ("Added handler failure.");
+
+        Thread.Sleep (5);
+
+        // The reschedule succeeds before Added is raised, so the timeout survives the handler exception
+        // and later passes keep running it rather than losing it.
+        Assert.Throws<InvalidOperationException> (timedEvents.RunTimers);
+        Assert.Equal (1, callbackCount);
+        Assert.Single (timedEvents.Timeouts);
+
+        Thread.Sleep (5);
+
+        Assert.Throws<InvalidOperationException> (timedEvents.RunTimers);
+        Assert.Equal (2, callbackCount);
+        Assert.Single (timedEvents.Timeouts);
+    }
+
     // CoPilot - GPT-5
     [Fact]
     public void RunTimers_StopAll_Cancels_Duplicate_Active_Timeout_Occurrences ()

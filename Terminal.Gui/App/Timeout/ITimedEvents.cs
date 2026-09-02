@@ -34,8 +34,15 @@ public interface ITimedEvents
     ///     <see cref="IApplication.StopAfterFirstIteration"/> is <see langword="true"/>.
     /// </summary>
     /// <remarks>
-    ///     The event is raised after the timeout is added and after the timeout queue lock is released. A concurrent
-    ///     <see cref="RunTimers"/> call can execute a due timeout before its <see cref="Added"/> handler runs.
+    ///     <para>
+    ///         The event is raised after the timeout is added and after the timeout queue lock is released. A concurrent
+    ///         <see cref="RunTimers"/> call can execute a due timeout before its <see cref="Added"/> handler runs.
+    ///     </para>
+    ///     <para>
+    ///         A handler exception propagates to whatever caused the timeout to be scheduled. For a repeating timeout that
+    ///         is being rescheduled, that is the <see cref="RunTimers"/> call, and it ends that timer pass. The timeout
+    ///         remains scheduled, so a handler that throws on every reschedule ends every subsequent pass as well.
+    ///     </para>
     /// </remarks>
     event EventHandler<TimeoutEventArgs>? Added;
 
