@@ -67,10 +67,10 @@ public interface ITimedEvents
     /// <remarks>
     ///     Timeout callbacks are serialized. A nested call on the active runner thread is supported. A call from a
     ///     competing thread returns without running callbacks; remaining due timeouts are processed by a later successful
-    ///     call. Each pass executes at most the number of callbacks that were due when it started, so a repeating callback
-    ///     that reschedules as already due is deferred to a later pass rather than starving the main loop. Concurrent queue
-    ///     changes can alter which due occurrences consume that budget. A callback exception propagates directly from the
-    ///     call that executes it and ends that timer pass.
+    ///     call. Each pass executes only queue occurrences that were due when it started. An occurrence added or rescheduled
+    ///     after the pass starts is deferred to a later pass, preventing an immediately repeating callback from starving
+    ///     already-due peers. A callback exception propagates directly from the call that executes it and ends that timer
+    ///     pass.
     /// </remarks>
     void RunTimers ();
 

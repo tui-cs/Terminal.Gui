@@ -53,9 +53,11 @@ public class TimedEvents : ITimedEvents
     // ActiveTimeoutState is a mutable struct, so TryGetValue hands back a copy. Every mutation must be written back
     // with _activeTimeoutStates [timeout] = state (or the entry removed) before _timeoutsLockToken is released.
     private readonly Dictionary<Timeout, ActiveTimeoutState> _activeTimeoutStates = new (ReferenceEqualityComparer.Instance);
+    private readonly Dictionary<long, long> _queuedTimeoutOccurrenceIds = [];
     private readonly object _runTimersLockToken = new ();
     private readonly object _timeoutsLockToken = new ();
     private readonly ITimeProvider? _timeProvider;
+    private long _nextTimeoutOccurrenceId;
     private long _stopAllEpoch;
 
     /// <summary>
@@ -170,6 +172,9 @@ public class TimedEvents : ITimedEvents
                     continue;
                 }
 
+                long key = _timeouts.Keys [i];
+                bool occurrenceRemoved = _queuedTimeoutOccurrenceIds.Remove (key);
+                Debug.Assert (occurrenceRemoved);
                 _timeouts.RemoveAt (i);
                 found = true;
             }
@@ -304,6 +309,7 @@ public class TimedEvents : ITimedEvents
 
         k = NudgeToUniqueKey (k);
         _timeouts.Add (k, timeout);
+        _queuedTimeoutOccurrenceIds.Add (k, _nextTimeoutOccurrenceId++);
 
         return k;
     }
@@ -329,48 +335,36 @@ public class TimedEvents : ITimedEvents
 
     private void RunTimersImpl ()
     {
-        int remainingCallbacks;
+        long passStart;
+        long occurrenceIdCutoff;
 
         lock (_timeoutsLockToken)
         {
-            long passStart = GetTimestampTicks ();
-            remainingCallbacks = 0;
-
-            while (remainingCallbacks < _timeouts.Count && _timeouts.Keys [remainingCallbacks] <= passStart)
-            {
-                remainingCallbacks++;
-            }
+            passStart = GetTimestampTicks ();
+            occurrenceIdCutoff = _nextTimeoutOccurrenceId;
         }
 
-        // Bound each pass to the number of callbacks that were due when it started. A repeating timeout with a zero or
-        // negative span reschedules as already due; without this budget it can run forever in one pass and starve the
-        // rest of the main loop. Concurrent queue changes can alter which due occurrences consume the budget.
-        while (remainingCallbacks > 0)
+        // Execute only queue occurrences that were due when this pass started. A repeating timeout with a zero or
+        // negative span reschedules as already due, but receives a new occurrence ID and is deferred to a later pass.
+        // Without occurrence identity, it can reuse its freed queue key and starve an already-due peer indefinitely.
+        while (true)
         {
             ActiveTimeoutOccurrence occurrence;
 
-            // Find the next due timeout
             lock (_timeoutsLockToken)
             {
-                if (_timeouts.Count == 0)
+                int timeoutIndex = GetNextDueTimeoutIndex (passStart, occurrenceIdCutoff);
+
+                if (timeoutIndex == -1)
                 {
                     return;
                 }
 
-                // Re-evaluate current time for each iteration
-                long now = GetTimestampTicks ();
-
-                // Check if the earliest timeout is due
-                long scheduledTime = _timeouts.Keys [0];
-
-                if (scheduledTime > now)
-                {
-                    return;
-                }
-
-                // This timeout is due - remove it from the queue
-                Timeout timeoutToExecute = _timeouts.Values [0];
-                _timeouts.RemoveAt (0);
+                long scheduledTime = _timeouts.Keys [timeoutIndex];
+                Timeout timeoutToExecute = _timeouts.Values [timeoutIndex];
+                bool occurrenceRemoved = _queuedTimeoutOccurrenceIds.Remove (scheduledTime);
+                Debug.Assert (occurrenceRemoved);
+                _timeouts.RemoveAt (timeoutIndex);
                 _activeTimeoutStates.TryGetValue (timeoutToExecute, out ActiveTimeoutState state);
 
                 if (state.StopAllEpoch != _stopAllEpoch)
@@ -385,8 +379,6 @@ public class TimedEvents : ITimedEvents
                 _activeTimeoutStates [timeoutToExecute] = state;
             }
 
-            remainingCallbacks--;
-
             // Execute the callback outside the lock
             // This allows nested RunTimers() calls to access the timeout queue
             bool repeat = false;
@@ -400,6 +392,33 @@ public class TimedEvents : ITimedEvents
                 CompleteTimeout (occurrence, repeat);
             }
         }
+    }
+
+    private int GetNextDueTimeoutIndex (long passStart, long occurrenceIdCutoff)
+    {
+        // Caller must hold _timeoutsLockToken.
+        Debug.Assert (Monitor.IsEntered (_timeoutsLockToken));
+        Debug.Assert (_timeouts.Count == _queuedTimeoutOccurrenceIds.Count);
+
+        for (var i = 0; i < _timeouts.Count; i++)
+        {
+            long scheduledTime = _timeouts.Keys [i];
+
+            if (scheduledTime > passStart)
+            {
+                return -1;
+            }
+
+            bool found = _queuedTimeoutOccurrenceIds.TryGetValue (scheduledTime, out long occurrenceId);
+            Debug.Assert (found);
+
+            if (found && occurrenceId < occurrenceIdCutoff)
+            {
+                return i;
+            }
+        }
+
+        return -1;
     }
 
     private void CompleteTimeout (ActiveTimeoutOccurrence occurrence, bool repeat)
@@ -452,6 +471,7 @@ public class TimedEvents : ITimedEvents
         lock (_timeoutsLockToken)
         {
             _timeouts.Clear ();
+            _queuedTimeoutOccurrenceIds.Clear ();
             _stopAllEpoch++;
         }
     }

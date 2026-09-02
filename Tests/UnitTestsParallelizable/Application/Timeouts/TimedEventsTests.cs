@@ -1166,7 +1166,7 @@ public class TimedEventsTests
                      $"Expected more unique timestamps. Got {uniqueTimestamps} unique out of {timestamps.Count} total");
     }
 
-    // Claude Opus 5
+    // Claude - Opus 5
     [Fact]
     public void Add_Timeout_Throws_For_Null_Timeout ()
     {
@@ -1175,7 +1175,7 @@ public class TimedEventsTests
         Assert.Throws<ArgumentNullException> (() => timedEvents.Add ((Terminal.Gui.App.Timeout)null!));
     }
 
-    // Claude Opus 5
+    // Claude - Opus 5
     [Fact]
     public void Add_Timeout_Throws_For_Null_Callback ()
     {
@@ -1186,7 +1186,7 @@ public class TimedEventsTests
         Assert.Empty (timedEvents.Timeouts);
     }
 
-    // Claude Opus 5
+    // Claude - Opus 5
     [Fact]
     public void Added_Reports_Actual_Queue_Key_After_Collision ()
     {
@@ -1202,7 +1202,7 @@ public class TimedEventsTests
         Assert.Equal (2, addedTicks.Distinct ().Count ());
     }
 
-    // Claude Opus 5
+    // Claude - Opus 5
     [Fact]
     public void Timeouts_Returns_Snapshot ()
     {
@@ -1217,7 +1217,7 @@ public class TimedEventsTests
         Assert.Equal (2, timedEvents.Timeouts.Count);
     }
 
-    // Claude Opus 5
+    // Claude - Opus 5
     [Fact]
     public async Task RunTimers_Defers_Repeating_Zero_Timeout_Until_Next_Pass ()
     {
@@ -1253,6 +1253,39 @@ public class TimedEventsTests
         Assert.Equal (1, countAfterPass);
         Assert.Equal (1, queuedAfterPass);
         Assert.Equal (2, countAfterNextPass);
+    }
+
+    // CoPilot - GPT-5
+    [Fact]
+    public void RunTimers_Repeating_Zero_Timeout_Does_Not_Starve_Due_Peer ()
+    {
+        TimedEvents timedEvents = new (new VirtualTimeProvider ());
+        var repeatingCallbackCount = 0;
+        var peerCallbackCount = 0;
+        object repeatingToken = timedEvents.Add (
+                                                 TimeSpan.Zero,
+                                                 () =>
+                                                 {
+                                                     repeatingCallbackCount++;
+
+                                                     return true;
+                                                 });
+        timedEvents.Add (
+                         TimeSpan.Zero,
+                         () =>
+                         {
+                             peerCallbackCount++;
+
+                             return false;
+                         });
+
+        timedEvents.RunTimers ();
+
+        Assert.Equal (1, repeatingCallbackCount);
+        Assert.Equal (1, peerCallbackCount);
+        Assert.Same (repeatingToken, Assert.Single (timedEvents.Timeouts).Value);
+
+        timedEvents.Remove (repeatingToken);
     }
 
     [Fact]
