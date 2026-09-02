@@ -30,8 +30,9 @@ namespace Terminal.Gui.App;
 ///     <para>
 ///         <see cref="Add(TimeSpan, Func{bool})"/>, <see cref="Add(Timeout)"/>, <see cref="Remove"/>,
 ///         <see cref="StopAll"/>, <see cref="GetTimeout"/>, <see cref="CheckTimers"/>, and <see cref="RunTimers"/> are
-///         safe to call concurrently from any thread. Callbacks are invoked outside the timeout queue lock, so a
-///         callback can schedule or cancel timeouts without deadlocking.
+///         safe to call concurrently from any thread. Timeout callbacks, <see cref="Timeout.Span"/> access,
+///         <see cref="Added"/> handlers, and time-provider reads occur outside the timeout queue lock, so user code can
+///         schedule or cancel timeouts without deadlocking.
 ///     </para>
 ///     <para>
 ///         <see cref="Timeouts"/> returns a snapshot so the queue can be inspected safely while another thread schedules
@@ -266,38 +267,45 @@ public class TimedEvents : ITimedEvents
             return null;
         }
 
+        var found = false;
+
         lock (_timeoutsLockToken)
         {
             foreach (Timeout queuedTimeout in _timeouts.Values)
             {
-                if (ReferenceEquals (queuedTimeout, timeout))
+                if (!ReferenceEquals (queuedTimeout, timeout))
                 {
-                    return timeout.Span;
+                    continue;
                 }
-            }
 
-            return null;
+                found = true;
+
+                break;
+            }
         }
+
+        return found ? timeout.Span : null;
     }
 
     private void AddTimeout (TimeSpan time, Timeout timeout)
     {
+        long timestampTicks = GetTimestampTicks ();
         long k;
 
         lock (_timeoutsLockToken)
         {
-            k = AddTimeoutCore (time, timeout);
+            k = AddTimeoutCore (timestampTicks, time, timeout);
         }
 
         Added?.Invoke (this, new (timeout, k));
     }
 
-    private long AddTimeoutCore (TimeSpan time, Timeout timeout)
+    private long AddTimeoutCore (long timestampTicks, TimeSpan time, Timeout timeout)
     {
         // Caller must hold _timeoutsLockToken.
         Debug.Assert (Monitor.IsEntered (_timeoutsLockToken));
 
-        long k = GetTimestampTicks () + time.Ticks;
+        long k = timestampTicks + time.Ticks;
 
         // if user wants to run as soon as possible set timer such that it expires right away (no race conditions)
         if (time == TimeSpan.Zero)
@@ -335,14 +343,14 @@ public class TimedEvents : ITimedEvents
 
     private void RunTimersImpl ()
     {
-        long passStart;
         long occurrenceIdCutoff;
 
         lock (_timeoutsLockToken)
         {
-            passStart = GetTimestampTicks ();
             occurrenceIdCutoff = _nextTimeoutOccurrenceId;
         }
+
+        long passStart = GetTimestampTicks ();
 
         // Execute only queue occurrences that were due when this pass started. A repeating timeout with a zero or
         // negative span reschedules as already due, but receives a new occurrence ID and is deferred to a later pass.
@@ -423,6 +431,51 @@ public class TimedEvents : ITimedEvents
 
     private void CompleteTimeout (ActiveTimeoutOccurrence occurrence, bool repeat)
     {
+        if (!repeat || !CanReschedule (occurrence))
+        {
+            CompleteTimeoutCore (occurrence, false, default, 0);
+
+            return;
+        }
+
+        TimeSpan repeatInterval = default;
+        long timestampTicks = 0;
+        var rescheduleInputsRead = false;
+
+        try
+        {
+            repeatInterval = occurrence.Timeout.Span;
+            timestampTicks = GetTimestampTicks ();
+            rescheduleInputsRead = true;
+        }
+        finally
+        {
+            // Span and the time provider are user-overridable. Read them without the queue lock, then revalidate the
+            // occurrence in CompleteTimeoutCore before enqueueing it. The finally also releases active-state bookkeeping
+            // if either read throws.
+            CompleteTimeoutCore (occurrence, rescheduleInputsRead, repeatInterval, timestampTicks);
+        }
+    }
+
+    private bool CanReschedule (ActiveTimeoutOccurrence occurrence)
+    {
+        lock (_timeoutsLockToken)
+        {
+            bool found = _activeTimeoutStates.TryGetValue (occurrence.Timeout, out ActiveTimeoutState state);
+            Debug.Assert (found);
+
+            return found
+                   && occurrence.StopAllEpoch == _stopAllEpoch
+                   && occurrence.RemovalGeneration == state.RemovalGeneration;
+        }
+    }
+
+    private void CompleteTimeoutCore (
+        ActiveTimeoutOccurrence occurrence,
+        bool repeat,
+        TimeSpan repeatInterval,
+        long timestampTicks)
+    {
         long k;
 
         lock (_timeoutsLockToken)
@@ -459,7 +512,7 @@ public class TimedEvents : ITimedEvents
                 return;
             }
 
-            k = AddTimeoutCore (occurrence.Timeout.Span, occurrence.Timeout);
+            k = AddTimeoutCore (timestampTicks, repeatInterval, occurrence.Timeout);
         }
 
         Added?.Invoke (this, new (occurrence.Timeout, k));

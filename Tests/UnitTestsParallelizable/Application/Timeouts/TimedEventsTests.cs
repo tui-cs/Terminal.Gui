@@ -9,6 +9,233 @@ public class TimedEventsTests
 {
     // CoPilot - GPT-5
     [Fact]
+    public async Task RunTimers_Repeating_Timeout_Span_Does_Not_Block_Remove ()
+    {
+        TimedEvents timedEvents = new (new VirtualTimeProvider ());
+        CancellationToken cancellationToken = TestContext.Current.CancellationToken;
+        using ManualResetEventSlim spanGetStarted = new ();
+        using ManualResetEventSlim releaseSpanGet = new ();
+        BlockingSpanTimeout timeout = new () { Span = TimeSpan.Zero, Callback = () => true };
+        timedEvents.Add (timeout);
+        timeout.BlockNextGet (spanGetStarted, releaseSpanGet, cancellationToken);
+        Task runnerTask = RunOnDedicatedThread (timedEvents.RunTimers);
+        Task<bool>? removeTask = null;
+        var spanGetStartedBeforeTimeout = false;
+        var removeReturnedBeforeSpanGet = false;
+
+        try
+        {
+            spanGetStartedBeforeTimeout = spanGetStarted.Wait (TimeSpan.FromSeconds (5), cancellationToken);
+
+            if (spanGetStartedBeforeTimeout)
+            {
+                removeTask = RunOnDedicatedThread (() => timedEvents.Remove (timeout));
+                removeReturnedBeforeSpanGet = await CompletesWithinAsync (removeTask, cancellationToken);
+            }
+        }
+        finally
+        {
+            releaseSpanGet.Set ();
+        }
+
+        await runnerTask;
+        bool removed = removeTask is not null && await removeTask;
+
+        Assert.True (spanGetStartedBeforeTimeout, "The repeat interval should be read after the callback returns true.");
+        Assert.True (removeReturnedBeforeSpanGet, "Remove should not wait for an overridden Span getter.");
+        Assert.True (removed);
+        Assert.True (timeout.BlockedGetReleased, "The Span getter should be released before its wait times out.");
+        Assert.Empty (timedEvents.Timeouts);
+    }
+
+    // CoPilot - GPT-5
+    [Fact]
+    public void RunTimers_Throwing_Repeat_Span_Cleans_Active_Occurrence ()
+    {
+        TimedEvents timedEvents = new (new VirtualTimeProvider ());
+        InvalidOperationException expectedException = new ("Expected Span failure.");
+        BlockingSpanTimeout timeout = new () { Span = TimeSpan.Zero, Callback = () => true };
+        timedEvents.Add (timeout);
+        timeout.ThrowOnNextGet (expectedException);
+
+        InvalidOperationException actualException = Assert.Throws<InvalidOperationException> (timedEvents.RunTimers);
+
+        Assert.Same (expectedException, actualException);
+        Assert.False (timedEvents.Remove (timeout));
+        Assert.Empty (timedEvents.Timeouts);
+
+        timeout.Callback = () => false;
+        timedEvents.Add (timeout);
+        timedEvents.RunTimers ();
+
+        Assert.Empty (timedEvents.Timeouts);
+    }
+
+    // CoPilot - GPT-5
+    [Fact]
+    public async Task GetTimeout_Overridden_Span_Does_Not_Block_Add ()
+    {
+        TimedEvents timedEvents = new (new VirtualTimeProvider ());
+        CancellationToken cancellationToken = TestContext.Current.CancellationToken;
+        using ManualResetEventSlim spanGetStarted = new ();
+        using ManualResetEventSlim releaseSpanGet = new ();
+        BlockingSpanTimeout timeout = new () { Span = TimeSpan.FromHours (1), Callback = () => false };
+        timedEvents.Add (timeout);
+        timeout.BlockNextGet (spanGetStarted, releaseSpanGet, cancellationToken);
+        Task<TimeSpan?> getTimeoutTask = RunOnDedicatedThread (() => timedEvents.GetTimeout (timeout));
+        Task? addTask = null;
+        var spanGetStartedBeforeTimeout = false;
+        var addReturnedBeforeSpanGet = false;
+
+        try
+        {
+            spanGetStartedBeforeTimeout = spanGetStarted.Wait (TimeSpan.FromSeconds (5), cancellationToken);
+
+            if (spanGetStartedBeforeTimeout)
+            {
+                addTask = RunOnDedicatedThread (() => timedEvents.Add (TimeSpan.FromHours (2), () => false));
+                addReturnedBeforeSpanGet = await CompletesWithinAsync (addTask, cancellationToken);
+            }
+        }
+        finally
+        {
+            releaseSpanGet.Set ();
+        }
+
+        TimeSpan? span = await getTimeoutTask;
+
+        if (addTask is not null)
+        {
+            await addTask;
+        }
+
+        Assert.True (spanGetStartedBeforeTimeout, "GetTimeout should read Span for the queued timeout.");
+        Assert.True (addReturnedBeforeSpanGet, "Add should not wait for an overridden Span getter.");
+        Assert.True (timeout.BlockedGetReleased, "The Span getter should be released before its wait times out.");
+        Assert.Equal (TimeSpan.FromHours (1), span);
+        Assert.Equal (2, timedEvents.Timeouts.Count);
+        timedEvents.StopAll ();
+    }
+
+    // CoPilot - GPT-5
+    [Fact]
+    public async Task Add_TimeProvider_Does_Not_Block_Remove ()
+    {
+        CancellationToken cancellationToken = TestContext.Current.CancellationToken;
+        using ManualResetEventSlim timeReadStarted = new ();
+        using ManualResetEventSlim releaseTimeRead = new ();
+        var timeReadCount = 0;
+        var timeReadReleased = false;
+
+        DateTime GetCurrentTime ()
+        {
+            if (Interlocked.Increment (ref timeReadCount) == 2)
+            {
+                timeReadStarted.Set ();
+                timeReadReleased = releaseTimeRead.Wait (TimeSpan.FromSeconds (5), cancellationToken);
+            }
+
+            return DateTime.UnixEpoch;
+        }
+
+        TimedEvents timedEvents = new (new FuncTimeProvider (GetCurrentTime));
+        object firstTimeout = timedEvents.Add (TimeSpan.FromHours (1), () => false);
+        Task<object> addTask = RunOnDedicatedThread (
+                                                         () => timedEvents.Add (TimeSpan.FromHours (2), () => false));
+        Task<bool>? removeTask = null;
+        var timeReadStartedBeforeTimeout = false;
+        var removeReturnedBeforeTimeRead = false;
+
+        try
+        {
+            timeReadStartedBeforeTimeout = timeReadStarted.Wait (TimeSpan.FromSeconds (5), cancellationToken);
+
+            if (timeReadStartedBeforeTimeout)
+            {
+                removeTask = RunOnDedicatedThread (() => timedEvents.Remove (firstTimeout));
+                removeReturnedBeforeTimeRead = await CompletesWithinAsync (removeTask, cancellationToken);
+            }
+        }
+        finally
+        {
+            releaseTimeRead.Set ();
+        }
+
+        await addTask;
+        bool removed = removeTask is not null && await removeTask;
+
+        Assert.True (timeReadStartedBeforeTimeout, "The second Add should read the time provider.");
+        Assert.True (removeReturnedBeforeTimeRead, "Remove should not wait for a time-provider read.");
+        Assert.True (removed);
+        Assert.True (timeReadReleased, "The time-provider read should be released before its wait times out.");
+        Assert.Single (timedEvents.Timeouts);
+        timedEvents.StopAll ();
+    }
+
+    // CoPilot - GPT-5
+    [Fact]
+    public async Task RunTimers_TimeProvider_Does_Not_Block_Remove ()
+    {
+        CancellationToken cancellationToken = TestContext.Current.CancellationToken;
+        using ManualResetEventSlim timeReadStarted = new ();
+        using ManualResetEventSlim releaseTimeRead = new ();
+        var timeReadCount = 0;
+        var timeReadReleased = false;
+        var callbackCount = 0;
+
+        DateTime GetCurrentTime ()
+        {
+            if (Interlocked.Increment (ref timeReadCount) == 2)
+            {
+                timeReadStarted.Set ();
+                timeReadReleased = releaseTimeRead.Wait (TimeSpan.FromSeconds (5), cancellationToken);
+            }
+
+            return DateTime.UnixEpoch;
+        }
+
+        TimedEvents timedEvents = new (new FuncTimeProvider (GetCurrentTime));
+        object timeout = timedEvents.Add (
+                                          TimeSpan.Zero,
+                                          () =>
+                                          {
+                                              callbackCount++;
+
+                                              return false;
+                                          });
+        Task runnerTask = RunOnDedicatedThread (timedEvents.RunTimers);
+        Task<bool>? removeTask = null;
+        var timeReadStartedBeforeTimeout = false;
+        var removeReturnedBeforeTimeRead = false;
+
+        try
+        {
+            timeReadStartedBeforeTimeout = timeReadStarted.Wait (TimeSpan.FromSeconds (5), cancellationToken);
+
+            if (timeReadStartedBeforeTimeout)
+            {
+                removeTask = RunOnDedicatedThread (() => timedEvents.Remove (timeout));
+                removeReturnedBeforeTimeRead = await CompletesWithinAsync (removeTask, cancellationToken);
+            }
+        }
+        finally
+        {
+            releaseTimeRead.Set ();
+        }
+
+        await runnerTask;
+        bool removed = removeTask is not null && await removeTask;
+
+        Assert.True (timeReadStartedBeforeTimeout, "RunTimers should read the time provider.");
+        Assert.True (removeReturnedBeforeTimeRead, "Remove should not wait for a time-provider read.");
+        Assert.True (removed);
+        Assert.True (timeReadReleased, "The time-provider read should be released before its wait times out.");
+        Assert.Equal (0, callbackCount);
+        Assert.Empty (timedEvents.Timeouts);
+    }
+
+    // CoPilot - GPT-5
+    [Fact]
     public async Task RunTimers_Callback_Does_Not_Block_Add_From_Other_Thread ()
     {
         TimedEvents timedEvents = new ();
@@ -1430,4 +1657,53 @@ public class TimedEventsTests
                                TaskScheduler.Default);
 
     private static bool WaitForCleanup (ManualResetEventSlim waitHandle) => waitHandle.Wait (TimeSpan.FromSeconds (5));
+
+    private sealed class BlockingSpanTimeout : Terminal.Gui.App.Timeout
+    {
+        private CancellationToken _cancellationToken;
+        private ManualResetEventSlim? _getStarted;
+        private Exception? _nextException;
+        private ManualResetEventSlim? _releaseGet;
+        private TimeSpan _span;
+
+        public bool BlockedGetReleased { get; private set; }
+
+        public override TimeSpan Span
+        {
+            get
+            {
+                Exception? exception = Interlocked.Exchange (ref _nextException, null);
+
+                if (exception is not null)
+                {
+                    throw exception;
+                }
+
+                ManualResetEventSlim? getStarted = Interlocked.Exchange (ref _getStarted, null);
+
+                if (getStarted is null)
+                {
+                    return _span;
+                }
+
+                getStarted.Set ();
+                BlockedGetReleased = _releaseGet!.Wait (TimeSpan.FromSeconds (5), _cancellationToken);
+
+                return _span;
+            }
+            set => _span = value;
+        }
+
+        public void BlockNextGet (
+            ManualResetEventSlim getStarted,
+            ManualResetEventSlim releaseGet,
+            CancellationToken cancellationToken)
+        {
+            _releaseGet = releaseGet;
+            _cancellationToken = cancellationToken;
+            Interlocked.Exchange (ref _getStarted, getStarted);
+        }
+
+        public void ThrowOnNextGet (Exception exception) { Interlocked.Exchange (ref _nextException, exception); }
+    }
 }
