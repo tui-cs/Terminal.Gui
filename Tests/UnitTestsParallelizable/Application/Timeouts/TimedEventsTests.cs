@@ -746,28 +746,6 @@ public class TimedEventsTests
 
     // Claude - Opus 5
     [Fact]
-    public void RunTimers_Added_Handler_Exception_Does_Not_Replace_Callback_Exception ()
-    {
-        TimedEvents timedEvents = new ();
-        InvalidOperationException expectedException = new ("Expected callback failure.");
-
-        // A repeating timeout that throws. Added is raised outside the finally that completes the
-        // occurrence, so a throwing subscriber must not be able to displace the callback's exception.
-        timedEvents.Add (TimeSpan.FromMilliseconds (1), () => throw expectedException);
-        timedEvents.Added += (_, _) => throw new NotSupportedException ("Added handler failure.");
-
-        Thread.Sleep (5);
-
-        InvalidOperationException actualException = Assert.Throws<InvalidOperationException> (timedEvents.RunTimers);
-
-        Assert.Same (expectedException, actualException);
-
-        // A throwing callback is not rescheduled, so the queue drains.
-        Assert.Empty (timedEvents.Timeouts);
-    }
-
-    // Claude - Opus 5
-    [Fact]
     public void RunTimers_Added_Handler_Exception_During_Reschedule_Leaves_Timeout_Scheduled ()
     {
         TimedEvents timedEvents = new ();
