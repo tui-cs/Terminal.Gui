@@ -127,27 +127,42 @@ public class SyncContextLifecycleTests
     public void Post_AfterSessionEnded_StillExecutesCallback ()
     {
         IApplication app = Application.Create ();
-        app.Init (DriverRegistry.Names.ANSI);
 
-        void OnIteration (object? s, EventArgs<IApplication?> a) => app.RequestStop ();
-
-        app.Iteration += OnIteration;
-
-        using (Runnable runnable = new ())
+        try
         {
-            app.Run (runnable);
+            app.Init (DriverRegistry.Names.ANSI);
+
+            void OnIteration (object? s, EventArgs<IApplication?> a) => app.RequestStop ();
+
+            app.Iteration += OnIteration;
+
+            using (Runnable runnable = new ())
+            {
+                app.Run (runnable);
+            }
+
+            app.Iteration -= OnIteration;
+
+            ApplicationImpl impl = (ApplicationImpl)app;
+
+            // After the session ends the loop is no longer a reliable pump; Post must
+            // fall back to the thread pool (#5636). Ubuntu CI failed this at 2s under
+            // parallel load. The pool can take longer than a tight Wait to inject a worker.
+            Assert.False (impl.CanPumpPostedWork);
+
+            SynchronizationContext context = impl.SynchronizationContext!;
+
+            using ManualResetEventSlim callbackCalled = new (false);
+            context.Post (_ => callbackCalled.Set (), null);
+
+            Assert.True (
+                         callbackCalled.Wait (TimeSpan.FromSeconds (10), TestContext.Current.CancellationToken),
+                         "Post after session end must run on the thread pool, not wait for a loop that is no longer pumping.");
         }
-
-        app.Iteration -= OnIteration;
-
-        SynchronizationContext context = ((ApplicationImpl)app).SynchronizationContext!;
-
-        using ManualResetEventSlim callbackCalled = new (false);
-        context.Post (_ => callbackCalled.Set (), null);
-
-        Assert.True (callbackCalled.Wait (TimeSpan.FromSeconds (2), TestContext.Current.CancellationToken));
-
-        app.Dispose ();
+        finally
+        {
+            app.Dispose ();
+        }
     }
 
     [Fact]
@@ -162,6 +177,8 @@ public class SyncContextLifecycleTests
         using ManualResetEventSlim callbackCalled = new (false);
         context.Post (_ => callbackCalled.Set (), null);
 
-        Assert.True (callbackCalled.Wait (TimeSpan.FromSeconds (2), TestContext.Current.CancellationToken));
+        Assert.True (
+                     callbackCalled.Wait (TimeSpan.FromSeconds (10), TestContext.Current.CancellationToken),
+                     "Post after Dispose must run on the thread pool.");
     }
 }
