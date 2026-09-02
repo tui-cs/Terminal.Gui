@@ -15,6 +15,7 @@ public interface ITimedEvents
     ///     returned value is a
     ///     token that can be used to stop the timeout by calling <see cref="Remove"/>.
     /// </remarks>
+    /// <exception cref="ArgumentNullException"><paramref name="callback"/> is <see langword="null"/>.</exception>
     object Add (TimeSpan time, Func<bool> callback);
 
     /// <inheritdoc cref="Add(System.TimeSpan,System.Func{bool})"/>
@@ -23,6 +24,9 @@ public interface ITimedEvents
     ///     cancellation token. Calling <see cref="Remove"/> with that token cancels all matching occurrences that precede
     ///     the removal operation's synchronization point.
     /// </remarks>
+    /// <exception cref="ArgumentNullException">
+    ///     <paramref name="timeout"/> or its <see cref="Timeout.Callback"/> is <see langword="null"/>.
+    /// </exception>
     object Add (Timeout timeout);
 
     /// <summary>
@@ -63,13 +67,16 @@ public interface ITimedEvents
     /// <remarks>
     ///     Timeout callbacks are serialized. A nested call on the active runner thread is supported. A call from a
     ///     competing thread returns without running callbacks; remaining due timeouts are processed by a later successful
-    ///     call. A callback exception propagates directly from the call that executes it and ends that timer pass.
+    ///     call. Each pass executes at most the number of callbacks that were due when it started, so a repeating callback
+    ///     that reschedules as already due is deferred to a later pass rather than starving the main loop. Concurrent queue
+    ///     changes can alter which due occurrences consume that budget. A callback exception propagates directly from the
+    ///     call that executes it and ends that timer pass.
     /// </remarks>
     void RunTimers ();
 
     /// <summary>
-    ///     Returns the next planned execution time (key - UTC ticks)
-    ///     for each timeout that is not actively executing.
+    ///     Returns a snapshot containing the next planned execution timestamp, in 100-nanosecond units, for each timeout
+    ///     that is not actively executing. Mutating the returned list does not change the scheduled timeouts.
     /// </summary>
     SortedList<long, Timeout> Timeouts { get; }
 

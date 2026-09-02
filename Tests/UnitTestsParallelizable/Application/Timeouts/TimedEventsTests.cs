@@ -1166,6 +1166,95 @@ public class TimedEventsTests
                      $"Expected more unique timestamps. Got {uniqueTimestamps} unique out of {timestamps.Count} total");
     }
 
+    // Claude Opus 5
+    [Fact]
+    public void Add_Timeout_Throws_For_Null_Timeout ()
+    {
+        TimedEvents timedEvents = new ();
+
+        Assert.Throws<ArgumentNullException> (() => timedEvents.Add ((Terminal.Gui.App.Timeout)null!));
+    }
+
+    // Claude Opus 5
+    [Fact]
+    public void Add_Timeout_Throws_For_Null_Callback ()
+    {
+        TimedEvents timedEvents = new ();
+        Terminal.Gui.App.Timeout timeout = new () { Span = TimeSpan.Zero };
+
+        Assert.Throws<ArgumentNullException> (() => timedEvents.Add (timeout));
+        Assert.Empty (timedEvents.Timeouts);
+    }
+
+    // Claude Opus 5
+    [Fact]
+    public void Added_Reports_Actual_Queue_Key_After_Collision ()
+    {
+        VirtualTimeProvider timeProvider = new ();
+        TimedEvents timedEvents = new (timeProvider);
+        List<long> addedTicks = [];
+        timedEvents.Added += (_, e) => addedTicks.Add (e.Ticks);
+
+        timedEvents.Add (TimeSpan.Zero, () => false);
+        timedEvents.Add (TimeSpan.Zero, () => false);
+
+        Assert.Equal (timedEvents.Timeouts.Keys, addedTicks);
+        Assert.Equal (2, addedTicks.Distinct ().Count ());
+    }
+
+    // Claude Opus 5
+    [Fact]
+    public void Timeouts_Returns_Snapshot ()
+    {
+        TimedEvents timedEvents = new ();
+        timedEvents.Add (TimeSpan.FromHours (1), () => false);
+
+        SortedList<long, Terminal.Gui.App.Timeout> snapshot = timedEvents.Timeouts;
+
+        timedEvents.Add (TimeSpan.FromHours (2), () => false);
+        snapshot.Clear ();
+
+        Assert.Equal (2, timedEvents.Timeouts.Count);
+    }
+
+    // Claude Opus 5
+    [Fact]
+    public async Task RunTimers_Defers_Repeating_Zero_Timeout_Until_Next_Pass ()
+    {
+        TimedEvents timedEvents = new (new VirtualTimeProvider ());
+        var callbackCount = 0;
+        object token = timedEvents.Add (
+                                        TimeSpan.Zero,
+                                        () =>
+                                        {
+                                            Interlocked.Increment (ref callbackCount);
+
+                                            return true;
+                                        });
+        Task runner = RunOnDedicatedThread (timedEvents.RunTimers);
+        Task completedTask = await Task.WhenAny (
+                                                 runner,
+                                                 Task.Delay (TimeSpan.FromSeconds (1), TestContext.Current.CancellationToken));
+        var returned = ReferenceEquals (completedTask, runner);
+        int countAfterPass = Volatile.Read (ref callbackCount);
+        int queuedAfterPass = returned ? timedEvents.Timeouts.Count : 0;
+        int countAfterNextPass = countAfterPass;
+
+        if (returned)
+        {
+            timedEvents.RunTimers ();
+            countAfterNextPass = Volatile.Read (ref callbackCount);
+        }
+
+        timedEvents.Remove (token);
+        await runner.WaitAsync (TimeSpan.FromSeconds (5), TestContext.Current.CancellationToken);
+
+        Assert.True (returned, "RunTimers should return after the callbacks that were due when the pass started.");
+        Assert.Equal (1, countAfterPass);
+        Assert.Equal (1, queuedAfterPass);
+        Assert.Equal (2, countAfterNextPass);
+    }
+
     [Fact]
     public void TimeSpan_Zero_Executes_Immediately ()
     {

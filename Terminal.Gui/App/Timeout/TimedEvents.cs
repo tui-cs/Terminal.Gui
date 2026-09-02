@@ -34,8 +34,8 @@ namespace Terminal.Gui.App;
 ///         callback can schedule or cancel timeouts without deadlocking.
 ///     </para>
 ///     <para>
-///         <see cref="Timeouts"/> is the exception: it returns the live queue rather than a snapshot, so reading or
-///         mutating it while another thread schedules timeouts is not synchronized.
+///         <see cref="Timeouts"/> returns a snapshot so the queue can be inspected safely while another thread schedules
+///         or cancels timeouts.
 ///     </para>
 ///     <para>
 ///         By default, uses <see cref="Stopwatch.GetTimestamp"/> for high-resolution timing to provide microsecond-level
@@ -84,10 +84,19 @@ public class TimedEvents : ITimedEvents
     ///     added at the end, but it will be called before an earlier addition that has a longer limit time.
     /// </summary>
     /// <remarks>
-    ///     Returns the live queue, not a snapshot, and access to it is not synchronized. A timeout whose callback is
-    ///     currently executing has already been dequeued and is not present.
+    ///     Returns a snapshot. Mutating the returned list does not change the scheduled timeouts. A timeout whose
+    ///     callback is currently executing has already been dequeued and is not present.
     /// </remarks>
-    public SortedList<long, Timeout> Timeouts => _timeouts;
+    public SortedList<long, Timeout> Timeouts
+    {
+        get
+        {
+            lock (_timeoutsLockToken)
+            {
+                return new (_timeouts);
+            }
+        }
+    }
 
     /// <inheritdoc/>
     public event EventHandler<TimeoutEventArgs>? Added;
@@ -193,6 +202,9 @@ public class TimedEvents : ITimedEvents
     /// <inheritdoc/>
     public object Add (Timeout timeout)
     {
+        ArgumentNullException.ThrowIfNull (timeout);
+        ArgumentNullException.ThrowIfNull (timeout.Callback);
+
         AddTimeout (timeout.Span, timeout);
 
         return timeout;
@@ -290,7 +302,8 @@ public class TimedEvents : ITimedEvents
             k -= TimeSpan.TicksPerMillisecond;
         }
 
-        _timeouts.Add (NudgeToUniqueKey (k), timeout);
+        k = NudgeToUniqueKey (k);
+        _timeouts.Add (k, timeout);
 
         return k;
     }
@@ -316,8 +329,23 @@ public class TimedEvents : ITimedEvents
 
     private void RunTimersImpl ()
     {
-        // Process due timeouts one at a time, without blocking the entire queue
-        while (true)
+        int remainingCallbacks;
+
+        lock (_timeoutsLockToken)
+        {
+            long passStart = GetTimestampTicks ();
+            remainingCallbacks = 0;
+
+            while (remainingCallbacks < _timeouts.Count && _timeouts.Keys [remainingCallbacks] <= passStart)
+            {
+                remainingCallbacks++;
+            }
+        }
+
+        // Bound each pass to the number of callbacks that were due when it started. A repeating timeout with a zero or
+        // negative span reschedules as already due; without this budget it can run forever in one pass and starve the
+        // rest of the main loop. Concurrent queue changes can alter which due occurrences consume the budget.
+        while (remainingCallbacks > 0)
         {
             ActiveTimeoutOccurrence occurrence;
 
@@ -356,6 +384,8 @@ public class TimedEvents : ITimedEvents
                 state.UncancelledActiveCount++;
                 _activeTimeoutStates [timeoutToExecute] = state;
             }
+
+            remainingCallbacks--;
 
             // Execute the callback outside the lock
             // This allows nested RunTimers() calls to access the timeout queue
