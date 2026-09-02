@@ -236,6 +236,26 @@ public class TimedEventsTests
 
     // CoPilot - GPT-5
     [Fact]
+    public void RunTimers_Empty_Queue_Does_Not_Read_TimeProvider ()
+    {
+        var timeReadCount = 0;
+
+        DateTime GetCurrentTime ()
+        {
+            timeReadCount++;
+
+            return DateTime.UnixEpoch;
+        }
+
+        TimedEvents timedEvents = new (new FuncTimeProvider (GetCurrentTime));
+
+        timedEvents.RunTimers ();
+
+        Assert.Equal (0, timeReadCount);
+    }
+
+    // CoPilot - GPT-5
+    [Fact]
     public async Task RunTimers_Callback_Does_Not_Block_Add_From_Other_Thread ()
     {
         TimedEvents timedEvents = new ();

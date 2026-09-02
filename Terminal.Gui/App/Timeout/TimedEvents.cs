@@ -347,6 +347,11 @@ public class TimedEvents : ITimedEvents
 
         lock (_timeoutsLockToken)
         {
+            if (_timeouts.Count == 0)
+            {
+                return;
+            }
+
             occurrenceIdCutoff = _nextTimeoutOccurrenceId;
         }
 
