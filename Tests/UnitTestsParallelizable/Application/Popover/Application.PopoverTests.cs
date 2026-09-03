@@ -98,6 +98,11 @@ public class ApplicationPopoverTests
                                           return;
                                       }
 
+                                      if (!app.Popovers.IsRegistered (popover))
+                                      {
+                                          return;
+                                      }
+
                                       reopened = true;
                                       app.Popovers.Show (popover);
                                   };
@@ -105,9 +110,66 @@ public class ApplicationPopoverTests
         bool result = app.Popovers.DeRegister (popover);
 
         Assert.True (result);
-        Assert.True (reopened);
+        Assert.False (reopened);
         Assert.DoesNotContain (popover, app.Popovers.Popovers);
         Assert.Null (app.Popovers.GetActivePopover ());
+        Assert.False (popover.Visible);
+
+        app.End (token!);
+    }
+
+    // CoPilot - Grok 4.6
+    /// <summary>
+    ///     Codex P2 on #5657: Hide runs while the popover is still registered, so a
+    ///     VisibleChanged handler can call Show and restore Visible. After DeRegister
+    ///     the popover must be unregistered, not active, and not visible.
+    /// </summary>
+    [Fact]
+    public void DeRegister_VisibleChangedShow_LeavesUnregisteredInactiveAndHidden ()
+    {
+        using IApplication app = Application.Create ();
+        app.Init (DriverRegistry.Names.ANSI);
+        app.Driver!.SetScreenSize (40, 15);
+
+        using Runnable top = new ();
+        SessionToken? token = app.Begin (top);
+        app.LayoutAndDraw ();
+
+        PopoverTestClass popover = new () { App = app, Width = 10, Height = 3 };
+        app.Popovers!.Register (popover);
+        app.Popovers.Show (popover);
+        app.LayoutAndDraw ();
+
+        var registeredDuringHide = false;
+        var reopened = false;
+
+        popover.VisibleChanged += (_, _) =>
+                                  {
+                                      if (popover.Visible)
+                                      {
+                                          return;
+                                      }
+
+                                      registeredDuringHide = app.Popovers.IsRegistered (popover);
+
+                                      if (!registeredDuringHide)
+                                      {
+                                          return;
+                                      }
+
+                                      reopened = true;
+                                      app.Popovers.Show (popover);
+                                  };
+
+        bool result = app.Popovers.DeRegister (popover);
+
+        Assert.True (result);
+        Assert.False (registeredDuringHide, "DeRegister must unregister before Hide so Show cannot run during VisibleChanged.");
+        Assert.False (reopened);
+        Assert.False (app.Popovers.IsRegistered (popover));
+        Assert.Null (app.Popovers.GetActivePopover ());
+        Assert.False (popover.Visible);
+        Assert.True (top.NeedsDraw);
 
         app.End (token!);
     }

@@ -57,7 +57,9 @@ public sealed class ApplicationPopover : IDisposable
     ///     When a popover is registered, the View instance lifetime is managed by the application. Call
     ///     <see cref="DeRegister"/>
     ///     to manage the lifetime of the popover directly.
-    ///     If <paramref name="popover"/> is the active popover, it is hidden first so the region it covered is invalidated.
+    ///     If <paramref name="popover"/> is the active popover, it is removed from the registry first, then hidden so the
+    ///     region it covered is invalidated. Unregistering before <see cref="Hide"/> prevents a
+    ///     <see cref="View.VisibleChanged"/> handler from calling <see cref="Show"/> during hide.
     /// </remarks>
     /// <param name="popover"></param>
     /// <returns></returns>
@@ -68,22 +70,26 @@ public sealed class ApplicationPopover : IDisposable
             return false;
         }
 
-        if (GetActivePopover () == popover)
+        bool wasActive = GetActivePopover () == popover;
+
+        // Unregister before Hide. Hide sets Visible=false and raises VisibleChanged.
+        // A handler can call Show only while the popover is still registered.
+        _popovers.Remove (popover);
+
+        if (wasActive)
         {
-            // Hide first so Visible is cleared and the covered region is invalidated.
-            // Clearing _activePopover alone leaves stale cells (see #5635).
+            // Hide after unregister so the covered region is still invalidated (#5635).
             Hide (popover);
         }
 
-        _popovers.Remove (popover);
-
-        // Hide sets Visible=false, which raises VisibleChanged. A handler can call Show
-        // and restore _activePopover before we return. The caller asked to deregister,
-        // so do not leave an unregistered popover as the active one.
+        // A VisibleChanged handler may have re-registered via MakeVisible and restored
+        // _activePopover. The caller asked to deregister.
         if (GetActivePopover () == popover)
         {
             _activePopover = null;
         }
+
+        _popovers.Remove (popover);
 
         PopoverDeRegistered?.Invoke (this, new EventArgs<IPopoverView> (popover));
 
