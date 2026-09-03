@@ -21,6 +21,7 @@
 # - from develop: 2.0.0-develop.1 (patch version increments)
 # - from main (pre-release): 2.0.0-prealpha.1 or 2.0.0-beta.1
 # - from main (release): 2.0.0 (patch version increments)
+# - To bump minor on develop, include `+semver: minor` in a commit message. Do not pin next-version.
 #
 mode: ContinuousDelivery   # GitVersion 6.x is configured here to use ContinuousDelivery mode for this GitFlow-style setup
 
