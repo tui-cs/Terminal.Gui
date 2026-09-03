@@ -12,7 +12,9 @@ public class TimeoutEventArgs : EventArgs
         Ticks = ticks;
     }
 
-    /// <summary>Gets the <see cref="DateTime.Ticks"/> in UTC time when the <see cref="Timeout"/> will next execute after.</summary>
+    /// <summary>
+    ///     Gets the actual queue key, as a timestamp in 100-nanosecond units, after collision nudging has been applied.
+    /// </summary>
     public long Ticks { get; }
 
     /// <summary>Gets the timeout callback handler</summary>
