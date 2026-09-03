@@ -70,6 +70,48 @@ public class ApplicationPopoverTests
         app.End (token!);
     }
 
+    // CoPilot - Grok 4.6
+    /// <summary>
+    ///     If Hide raises VisibleChanged and a handler calls Show, DeRegister must not
+    ///     leave that popover active after removing it from the registry.
+    /// </summary>
+    [Fact]
+    public void DeRegister_ActivePopover_ReentrantShow_DoesNotLeaveUnregisteredActive ()
+    {
+        using IApplication app = Application.Create ();
+        app.Init (DriverRegistry.Names.ANSI);
+        app.Driver!.SetScreenSize (40, 15);
+
+        using Runnable top = new ();
+        SessionToken? token = app.Begin (top);
+
+        PopoverTestClass popover = new () { App = app, Width = 10, Height = 3 };
+        app.Popovers!.Register (popover);
+        app.Popovers.Show (popover);
+
+        var reopened = false;
+
+        popover.VisibleChanged += (_, _) =>
+                                  {
+                                      if (popover.Visible || reopened)
+                                      {
+                                          return;
+                                      }
+
+                                      reopened = true;
+                                      app.Popovers.Show (popover);
+                                  };
+
+        bool result = app.Popovers.DeRegister (popover);
+
+        Assert.True (result);
+        Assert.True (reopened);
+        Assert.DoesNotContain (popover, app.Popovers.Popovers);
+        Assert.Null (app.Popovers.GetActivePopover ());
+
+        app.End (token!);
+    }
+
     [Fact]
     public void Show_SetsActivePopover ()
     {

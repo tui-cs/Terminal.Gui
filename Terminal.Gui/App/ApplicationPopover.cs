@@ -77,6 +77,14 @@ public sealed class ApplicationPopover : IDisposable
 
         _popovers.Remove (popover);
 
+        // Hide sets Visible=false, which raises VisibleChanged. A handler can call Show
+        // and restore _activePopover before we return. The caller asked to deregister,
+        // so do not leave an unregistered popover as the active one.
+        if (GetActivePopover () == popover)
+        {
+            _activePopover = null;
+        }
+
         PopoverDeRegistered?.Invoke (this, new EventArgs<IPopoverView> (popover));
 
         return true;
