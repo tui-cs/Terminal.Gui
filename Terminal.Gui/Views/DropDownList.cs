@@ -234,6 +234,10 @@ public class DropDownList : TextField
             return false;
         }
 
+        // Hide while the popover is still active so Hide can invalidate the covered region.
+        // DeRegister after that also hides if still active; doing Hide here covers the
+        // keyboard Accepting+Handled path that moves focus before OnAccepted runs (#5635).
+        App?.Popovers?.Hide (_listPopover);
         App?.Popovers?.DeRegister (_listPopover);
 
         return false;
