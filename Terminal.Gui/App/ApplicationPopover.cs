@@ -57,6 +57,7 @@ public sealed class ApplicationPopover : IDisposable
     ///     When a popover is registered, the View instance lifetime is managed by the application. Call
     ///     <see cref="DeRegister"/>
     ///     to manage the lifetime of the popover directly.
+    ///     If <paramref name="popover"/> is the active popover, it is hidden first so the region it covered is invalidated.
     /// </remarks>
     /// <param name="popover"></param>
     /// <returns></returns>
@@ -69,7 +70,9 @@ public sealed class ApplicationPopover : IDisposable
 
         if (GetActivePopover () == popover)
         {
-            _activePopover = null;
+            // Hide first so Visible is cleared and the covered region is invalidated.
+            // Clearing _activePopover alone leaves stale cells (see #5635).
+            Hide (popover);
         }
 
         _popovers.Remove (popover);

@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.ObjectModel;
+using System.Text;
 using UnitTests;
 
 namespace ViewsTests;
@@ -1223,8 +1224,201 @@ public class DropDownListTests (ITestOutputHelper output)
         app.End (token!);
     }
 
+    // CoPilot - Grok 4.6
+    /// <summary>
+    ///     Regression for https://github.com/tui-cs/Terminal.Gui/issues/5635.
+    ///     Keyboard Enter with Accepting Handled and a focus move must not leave the dropped
+    ///     list's text in cells the popover previously covered.
+    /// </summary>
+    [Fact]
+    public void Enter_HandledAccepting_DoesNotLeaveStalePopoverCells ()
+    {
+        using HandledAcceptRepro repro = HandledAcceptRepro.Create ();
+
+        repro.DropDown.SetFocus ();
+        repro.App.InjectKey (Key.F4);
+        repro.App.LayoutAndDraw ();
+
+        IPopoverView? popover = FindDropDownPopover (repro.App);
+        Assert.NotNull (popover);
+        Assert.True (popover.Visible);
+
+        string openBuffer = ReadScreen (repro.App);
+        output.WriteLine ("Open:\n{0}", openBuffer);
+        Assert.Contains ("Equipment", openBuffer, StringComparison.Ordinal);
+
+        repro.App.InjectKey (Key.CursorDown);
+        repro.App.InjectKey (Key.Enter);
+        repro.App.LayoutAndDraw ();
+
+        Assert.Equal ("Fuel/Energy", repro.DropDown.Text);
+        Assert.True (repro.NextView.HasFocus);
+        Assert.False (popover.Visible);
+        Assert.NotEqual (popover, repro.App.Popovers?.GetActivePopover ());
+
+        string closedBuffer = ReadScreen (repro.App);
+        output.WriteLine ("Closed:\n{0}", closedBuffer);
+        Assert.Contains ("COVERED-AREA-3", closedBuffer, StringComparison.Ordinal);
+        Assert.DoesNotContain ("Equipment", closedBuffer, StringComparison.Ordinal);
+    }
+
+    // CoPilot - Grok 4.6
+    /// <summary>
+    ///     Regression for https://github.com/tui-cs/Terminal.Gui/issues/5635.
+    ///     Mouse accept with Accepting Handled must still repaint the covered region.
+    /// </summary>
+    [Fact]
+    public void MouseAccept_HandledAccepting_DoesNotLeaveStalePopoverCells ()
+    {
+        using HandledAcceptRepro repro = HandledAcceptRepro.Create ();
+
+        repro.DropDown.SetFocus ();
+        repro.App.InjectKey (Key.F4);
+        repro.App.LayoutAndDraw ();
+
+        Popover<ListView, string?>? popover = FindDropDownPopover (repro.App) as Popover<ListView, string?>;
+        Assert.NotNull (popover);
+        Assert.True (popover.Visible);
+        Assert.NotNull (popover.ContentView);
+
+        Rectangle listFrame = popover.ContentView.FrameToScreen ();
+        Point clickPos = new (listFrame.X + 1, listFrame.Y + 1);
+
+        DateTime baseTime = new (2025, 1, 1, 12, 0, 0);
+        InputInjectionOptions options = new () { Mode = InputInjectionMode.Direct };
+        IInputInjector injector = repro.App.GetInputInjector ();
+
+        injector.InjectMouse (new Mouse { ScreenPosition = clickPos, Flags = MouseFlags.LeftButtonPressed, Timestamp = baseTime }, options);
+        injector.InjectMouse (new Mouse { ScreenPosition = clickPos, Flags = MouseFlags.LeftButtonReleased, Timestamp = baseTime.AddMilliseconds (50) }, options);
+
+        repro.App.LayoutAndDraw ();
+
+        Assert.Equal ("Fuel/Energy", repro.DropDown.Text);
+        Assert.True (repro.NextView.HasFocus);
+        Assert.False (popover.Visible);
+        Assert.NotEqual (popover, repro.App.Popovers?.GetActivePopover ());
+
+        string closedBuffer = ReadScreen (repro.App);
+        output.WriteLine ("Closed:\n{0}", closedBuffer);
+        Assert.Contains ("COVERED-AREA-3", closedBuffer, StringComparison.Ordinal);
+        Assert.DoesNotContain ("Equipment", closedBuffer, StringComparison.Ordinal);
+    }
+
     // Helper to find the DropDownList popover (excludes the context menu popover)
     private static IPopoverView? FindDropDownPopover (IApplication app) => app.Popovers?.Popovers.OfType<Popover<ListView, string?>> ().FirstOrDefault ();
+
+    private static string ReadScreen (IApplication app)
+    {
+        Cell [,]? contents = app.Driver!.GetOutputBuffer ().Contents;
+        Assert.NotNull (contents);
+
+        int rows = contents.GetLength (0);
+        int cols = contents.GetLength (1);
+        StringBuilder builder = new ();
+
+        for (var row = 0; row < rows; row++)
+        {
+            for (var col = 0; col < cols; col++)
+            {
+                builder.Append (contents [row, col].Grapheme);
+            }
+
+            builder.AppendLine ();
+        }
+
+        return builder.ToString ();
+    }
+
+    /// <summary>
+    ///     Dialog repro for handled Accepting: read-only DropDownList over a Label, ListView as the next focus target.
+    /// </summary>
+    private sealed class HandledAcceptRepro : IDisposable
+    {
+        private readonly SessionToken? _token;
+
+        private HandledAcceptRepro (IApplication app, Dialog dialog, DropDownList dropDown, ListView nextView, SessionToken? token)
+        {
+            App = app;
+            Dialog = dialog;
+            DropDown = dropDown;
+            NextView = nextView;
+            _token = token;
+        }
+
+        public IApplication App { get; }
+
+        public Dialog Dialog { get; }
+
+        public DropDownList DropDown { get; }
+
+        public ListView NextView { get; }
+
+        public static HandledAcceptRepro Create ()
+        {
+            IApplication app = Application.Create ();
+            app.Init (DriverRegistry.Names.ANSI);
+            app.Driver!.SetScreenSize (40, 15);
+
+            Dialog dialog = new ()
+            {
+                X = 0,
+                Y = 0,
+                Width = 40,
+                Height = 12,
+                Title = "Repro",
+                ShadowStyle = ShadowStyles.None
+            };
+
+            ObservableCollection<string> items = ["Labor", "Fuel/Energy", "Equipment"];
+
+            DropDownList dropDown = new ()
+            {
+                X = 0,
+                Y = 0,
+                Width = 20,
+                ReadOnly = true,
+                Source = new ListWrapper<string> (items),
+                Text = "Labor"
+            };
+
+            Label covered1 = new () { X = 0, Y = 1, Width = 20, Text = "COVERED-AREA-1" };
+            Label covered2 = new () { X = 0, Y = 2, Width = 20, Text = "COVERED-AREA-2" };
+            Label covered3 = new () { X = 0, Y = 3, Width = 20, Text = "COVERED-AREA-3" };
+
+            ListView nextView = new ()
+            {
+                X = 0,
+                Y = 5,
+                Width = 20,
+                Height = 3,
+                Source = new ListWrapper<string> (new ObservableCollection<string> (["NextA", "NextB", "NextC"]))
+            };
+
+            dropDown.Accepting += (_, e) =>
+                                  {
+                                      e.Handled = true;
+                                      nextView.SetFocus ();
+                                  };
+
+            dialog.Add (dropDown, covered1, covered2, covered3, nextView);
+
+            SessionToken? token = app.Begin (dialog);
+            app.LayoutAndDraw ();
+
+            return new HandledAcceptRepro (app, dialog, dropDown, nextView, token);
+        }
+
+        public void Dispose ()
+        {
+            if (_token is { })
+            {
+                App.End (_token);
+            }
+
+            Dialog.Dispose ();
+            App.Dispose ();
+        }
+    }
 }
 
 public class DropDownListGenericTests
