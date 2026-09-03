@@ -37,7 +37,7 @@ most of what you "know" about Terminal.Gui is **wrong**. The API has fundamental
 | `view.Bounds` | `view.Viewport` |
 | `LayoutStyle.Computed` | Removed — all layout is declarative via `Pos`/`Dim` |
 | `new RadioGroup (...)` | `new OptionSelector { ... }` |
-| `Colors.ColorSchemes ["name"]` | `Schemes.Resolve ("name")` or use `Scheme` directly |
+| `Colors.ColorSchemes ["name"]` | `SchemeManager.GetScheme ("name")` or use `Scheme` directly |
 | `Application.RequestStop ()` | `App!.RequestStop ()` (from inside a `Runnable`) |
 | `Pos.At (n)` / `Pos.Left (v)` | Assign integers directly: `X = 5;` (implicit conversion) |
 

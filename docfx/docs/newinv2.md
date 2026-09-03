@@ -4,6 +4,8 @@ This document provides an in-depth overview of the new features, improvements, a
 
 **For migration guidance**, see the [v1 To v2 Migration Guide](migratingfromv1.md).
 
+For the 2.5.0 API breaks (`View.Text`, `IAcceptTarget`, `ConfigurationManager`, nested `config.json`), see [2.5.0 Breaking Changes](breaking-changes-2.5.0.md).
+
 ## Table of Contents
 
 - [Overview](#overview)
@@ -656,7 +658,7 @@ builder.ApplyToStaticFacades ();
 builder.ThemeManager.SwitchTheme ("Dark");
 ```
 
-See [Migrating ConfigurationManager to TuiConfigurationBuilder](migrate-cm-to-mec.md) if you still have 2.4.x `ConfigurationManager` calls or a flat-key `config.json`.
+See [Migrating ConfigurationManager to TuiConfigurationBuilder](migrate-cm-to-mec.md) if you still have 2.4.x `ConfigurationManager` calls or a flat-key `config.json`. See [2.5.0 Breaking Changes](breaking-changes-2.5.0.md) for the other 2.5.0 API breaks.
 
 **User Customization:**
 - End-users can personalize themes, colors, text styles
