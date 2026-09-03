@@ -15,4 +15,8 @@
 		<PackageReference Include="Microsoft.Extensions.Logging" />
 	</ItemGroup>
 
+	<ItemGroup>
+		<InternalsVisibleTo Include="UnitTests.Parallelizable" />
+	</ItemGroup>
+
 </Project>

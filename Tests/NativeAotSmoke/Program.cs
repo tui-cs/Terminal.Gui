@@ -1,4 +1,4 @@
-﻿// Native AOT smoke test application for Terminal.Gui.
+// Native AOT smoke test application for Terminal.Gui.
 //
 // This app is an AOT-safe equivalent of UICatalog's AllViewsTester. It statically instantiates
 // every IDesignable view and calls EnableForDesign () to populate demo data.
@@ -25,8 +25,6 @@ public static class Program
     private static async Task RunAsync (string [] args)
     {
         bool smokeTest = args.Length > 0 && args [0] == "--smoke-test";
-
-        ConfigurationManager.Enable (ConfigLocations.All);
 
         using IApplication app = Application.Create ().Init ();
 
@@ -60,12 +58,12 @@ public static class Program
 
     private static void ExerciseDictionaryDeepCloning ()
     {
-        _ = DeepCloner.DeepClone (Color.Colors16);
-        _ = DeepCloner.DeepClone (Application.DefaultKeyBindings);
-        _ = DeepCloner.DeepClone (View.DefaultKeyBindings);
-        _ = DeepCloner.DeepClone (View.ViewKeyBindings);
-        _ = DeepCloner.DeepClone (ThemeManager.Themes);
-        _ = DeepCloner.DeepClone (SchemeManager.Schemes);
+        _ = Color.Colors16;
+        _ = Application.DefaultKeyBindings;
+        _ = View.DefaultKeyBindings;
+        _ = View.ViewKeyBindings;
+        _ = ThemeManager.GetThemeNames ();
+        _ = SchemeManager.Schemes;
     }
 }
 

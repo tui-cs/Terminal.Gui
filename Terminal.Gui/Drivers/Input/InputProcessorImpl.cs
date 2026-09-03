@@ -33,6 +33,9 @@ public abstract class InputProcessorImpl<TInputRecord> : IInputProcessor, IDispo
     private readonly ITimeProvider _timeProvider;
     private readonly MouseInterpreter _mouseInterpreter;
 
+    /// <summary>Gets the current pipeline time.</summary>
+    protected DateTime CurrentTime => _timeProvider.Now;
+
     /// <summary>
     ///     Thread-safe input queue populated by <see cref="IInput{TInputRecord}"/> on the input thread.
     ///     Dequeued by <see cref="ProcessQueue"/> on the main loop thread.
@@ -78,19 +81,19 @@ public abstract class InputProcessorImpl<TInputRecord> : IInputProcessor, IDispo
 
         Parser.Paste += (_, text) => RaisePasteEvent (text);
 
-        Parser.Keyboard += (_, keyEvent) =>
-                           {
-                               Key normalizedKeyEvent = OnKeyboardEventParsed (keyEvent);
+        Parser.KeyboardPatternMatched += (pattern, keyEvent) =>
+                                         {
+                                             Key normalizedKeyEvent = OnKeyboardEventParsed (pattern, keyEvent);
 
-                               if (normalizedKeyEvent.EventType == KeyEventType.Release)
-                               {
-                                   RaiseKeyUpEvent (normalizedKeyEvent);
-                               }
-                               else
-                               {
-                                   RaiseKeyDownEvent (normalizedKeyEvent);
-                               }
-                           };
+                                             if (normalizedKeyEvent.EventType == KeyEventType.Release)
+                                             {
+                                                 RaiseKeyUpEvent (normalizedKeyEvent);
+                                             }
+                                             else
+                                             {
+                                                 RaiseKeyDownEvent (normalizedKeyEvent);
+                                             }
+                                         };
 
         // Configure unexpected response handler
         Parser.UnexpectedResponseHandler = str =>
@@ -221,6 +224,15 @@ public abstract class InputProcessorImpl<TInputRecord> : IInputProcessor, IDispo
     /// <param name="keyEvent">The parsed key event.</param>
     /// <returns>The key event to forward.</returns>
     protected virtual Key OnKeyboardEventParsed (Key keyEvent) => keyEvent;
+
+    /// <summary>
+    ///     Called with the parser pattern that recognized a keyboard event before the event is forwarded to
+    ///     <see cref="KeyDown"/> or <see cref="KeyUp"/> subscribers.
+    /// </summary>
+    /// <param name="pattern">The parser pattern that recognized the input.</param>
+    /// <param name="keyEvent">The parsed key event.</param>
+    /// <returns>The key event to forward.</returns>
+    private protected virtual Key OnKeyboardEventParsed (AnsiKeyboardParserPattern pattern, Key keyEvent) => OnKeyboardEventParsed (keyEvent);
 
     /// <summary>
     ///     Gives derived processors a chance to suppress keydown events that come from fallback stream processing

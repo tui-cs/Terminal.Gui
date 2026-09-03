@@ -140,6 +140,7 @@ public class Shortcut : View, IOrientation, IDesignable
         HelpView.Id = "_helpView";
 #endif
         HelpView.Text = helpText ?? string.Empty;
+        SetTextDirect (helpText ?? string.Empty);
         HelpView.GettingAttributeForRole += SubViewOnGettingAttributeForRole;
 
 #if DEBUG
@@ -676,18 +677,19 @@ public class Shortcut : View, IOrientation, IDesignable
         HelpView.MouseHighlightStates = MouseState.None;
     }
 
+    /// <inheritdoc/>
+    protected override bool OnDrawingText (DrawContext? context) => true;
+
     /// <summary>
     ///     Gets or sets the help text displayed in the middle of the Shortcut. Identical in function to <see cref="HelpText"/>
     ///     .
     /// </summary>
-    public override string Text
+    protected override void OnTextChanged ()
     {
-        get => HelpView.Text;
-        set
-        {
-            HelpView.Text = value;
-            ShowHide ();
-        }
+        HelpView.Text = Text;
+        ShowHide ();
+
+        base.OnTextChanged ();
     }
 
     /// <summary>
@@ -699,6 +701,7 @@ public class Shortcut : View, IOrientation, IDesignable
         set
         {
             HelpView.Text = value;
+            SetTextDirect (value);
             ShowHide ();
         }
     }

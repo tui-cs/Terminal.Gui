@@ -1,16 +1,22 @@
 namespace Terminal.Gui.Configuration;
 
 /// <summary>
-///     Settings POCO for <see cref="Views.FrameView"/> defaults (ThemeScope).
+///     Immutable settings record for <see cref="Views.FrameView"/> defaults (ThemeScope).
 /// </summary>
-public class FrameViewSettings
+public sealed record FrameViewSettings
 {
-    /// <summary>Gets or sets the default border style for frame views.</summary>
-    public LineStyle DefaultBorderStyle { get; set; } = LineStyle.Rounded;
+    /// <summary>Gets the default border style for frame views.</summary>
+    public LineStyle DefaultBorderStyle { get; init; } = LineStyle.Rounded;
 
-    /// <summary>
-    ///     The static facade instance. Always contains the current effective values.
-    ///     Updated by the MEC binding at <see cref="IApplication"/> initialization.
-    /// </summary>
-    public static FrameViewSettings Defaults { get; set; } = new ();
+    /// <summary>The compile-time-known defaults.</summary>
+    public static FrameViewSettings Default { get; } = new ();
+
+    /// <summary>The currently effective values, updated atomically by <see cref="MecThemeManager"/>.</summary>
+    public static FrameViewSettings Current
+    {
+        get => Volatile.Read (ref _current);
+        set => Volatile.Write (ref _current, value);
+    }
+
+    private static FrameViewSettings _current = Default;
 }

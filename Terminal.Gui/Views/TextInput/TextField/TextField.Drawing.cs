@@ -3,6 +3,9 @@ namespace Terminal.Gui.Views;
 public partial class TextField
 {
     /// <inheritdoc/>
+    protected override bool OnDrawingText (DrawContext? context) => true;
+
+    /// <inheritdoc/>
     protected override bool OnGettingAttributeForRole (in VisualRole role, ref Attribute currentAttribute)
     {
         if (role == VisualRole.Normal)

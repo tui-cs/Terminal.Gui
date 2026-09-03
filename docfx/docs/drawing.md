@@ -250,7 +250,7 @@ Terminal.Gui supports text formatting using <xref:Terminal.Gui.Text.TextFormatte
 
 ## Glyphs
 
-The <xref:Terminal.Gui.Drawing.Glyphs> class defines the common set of glyphs used to draw checkboxes, lines, borders, etc... The default glyphs can be changed per-ThemeScope via <xref:Terminal.Gui.Configuration.ConfigurationManager>. 
+The <xref:Terminal.Gui.Drawing.Glyphs> class defines the common set of glyphs used to draw checkboxes, lines, borders, etc... The default glyphs can be changed per-theme via <xref:Terminal.Gui.Configuration.GlyphSettings> and <xref:Terminal.Gui.Configuration.TuiConfigurationBuilder>. 
 
 ## LineCanvas Deep Dive
 

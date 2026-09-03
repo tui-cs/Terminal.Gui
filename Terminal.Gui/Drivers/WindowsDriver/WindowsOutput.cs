@@ -101,7 +101,7 @@ internal partial class WindowsOutput : OutputBase, IOutput
             return;
         }
 
-        if (!RuntimeInformation.IsOSPlatform (OSPlatform.Windows))
+        if (!OperatingSystem.IsWindows ())
         {
             return;
         }
@@ -261,7 +261,7 @@ internal partial class WindowsOutput : OutputBase, IOutput
             return;
         }
 
-        if (!RuntimeInformation.IsOSPlatform (OSPlatform.Windows))
+        if (!OperatingSystem.IsWindows ())
         {
             return;
         }
@@ -290,7 +290,7 @@ internal partial class WindowsOutput : OutputBase, IOutput
 
     internal Size SetConsoleWindow (short cols, short rows)
     {
-        if (!RuntimeInformation.IsOSPlatform (OSPlatform.Windows) || !IsAttachedToTerminal)
+        if (!OperatingSystem.IsWindows () || !IsAttachedToTerminal)
         {
             return new Size (cols, rows);
         }
@@ -392,7 +392,7 @@ internal partial class WindowsOutput : OutputBase, IOutput
         {
             Logging.Error ($"Error: {e.Message} in {nameof (WindowsOutput)}");
 
-            if (RuntimeInformation.IsOSPlatform (OSPlatform.Windows))
+            if (OperatingSystem.IsWindows ())
             {
                 throw;
             }
@@ -455,7 +455,7 @@ internal partial class WindowsOutput : OutputBase, IOutput
             {
                 Logging.Error ($"Error: {e.Message} in {nameof (WindowsOutput)}");
 
-                if (RuntimeInformation.IsOSPlatform (OSPlatform.Windows))
+                if (OperatingSystem.IsWindows ())
                 {
                     throw;
                 }

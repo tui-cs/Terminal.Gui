@@ -1,4 +1,4 @@
-﻿#nullable enable
+#nullable enable
 namespace UICatalog.Scenarios;
 
 [ScenarioMetadata ("ColorPicker", "Color Picker and TrueColor demonstration.")]
@@ -30,7 +30,6 @@ public class ColorPickers : Scenario
     /// <summary>Set up the scenario.</summary>
     public override void Main ()
     {
-        ConfigurationManager.Enable (ConfigLocations.All);
         using IApplication app = Application.Create ();
         app.Init ();
 

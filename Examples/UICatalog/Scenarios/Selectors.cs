@@ -1,4 +1,4 @@
-﻿// ReSharper disable AccessToDisposedClosure
+// ReSharper disable AccessToDisposedClosure
 #nullable enable
 
 namespace UICatalog.Scenarios;
@@ -9,7 +9,6 @@ public sealed class Selectors : Scenario
 {
     public override void Main ()
     {
-        ConfigurationManager.Enable (ConfigLocations.All);
 
         // Init
         using IApplication app = Application.Create ();

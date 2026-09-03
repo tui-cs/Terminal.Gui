@@ -130,13 +130,13 @@ dotnet run --project Tests/Benchmarks -c Release -- --filter '*Scroll*'
 
 The `Configuration/` directory contains benchmarks for the configuration, theming, and scheme subsystems.
 
-### ConfigurationManagerLoadBenchmark
+### TuiConfigurationBuilderBuildBenchmark
 
-Measures the cold-start cost of `ConfigurationManager.Disable(true)` → `Enable(ConfigLocations.LibraryResources)` → `Apply()`. This is the app-startup hot path covering embedded-config load, deserialization, and apply.
+Measures the cold-start cost of `new TuiConfigurationBuilder ().ApplyToStaticFacades ()`. This is the app-startup hot path covering embedded-config load, bind, and apply.
 
 ### ThemeSwitchBenchmark
 
-Measures `ThemeManager.Theme = "X"; ConfigurationManager.Apply()` against the embedded configuration. Parametric over all built-in theme names (`Default`, `Dark`, `Light`, `TurboPascal 5`, `Anders`, `Green Phosphor`, `Amber Phosphor`).
+Measures `ThemeManager.Theme = "X"` against the embedded configuration. Parametric over all built-in theme names (`Default`, `Dark`, `Light`, `TurboPascal 5`, `Anders`, `Green Phosphor`, `Amber Phosphor`).
 
 ### SchemeAttributeBenchmark
 
@@ -145,7 +145,7 @@ Measures `Scheme.GetAttributeForRole(VisualRole)` for roles at different depths 
 - **GetHotFocus**: Derived from `Focus` (which itself derives from `Normal`)
 - **GetCode**: Deepest derivation path (`Code` → `Editable` → `Normal`)
 
-No `ConfigurationManager` required; operates on a standalone `Scheme` instance.
+No configuration pipeline required; operates on a standalone `Scheme` instance.
 
 ### SchemeSerializationBenchmark
 
@@ -170,6 +170,25 @@ dotnet run --project Tests/Benchmarks -c Release -- --filter '*Config*' '*Scheme
 - Use the `memory` / `scenarios` commands for quick allocation checks
 - Use BenchmarkDotNet for formal timing benchmarks with statistical rigor
 - Document what each benchmark measures
+
+## Output Flush Benchmarks
+
+`OutputWriteBenchmark` compares a full 270x72 frame with a sparse frame whose first and last cells
+are dirty on every row. The sparse case reproduces the shape reported in issue #5627.
+
+```powershell
+dotnet run --project Tests/Benchmarks -c Release -- --filter "*OutputWriteBenchmark*" --job short --exporters json
+```
+
+To measure the real Windows output path, run the benchmark through Windows Terminal or `tuirec` and
+provide a JSON result path:
+
+```powershell
+dotnet run --project Tests/Benchmarks -c Release -- output-conpty "$env:TEMP\tg-output-conpty.json"
+```
+
+The ConPTY benchmark requires Windows with output attached to a terminal. It warms three sparse
+frames, measures twenty frames, and records mean, median, p95, minimum, and maximum frame latency.
 
 ## Continuous Integration
 

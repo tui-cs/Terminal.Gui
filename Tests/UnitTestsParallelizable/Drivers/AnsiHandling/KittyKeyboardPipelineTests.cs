@@ -15,15 +15,15 @@ public class KittyKeyboardPipelineTests
     /// </summary>
     private static (List<Key> KeyDown, List<Key> KeyUp) InjectRawSequence (params string [] sequences)
     {
-        return InjectRawSequenceCore (false, sequences);
+        return InjectRawSequenceCore (TimeSpan.Zero, sequences);
     }
 
-    private static (List<Key> KeyDown, List<Key> KeyUp) InjectRawSequenceWithKittyEnabled (params string [] sequences)
+    private static (List<Key> KeyDown, List<Key> KeyUp) InjectRawSequenceWithDelay (TimeSpan delay, params string [] sequences)
     {
-        return InjectRawSequenceCore (true, sequences);
+        return InjectRawSequenceCore (delay, sequences);
     }
 
-    private static (List<Key> KeyDown, List<Key> KeyUp) InjectRawSequenceCore (bool kittyKeyboardEnabled, params string [] sequences)
+    private static (List<Key> KeyDown, List<Key> KeyUp) InjectRawSequenceCore (TimeSpan delay, params string [] sequences)
     {
         VirtualTimeProvider timeProvider = new ();
         timeProvider.SetTime (new DateTime (2025, 1, 1, 12, 0, 0));
@@ -37,17 +37,23 @@ public class KittyKeyboardPipelineTests
         app.Keyboard.KeyUp += (_, key) => keyUpEvents.Add (key);
 
         IInputProcessor processor = app.Driver?.GetInputProcessor ()!;
-        ((AnsiInputProcessor)processor).SetKittyKeyboardEnabled (kittyKeyboardEnabled);
         ConcurrentQueue<char> queue = ((AnsiInputProcessor)processor).InputQueue;
 
-        foreach (string seq in sequences)
+        for (var sequenceIndex = 0; sequenceIndex < sequences.Length; sequenceIndex++)
         {
+            string seq = sequences [sequenceIndex];
+
             foreach (char ch in seq)
             {
                 queue.Enqueue (ch);
             }
 
             processor.ProcessQueue ();
+
+            if (sequenceIndex < sequences.Length - 1)
+            {
+                timeProvider.Advance (delay);
+            }
         }
 
         return (keyDownEvents, keyUpEvents);
@@ -215,9 +221,9 @@ public class KittyKeyboardPipelineTests
 
     #endregion
 
-    #region Mixed Kitty + Legacy Duplicate Input
+    #region Kitty + Legacy Input
 
-    // Copilot
+    // Codex - GPT-5 Codex
     [Fact]
     public void Pipeline_MixedKittyAndLegacyPrintable_DoesNotRaiseDuplicateKeyDown ()
     {
@@ -230,27 +236,93 @@ public class KittyKeyboardPipelineTests
         Assert.Empty (up);
     }
 
-    // Copilot
-    [Theory]
-    [InlineData ("«")]
-    [InlineData ("»")]
-    [InlineData ("ç")]
-    [InlineData ("Ç")]
-    [InlineData ("º")]
-    [InlineData ("ª")]
-    public void Pipeline_LegacyPrintable_PortugueseKeys_WhenKittyEnabled_DoesNotRaiseDuplicateKeyDown (string printable)
+    // Codex - GPT-5 Codex
+    [Fact]
+    public void Pipeline_MixedKittyAndLegacyPrintable_AcrossDelay_DoesNotRaiseDuplicateKeyDown ()
     {
-        // Issue #4918 (PT keyboard): some glyphs may still arrive as duplicated legacy printable input
-        // even when kitty is enabled. A single keypress should still produce one KeyDown.
-        string duplicatedInput = printable + printable;
-        (List<Key> down, List<Key> up) = InjectRawSequenceWithKittyEnabled (duplicatedInput);
+        (List<Key> down, List<Key> up) = InjectRawSequenceWithDelay (TimeSpan.FromMilliseconds (51), "\x1b[97u", "a");
 
         Assert.Single (down);
-        Assert.Equal (printable, down [0].GetPrintableText ());
+        Assert.Equal (Key.A, down [0]);
         Assert.Empty (up);
     }
 
-    // Copilot
+    // Codex - GPT-5.6
+    [Fact]
+    public void Pipeline_KittyPortugueseKey_FollowedByTwoLegacyPrintables_SuppressesOnlyFirstFallback ()
+    {
+        (List<Key> down, List<Key> up) = InjectRawSequence ("\x1b[231::59;;231u", "ç", "ç");
+
+        Assert.Equal (2, down.Count);
+        Assert.All (down, key => Assert.Equal ("ç", key.GetPrintableText ()));
+        Assert.Empty (up);
+    }
+
+    // Codex - GPT-5.6
+    [Fact]
+    public void Pipeline_KittyPrintable_FollowedByNonmatchingFallback_ClearsSuppression ()
+    {
+        (List<Key> down, List<Key> up) = InjectRawSequence ("\x1b[97u", "b", "a");
+
+        Assert.Equal ([Key.A, Key.B, Key.A], down);
+        Assert.Empty (up);
+    }
+
+    // Codex - GPT-5.6
+    [Fact]
+    public void Pipeline_KittyPrintable_InterveningParsedKey_PreservesLaterMatchingFallbackKey ()
+    {
+        (List<Key> down, List<Key> up) = InjectRawSequence ("\x1b[97u\x1b[Aa");
+
+        Assert.Equal ([Key.A, Key.CursorUp, Key.A], down);
+        Assert.Empty (up);
+    }
+
+    // Codex - GPT-5.6
+    [Theory]
+    [InlineData ("\x1b[<0;10;20M")]
+    [InlineData ("\x1b[?1;2c")]
+    [InlineData ("\x1b[200~x\x1b[201~")]
+    public void Pipeline_KittyPrintable_InterveningAnsiInput_PreservesLaterMatchingFallbackKey (string interveningInput)
+    {
+        (List<Key> down, List<Key> up) = InjectRawSequence ($"\x1b[97u{interveningInput}a");
+
+        Assert.Equal ([Key.A, Key.A], down);
+        Assert.Empty (up);
+    }
+
+    // Codex - GPT-5.6
+    [Fact]
+    public void Pipeline_LegacyShiftTabFollowedByTab_RaisesBothKeyDowns ()
+    {
+        (List<Key> down, List<Key> up) = InjectRawSequence ("\x1b[Z\t");
+
+        Assert.Equal ([Key.Tab.WithShift, Key.Tab], down);
+        Assert.Empty (up);
+    }
+
+    // Codex - GPT-5.6
+    [Fact]
+    public void Pipeline_KittyTabAndLegacyTab_DoesNotRaiseDuplicateKeyDown ()
+    {
+        (List<Key> down, List<Key> up) = InjectRawSequence ("\x1b[9u\t");
+
+        Assert.Equal ([Key.Tab], down);
+        Assert.Empty (up);
+    }
+
+    // Codex - GPT-5 Codex
+    [Fact]
+    public void Pipeline_RepeatedLegacyPrintableInput_DoesNotSelfArmSuppression ()
+    {
+        (List<Key> down, List<Key> up) = InjectRawSequence ("jjjj");
+
+        Assert.Equal (4, down.Count);
+        Assert.Equal ("jjjj", string.Concat (down.Select (key => key.GetPrintableText ())));
+        Assert.Empty (up);
+    }
+
+    // Codex - GPT-5 Codex
     [Fact]
     public void Pipeline_MixedKittyAssociatedTextAndLegacyPrintable_DoesNotRaiseDuplicateKeyDown ()
     {

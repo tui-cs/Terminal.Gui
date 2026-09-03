@@ -94,7 +94,7 @@ public class AnsiOutput : OutputBase, IOutput
             }
 
             // Initialize platform-specific output helpers
-            if (PlatformDetection.IsWindows ())
+            if (OperatingSystem.IsWindows ())
             {
                 _windowsVTOutput = new WindowsVTOutputHelper ();
 
@@ -111,7 +111,7 @@ public class AnsiOutput : OutputBase, IOutput
                 }
                 _platform = AnsiPlatform.WindowsVT;
             }
-            else if (PlatformDetection.IsUnixLike ())
+            else
             {
                 // duplicate the controlling terminal output fd so we don't mess with it.
                 // When stdout is redirected this is /dev/tty rather than STDOUT_FILENO,

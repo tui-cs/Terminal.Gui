@@ -181,7 +181,7 @@ public class NetOutput : OutputBase, IOutput
     /// <inheritdoc/>
     public void Suspend ()
     {
-        if (PlatformDetection.IsWindows () && !IsAttachedToTerminal)
+        if (OperatingSystem.IsWindows () && !IsAttachedToTerminal)
         {
             return;
         }

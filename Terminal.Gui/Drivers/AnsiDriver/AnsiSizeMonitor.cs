@@ -4,22 +4,22 @@ using Terminal.Gui.Tracing;
 namespace Terminal.Gui.Drivers;
 
 /// <summary>
-///     Size monitor that uses ANSI escape sequences to query terminal size.
-///     This demonstrates proper use of <see cref="AnsiResponseParser"/> for detecting terminal resize events.
+///     Size monitor for <see cref="AnsiOutput"/> that uses either ANSI escape sequences or a native query
+///     to detect terminal resize events.
 /// </summary>
 /// <remarks>
 ///     <para>
-///         Unlike platform-specific size monitors that use native APIs (e.g., SIGWINCH on Unix or
-///         console buffer events on Windows), <see cref="AnsiSizeMonitor"/> uses pure ANSI escape
-///         sequences to query the terminal size, making it portable across all ANSI-compatible terminals.
+///         In ANSI-query mode, <see cref="AnsiSizeMonitor"/> sends <c>CSI 18t</c>. In native-query mode,
+///         <see cref="AnsiOutput.GetSize"/> obtains the size from the operating system. Both modes retain
+///         ANSI cursor-position discovery for inline applications.
 ///     </para>
 ///     <para>
 ///         <b>How it works:</b>
 ///     </para>
 ///     <list type="number">
-///         <item><see cref="Poll"/> sends <see cref="EscSeqUtils.CSI_ReportWindowSizeInChars"/> periodically</item>
-///         <item>Terminal responds with: ESC [ 8 ; height ; width t</item>
-///         <item><see cref="HandleSizeResponse"/> parses the response and updates cached size</item>
+///         <item><see cref="Poll"/> obtains the current size through the configured mode</item>
+///         <item>ANSI-query mode parses the terminal's ESC [ 8 ; height ; width t response</item>
+///         <item>Native-query mode reads the size through <see cref="AnsiOutput.GetSize"/></item>
 ///         <item>If size changed, <see cref="ISizeMonitor.SizeChanged"/> event is raised</item>
 ///     </list>
 /// </remarks>
@@ -29,6 +29,7 @@ internal class AnsiSizeMonitor : ISizeMonitor
     private static readonly TimeSpan StartupCursorPositionQueryTimeout = TimeSpan.FromMilliseconds (500);
 
     private readonly AnsiOutput _output;
+    private readonly bool _queryTerminalSize;
     private Action<AnsiEscapeSequenceRequest>? _queueAnsiRequest;
     private IAnsiStartupGate? _startupGate;
     private IDisposable? _startupSizeQueryCompletionHandle;
@@ -42,7 +43,7 @@ internal class AnsiSizeMonitor : ISizeMonitor
 
     /// <inheritdoc/>
     public bool InitialSizeReceived =>
-        _sizeResponseReceived
+        (!_queryTerminalSize || _sizeResponseReceived)
         && (_output.AppModel != AppModel.Inline || _cursorPositionReceived);
 
     /// <inheritdoc/>
@@ -53,10 +54,15 @@ internal class AnsiSizeMonitor : ISizeMonitor
     /// </summary>
     /// <param name="output">The ANSIOutput instance to query for size</param>
     /// <param name="queueAnsiRequest">Callback to queue ANSI requests (provided by driver/scheduler)</param>
-    public AnsiSizeMonitor (AnsiOutput output, Action<AnsiEscapeSequenceRequest>? queueAnsiRequest = null)
+    /// <param name="queryTerminalSize">
+    ///     <see langword="true"/> to query terminal size with <c>CSI 18t</c>; <see langword="false"/> to use
+    ///     the native query configured on <paramref name="output"/>.
+    /// </param>
+    public AnsiSizeMonitor (AnsiOutput output, Action<AnsiEscapeSequenceRequest>? queueAnsiRequest = null, bool queryTerminalSize = true)
     {
         _output = output;
         _queueAnsiRequest = queueAnsiRequest;
+        _queryTerminalSize = queryTerminalSize;
 
         // Get initial size from console or fallback
         _lastSize = _output.GetSize ();
@@ -75,12 +81,15 @@ internal class AnsiSizeMonitor : ISizeMonitor
         _queueAnsiRequest = driver.QueueAnsiRequest;
         _startupGate = driver.AnsiStartupGate;
 
-        Trace.Lifecycle (nameof (AnsiSizeMonitor), "Initialize", "Driver wired up; sending initial size query");
-
-        _startupSizeQueryCompletionHandle = _startupGate?.RegisterQuery (AnsiStartupQuery.TerminalSize, StartupSizeQueryTimeout);
         _startupCursorPositionQueryCompletionHandle = _startupGate?.RegisterQuery (AnsiStartupQuery.CursorPosition, StartupCursorPositionQueryTimeout);
 
-        SendSizeQuery ();
+        if (_queryTerminalSize)
+        {
+            Trace.Lifecycle (nameof (AnsiSizeMonitor), "Initialize", "Driver wired up; sending initial size query");
+            _startupSizeQueryCompletionHandle = _startupGate?.RegisterQuery (AnsiStartupQuery.TerminalSize, StartupSizeQueryTimeout);
+            SendSizeQuery ();
+        }
+
         SendCursorPositionQuery ();
     }
 
@@ -121,6 +130,11 @@ internal class AnsiSizeMonitor : ISizeMonitor
     /// <inheritdoc/>
     public bool Poll ()
     {
+        if (!_queryTerminalSize)
+        {
+            return CheckSizeChanged ();
+        }
+
         // Throttle queries to avoid spamming the terminal
         if (DateTime.Now - _lastQuery < _queryThrottle)
         {

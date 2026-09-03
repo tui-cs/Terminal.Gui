@@ -42,7 +42,7 @@ internal class FilepathSuggestionGenerator : ISuggestionGenerator
             return [];
         }
 
-        bool isWindows = RuntimeInformation.IsOSPlatform (OSPlatform.Windows);
+        bool isWindows = OperatingSystem.IsWindows ();
 
         string? [] suggestions = _state?.Children.Where (d => !d.IsParent)
                                        .Select (e => e.FileSystemInfo is IDirectoryInfo d ? d.Name + Path.DirectorySeparatorChar : e.FileSystemInfo?.Name)

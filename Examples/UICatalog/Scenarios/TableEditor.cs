@@ -1,4 +1,4 @@
-﻿#nullable enable
+#nullable enable
 using System.Data;
 using System.Globalization;
 using System.Text;
@@ -204,7 +204,6 @@ public class TableEditor : Scenario
 
     public override void Main ()
     {
-        ConfigurationManager.Enable (ConfigLocations.All);
 
         // Init
         using IApplication app = Application.Create ();

@@ -45,7 +45,7 @@ public class NumericUpDownDefaultKeyBindingsTests
 
         Assert.NotNull (property);
 
-        var attr = property!.GetCustomAttribute<ConfigurationPropertyAttribute> ();
+        var attr = property!.GetCustomAttributes ().FirstOrDefault (a => a.GetType ().Name == "ConfigurationPropertyAttribute");
 
         Assert.Null (attr);
     }

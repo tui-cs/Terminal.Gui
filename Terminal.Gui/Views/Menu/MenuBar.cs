@@ -1,8 +1,6 @@
 using System.ComponentModel;
 using Terminal.Gui.Tracing;
 
-#pragma warning disable CS0618 // Obsolete - MenuBar uses [ConfigurationProperty] for DefaultBorderStyle/DefaultKey during transition
-
 namespace Terminal.Gui.Views;
 
 /// <summary>
@@ -440,20 +438,24 @@ public class MenuBar : Menu, IDesignable
     /// <summary>
     ///     Gets or sets the default Border Style for the MenuBar. The default is <see cref="LineStyle.None"/>.
     /// </summary>
-    [ConfigurationProperty (Scope = typeof (ThemeScope))]
-    public new static LineStyle DefaultBorderStyle
-    {
-        get => MenuBarSettings.Defaults.DefaultBorderStyle;
-        set => MenuBarSettings.Defaults.DefaultBorderStyle = value;
-    }
+    public new static LineStyle DefaultBorderStyle => MenuBarSettings.Current.DefaultBorderStyle;
+
+    private static Key? _defaultKeyOverride;
 
     /// <summary>The default key for activating menu bars.</summary>
-    [ConfigurationProperty (Scope = typeof (SettingsScope))]
+    /// <remarks>
+    ///     Setting this overrides the configured value; the override survives theme switches and
+    ///     configuration re-application (<see cref="MenuBarSettings.Current"/> is wholesale-replaced
+    ///     on each apply, so a value written there would silently revert).
+    /// </remarks>
     public static Key DefaultKey
     {
-        get => MenuBarSettings.Defaults.DefaultKey;
-        set => MenuBarSettings.Defaults.DefaultKey = value;
+        get => _defaultKeyOverride ?? MenuBarSettings.Current.DefaultKey;
+        set => _defaultKeyOverride = value;
     }
+
+    /// <summary>INTERNAL: Clears the app-set <see cref="DefaultKey"/> override (for tests).</summary>
+    internal static void ResetDefaultKeyOverride () => _defaultKeyOverride = null;
 
     /// <inheritdoc/>
     public override void EndInit ()
@@ -786,7 +788,7 @@ public class MenuBar : Menu, IDesignable
     {
         if (SuperView is null)
         {
-            // BUGBUG: This is a hack for avoiding a race condition in ConfigurationManager.Apply
+            // BUGBUG: This is a hack for avoiding a race condition when theme overlays re-apply.
             // BUGBUG: For some reason in some unit tests, when Top is disposed, MenuBar.Dispose does not get called.
             // BUGBUG: Yet, the MenuBar does get Removed from Top (and it's SuperView set to null).
             // BUGBUG: Related: https://github.com/tui-cs/Terminal.Gui/issues/4021

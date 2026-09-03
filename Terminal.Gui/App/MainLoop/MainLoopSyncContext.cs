@@ -1,43 +1,97 @@
-#nullable disable
 namespace Terminal.Gui.App;
 
-///// <summary>
-/////     provides the sync context set while executing code in Terminal.Gui, to let
-/////     users use async/await on their code
-///// </summary>
-//internal sealed class MainLoopSyncContext : SynchronizationContext
-//{
-//    public override SynchronizationContext CreateCopy () { return new MainLoopSyncContext (); }
+/// <summary>
+///     Provides the sync context set while executing code in Terminal.Gui, to let
+///     users use async/await on their code
+/// </summary>
+internal sealed class MainLoopSyncContext : SynchronizationContext
+{
+    private readonly IApplication _app;
 
-//    public override void Post (SendOrPostCallback d, object state)
-//    {
-//        // Queue the task using the modern architecture
-//        ApplicationImpl.Instance.Invoke (() => { d (state); });
-//    }
+    /// <summary>
+    ///     Initializes a new instance of the <see cref="MainLoopSyncContext"/> class.
+    /// </summary>
+    /// <param name="app">The application instance that owns the main loop.</param>
+    public MainLoopSyncContext (IApplication app) => _app = app;
 
-//    //_mainLoop.Driver.Wakeup ();
-//    public override void Send (SendOrPostCallback d, object state)
-//    {
-//        if (Thread.CurrentThread.ManagedThreadId == Application.MainThreadId)
-//        {
-//            d (state);
-//        }
-//        else
-//        {
-//            var wasExecuted = false;
+    /// <inheritdoc/>
+    public override SynchronizationContext CreateCopy () => new MainLoopSyncContext (_app);
 
-//            ApplicationImpl.Instance.Invoke (
-//                                             () =>
-//                                             {
-//                                                 d (state);
-//                                                 wasExecuted = true;
-//                                             }
-//                                            );
+    private bool CanPump => _app is ApplicationImpl { CanPumpPostedWork: true };
 
-//            while (!wasExecuted)
-//            {
-//                Thread.Sleep (15);
-//            }
-//        }
-//    }
-//}
+    /// <inheritdoc/>
+    public override void Post (SendOrPostCallback d, object? state)
+    {
+        ArgumentNullException.ThrowIfNull (d);
+
+        // With no main loop pumping (after Shutdown/Dispose, or after a session ended with none
+        // running), run the callback on the thread pool instead of stranding it — and any awaiter —
+        // forever (#5636). Posts made between Init and the first Run stay queued for that Run.
+        if (!CanPump)
+        {
+            ThreadPool.QueueUserWorkItem (
+                                          static s =>
+                                          {
+                                              (SendOrPostCallback callback, object? callbackState) = ((SendOrPostCallback, object?))s!;
+                                              callback (callbackState);
+                                          },
+                                          (d, state));
+
+            return;
+        }
+
+        // Queue the task using the modern architecture
+        _app.Invoke (() => d (state));
+    }
+
+    /// <inheritdoc/>
+    public override void Send (SendOrPostCallback d, object? state)
+    {
+        ArgumentNullException.ThrowIfNull (d);
+
+        // With no main loop pumping, execute inline rather than waiting on a queue nothing drains.
+        if (!CanPump || _app.MainThreadId == Thread.CurrentThread.ManagedThreadId)
+        {
+            d (state);
+
+            return;
+        }
+
+        object gate = new ();
+        bool wasExecuted = false;
+        Exception? error = null;
+
+        _app.Invoke (() =>
+        {
+            try
+            {
+                d (state);
+            }
+            catch (Exception ex)
+            {
+                error = ex;
+            }
+            finally
+            {
+                lock (gate)
+                {
+                    wasExecuted = true;
+                    Monitor.Pulse (gate);
+                }
+            }
+        });
+
+        lock (gate)
+        {
+            while (!wasExecuted)
+            {
+                Monitor.Wait (gate);
+            }
+        }
+
+        if (error is { })
+        {
+            System.Runtime.ExceptionServices.ExceptionDispatchInfo.Capture (error).Throw ();
+        }
+    }
+}

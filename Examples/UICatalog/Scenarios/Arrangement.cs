@@ -1,4 +1,4 @@
-﻿#nullable enable
+#nullable enable
 using Timer = System.Timers.Timer;
 
 namespace UICatalog.Scenarios;
@@ -13,7 +13,6 @@ public class Arrangement : Scenario
 
     public override void Main ()
     {
-        ConfigurationManager.Enable (ConfigLocations.All);
         using IApplication app = Application.Create ();
         app.Init ();
 

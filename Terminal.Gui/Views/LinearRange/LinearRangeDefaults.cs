@@ -8,10 +8,5 @@ namespace Terminal.Gui.Views;
 public static class LinearRangeDefaults
 {
     /// <summary>Gets or sets the default cursor style applied to a new linear range view.</summary>
-    [ConfigurationProperty (Scope = typeof (ThemeScope))]
-    public static CursorStyle DefaultCursorStyle
-    {
-        get => LinearRangeSettings.Defaults.DefaultCursorStyle;
-        set => LinearRangeSettings.Defaults.DefaultCursorStyle = value;
-    }
+    public static CursorStyle DefaultCursorStyle => LinearRangeSettings.Current.DefaultCursorStyle;
 }

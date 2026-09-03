@@ -1,16 +1,22 @@
 namespace Terminal.Gui.Configuration;
 
 /// <summary>
-///     Settings POCO for <see cref="Views.SelectorBase"/> defaults (ThemeScope).
+///     Immutable settings record for <see cref="Views.SelectorBase"/> defaults (ThemeScope).
 /// </summary>
-public class SelectorBaseSettings
+public sealed record SelectorBaseSettings
 {
-    /// <summary>Gets or sets the default mouse highlight states for selectors.</summary>
-    public MouseState DefaultMouseHighlightStates { get; set; } = MouseState.In;
+    /// <summary>Gets the default mouse highlight states for selectors.</summary>
+    public MouseState DefaultMouseHighlightStates { get; init; } = MouseState.In;
 
-    /// <summary>
-    ///     The static facade instance. Always contains the current effective values.
-    ///     Updated by the MEC binding at <see cref="IApplication"/> initialization.
-    /// </summary>
-    public static SelectorBaseSettings Defaults { get; set; } = new ();
+    /// <summary>The compile-time-known defaults.</summary>
+    public static SelectorBaseSettings Default { get; } = new ();
+
+    /// <summary>The currently effective values, updated atomically by <see cref="MecThemeManager"/>.</summary>
+    public static SelectorBaseSettings Current
+    {
+        get => Volatile.Read (ref _current);
+        set => Volatile.Write (ref _current, value);
+    }
+
+    private static SelectorBaseSettings _current = Default;
 }

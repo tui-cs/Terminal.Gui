@@ -66,12 +66,12 @@ go in `UnitTestsParallelizable` — they belong in `UnitTests.NonParallelizable`
 | `ApplicationImpl.SetInstance(impl)` | Replaces the singleton (used in tests) |
 | `ApplicationImpl.ResetModelUsageTracking()` | Resets the static "which model was used" flag |
 
-### `ConfigurationManager` (singleton — `Terminal.Gui.Configuration/`)
+### Settings facades (process-wide — `Terminal.Gui.Configuration/`)
 
 | Member | Notes |
 |--------|-------|
-| `CM.IsEnabled` | Global flag; affects all code reading configuration |
-| `CM.Disable(reset)` | Disables and optionally resets to hard-coded defaults |
+| `TuiConfigurationBuilder.Shared` | Process-wide builder applied at assembly load |
+| `*Settings.Current` / `*Settings.Defaults` | Static facades mutated by `ApplyToStaticFacades` |
 
 ### `View.Diagnostics` (static field — `Terminal.Gui.ViewBase/View.cs`)
 
@@ -85,7 +85,7 @@ go in `UnitTestsParallelizable` — they belong in `UnitTests.NonParallelizable`
 
 | Test characteristic | Project |
 |---------------------|---------|
-| No static state; no `Application.Init`/`Shutdown`; no `ConfigurationManager` mutations | `UnitTestsParallelizable` |
+| No static state; no `Application.Init`/`Shutdown`; no process-wide settings-facade mutations | `UnitTestsParallelizable` |
 | Calls `Application.Init`/`Shutdown` directly, or mutates `Application.DefaultKeyBindings`, `Application.ForceDriver`, or `ApplicationImpl.ResetModelUsageTracking()` | `UnitTests.NonParallelizable` |
 | Uses `[AutoInitShutdown]` or `[SetupFakeApplication]` (fake driver, does not call real `Application.Init`) | Currently in `UnitTests.Legacy`; migrate to `UnitTestsParallelizable` or `UnitTests.NonParallelizable` after review |
 | Not yet reviewed / ported | `UnitTests.Legacy` |

@@ -1100,7 +1100,7 @@ public class LineCanvas : IDisposable
         }
 
         /// <summary>
-        ///     Sets the glyphs used. Call this method after construction and any time ConfigurationManager has updated the
+        ///     Sets the glyphs used. Call this method after construction and any time theme overlays have updated the
         ///     settings.
         /// </summary>
         public abstract void SetGlyphs ();

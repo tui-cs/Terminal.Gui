@@ -205,9 +205,9 @@ internal class DriverImpl : IDriver
         PlatformID p = Environment.OSVersion.Platform;
 
         return CreateClipboard (() => p is PlatformID.Win32NT or PlatformID.Win32S or PlatformID.Win32Windows,
-                                () => RuntimeInformation.IsOSPlatform (OSPlatform.OSX),
+                                OperatingSystem.IsMacOS,
                                 PlatformDetection.IsWSL,
-                                PlatformDetection.IsLinux,
+                                OperatingSystem.IsLinux,
                                 () => new WindowsClipboard (),
                                 () => new MacOSXClipboard (),
                                 () => new WSLClipboard (),

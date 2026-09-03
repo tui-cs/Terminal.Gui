@@ -55,23 +55,13 @@ public static class MessageBox
 {
     /// <summary>
     ///     Defines the default border styling for <see cref="MessageBox"/>. Can be configured via
-    ///     <see cref="ConfigurationManager"/>.
+    ///     <see cref="TuiConfigurationBuilder"/>.
     /// </summary>
-    [ConfigurationProperty (Scope = typeof (ThemeScope))]
-    public static LineStyle DefaultBorderStyle
-    {
-        get => MessageBoxSettings.Defaults.DefaultBorderStyle;
-        set => MessageBoxSettings.Defaults.DefaultBorderStyle = value;
-    }
+    public static LineStyle DefaultBorderStyle => MessageBoxSettings.Current.DefaultBorderStyle;
 
     /// <summary>The default <see cref="Alignment"/> for <see cref="Dialog"/>.</summary>
     /// <remarks>This property can be set in a Theme.</remarks>
-    [ConfigurationProperty (Scope = typeof (ThemeScope))]
-    public static Alignment DefaultButtonAlignment
-    {
-        get => MessageBoxSettings.Defaults.DefaultButtonAlignment;
-        set => MessageBoxSettings.Defaults.DefaultButtonAlignment = value;
-    }
+    public static Alignment DefaultButtonAlignment => MessageBoxSettings.Current.DefaultButtonAlignment;
 
     /// <summary>
     ///     Displays an auto-sized error <see cref="MessageBox"/>.

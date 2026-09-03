@@ -372,7 +372,6 @@ public partial class FileDialog : Dialog<IReadOnlyList<string>?>, IDesignable
 
     /// <summary>The maximum number of results that will be collected when searching before stopping.</summary>
     /// <remarks>This prevents performance issues e.g. when searching root of file system for a common letter (e.g. 'e').</remarks>
-    [ConfigurationProperty (Scope = typeof (SettingsScope))]
     public static int MaxSearchResults
     {
         get => FileDialogSettings.Defaults.MaxSearchResults;

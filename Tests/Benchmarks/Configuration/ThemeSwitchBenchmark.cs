@@ -5,7 +5,7 @@ namespace Terminal.Gui.Benchmarks.Configuration;
 
 /// <summary>
 ///     Measures the cost of switching the active theme via
-///     <c>ThemeManager.Theme = "X"; ConfigurationManager.Apply ()</c>.
+///     <c>ThemeManager.Theme = "X"</c>.
 ///     Parametric over every built-in theme name shipped in the embedded <c>config.json</c>.
 /// </summary>
 /// <remarks>
@@ -27,12 +27,8 @@ public class ThemeSwitchBenchmark
     {
         get
         {
-            ConfigurationManager.Disable (true);
-            ConfigurationManager.Enable (ConfigLocations.LibraryResources);
 
             IEnumerable<string> names = ThemeManager.GetThemeNames ();
-
-            ConfigurationManager.Disable (true);
 
             return names;
         }
@@ -42,8 +38,6 @@ public class ThemeSwitchBenchmark
     [GlobalSetup]
     public void Setup ()
     {
-        ConfigurationManager.Disable (true);
-        ConfigurationManager.Enable (ConfigLocations.LibraryResources);
     }
 
     /// <summary>
@@ -56,16 +50,13 @@ public class ThemeSwitchBenchmark
     public void SwitchTheme ()
     {
         ThemeManager.Theme = ThemeManager.DEFAULT_THEME_NAME;
-        ConfigurationManager.Apply ();
 
         ThemeManager.Theme = ThemeName;
-        ConfigurationManager.Apply ();
     }
 
-    /// <summary>Ensures ConfigurationManager is disabled after all iterations.</summary>
+    /// <summary>No cleanup required; facade state is process-wide and restored by the next setup.</summary>
     [GlobalCleanup]
     public void Cleanup ()
     {
-        ConfigurationManager.Disable (true);
     }
 }

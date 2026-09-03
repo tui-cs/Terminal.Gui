@@ -1,4 +1,4 @@
-﻿#nullable enable
+#nullable enable
 
 using System.Collections.ObjectModel;
 
@@ -17,7 +17,6 @@ public sealed class Themes : Scenario
 
     public override void Main ()
     {
-        ConfigurationManager.Enable (ConfigLocations.All);
 
         // Init
         using IApplication app = Application.Create ();
@@ -86,7 +85,6 @@ public sealed class Themes : Scenario
 
                                                 // strip off the leading underscore
                                                 ThemeManager.Theme = newTheme [1..];
-                                                ConfigurationManager.Apply ();
                                             };
 
         ThemeViewer themeViewer = new () { X = Pos.Right (themeOptionSelector) };

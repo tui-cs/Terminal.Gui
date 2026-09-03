@@ -266,7 +266,7 @@ public partial class TreeView<T> : View, ITreeView where T : class
     /// </summary>
     /// <remarks>
     ///     <para>
-    ///         This property is not decorated with <see cref="ConfigurationPropertyAttribute"/> because
+    ///         This property is not a configuration-bound property because
     ///         <see cref="TreeView{T}"/> is a generic type. Use <see cref="View.ViewKeyBindings"/> to
     ///         override key bindings for TreeView via configuration.
     ///     </para>

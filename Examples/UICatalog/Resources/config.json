@@ -1,321 +1,421 @@
 {
   "$schema": "https://tui-cs.github.io/Terminal.Gui/schemas/tui-config-schema.json",
-  "Themes": [
-    {
-      "Hot Dog Stand": {
-        "Glyphs.WideGlyphReplacement": "①",
-        "Schemes": [
-          {
-            "Accent": {
-              "Normal": {
-                "Foreground": "Black",
-                "Background": "#FFFF00"
-              },
-              "Focus": {
-                "Foreground": "White",
-                "Background": "Black"
-              },
-              "HotNormal": {
-                "Foreground": "#FF0000",
-                "Background": "#FFFF00"
-              },
-              "HotFocus": {
-                "Foreground": "#FFFF00",
-                "Background": "White"
-              },
-              "Disabled": {
-                "Foreground": "BrightGreen",
-                "Background": "Gray"
-              }
-            }
+  "Themes": {
+    "Hot Dog Stand": {
+      "Glyphs": {
+        "WideGlyphReplacement": "①"
+      },
+      "Schemes": {
+        "Accent": {
+          "Normal": {
+            "Foreground": "Black",
+            "Background": "#FFFF00"
           },
-          {
-            "Base": {
-              "Normal": {
-                "Foreground": "Black",
-                "Background": "#FFFF00"
-              },
-              "Focus": {
-                "Foreground": "White",
-                "Background": "Black"
-              },
-              "HotNormal": {
-                "Foreground": "#FF0000",
-                "Background": "#FFFF00"
-              },
-              "HotFocus": {
-                "Foreground": "#FFFF00",
-                "Background": "Black"
-              },
-              "Disabled": {
-                "Foreground": "BrightGreen",
-                "Background": "Gray"
-              },
-              "Code": { "Foreground": "Black", "Background": "#FFFF00", "Style": "None" },
-              "CodeComment": { "Foreground": "#008000", "Background": "None", "Style": "None" },
-              "CodeKeyword": { "Foreground": "#FF0000", "Background": "None", "Style": "None" },
-              "CodeString": { "Foreground": "#0000CC", "Background": "None", "Style": "None" },
-              "CodeNumber": { "Foreground": "#800080", "Background": "None", "Style": "None" },
-              "CodeOperator": { "Foreground": "Black", "Background": "None", "Style": "None" },
-              "CodeType": { "Foreground": "#C00000", "Background": "None", "Style": "None" },
-              "CodePreprocessor": { "Foreground": "#008000", "Background": "None", "Style": "None" },
-              "CodeIdentifier": { "Foreground": "Black", "Background": "None", "Style": "None" },
-              "CodeConstant": { "Foreground": "#800080", "Background": "None", "Style": "None" },
-              "CodePunctuation": { "Foreground": "Black", "Background": "None", "Style": "None" },
-              "CodeFunctionName": { "Foreground": "#0000CC", "Background": "None", "Style": "None" },
-              "CodeAttribute": { "Foreground": "#008000", "Background": "None", "Style": "None" }
-            }
+          "Focus": {
+            "Foreground": "White",
+            "Background": "Black"
           },
-          {
-            "Dialog": {
-              "Normal": {
-                "Foreground": "Gray",
-                "Background": "#FF0000"
-              },
-              "Focus": {
-                "Foreground": "#FF0000",
-                "Background": "White"
-              },
-              "HotNormal": {
-                "Foreground": "#FF0000",
-                "Background": "#FFF000"
-              },
-              "HotFocus": {
-                "Foreground": "Black",
-                "Background": "White"
-              },
-              "Disabled": {
-                "Foreground": "BrightYellow",
-                "Background": "Gray"
-              }
-            }
+          "HotNormal": {
+            "Foreground": "#FF0000",
+            "Background": "#FFFF00"
           },
-          {
-            "Menu": {
-              "Normal": {
-                "Foreground": "Black",
-                "Background": "White"
-              },
-              "Focus": {
-                "Foreground": "White",
-                "Background": "Black"
-              },
-              "HotNormal": {
-                "Foreground": "#FF00",
-                "Background": "White"
-              },
-              "HotFocus": {
-                "Foreground": "#FF00",
-                "Background": "Black"
-              },
-              "Disabled": {
-                "Foreground": "Gray",
-                "Background": "White"
-              }
-            }
+          "HotFocus": {
+            "Foreground": "#FFFF00",
+            "Background": "White"
           },
-          {
-            "Error": {
-              "Normal": {
-                "Foreground": "#FF00",
-                "Background": "#FFF000"
-              },
-              "Focus": {
-                "Foreground": "Black",
-                "Background": "#FFF000"
-              },
-              "HotNormal": {
-                "Foreground": "DarkGray",
-                "Background": "BrightYellow"
-              },
-              "HotFocus": {
-                "Foreground": "Red",
-                "Background": "BrightYellow"
-              },
-              "Disabled": {
-                "Foreground": "Gray",
-                "Background": "BrightYellow"
-              }
-            }
+          "Disabled": {
+            "Foreground": "BrightGreen",
+            "Background": "Gray"
           }
-        ]
+        },
+        "Base": {
+          "Normal": {
+            "Foreground": "Black",
+            "Background": "#FFFF00"
+          },
+          "Focus": {
+            "Foreground": "White",
+            "Background": "Black"
+          },
+          "HotNormal": {
+            "Foreground": "#FF0000",
+            "Background": "#FFFF00"
+          },
+          "HotFocus": {
+            "Foreground": "#FFFF00",
+            "Background": "Black"
+          },
+          "Disabled": {
+            "Foreground": "BrightGreen",
+            "Background": "Gray"
+          },
+          "Code": {
+            "Foreground": "Black",
+            "Background": "#FFFF00",
+            "Style": "None"
+          },
+          "CodeComment": {
+            "Foreground": "#008000",
+            "Background": "None",
+            "Style": "None"
+          },
+          "CodeKeyword": {
+            "Foreground": "#FF0000",
+            "Background": "None",
+            "Style": "None"
+          },
+          "CodeString": {
+            "Foreground": "#0000CC",
+            "Background": "None",
+            "Style": "None"
+          },
+          "CodeNumber": {
+            "Foreground": "#800080",
+            "Background": "None",
+            "Style": "None"
+          },
+          "CodeOperator": {
+            "Foreground": "Black",
+            "Background": "None",
+            "Style": "None"
+          },
+          "CodeType": {
+            "Foreground": "#C00000",
+            "Background": "None",
+            "Style": "None"
+          },
+          "CodePreprocessor": {
+            "Foreground": "#008000",
+            "Background": "None",
+            "Style": "None"
+          },
+          "CodeIdentifier": {
+            "Foreground": "Black",
+            "Background": "None",
+            "Style": "None"
+          },
+          "CodeConstant": {
+            "Foreground": "#800080",
+            "Background": "None",
+            "Style": "None"
+          },
+          "CodePunctuation": {
+            "Foreground": "Black",
+            "Background": "None",
+            "Style": "None"
+          },
+          "CodeFunctionName": {
+            "Foreground": "#0000CC",
+            "Background": "None",
+            "Style": "None"
+          },
+          "CodeAttribute": {
+            "Foreground": "#008000",
+            "Background": "None",
+            "Style": "None"
+          }
+        },
+        "Dialog": {
+          "Normal": {
+            "Foreground": "Gray",
+            "Background": "#FF0000"
+          },
+          "Focus": {
+            "Foreground": "#FF0000",
+            "Background": "White"
+          },
+          "HotNormal": {
+            "Foreground": "#FF0000",
+            "Background": "#FFF000"
+          },
+          "HotFocus": {
+            "Foreground": "Black",
+            "Background": "White"
+          },
+          "Disabled": {
+            "Foreground": "BrightYellow",
+            "Background": "Gray"
+          }
+        },
+        "Menu": {
+          "Normal": {
+            "Foreground": "Black",
+            "Background": "White"
+          },
+          "Focus": {
+            "Foreground": "White",
+            "Background": "Black"
+          },
+          "HotNormal": {
+            "Foreground": "#FF00",
+            "Background": "White"
+          },
+          "HotFocus": {
+            "Foreground": "#FF00",
+            "Background": "Black"
+          },
+          "Disabled": {
+            "Foreground": "Gray",
+            "Background": "White"
+          }
+        },
+        "Error": {
+          "Normal": {
+            "Foreground": "#FF00",
+            "Background": "#FFF000"
+          },
+          "Focus": {
+            "Foreground": "Black",
+            "Background": "#FFF000"
+          },
+          "HotNormal": {
+            "Foreground": "DarkGray",
+            "Background": "BrightYellow"
+          },
+          "HotFocus": {
+            "Foreground": "Red",
+            "Background": "BrightYellow"
+          },
+          "Disabled": {
+            "Foreground": "Gray",
+            "Background": "BrightYellow"
+          }
+        }
       }
     },
-    {
-      "UI Catalog": {
-        "Window.DefaultShadow": "Transparent",
-        "Button.DefaultShadow": "None",
-        "CheckBox.DefaultMouseHighlightStates": "In, Pressed, PressedOutside",
-        "MessageBox.DefaultButtonAlignment": "Start",
-        "StatusBar.DefaultSeparatorLineStyle": "Single",
-        "NerdFonts.Enable": false,
-        "Window.DefaultBorderStyle": "Double",
-        "Dialog.DefaultShadow": "Opaque",
-        "Dialog.DefaultButtonAlignment": "Start",
-        "FrameView.DefaultBorderStyle": "Double",
-        "Button.DefaultMouseHighlightStates": "In, Pressed",
-        "Menu.DefaultBorderStyle": "Heavy",
-        "MenuBar.DefaultBorderStyle": "Heavy",
-        "Schemes": [
-          {
-            "UI Catalog Scheme": {
-              "Normal": {
-                "Foreground": "White",
-                "Background": "Green"
-              },
-              "Focus": {
-                "Foreground": "Green",
-                "Background": "White"
-              },
-              "HotNormal": {
-                "Foreground": "Blue",
-                "Background": "Green"
-              },
-              "HotFocus": {
-                "Foreground": "BrightRed",
-                "Background": "White"
-              },
-              "Disabled": {
-                "Foreground": "BrightGreen",
-                "Background": "Gray"
-              }
-            }
+    "UI Catalog": {
+      "Window": {
+        "DefaultShadow": "Transparent",
+        "DefaultBorderStyle": "Double"
+      },
+      "Button": {
+        "DefaultShadow": "None",
+        "DefaultMouseHighlightStates": "In, Pressed"
+      },
+      "CheckBox": {
+        "DefaultMouseHighlightStates": "In, Pressed, PressedOutside"
+      },
+      "MessageBox": {
+        "DefaultButtonAlignment": "Start"
+      },
+      "StatusBar": {
+        "DefaultSeparatorLineStyle": "Single"
+      },
+      "NerdFonts": {
+        "Enable": false
+      },
+      "Dialog": {
+        "DefaultShadow": "Opaque",
+        "DefaultButtonAlignment": "Start"
+      },
+      "FrameView": {
+        "DefaultBorderStyle": "Double"
+      },
+      "Menu": {
+        "DefaultBorderStyle": "Heavy"
+      },
+      "MenuBar": {
+        "DefaultBorderStyle": "Heavy"
+      },
+      "Schemes": {
+        "UI Catalog Scheme": {
+          "Normal": {
+            "Foreground": "White",
+            "Background": "Green"
           },
-          {
-            "Accent": {
-              "Normal": {
-                "Foreground": "DarkGray",
-                "Background": "White"
-              },
-              "Focus": {
-                "Foreground": "Black",
-                "Background": "White"
-              },
-              "HotNormal": {
-                "Foreground": "BrightGreen",
-                "Background": "White"
-              },
-              "HotFocus": {
-                "Foreground": "Cyan",
-                "Background": "White"
-              },
-              "Disabled": {
-                "Foreground": "Gray",
-                "Background": "White"
-              }
-            }
+          "Focus": {
+            "Foreground": "Green",
+            "Background": "White"
           },
-          {
-            "Base": {
-              "Normal": {
-                "Foreground": "White",
-                "Background": "Green"
-              },
-              "Focus": {
-                "Foreground": "Green",
-                "Background": "White"
-              },
-              "HotNormal": {
-                "Foreground": "Blue",
-                "Background": "Green"
-              },
-              "HotFocus": {
-                "Foreground": "BrightRed",
-                "Background": "White"
-              },
-              "Disabled": {
-                "Foreground": "BrightGreen",
-                "Background": "Gray"
-              },
-              "Code": { "Foreground": "White", "Background": "Green", "Style": "None" },
-              "CodeComment": { "Foreground": "LightGray", "Background": "None", "Style": "None" },
-              "CodeKeyword": { "Foreground": "Yellow", "Background": "None", "Style": "None" },
-              "CodeString": { "Foreground": "LightCyan", "Background": "None", "Style": "None" },
-              "CodeNumber": { "Foreground": "LightYellow", "Background": "None", "Style": "None" },
-              "CodeOperator": { "Foreground": "White", "Background": "None", "Style": "None" },
-              "CodeType": { "Foreground": "Cyan", "Background": "None", "Style": "None" },
-              "CodePreprocessor": { "Foreground": "BrightRed", "Background": "None", "Style": "None" },
-              "CodeIdentifier": { "Foreground": "White", "Background": "None", "Style": "None" },
-              "CodeConstant": { "Foreground": "Yellow", "Background": "None", "Style": "None" },
-              "CodePunctuation": { "Foreground": "White", "Background": "None", "Style": "None" },
-              "CodeFunctionName": { "Foreground": "LightCyan", "Background": "None", "Style": "None" },
-              "CodeAttribute": { "Foreground": "LightGray", "Background": "None", "Style": "None" }
-            }
+          "HotNormal": {
+            "Foreground": "Blue",
+            "Background": "Green"
           },
-          {
-            "Dialog": {
-              "Normal": {
-                "Foreground": "Gray",
-                "Background": "Green"
-              },
-              "Focus": {
-                "Foreground": "Green",
-                "Background": "White"
-              },
-              "HotNormal": {
-                "Foreground": "Blue",
-                "Background": "Green"
-              },
-              "HotFocus": {
-                "Foreground": "Black",
-                "Background": "White"
-              },
-              "Disabled": {
-                "Foreground": "BrightGreen",
-                "Background": "Gray"
-              }
-            }
+          "HotFocus": {
+            "Foreground": "BrightRed",
+            "Background": "White"
           },
-          {
-            "Menu": {
-              "Normal": {
-                "Foreground": "Black",
-                "Background": "Gray"
-              },
-              "Focus": {
-                "Foreground": "Green",
-                "Background": "DarkGray"
-              },
-              "HotNormal": {
-                "Foreground": "Green",
-                "Background": "Gray"
-              },
-              "HotFocus": {
-                "Foreground": "DarkGray",
-                "Background": "DarkGray"
-              },
-              "Disabled": {
-                "Foreground": "Gray",
-                "Background": "White"
-              }
-            }
-          },
-          {
-            "Error": {
-              "Normal": {
-                "Foreground": "BrightRed",
-                "Background": "BrightYellow"
-              },
-              "Focus": {
-                "Foreground": "Black",
-                "Background": "BrightYellow"
-              },
-              "HotNormal": {
-                "Foreground": "DarkGray",
-                "Background": "BrightYellow"
-              },
-              "HotFocus": {
-                "Foreground": "Red",
-                "Background": "BrightYellow"
-              },
-              "Disabled": {
-                "Foreground": "BrightGreen",
-                "Background": "Gray"
-              }
-            }
+          "Disabled": {
+            "Foreground": "BrightGreen",
+            "Background": "Gray"
           }
-        ]
+        },
+        "Accent": {
+          "Normal": {
+            "Foreground": "DarkGray",
+            "Background": "White"
+          },
+          "Focus": {
+            "Foreground": "Black",
+            "Background": "White"
+          },
+          "HotNormal": {
+            "Foreground": "BrightGreen",
+            "Background": "White"
+          },
+          "HotFocus": {
+            "Foreground": "Cyan",
+            "Background": "White"
+          },
+          "Disabled": {
+            "Foreground": "Gray",
+            "Background": "White"
+          }
+        },
+        "Base": {
+          "Normal": {
+            "Foreground": "White",
+            "Background": "Green"
+          },
+          "Focus": {
+            "Foreground": "Green",
+            "Background": "White"
+          },
+          "HotNormal": {
+            "Foreground": "Blue",
+            "Background": "Green"
+          },
+          "HotFocus": {
+            "Foreground": "BrightRed",
+            "Background": "White"
+          },
+          "Disabled": {
+            "Foreground": "BrightGreen",
+            "Background": "Gray"
+          },
+          "Code": {
+            "Foreground": "White",
+            "Background": "Green",
+            "Style": "None"
+          },
+          "CodeComment": {
+            "Foreground": "LightGray",
+            "Background": "None",
+            "Style": "None"
+          },
+          "CodeKeyword": {
+            "Foreground": "Yellow",
+            "Background": "None",
+            "Style": "None"
+          },
+          "CodeString": {
+            "Foreground": "LightCyan",
+            "Background": "None",
+            "Style": "None"
+          },
+          "CodeNumber": {
+            "Foreground": "LightYellow",
+            "Background": "None",
+            "Style": "None"
+          },
+          "CodeOperator": {
+            "Foreground": "White",
+            "Background": "None",
+            "Style": "None"
+          },
+          "CodeType": {
+            "Foreground": "Cyan",
+            "Background": "None",
+            "Style": "None"
+          },
+          "CodePreprocessor": {
+            "Foreground": "BrightRed",
+            "Background": "None",
+            "Style": "None"
+          },
+          "CodeIdentifier": {
+            "Foreground": "White",
+            "Background": "None",
+            "Style": "None"
+          },
+          "CodeConstant": {
+            "Foreground": "Yellow",
+            "Background": "None",
+            "Style": "None"
+          },
+          "CodePunctuation": {
+            "Foreground": "White",
+            "Background": "None",
+            "Style": "None"
+          },
+          "CodeFunctionName": {
+            "Foreground": "LightCyan",
+            "Background": "None",
+            "Style": "None"
+          },
+          "CodeAttribute": {
+            "Foreground": "LightGray",
+            "Background": "None",
+            "Style": "None"
+          }
+        },
+        "Dialog": {
+          "Normal": {
+            "Foreground": "Gray",
+            "Background": "Green"
+          },
+          "Focus": {
+            "Foreground": "Green",
+            "Background": "White"
+          },
+          "HotNormal": {
+            "Foreground": "Blue",
+            "Background": "Green"
+          },
+          "HotFocus": {
+            "Foreground": "Black",
+            "Background": "White"
+          },
+          "Disabled": {
+            "Foreground": "BrightGreen",
+            "Background": "Gray"
+          }
+        },
+        "Menu": {
+          "Normal": {
+            "Foreground": "Black",
+            "Background": "Gray"
+          },
+          "Focus": {
+            "Foreground": "Green",
+            "Background": "DarkGray"
+          },
+          "HotNormal": {
+            "Foreground": "Green",
+            "Background": "Gray"
+          },
+          "HotFocus": {
+            "Foreground": "DarkGray",
+            "Background": "DarkGray"
+          },
+          "Disabled": {
+            "Foreground": "Gray",
+            "Background": "White"
+          }
+        },
+        "Error": {
+          "Normal": {
+            "Foreground": "BrightRed",
+            "Background": "BrightYellow"
+          },
+          "Focus": {
+            "Foreground": "Black",
+            "Background": "BrightYellow"
+          },
+          "HotNormal": {
+            "Foreground": "DarkGray",
+            "Background": "BrightYellow"
+          },
+          "HotFocus": {
+            "Foreground": "Red",
+            "Background": "BrightYellow"
+          },
+          "Disabled": {
+            "Foreground": "BrightGreen",
+            "Background": "Gray"
+          }
+        }
       }
     }
-  ]
+  }
 }

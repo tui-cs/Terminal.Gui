@@ -1,6 +1,6 @@
 # Spec: Replace ConfigurationManager (CM) with Microsoft.Extensions.Configuration (MEC)
 
-> **Status:** In Progress — MEC migration is implemented; current focus is finishing complex-type migration in PR #5411.
+> **Status:** Historical. The MEC pipeline shipped in #5411; legacy CM types were deleted in #5416. Current contract: [config.md](../docfx/docs/config.md) and [migrate-cm-to-mec.md](../docfx/docs/migrate-cm-to-mec.md). Do not treat the APIs below as live.
 > **Tracking Issue:** [#4943](https://github.com/gui-cs/Terminal.Gui/issues/4943)
 > **Related analysis:** See [@tig's AOT binary-size comment](https://github.com/gui-cs/Terminal.Gui/issues/4943#issuecomment-XXXXXX)
 
@@ -1257,7 +1257,7 @@ The following are explicitly **not** part of this proposal:
 | `Application` | `IsMouseDisabled` | `bool` | `false` |
 | `ConfigurationManager` | `ThrowOnJsonErrors` | `bool?` | `false` |
 | `Driver` | `Force16Colors` | `bool` | `false` |
-| `Driver` | `SizeDetection` | `SizeDetectionMode` | `AnsiQuery` |
+| `Driver` | `SizeDetection` | `SizeDetectionMode` | `Polling` |
 | `Key` | `Separator` | `char` | `'+'` |
 | `MenuBar` | `DefaultKey` | `Key` | `F10` |
 | `PopoverMenu` | `DefaultKey` | `Key` | `Shift+F10` |

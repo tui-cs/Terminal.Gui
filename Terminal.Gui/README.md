@@ -14,9 +14,11 @@ The [GitVersion.MsBuild](https://www.nuget.org/packages/GitVersion.MsBuild) NuGe
 |--------|----------------|-----------|-------|
 | `main` (stable) | `2.0.0` | Patch | Label set in `GitVersion.yml` (`label: ''`) |
 | `main` (pre-release) | `2.0.1-rc.1` | Patch | Label set in `GitVersion.yml` (e.g., `label: rc`) |
-| `develop` | `2.1.0-develop.42` | Minor | Always carries `-develop` pre-release label |
-| `feature/*`, `fix/*`, etc. | `2.1.0-my-feature.1` | Inherit | Inherits from `develop`; branch name becomes label |
+| `develop` | `2.5.0-develop.55` | Patch | Always carries `-develop` pre-release label |
+| `feature/*`, `fix/*`, etc. | `2.5.0-my-feature.1` | Inherit | Inherits from `develop`; branch name becomes label |
 | `pull-request/*` | `2.0.0-pr.123.1` | Inherit | PR number in label |
+
+`develop` increments **Patch** (`GitVersion.yml` `increment: Patch`). To bump Minor, include `+semver: minor` in a commit message. Do not pin `next-version`.
 
 ### Checking Versions Locally
 
@@ -135,7 +137,7 @@ These branches are **not** configured in `GitVersion.yml` (the config was remove
 
 - **Package**: [nuget.org/packages/Terminal.Gui](https://www.nuget.org/packages/Terminal.Gui)
 - **Auto-published** on every push to `develop` (pre-release versions) and on `v*` tag pushes (stable/pre-release versions tagged on `main`)
-- Pre-release versions (e.g., `2.1.0-develop.42`) are marked as pre-release on NuGet
+- Pre-release versions (e.g., `2.5.0-develop.55`) are marked as pre-release on NuGet
 
 ### Local Package Development
 

@@ -7,7 +7,9 @@
 - name: What's new in v2
   href: newinv2.md
 - name: v1 To v2 Migration
-  href: migratingfromv1.md  
+  href: migratingfromv1.md
+- name: 2.5.0 Breaking Changes
+  href: breaking-changes-2.5.0.md
 - name: Lexicon & Taxonomy
   href: lexicon.md
 - name: Views
@@ -30,6 +32,8 @@
   href: command-diagrams.md
 - name: Configuration
   href: config.md
+- name: Migrating ConfigurationManager
+  href: migrate-cm-to-mec.md
 - name: Cursor
   href: cursor.md
 - name: Dim.Auto

@@ -8,6 +8,7 @@ For detailed breaking change documentation, check out this Discussion: https://g
 
 - [Overview of Major Changes](#overview-of-major-changes)
 - [Application Architecture](#application-architecture)
+- [Configuration](#configuration)
 - [View Construction and Initialization](#view-construction-and-initialization)
 - [Layout System Changes](#layout-system-changes)
 - [Color and Attribute Changes](#color-and-attribute-changes)
@@ -163,6 +164,16 @@ public class MyView : View
     }
 }
 ```
+
+---
+
+## Configuration
+
+v1 exposed `ConfigurationManager` (typically `ConfigurationManager.Enable`). That API is gone in 2.5.0.
+
+To load themes and settings in v2, use <xref:Terminal.Gui.Configuration.TuiConfigurationBuilder> and Settings POCOs. Do not call `ConfigurationManager.Enable`.
+
+To convert a pre-2.5.0 `config.json`, see [Migrating ConfigurationManager to TuiConfigurationBuilder](migrate-cm-to-mec.md). For the other 2.5.0 API breaks, see [2.5.0 Breaking Changes](breaking-changes-2.5.0.md).
 
 ---
 
@@ -1093,6 +1104,9 @@ While migration requires some effort, the result is a more robust, performant, a
 
 For more details, see:
 - [Application Deep Dive](application.md)
+- [Configuration Deep Dive](config.md)
+- [Migrating ConfigurationManager to TuiConfigurationBuilder](migrate-cm-to-mec.md)
+- [2.5.0 Breaking Changes](breaking-changes-2.5.0.md)
 - [Keyboard Deep Dive](keyboard.md)
 - [Mouse Deep Dive](mouse.md)
 - [Layout Deep Dive](layout.md)

@@ -289,6 +289,31 @@ public class AnsiSizeMonitorTests
         Assert.Equal (14, monitor.InitialCursorRow); // 0-indexed
     }
 
+    // Codex - GPT-5 Codex
+    [Fact]
+    public void InlineMode_NativeSizeQuery_StillDiscoversInitialCursorRow ()
+    {
+        AnsiOutput output = new (AppModel.Inline);
+        output.NativeSizeQuery = () => new Size (80, 50);
+
+        List<AnsiEscapeSequenceRequest> captured = [];
+        Mock<IDriver> driverMock = new ();
+        driverMock.Setup (d => d.QueueAnsiRequest (It.IsAny<AnsiEscapeSequenceRequest> ()))
+                  .Callback<AnsiEscapeSequenceRequest> (captured.Add);
+
+        AnsiSizeMonitor monitor = new (output, queryTerminalSize: false);
+        monitor.Initialize (driverMock.Object);
+
+        Assert.DoesNotContain (captured, request => request.Terminator == "t");
+        AnsiEscapeSequenceRequest cprRequest = Assert.Single (captured, request => request.Terminator == "R");
+        Assert.False (monitor.InitialSizeReceived);
+
+        cprRequest.ResponseReceived! ("[15;1R");
+
+        Assert.True (monitor.InitialSizeReceived);
+        Assert.Equal (14, monitor.InitialCursorRow);
+    }
+
     /// <summary>
     ///     In FullScreen mode, <see cref="AnsiSizeMonitor"/> sends both size and cursor
     ///     position queries during initialization (cursor position is needed for the startup gate).

@@ -33,10 +33,18 @@ jobs:
 
       - name: Extract release info from branch name
         id: release
+        env:
+          HEAD_REF: ${{ github.event.pull_request.head.ref }}
         run: |
-          BRANCH="${{ github.event.pull_request.head.ref }}"
+          BRANCH="$HEAD_REF"
           # Branch name is release/vX.Y.Z or release/vX.Y.Z-beta
           TAG="${BRANCH#release/}"
+
+          if ! [[ "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z-]+(\.[0-9A-Za-z-]+)*)?$ ]]; then
+            echo "::error::Unexpected release branch format: $BRANCH"
+            exit 1
+          fi
+
           SEMVER="${TAG#v}"
 
           # Determine if this is a pre-release
@@ -82,8 +90,10 @@ jobs:
             $PRERELEASE_FLAG
 
       - name: Delete release branch
+        env:
+          HEAD_REF: ${{ github.event.pull_request.head.ref }}
         run: |
-          BRANCH="${{ github.event.pull_request.head.ref }}"
+          BRANCH="$HEAD_REF"
           git push origin --delete "$BRANCH" || true
           echo "Deleted branch: $BRANCH"
 

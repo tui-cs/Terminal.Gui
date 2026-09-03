@@ -35,7 +35,6 @@ public static class Trace
     ///     Gets or sets the enabled trace categories for the current async context.
     ///     This property is thread-safe and isolated per async flow.
     /// </summary>
-    [ConfigurationProperty (Scope = typeof (SettingsScope))]
     [JsonConverter (typeof (TraceCategoryJsonConverter))]
     public static TraceCategory EnabledCategories
     {

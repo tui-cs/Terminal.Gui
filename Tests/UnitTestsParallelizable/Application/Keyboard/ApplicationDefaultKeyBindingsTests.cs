@@ -65,8 +65,8 @@ public class ApplicationDefaultKeyBindingsTests
 
         Assert.NotNull (propertyInfo);
 
-        var attr = propertyInfo.GetCustomAttribute<ConfigurationPropertyAttribute> ();
-        Assert.NotNull (attr);
+        System.Attribute? attr = propertyInfo.GetCustomAttributes ().FirstOrDefault (a => a.GetType ().Name == "ConfigurationPropertyAttribute");
+        Assert.Null (attr);
     }
 
     [Fact]

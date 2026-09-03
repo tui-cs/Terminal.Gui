@@ -44,6 +44,11 @@ public interface IOutputBuffer
     ///     Gets a value for each row indicating whether that row contains any dirty cells and should be rendered.
     ///     Used by <see cref="IOutput"/> to skip rows with no pending changes, avoiding unnecessary cursor moves.
     /// </summary>
+    /// <remarks>
+    ///     Output implementations clear each row's flag after emitting its dirty cells. Buffer implementations must set
+    ///     the corresponding row flag whenever a cell is marked dirty. Code that modifies <see cref="Contents"/> directly
+    ///     is responsible for updating the corresponding row flag.
+    /// </remarks>
     bool [] DirtyLines { get; }
 
     /// <summary>

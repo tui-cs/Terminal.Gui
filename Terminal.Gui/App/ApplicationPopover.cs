@@ -57,6 +57,9 @@ public sealed class ApplicationPopover : IDisposable
     ///     When a popover is registered, the View instance lifetime is managed by the application. Call
     ///     <see cref="DeRegister"/>
     ///     to manage the lifetime of the popover directly.
+    ///     If <paramref name="popover"/> is the active popover, it is removed from the registry first, then hidden so the
+    ///     region it covered is invalidated. Unregistering before <see cref="Hide"/> prevents a
+    ///     <see cref="View.VisibleChanged"/> handler from calling <see cref="Show"/> during hide.
     /// </remarks>
     /// <param name="popover"></param>
     /// <returns></returns>
@@ -67,6 +70,20 @@ public sealed class ApplicationPopover : IDisposable
             return false;
         }
 
+        bool wasActive = GetActivePopover () == popover;
+
+        // Unregister before Hide. Hide sets Visible=false and raises VisibleChanged.
+        // A handler can call Show only while the popover is still registered.
+        _popovers.Remove (popover);
+
+        if (wasActive)
+        {
+            // Hide after unregister so the covered region is still invalidated (#5635).
+            Hide (popover);
+        }
+
+        // A VisibleChanged handler may have re-registered via MakeVisible and restored
+        // _activePopover. The caller asked to deregister.
         if (GetActivePopover () == popover)
         {
             _activePopover = null;

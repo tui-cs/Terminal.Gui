@@ -43,15 +43,17 @@ public class MarkdownCodeBlock : View, IDesignable
     ///     (<c>```lang\ncode\n```</c>) and extracts the language automatically. Plain text
     ///     (without fences) is also accepted and treated as language-less code.
     /// </summary>
-    public override string Text
+    protected override void OnTextChanged ()
     {
-        get
-        {
-            string body = string.Join ("\n", CodeLines);
+        ParseFencedText (Text);
 
-            return !string.IsNullOrEmpty (Language) ? $"```{Language}\n{body}\n```" : body;
-        }
-        set => ParseFencedText (value);
+        base.OnTextChanged ();
+    }
+
+    /// <inheritdoc/>
+    protected override void UpdateTextFormatterText ()
+    {
+        TextFormatter.Text = string.Empty;
     }
 
     /// <summary>

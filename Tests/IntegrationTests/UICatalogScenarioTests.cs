@@ -17,8 +17,6 @@ public class UICatalogScenarioTests (ITestOutputHelper output)
         View.EnableDebugIDisposableAsserts = true;
         View.Instances.Clear ();
 #endif
-
-        ConfigurationManager.Disable (true);
         Application.ResetState (true);
 
         uint abortTime = 3000;

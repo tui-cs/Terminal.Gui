@@ -24,12 +24,7 @@ public class CheckBox : View, IValue<CheckState>
     /// <summary>
     ///     Gets or sets the default Highlight Style.
     /// </summary>
-    [ConfigurationProperty (Scope = typeof (ThemeScope))]
-    public static MouseState DefaultMouseHighlightStates
-    {
-        get => CheckBoxSettings.Defaults.DefaultMouseHighlightStates;
-        set => CheckBoxSettings.Defaults.DefaultMouseHighlightStates = value;
-    }
+    public static MouseState DefaultMouseHighlightStates => CheckBoxSettings.Current.DefaultMouseHighlightStates;
 
     /// <summary>
     ///     Initializes a new instance of <see cref="CheckBox"/>.
@@ -68,12 +63,17 @@ public class CheckBox : View, IValue<CheckState>
 
     private void Checkbox_TitleChanged (object? sender, EventArgs<string> e)
     {
-        base.Text = e.Value;
+        SetTextDirect (e.Value);
         TextFormatter.HotKeySpecifier = HotKeySpecifier;
     }
 
     /// <inheritdoc/>
-    public override string Text { get => Title; set => base.Text = Title = value; }
+    protected override void OnTextChanged ()
+    {
+        Title = Text;
+
+        base.OnTextChanged ();
+    }
 
     /// <inheritdoc/>
     public override Rune HotKeySpecifier { get => base.HotKeySpecifier; set => TextFormatter.HotKeySpecifier = base.HotKeySpecifier = value; }

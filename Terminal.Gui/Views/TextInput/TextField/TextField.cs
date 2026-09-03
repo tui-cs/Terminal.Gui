@@ -79,12 +79,7 @@ public partial class TextField : View, IDesignable, IValue<string>
     /// <summary>
     ///     Gets or sets the default cursor style.
     /// </summary>
-    [ConfigurationProperty (Scope = typeof (ThemeScope))]
-    public static CursorStyle DefaultCursorStyle
-    {
-        get => TextFieldSettings.Defaults.DefaultCursorStyle;
-        set => TextFieldSettings.Defaults.DefaultCursorStyle = value;
-    }
+    public static CursorStyle DefaultCursorStyle => TextFieldSettings.Current.DefaultCursorStyle;
 
     /// <summary>
     ///     Initializes a new instance of the <see cref="TextField"/> class.
@@ -98,7 +93,7 @@ public partial class TextField : View, IDesignable, IValue<string>
 
         ReadOnly = false;
         Autocomplete = new TextFieldAutocomplete ();
-        Height = Dim.Auto (DimAutoStyle.Text, 1);
+        Height = Dim.Auto (DimAutoStyle.Text, minimumContentDim: 1, maximumContentDim: 1);
 
         CanFocus = true;
         Used = true;

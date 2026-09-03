@@ -25,7 +25,7 @@ Terminal.Gui provides three console driver implementations:
 | **Output Model** | Pure ANSI escape sequences | Managed .NET + ANSI sequences (when VT mode enabled) | Direct character output via Win32 API with double buffering |
 | **Unix Write APIs** | `write()` syscall to stdout (fd 1) | N/A (uses .NET `Console.Write()` which internally delegates to platform APIs) | N/A (Windows-only) |
 | **Windows Write APIs** | P/Invokes `WriteFile()` | N/A (uses .NET `Console.Write()` which internally delegates to platform APIs) | P/Invokes `WriteConsoleW()`, `CreateConsoleScreenBuffer()`/`SetConsoleActiveScreenBuffer()` for double buffering, `SetConsoleTextAttribute()` |
-| **Screen Model** | Configurable via `Driver.SizeDetection`. Default (`AnsiQuery`): ANSI `CSI 18t` query, throttled to 500 ms. `Polling`: `ioctl(TIOCGWINSZ)` on Unix, Console API on Windows. | Polling-based re-size: `Console.WindowWidth`/`Console.WindowHeight` queried periodically. Falls back to 80x25 on `IOException`. | Event-based re-size: `WINDOW_BUFFER_SIZE_EVENT` received in input stream via `ReadConsoleInputW()`. Immediate resize notification. `GetConsoleScreenBufferInfoEx()` queries dimensions. |
+| **Screen Model** | Configurable via `Driver.SizeDetection`. Default (`Polling`): `ioctl(TIOCGWINSZ)` on Unix, Console API on Windows. `AnsiQuery`: ANSI `CSI 18t` query, throttled to 500 ms. | Polling-based re-size: `Console.WindowWidth`/`Console.WindowHeight` queried periodically. Falls back to 80x25 on `IOException`. | Event-based re-size: `WINDOW_BUFFER_SIZE_EVENT` received in input stream via `ReadConsoleInputW()`. Immediate resize notification. `GetConsoleScreenBufferInfoEx()` queries dimensions. |
 | **Cursor Handling** | ANSI sequences: DECTCEM (`CSI ? 25 h/l`) for show/hide, DECSCUSR (`CSI Ps SP q`) for style. Full `CursorStyle` support. | ANSI sequences (same as ansi driver). Falls back to `Console.SetCursorPosition()` on Windows. | • Legacy mode: Win32 `CONSOLE_CURSOR_INFO` (size percentage only, no blinking control). <br>• Modern VT mode: ANSI sequences (same as ansi driver). Full `CursorStyle` support. |
 | **Advantages** | • Cross-platform (all platforms)<br>• Pure, clean implementation<br>• Perfect for testing/CI<br>• Virtual time support<br>• Deterministic behavior<br>• Configurable size detection | • Cross-platform (all platforms)<br>• Maximum compatibility<br>• Simple implementation<br>• No P/Invoke; Works with .NET BCL<br> | • Highest performance on Windows<br>• Immediate resize detection<br> |
 | **Disadvantages** | • Requires proper ANSI support | • Lower performance (managed overhead)<br>• Limited feature set<br>• `System.ReadKey` has bugs on Windows<br>• Polling-based resize | • Windows-only<br>• More complex P/Invoke code |
@@ -41,11 +41,13 @@ The appropriate driver is automatically selected based on the platform when <xre
 
 Explicitly specify a driver in several ways:
 
-Method 1: Set ForceDriver using Configuration Manager
+Method 1: Set ForceDriver via nested configuration
 
 ```json
 {
-  "Application.ForceDriver": "ansi"
+  "Application": {
+    "ForceDriver": "ansi"
+  }
 }
 ```
 
@@ -67,13 +69,13 @@ using (IApplication app = Application.Create())
 }
 ```
 
-### ForceDriver as Configuration Property
+### ForceDriver via configuration
 
-The `ForceDriver` property is a configuration property marked with `[ConfigurationProperty]`, which means:
+`Application.ForceDriver` is backed by <xref:Terminal.Gui.Configuration.ApplicationSettings>.ForceDriver:
 
-- It can be set through the configuration system (e.g., `config.json`)
+- Set it in nested JSON (`Application: { ForceDriver: "ansi" }`) or on `ApplicationSettings.Defaults`
 - Changes raise the `ForceDriverChanged` event
-- It persists across application instances when using the static <xref:Terminal.Gui.App.Application> class
+- Library defaults load when `Terminal.Gui.dll` loads; overlay with `TuiConfigurationBuilder.RuntimeConfig`
 
 ```csharp
 // Subscribe to driver changes
@@ -357,23 +359,23 @@ The main driver interface that the framework uses internally. `IDriver` is organ
 
 #### Size Detection (ANSI Driver)
 
-The ANSI driver's terminal-size detection strategy is controlled by `Driver.SizeDetection` (a `[ConfigurationProperty]`):
+The ANSI driver's terminal-size detection strategy is controlled by `Driver.SizeDetection` (<xref:Terminal.Gui.Configuration.DriverSettings>.SizeDetection):
 
 | Mode | Mechanism | When to use |
 |---|---|---|
-| `AnsiQuery` (default) | Sends `CSI 18t`, parses `ESC[8;h;wt` response. Async, ~500 ms throttle. | Most terminals. Works everywhere ANSI is supported. |
-| `Polling` | `ioctl(TIOCGWINSZ)` on Unix, `Console.WindowWidth/Height` on Windows. Synchronous. | When the ANSI response does not reflect the actual terminal size (e.g., some SSH configurations). |
+| `Polling` (default) | `ioctl(TIOCGWINSZ)` on Unix, `Console.WindowWidth/Height` on Windows. Falls back to `AnsiQuery` when the native query is unavailable. | Supported local platforms. Avoids terminal size-query traffic when the native query is available. |
+| `AnsiQuery` | Sends `CSI 18t`, parses `ESC[8;h;wt` response. Async, ~500 ms throttle. | Explicit fallback for transports where the native query is unavailable or does not report the correct size. |
 
 Set via JSON configuration:
 
 ```json
-{ "Driver.SizeDetection": "Polling" }
+{ "Driver": { "SizeDetection": "AnsiQuery" } }
 ```
 
 Or programmatically before `Init()`:
 
 ```csharp
-Driver.SizeDetection = SizeDetectionMode.Polling;
+Driver.SizeDetection = SizeDetectionMode.AnsiQuery;
 ```
 
 #### Content Buffer

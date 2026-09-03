@@ -57,7 +57,7 @@ public class TextValidateField : View, IDesignable, IValue<string>
     /// </summary>
     public TextValidateField ()
     {
-        Height = Dim.Auto (minimumContentDim: 1);
+        Height = Dim.Auto (DimAutoStyle.Text, minimumContentDim: 1, maximumContentDim: 1);
         CanFocus = true;
 
         // Things this view knows how to do
@@ -153,6 +153,7 @@ public class TextValidateField : View, IDesignable, IValue<string>
             {
                 _provider.TextChanged += ProviderOnTextChanged;
                 _lastKnownText = _provider.Text;
+                SetTextDirect (_provider.Text);
             }
 
             if (_provider!.Fixed)
@@ -203,57 +204,93 @@ public class TextValidateField : View, IDesignable, IValue<string>
 
     #endregion
 
-    /// <summary>Text</summary>
-    public override string Text
+    /// <summary>
+    ///     Stashes the final text value determined during <see cref="OnTextChanging"/> (after possible
+    ///     subscriber modification) for use in <see cref="OnTextChanged"/>.
+    /// </summary>
+    private string? _pendingValidatedText;
+
+    /// <inheritdoc/>
+    protected override bool OnTextChanging (string newText)
     {
-        get => _provider is null ? string.Empty : _provider.Text;
-        set
+        if (_provider is null || SuppressValueEvents)
         {
-            if (_provider is null)
-            {
-                return;
-            }
-
-            string oldValue = _provider.Text;
-
-            if (oldValue == value)
-            {
-                return;
-            }
-
-            if (!SuppressValueEvents)
-            {
-                ValueChangingEventArgs<string?> args = new (oldValue, value);
-
-                if (OnValueChanging (args) || args.Handled)
-                {
-                    return;
-                }
-
-                ValueChanging?.Invoke (this, args);
-
-                if (args.Handled)
-                {
-                    return;
-                }
-
-                // Allow subscribers to modify the new value
-                value = args.NewValue ?? string.Empty;
-            }
-
-            _lastKnownText = value;
-            _provider.Text = value;
-
-            if (!SuppressValueEvents)
-            {
-                ValueChangedEventArgs<string?> changedArgs = new (oldValue, value);
-                OnValueChanged (changedArgs);
-                ValueChanged?.Invoke (this, changedArgs);
-                ValueChangedUntyped?.Invoke (this, new ValueChangedEventArgs<object?> (oldValue, value));
-            }
-
-            SetNeedsDraw ();
+            return base.OnTextChanging (newText);
         }
+
+        string oldValue = _provider.Text;
+
+        if (oldValue == newText)
+        {
+            return true;
+        }
+
+        ValueChangingEventArgs<string?> args = new (oldValue, newText);
+
+        if (OnValueChanging (args) || args.Handled)
+        {
+            return true;
+        }
+
+        ValueChanging?.Invoke (this, args);
+
+        if (args.Handled)
+        {
+            return true;
+        }
+
+        // Allow subscribers to modify the new value
+        _pendingValidatedText = args.NewValue ?? string.Empty;
+
+        return base.OnTextChanging (newText);
+    }
+
+    /// <summary>Text</summary>
+    protected override void OnTextChanged ()
+    {
+        string value = _pendingValidatedText ?? Text;
+        _pendingValidatedText = null;
+
+        if (_provider is null)
+        {
+            base.OnTextChanged ();
+
+            return;
+        }
+
+        string oldValue = _provider.Text;
+
+        if (oldValue == value)
+        {
+            base.OnTextChanged ();
+
+            return;
+        }
+
+        // Apply subscriber-modified value if different from what the base stored
+        if (value != Text)
+        {
+            SetTextDirect (value);
+        }
+
+        _lastKnownText = value;
+        _provider.Text = value;
+
+        // The provider may transform the text (e.g., mask formatting).
+        // Keep base _text in sync with the provider's actual text.
+        SetTextDirect (_provider.Text);
+
+        if (!SuppressValueEvents)
+        {
+            ValueChangedEventArgs<string?> changedArgs = new (oldValue, _provider.Text);
+            OnValueChanged (changedArgs);
+            ValueChanged?.Invoke (this, changedArgs);
+            ValueChangedUntyped?.Invoke (this, new ValueChangedEventArgs<object?> (oldValue, _provider.Text));
+        }
+
+        SetNeedsDraw ();
+
+        base.OnTextChanged ();
     }
 
     private int _insertionPoint;
@@ -325,6 +362,9 @@ public class TextValidateField : View, IDesignable, IValue<string>
 
         // Sync _lastKnownText with actual provider state (may have been reverted by handler)
         _lastKnownText = _provider.Text;
+
+        // Keep base Text in sync with provider
+        SetTextDirect (_provider.Text);
     }
 
     private void RevertProviderText (string oldText)
@@ -358,6 +398,9 @@ public class TextValidateField : View, IDesignable, IValue<string>
     }
 
     /// <inheritdoc/>
+    protected override bool OnDrawingText (DrawContext? context) => true;
+
+    /// <inheritdoc/>
     protected override bool OnDrawingContent (DrawContext? context)
     {
         if (_provider is null)
@@ -368,7 +411,7 @@ public class TextValidateField : View, IDesignable, IValue<string>
             return true;
         }
 
-        var role = VisualRole.Editable;
+        VisualRole role = VisualRole.Editable;
         Attribute textColor = IsValid ? GetAttributeForRole (role) : SchemeManager.GetScheme (Schemes.Error).GetAttributeForRole (role);
 
         (int marginLeft, int marginRight) = GetMargins (Viewport.Width);
@@ -405,7 +448,7 @@ public class TextValidateField : View, IDesignable, IValue<string>
             return true;
         }
 
-        SetAttributeForRole (VisualRole.Focus);
+        SetAttribute (textColor with { Style = textColor.Style | TextStyle.Underline });
         Move (InsertionPoint + marginLeft, 0);
         AddRune ((Rune)_provider.DisplayText [InsertionPoint]);
 

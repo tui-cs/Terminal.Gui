@@ -16,4 +16,4 @@ A Scheme defines how Views look based on their semantic purpose. The following s
 Scheme dialogScheme = SchemeManager.GetScheme (Schemes.Dialog);
 ```
 
-[ConfigurationManager](~/docs/config.md) can be used to override the default values for these schemes and add additional schemes. 
+[TuiConfigurationBuilder](~/docs/config.md) can be used to override the default values for these schemes and add additional schemes. 

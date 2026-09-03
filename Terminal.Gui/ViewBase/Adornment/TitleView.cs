@@ -112,7 +112,12 @@ public sealed class TitleView : View, ITitleView, IDesignable
     public NavigationDirection Direction { get; set; }
 
     /// <inheritdoc/>
-    public override string Text { get => base.Text; set => base.Text = Title = value; }
+    protected override void OnTextChanged ()
+    {
+        Title = Text;
+
+        base.OnTextChanged ();
+    }
 
     /// <summary>
     ///     Binds the appropriate arrow keys to their directional <see cref="Command"/> based on

@@ -60,7 +60,7 @@ public class UnixIOHelperTests
     // Copilot
     public void IsInputAvailable_ReturnsTrue_WhenPollReportsReadableData ()
     {
-        if (!OperatingSystem.IsLinux () && !OperatingSystem.IsMacOS () && !OperatingSystem.IsFreeBSD ())
+        if (OperatingSystem.IsWindows ())
         {
             return;
         }
@@ -95,7 +95,7 @@ public class UnixIOHelperTests
     // Copilot
     public void IsInputAvailable_ReturnsFalse_WhenPollReportsNonReadableEvent ()
     {
-        if (!OperatingSystem.IsLinux () && !OperatingSystem.IsMacOS () && !OperatingSystem.IsFreeBSD ())
+        if (OperatingSystem.IsWindows ())
         {
             return;
         }

@@ -1,8 +1,7 @@
 using System.Diagnostics;
+using Terminal.Gui.Configuration;
 using Wcwidth;
 using Trace = Terminal.Gui.Tracing.Trace;
-
-#pragma warning disable CS0618 // Obsolete - ConfigurationManager still used internally during transition
 
 namespace Terminal.Gui.App;
 
@@ -13,6 +12,8 @@ internal partial class ApplicationImpl
 
     /// <inheritdoc/>
     public bool Initialized { get; set; }
+
+    internal SynchronizationContext? SynchronizationContext { get; private set; }
 
     /// <inheritdoc/>
     public event EventHandler<EventArgs<bool>>? InitializedChanged;
@@ -79,7 +80,11 @@ internal partial class ApplicationImpl
         RaiseInitializedChanged (this, new EventArgs<bool> (true));
         SubscribeDriverEvents ();
 
-        SynchronizationContext.SetSynchronizationContext (new SynchronizationContext ());
+        // Created here; installed as the thread's ambient context only while a session is running
+        // (see Begin/Run). Installing it at Init time would make an await between Init and Run
+        // capture a context whose continuations only execute once the main loop is pumping —
+        // stranding the continuation that was going to start the loop (#5636).
+        SynchronizationContext = new MainLoopSyncContext (this);
 
         _result = null;
 
@@ -182,8 +187,7 @@ internal partial class ApplicationImpl
         // ResetState handles the case where Initialized is false
         ResetState ();
 
-        // Configuration manager diagnostics
-        ConfigurationManager.PrintJsonErrors ();
+        TuiJsonErrors.Print ();
 
         // Raise the initialized changed event to notify shutdown
         if (wasInitialized)
@@ -302,15 +306,16 @@ internal partial class ApplicationImpl
         // === 8. Reset initialization state ===
         Initialized = false;
         MainThreadId = null;
+        ResetHasEndedSession ();
 
         // === 9. Reset synchronization context ===
-        // IMPORTANT: Always reset sync context, even if not initialized
-        // This ensures cleanup works correctly even if Shutdown is called without Init
-        // Reset synchronization context to allow the user to run async/await,
-        // as the main loop has been ended, the synchronization context from
-        // gui.cs does no longer process any callbacks. See #1084 for more details:
-        // (https://github.com/tui-cs/Terminal.Gui/issues/1084).
-        SynchronizationContext.SetSynchronizationContext (null);
+        // If this app's context is still the thread's ambient context, clear it so later
+        // async/await does not capture a context that no longer processes callbacks (#1084).
+        // A foreign ambient context (the caller's own) is left untouched.
+        if (SynchronizationContext is { } ownContext && System.Threading.SynchronizationContext.Current == ownContext)
+        {
+            System.Threading.SynchronizationContext.SetSynchronizationContext (null);
+        }
 
         // === 10. Unsubscribe from Application static property change events ===
         UnsubscribeApplicationEvents ();

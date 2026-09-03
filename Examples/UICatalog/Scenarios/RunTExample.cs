@@ -1,4 +1,4 @@
-﻿
+
 namespace UICatalog.Scenarios;
 
 [ScenarioMetadata ("Run<T> Example", "Illustrates using Application.Run<T> to run a custom class")]
@@ -7,7 +7,6 @@ public class RunTExample : Scenario
 {
     public override void Main ()
     {
-        ConfigurationManager.Enable (ConfigLocations.All);
 
         using IApplication app = Application.Create ();
         app.Init ();

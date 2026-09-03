@@ -177,7 +177,7 @@ public class TimeEditor : TextValidateField, IValue<TimeSpan>, IDesignable
 
     /// <summary>
     ///     Synchronizes the <see cref="TimeSpan"/> backing field when the base class
-    ///     <see cref="TextValidateField.Text"/> property changes programmatically.
+    ///     <see cref="View.Text"/> property changes programmatically.
     /// </summary>
     protected override void OnValueChanged (ValueChangedEventArgs<string?> args) => _value = TimeProvider.TimeValue;
 

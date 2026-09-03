@@ -4,6 +4,8 @@ This document provides an in-depth overview of the new features, improvements, a
 
 **For migration guidance**, see the [v1 To v2 Migration Guide](migratingfromv1.md).
 
+For the 2.5.0 API breaks (`View.Text`, `IAcceptTarget`, `ConfigurationManager`, nested `config.json`), see [2.5.0 Breaking Changes](breaking-changes-2.5.0.md).
+
 ## Table of Contents
 
 - [Overview](#overview)
@@ -316,14 +318,15 @@ See the [Configuration Deep Dive](config.md) and [Scheme Deep Dive](scheme.md) f
 
 v2 adds comprehensive theme support:
 
-- **ConfigurationManager**: Loads/saves color schemes from files
+- **TuiConfigurationBuilder**: Loads themes and settings from nested JSON files
 - **Schemes**: Applied per-view or globally via [Scheme](~/api/Terminal.Gui.Drawing.Scheme.yml)
 - **Text Styles**: [TextStyle](~/api/Terminal.Gui.Drawing.TextStyle.yml) supports Bold, Italic, Underline, Strikethrough, Blink, Reverse, Faint
 - **User Customization**: End-users can personalize without code changes
 
 ```csharp
 // Apply a theme
-ConfigurationManager.Themes.Theme = "Dark";
+TuiConfigurationBuilder builder = new ();
+builder.ThemeManager.SwitchTheme ("Dark");
 
 // Customize text style
 view.Scheme.Normal = new (
@@ -639,27 +642,23 @@ See the [Mouse Deep Dive](mouse.md) for complete details.
 
 See the [Configuration Deep Dive](config.md) for complete details.
 
-### ConfigurationManager
+### TuiConfigurationBuilder
 
-[ConfigurationManager](~/api/Terminal.Gui.Configuration.ConfigurationManager.yml) provides:
+<xref:Terminal.Gui.Configuration.TuiConfigurationBuilder> provides:
 
-- JSON-based persistence
-- Theme management
-- Key binding customization
-- View property persistence
-- [SettingsScope](~/api/Terminal.Gui.Configuration.SettingsScope.yml) - User, Application, Machine levels
-- [ConfigLocations](~/api/Terminal.Gui.Configuration.ConfigLocations.yml) - Where to search for configs
+- JSON-based persistence via Microsoft.Extensions.Configuration
+- Theme management (`IThemeManager.SwitchTheme`)
+- Key binding and view-default overlays
+- App-specific Settings POCOs (`BindAppSettings<T>`)
 
 ```csharp
-// Enable configuration
-ConfigurationManager.Enable (ConfigLocations.All);
-
-// Load a theme
-ConfigurationManager.Themes.Theme = "Dark";
-
-// Save current configuration
-ConfigurationManager.Save ();
+TuiConfigurationBuilder builder = new ("MyApp");
+builder.RuntimeConfig = """{ "Theme": "Dark" }""";
+builder.ApplyToStaticFacades ();
+builder.ThemeManager.SwitchTheme ("Dark");
 ```
+
+See [Migrating ConfigurationManager to TuiConfigurationBuilder](migrate-cm-to-mec.md) if you still have 2.4.x `ConfigurationManager` calls or a flat-key `config.json`. See [2.5.0 Breaking Changes](breaking-changes-2.5.0.md) for the other 2.5.0 API breaks.
 
 **User Customization:**
 - End-users can personalize themes, colors, text styles

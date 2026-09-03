@@ -1,16 +1,22 @@
 namespace Terminal.Gui.Configuration;
 
 /// <summary>
-///     Settings POCO for <see cref="Views.TextView"/> defaults (ThemeScope).
+///     Immutable settings record for <see cref="Views.TextView"/> defaults (ThemeScope).
 /// </summary>
-public class TextViewSettings
+public sealed record TextViewSettings
 {
-    /// <summary>Gets or sets the default cursor style for text views.</summary>
-    public CursorStyle DefaultCursorStyle { get; set; } = CursorStyle.BlinkingBar;
+    /// <summary>Gets the default cursor style for text views.</summary>
+    public CursorStyle DefaultCursorStyle { get; init; } = CursorStyle.BlinkingBar;
 
-    /// <summary>
-    ///     The static facade instance. Always contains the current effective values.
-    ///     Updated by the MEC binding at <see cref="IApplication"/> initialization.
-    /// </summary>
-    public static TextViewSettings Defaults { get; set; } = new ();
+    /// <summary>The compile-time-known defaults.</summary>
+    public static TextViewSettings Default { get; } = new ();
+
+    /// <summary>The currently effective values, updated atomically by <see cref="MecThemeManager"/>.</summary>
+    public static TextViewSettings Current
+    {
+        get => Volatile.Read (ref _current);
+        set => Volatile.Write (ref _current, value);
+    }
+
+    private static TextViewSettings _current = Default;
 }

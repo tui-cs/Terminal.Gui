@@ -124,7 +124,7 @@ internal sealed class WindowsVTInputHelper : IDisposable
         }
 
         // Only attempt on Windows
-        if (!RuntimeInformation.IsOSPlatform (OSPlatform.Windows))
+        if (!OperatingSystem.IsWindows ())
         {
             return false;
         }
@@ -290,7 +290,7 @@ internal sealed class WindowsVTInputHelper : IDisposable
     /// </summary>
     public static void WakePendingRead ()
     {
-        if (!RuntimeInformation.IsOSPlatform (OSPlatform.Windows))
+        if (!OperatingSystem.IsWindows ())
         {
             return;
         }

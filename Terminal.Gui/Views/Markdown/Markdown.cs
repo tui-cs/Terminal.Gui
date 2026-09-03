@@ -124,7 +124,23 @@ public partial class Markdown : View, IDesignable
 
     /// <summary>Gets or sets the Markdown-formatted text displayed by this view.</summary>
     /// <value>The raw Markdown string. Setting this property triggers reparsing, re-layout, and a redraw.</value>
-    public override string Text { get => _markdown; set => SetMarkdown (value); }
+    protected override void OnTextChanged ()
+    {
+        SetMarkdown (Text);
+
+        base.OnTextChanged ();
+    }
+
+    /// <inheritdoc/>
+    /// <remarks>
+    ///     <see cref="Markdown"/> does not use <see cref="View.TextFormatter"/> for rendering.
+    ///     It uses its own styled-line pipeline. Clearing the formatter text prevents the base
+    ///     <see cref="View"/> from drawing raw markdown as plain text.
+    /// </remarks>
+    protected override void UpdateTextFormatterText ()
+    {
+        TextFormatter.Text = string.Empty;
+    }
 
     /// <inheritdoc/>
     /// <remarks>

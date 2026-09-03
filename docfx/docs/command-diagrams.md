@@ -82,7 +82,7 @@ flowchart TD
 - `DispatchDown` creates a new context with `Routing = DispatchingDown`, suppressing re-bubbling in the target and preventing infinite recursion.
 - `TextField.DefaultAcceptHandler` skips its own <xref:Terminal.Gui.ViewBase.View.DefaultAcceptView> redirect because `acceptWillBubble = true` — this prevents double-handling.
 - <xref:Terminal.Gui.ViewBase.View.DefaultAcceptView> is a property on each view that returns the first `IAcceptTarget { IsDefault: true }` SubView (typically a <xref:Terminal.Gui.Views.Button>). It is not inherited from the SuperView.
-- <xref:Terminal.Gui.Views.Button> returns `true` from `DefaultAcceptHandler` because it implements <xref:Terminal.Gui.IAcceptTarget>.
+- <xref:Terminal.Gui.Views.Button> returns `true` from `DefaultAcceptHandler` because it implements <xref:Terminal.Gui.Input.IAcceptTarget>.
 
 ### Level 3: Complete Flow with MenuBarItem, Menu, and MenuItem
 

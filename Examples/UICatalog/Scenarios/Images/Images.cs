@@ -46,7 +46,6 @@ public class Images : Scenario
 
     public override void Main ()
     {
-        ConfigurationManager.Enable (ConfigLocations.All);
         using IApplication app = Application.Create ();
         app.Init ();
         IDriver driver = app.Driver ?? throw new InvalidOperationException ("The application driver was not initialized.");

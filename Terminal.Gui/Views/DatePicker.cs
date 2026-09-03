@@ -50,16 +50,26 @@ public class DatePicker : View, IValue<DateTime>
     }
 
     /// <inheritdoc/>
-    public override string Text
+    protected override bool OnTextChanging (string newText)
     {
-        get => Value.ToString (Format);
-        set
+        // Reject text that cannot be parsed as a valid DateTime
+        if (!DateTime.TryParse (newText, out _))
         {
-            if (DateTime.TryParse (value, out DateTime result))
-            {
-                Value = result;
-            }
+            return true;
         }
+
+        return base.OnTextChanging (newText);
+    }
+
+    /// <inheritdoc/>
+    protected override void OnTextChanged ()
+    {
+        if (DateTime.TryParse (Text, out DateTime result))
+        {
+            Value = result;
+        }
+
+        base.OnTextChanged ();
     }
 
     #region IValue<DateTime> Implementation
@@ -92,6 +102,9 @@ public class DatePicker : View, IValue<DateTime>
             }
 
             _date = value;
+
+            // Keep Text in sync with the new date value
+            SetTextDirect (_date.ToString (Format));
 
             // Propagate value to embedded editor
             _dateEditor?.Value = value;

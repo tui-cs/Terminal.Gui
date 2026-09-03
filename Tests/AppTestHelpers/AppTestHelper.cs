@@ -181,7 +181,7 @@ public partial class AppTestHelper : IDisposable
                                  catch (Exception ex)
                                  {
                                      _backgroundException = ex;
-                                     _ansiInput.ExternalCancellationTokenSource!.Cancel ();
+                                     _ansiInput.ExternalCancellationTokenSource?.Cancel ();
                                  }
                                  finally
                                  {
@@ -314,8 +314,15 @@ public partial class AppTestHelper : IDisposable
     /// <returns></returns>
     public AppTestHelper WaitIteration (Action<IApplication>? action = null)
     {
-        // If application has already exited don't wait!
-        if (Finished || _runCancellationTokenSource.Token.IsCancellationRequested || _ansiInput.ExternalCancellationTokenSource!.Token.IsCancellationRequested)
+        CancellationTokenSource? externalCts = _ansiInput.ExternalCancellationTokenSource;
+
+        // If application has already exited don't wait.
+        // ExternalCancellationTokenSource can already be null during shutdown:
+        // CleanupApplication nulls it, and Stop/Dispose still call WaitIteration.
+        if (Finished
+            || _runCancellationTokenSource.Token.IsCancellationRequested
+            || externalCts is null
+            || externalCts.Token.IsCancellationRequested)
         {
             Logging.Warning ("WaitIteration called after context was stopped");
 
@@ -359,7 +366,7 @@ public partial class AppTestHelper : IDisposable
         [
             _runCancellationTokenSource.Token.WaitHandle,
             ctsActionCompleted.Token.WaitHandle,
-            _ansiInput.ExternalCancellationTokenSource!.Token.WaitHandle
+            externalCts.Token.WaitHandle
         ];
 
         WaitHandle.WaitAny (waitHandles);
@@ -565,15 +572,27 @@ public partial class AppTestHelper : IDisposable
         throw new Exception (reason);
     }
 
+    /// <summary>
+    ///     Test hook: nulls the external cancellation source without marking <see cref="Finished"/>.
+    ///     Matches the shutdown race where <see cref="CleanupApplication"/> clears the source
+    ///     while <see cref="WaitIteration"/> is still running.
+    /// </summary>
+    internal void ClearExternalCancellationTokenSourceForTests ()
+    {
+        _ansiInput.ExternalCancellationTokenSource = null;
+    }
+
     private void CleanupApplication ()
     {
         Logging.Trace ("CleanupApplication");
+
+        // Mark finished first so WaitIteration can return without touching the CTS.
+        Finished = true;
         _ansiInput.ExternalCancellationTokenSource = null;
 
         App?.ResetState (true);
         _loggerScope?.Dispose ();
         _loggerScope = null;
-        Finished = true;
 
         Application.MaximumIterationsPerSecond = Application.DefaultMaximumIterationsPerSecond;
     }

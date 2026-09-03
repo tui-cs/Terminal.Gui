@@ -16,12 +16,10 @@ public class PopoverMenuDefaultKeyCollisionTests
     [Fact]
     public void FileDialog_Ctor_DoesNotThrow_WhenDefaultKeyCollidesWithTableViewBinding ()
     {
-        PopoverMenuSettings original = PopoverMenuSettings.Defaults;
-
         try
         {
             // TableView binds Ctrl+P -> Command.Up by default; the context-menu key must win without throwing.
-            PopoverMenuSettings.Defaults = new () { DefaultKey = Key.P.WithCtrl };
+            PopoverMenu.DefaultKey = Key.P.WithCtrl;
 
             MockFileSystem fs = new ();
             fs.AddDirectory ("/testdir");
@@ -32,19 +30,18 @@ public class PopoverMenuDefaultKeyCollisionTests
         }
         finally
         {
-            PopoverMenuSettings.Defaults = original;
+            // Setting DefaultKey pins an app override; tests must clear it, not assign the old value back.
+            PopoverMenu.ResetDefaultKeyOverride ();
         }
     }
 
     [Fact]
     public void CharMap_Ctor_DoesNotThrow_WhenDefaultKeyCollidesWithExistingBinding ()
     {
-        PopoverMenuSettings original = PopoverMenuSettings.Defaults;
-
         try
         {
             // CharMap binds Key.End -> Command.End before binding the context-menu key.
-            PopoverMenuSettings.Defaults = new () { DefaultKey = Key.End };
+            PopoverMenu.DefaultKey = Key.End;
 
             using CharMap charMap = new ();
 
@@ -52,7 +49,8 @@ public class PopoverMenuDefaultKeyCollisionTests
         }
         finally
         {
-            PopoverMenuSettings.Defaults = original;
+            // Setting DefaultKey pins an app override; tests must clear it, not assign the old value back.
+            PopoverMenu.ResetDefaultKeyOverride ();
         }
     }
 }

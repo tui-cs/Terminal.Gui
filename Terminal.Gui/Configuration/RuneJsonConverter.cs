@@ -20,104 +20,37 @@ namespace Terminal.Gui.Configuration;
 /// </summary>
 internal class RuneJsonConverter : JsonConverter<Rune>
 {
+    /// <summary>
+    ///     Parses a configuration string using the same rules as <see cref="Read"/> for a JSON string token.
+    ///     Does not round-trip through <see cref="JsonSerializer"/> (that path is trim-unsafe on NativeAOT).
+    /// </summary>
+    internal static bool TryParse (string? value, out Rune result)
+    {
+        result = default;
+
+        if (value is null)
+        {
+            return false;
+        }
+
+        try
+        {
+            result = ParseString (value);
+
+            return true;
+        }
+        catch (JsonException)
+        {
+            return false;
+        }
+    }
+
     public override Rune Read (ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
     {
         switch (reader.TokenType)
         {
             case JsonTokenType.String:
-                {
-                    string? value = reader.GetString ();
-                    int first = RuneExtensions.MaxUnicodeCodePoint + 1;
-                    int second = RuneExtensions.MaxUnicodeCodePoint + 1;
-
-                    if (value is { } && (value.StartsWith ("U+", StringComparison.OrdinalIgnoreCase)
-                                         || value.StartsWith ("\\U", StringComparison.OrdinalIgnoreCase)))
-                    {
-                        // Handle encoded single char, surrogate pair, or combining mark + char
-                        uint [] codePoints = Regex.Matches (value, @"(?:\\[uU]\+?|U\+)([0-9A-Fa-f]{1,8})")
-                                                  .Select (
-                                                           match => uint.Parse (
-                                                                                match.Groups [1].Value,
-                                                                                NumberStyles.HexNumber
-                                                                               )
-                                                          )
-                                                  .ToArray ();
-
-                        if (codePoints.Length is 0 or > 2)
-                        {
-                            throw new JsonException ($"{value}: Invalid Rune.");
-                        }
-
-                        if (codePoints.Length > 0)
-                        {
-                            first = (int)codePoints [0];
-                        }
-
-                        if (codePoints.Length == 2)
-                        {
-                            second = (int)codePoints [1];
-                        }
-                    }
-                    else
-                    {
-                        // Handle single character, surrogate pair, or combining mark + char
-                        if (value is { Length: 0 or > 2 })
-                        {
-                            throw new JsonException ($"{value}: Invalid Rune");
-                        }
-
-                        if (value is { Length: > 0 })
-                        {
-                            first = value [0];
-                        }
-
-                        if (value is { Length: 2 })
-                        {
-                            second = value [1];
-                        }
-                    }
-
-                    Rune result;
-
-                    if (second == RuneExtensions.MaxUnicodeCodePoint + 1)
-                    {
-                        // Single codepoint
-                        if (!Rune.TryCreate (first, out result))
-                        {
-                            throw new JsonException ($"{value}: Invalid Rune");
-                        }
-
-                        return result;
-                    }
-
-                    // Surrogate pair?
-                    if (Rune.TryCreate ((char)first, (char)second, out result))
-                    {
-                        return result;
-                    }
-
-                    if (!Rune.IsValid (second))
-                    {
-                        throw new JsonException ($"{value}: Invalid Rune. The second codepoint is not valid: {second}.");
-                    }
-
-                    var cm = new Rune (second);
-
-                    if (!cm.IsCombiningMark ())
-                    {
-                        throw new JsonException ($"{value}: Invalid Rune. The second codepoint is not a combining mark: {cm}.");
-                    }
-
-                    // not a surrogate pair, so a combining mark + char?
-                    string combined = string.Concat ((char)first, (char)second).Normalize ();
-
-                    if (!Rune.IsValid (combined [0]))
-                    {
-                        throw new JsonException ($"{value}: Invalid combined Rune.");
-                    }
-
-                    return new (combined [0]);
-                }
+                return ParseString (reader.GetString ());
             case JsonTokenType.Number:
                 {
                     uint num = reader.GetUInt32 ();
@@ -149,6 +82,103 @@ internal class RuneJsonConverter : JsonConverter<Rune>
             // Write as the actual glyph
             writer.WriteStringValue (value.ToString ());
         }
+    }
+
+    /// <summary>
+    ///     Parses a glyph, U+hex, or \u string using the same rules as a JSON string token in <see cref="Read"/>.
+    /// </summary>
+    private static Rune ParseString (string? value)
+    {
+        int first = RuneExtensions.MaxUnicodeCodePoint + 1;
+        int second = RuneExtensions.MaxUnicodeCodePoint + 1;
+
+        if (value is { } && (value.StartsWith ("U+", StringComparison.OrdinalIgnoreCase)
+                             || value.StartsWith ("\\U", StringComparison.OrdinalIgnoreCase)))
+        {
+            // Handle encoded single char, surrogate pair, or combining mark + char
+            uint [] codePoints = Regex.Matches (value, @"(?:\\[uU]\+?|U\+)([0-9A-Fa-f]{1,8})")
+                                      .Select (
+                                               match => uint.Parse (
+                                                                    match.Groups [1].Value,
+                                                                    NumberStyles.HexNumber
+                                                                   )
+                                              )
+                                      .ToArray ();
+
+            if (codePoints.Length is 0 or > 2)
+            {
+                throw new JsonException ($"{value}: Invalid Rune.");
+            }
+
+            if (codePoints.Length > 0)
+            {
+                first = (int)codePoints [0];
+            }
+
+            if (codePoints.Length == 2)
+            {
+                second = (int)codePoints [1];
+            }
+        }
+        else
+        {
+            // Handle single character, surrogate pair, or combining mark + char
+            if (value is { Length: 0 or > 2 })
+            {
+                throw new JsonException ($"{value}: Invalid Rune");
+            }
+
+            if (value is { Length: > 0 })
+            {
+                first = value [0];
+            }
+
+            if (value is { Length: 2 })
+            {
+                second = value [1];
+            }
+        }
+
+        Rune result;
+
+        if (second == RuneExtensions.MaxUnicodeCodePoint + 1)
+        {
+            // Single codepoint
+            if (!Rune.TryCreate (first, out result))
+            {
+                throw new JsonException ($"{value}: Invalid Rune");
+            }
+
+            return result;
+        }
+
+        // Surrogate pair?
+        if (Rune.TryCreate ((char)first, (char)second, out result))
+        {
+            return result;
+        }
+
+        if (!Rune.IsValid (second))
+        {
+            throw new JsonException ($"{value}: Invalid Rune. The second codepoint is not valid: {second}.");
+        }
+
+        var cm = new Rune (second);
+
+        if (!cm.IsCombiningMark ())
+        {
+            throw new JsonException ($"{value}: Invalid Rune. The second codepoint is not a combining mark: {cm}.");
+        }
+
+        // not a surrogate pair, so a combining mark + char?
+        string combined = string.Concat ((char)first, (char)second).Normalize ();
+
+        if (!Rune.IsValid (combined [0]))
+        {
+            throw new JsonException ($"{value}: Invalid combined Rune.");
+        }
+
+        return new (combined [0]);
     }
 }
 #pragma warning restore 1591

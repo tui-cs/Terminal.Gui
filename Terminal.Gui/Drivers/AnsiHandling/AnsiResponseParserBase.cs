@@ -684,6 +684,11 @@ internal abstract class AnsiResponseParserBase (IHeld heldContent, ITimeProvider
     public event EventHandler<Key>? Keyboard;
 
     /// <summary>
+    ///     Raised with the parser pattern that recognized a keyboard escape sequence.
+    /// </summary>
+    internal event Action<AnsiKeyboardParserPattern, Key>? KeyboardPatternMatched;
+
+    /// <summary>
     ///     Gets or sets whether to explicitly handle keyboard escape sequences by raising the <see cref="Keyboard"/> event.
     /// </summary>
     /// <remarks>
@@ -702,6 +707,7 @@ internal abstract class AnsiResponseParserBase (IHeld heldContent, ITimeProvider
         }
         else
         {
+            KeyboardPatternMatched?.Invoke (pattern, k);
             Keyboard?.Invoke (this, k);
         }
     }

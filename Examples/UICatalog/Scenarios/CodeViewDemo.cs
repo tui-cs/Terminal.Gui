@@ -82,7 +82,6 @@ public sealed class CodeViewDemo : Scenario
     /// <inheritdoc/>
     public override void Main ()
     {
-        ConfigurationManager.Enable (ConfigLocations.All);
 
         using IApplication app = Application.Create ();
         app.Init ();
@@ -150,7 +149,6 @@ public sealed class CodeViewDemo : Scenario
 
                                           string theme = themes [(int)args.NewValue] [1..];
                                           ThemeManager.Theme = theme;
-                                          ConfigurationManager.Apply ();
                                       };
 
         window.Add (languageSelector, themeSelector, code);

@@ -33,7 +33,7 @@ using Terminal.Gui.Views;        // All controls (Button, Label, etc.)
 using Terminal.Gui.ViewBase;     // View, Pos, Dim
 using Terminal.Gui.Drawing;      // Colors, Attribute, LineStyle
 using Terminal.Gui.Input;        // Key, KeyCode, MouseFlags
-using Terminal.Gui.Configuration; // ConfigurationManager (optional)
+using Terminal.Gui.Configuration; // TuiConfigurationBuilder, Settings POCOs (optional)
 ```
 
 ## Application Structure
