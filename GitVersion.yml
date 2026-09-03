@@ -35,7 +35,7 @@ branches:
     # Matches the main branch
     regex: ^main$
     # Uses an empty label for stable releases
-    label: ''
+    label: beta
     # Increments patch version (x.y.z+1) on commits
     increment: Patch
     # Specifies develop as the source branch
