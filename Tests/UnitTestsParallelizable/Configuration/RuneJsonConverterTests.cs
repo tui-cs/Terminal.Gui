@@ -143,4 +143,49 @@ public class RuneJsonConverterTests
         // Assert
         Assert.Equal ("a", deserialized.ToString ());
     }
+
+    // CoPilot - Grok 4.6
+    [Theory]
+    [InlineData ("a", "a")]
+    [InlineData ("☑", "☑")]
+    [InlineData ("\\u2611", "☑")]
+    [InlineData ("U+2611", "☑")]
+    [InlineData ("🍎", "🍎")]
+    [InlineData ("U+1F34E", "🍎")]
+    [InlineData ("\\U0001F34E", "🍎")]
+    [InlineData ("\\ud83d \\udc69", "👩")]
+    [InlineData ("\\ud83d\\udc69", "👩")]
+    [InlineData ("U+d83d U+dc69", "👩")]
+    [InlineData ("U+1F469", "👩")]
+    [InlineData ("\\U0001F469", "👩")]
+    [InlineData ("\\u0065\\u0301", "é")]
+    [InlineData ("6", "6")]
+    public void TryParse_DoesNotNeedJsonSerializer_Positive (string rune, string expected)
+    {
+        Assert.True (RuneJsonConverter.TryParse (rune, out Rune result));
+        Assert.Equal (expected, result.ToString ());
+    }
+
+    // CoPilot - Grok 4.6
+    [Theory]
+    [InlineData (null)]
+    [InlineData ("")]
+    [InlineData ("aa")]
+    [InlineData ("☑☑")]
+    [InlineData ("\\x2611")]
+    [InlineData ("Z+2611")]
+    [InlineData ("🍎🍎")]
+    [InlineData ("U+FFF1F34E")]
+    [InlineData ("\\UFFF1F34E")]
+    [InlineData ("\\ud83d")]
+    [InlineData ("\\udc3d")]
+    [InlineData ("\\ud83d \\u1c69")]
+    [InlineData ("\\ud83ddc69")]
+    [InlineData ("U+1F469 U+200D U+1F469 U+200D U+1F467 U+200D U+1F467")]
+    [InlineData ("\\U0001F469\\u200D\\U0001F469\\u200D\\U0001F467\\u200D\\U0001F467")]
+    [InlineData ("9733")]
+    public void TryParse_DoesNotNeedJsonSerializer_Negative (string? rune)
+    {
+        Assert.False (RuneJsonConverter.TryParse (rune, out _));
+    }
 }
