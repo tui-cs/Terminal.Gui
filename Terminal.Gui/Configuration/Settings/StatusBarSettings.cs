@@ -1,16 +1,22 @@
 namespace Terminal.Gui.Configuration;
 
 /// <summary>
-///     Settings POCO for <see cref="Views.StatusBar"/> defaults (ThemeScope).
+///     Immutable settings record for <see cref="Views.StatusBar"/> defaults (ThemeScope).
 /// </summary>
-public class StatusBarSettings
+public sealed record StatusBarSettings
 {
-    /// <summary>Gets or sets the default separator line style for status bars.</summary>
-    public LineStyle DefaultSeparatorLineStyle { get; set; } = LineStyle.Single;
+    /// <summary>Gets the default separator line style for status bars.</summary>
+    public LineStyle DefaultSeparatorLineStyle { get; init; } = LineStyle.Single;
 
-    /// <summary>
-    ///     The static facade instance. Always contains the current effective values.
-    ///     Updated by the MEC binding at <see cref="IApplication"/> initialization.
-    /// </summary>
-    public static StatusBarSettings Defaults { get; set; } = new ();
+    /// <summary>The compile-time-known defaults.</summary>
+    public static StatusBarSettings Default { get; } = new ();
+
+    /// <summary>The currently effective values, updated atomically by <see cref="MecThemeManager"/>.</summary>
+    public static StatusBarSettings Current
+    {
+        get => Volatile.Read (ref _current);
+        set => Volatile.Write (ref _current, value);
+    }
+
+    private static StatusBarSettings _current = Default;
 }

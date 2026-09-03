@@ -270,10 +270,10 @@ public class CommandExecutor
 
 ### Example 4: Property Changes (Cancellable)
 
-A `ConfigurationManager` class manages configuration properties with cancellable change notifications.
+A settings facade manages configuration properties with cancellable change notifications.
 
 ```csharp
-public class ConfigurationManager
+public class ThemeSettingsExample
 {
     private string _theme = "Default";
 

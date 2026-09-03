@@ -1,4 +1,4 @@
-﻿#nullable enable
+#nullable enable
 
 using System.Data;
 using System.Text;
@@ -17,7 +17,6 @@ public class MultiColouredTable : Scenario
 
     public override void Main ()
     {
-        ConfigurationManager.Enable (ConfigLocations.All);
         using IApplication app = Application.Create ();
         app.Init ();
         _app = app;

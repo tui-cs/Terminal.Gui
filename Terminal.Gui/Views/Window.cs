@@ -33,12 +33,7 @@ public class Window : Runnable
     /// <summary>
     ///     Gets or sets whether all <see cref="Window"/>s are shown with a shadow effect by default.
     /// </summary>
-    [ConfigurationProperty (Scope = typeof (ThemeScope))]
-    public static ShadowStyles DefaultShadow
-    {
-        get => WindowSettings.Defaults.DefaultShadow;
-        set => WindowSettings.Defaults.DefaultShadow = value;
-    }
+    public static ShadowStyles DefaultShadow => WindowSettings.Current.DefaultShadow;
 
     // TODO: enable this
     ///// <summary>
@@ -47,8 +42,7 @@ public class Window : Runnable
     ///// <remarks>
     ///// This property can be set in a Theme to change the default <see cref="LineStyle"/> for all <see cref="Window"/>s.
     ///// </remarks>
-    /////[ConfigurationProperty (Scope = typeof (ThemeScope)), JsonConverter (typeof (JsonStringEnumConverter))]
-    ////public static Scheme DefaultScheme { get; set; } = Colors.Schemes ["Base"];
+
 
     /// <summary>
     ///     The default <see cref="LineStyle"/> for <see cref="Window"/>'s border. The default is
@@ -58,10 +52,5 @@ public class Window : Runnable
     ///     This property can be set in a Theme to change the default <see cref="LineStyle"/> for all <see cref="Window"/>
     ///     s.
     /// </remarks>
-    [ConfigurationProperty (Scope = typeof (ThemeScope))]
-    public static LineStyle DefaultBorderStyle
-    {
-        get => WindowSettings.Defaults.DefaultBorderStyle;
-        set => WindowSettings.Defaults.DefaultBorderStyle = value;
-    }
+    public static LineStyle DefaultBorderStyle => WindowSettings.Current.DefaultBorderStyle;
 }

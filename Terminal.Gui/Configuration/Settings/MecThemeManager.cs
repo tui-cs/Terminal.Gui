@@ -1,12 +1,8 @@
-#pragma warning disable CS0618 // Obsolete - MecThemeManager forwards from legacy ThemeManager during transition
-
 namespace Terminal.Gui.Configuration;
 
 /// <summary>
-///     MEC-backed implementation of <see cref="IThemeManager"/>.
-///     During the transition period (PR #5411), this delegates writes to the legacy static <see cref="ThemeManager"/>
-///     because the runtime theme/scheme dictionary is still owned by <see cref="ConfigurationManager.Settings"/>.
-///     The Phase A2 work in #5416 will let this type own the theme/scheme data directly.
+///     Per-builder <see cref="IThemeManager"/>. Process-wide callers use the static
+///     <see cref="ThemeManager"/> facade (<c>ThemeManager.Theme =</c>).
 /// </summary>
 public class MecThemeManager : IThemeManager
 {
@@ -16,35 +12,20 @@ public class MecThemeManager : IThemeManager
     /// <summary>Initializes a new instance of <see cref="MecThemeManager"/>.</summary>
     public MecThemeManager (TuiConfigurationBuilder builder) { _builder = builder; }
 
-    private void OnLegacyThemeChanged (object? sender, App.EventArgs<string> e) => _themeChanged?.Invoke (this, e);
+    private void OnStaticThemeChanged (object? sender, App.EventArgs<string> e) => _themeChanged?.Invoke (this, e);
 
     /// <inheritdoc/>
     public string CurrentThemeName => ThemeSettings.Defaults.Theme;
 
     /// <inheritdoc/>
-    public IReadOnlyList<string> ThemeNames
-    {
-        get
-        {
-            // During transition, delegate to existing ThemeManager
-            try
-            {
-                return ThemeManager.GetThemeNames ();
-            }
-            catch (InvalidOperationException)
-            {
-                return [ThemeManager.DEFAULT_THEME_NAME];
-            }
-        }
-    }
+    public IReadOnlyList<string> ThemeNames => ThemeCatalog.GetNames (_builder.Configuration);
 
     private EventHandler<App.EventArgs<string>>? _themeChanged;
 
     /// <inheritdoc/>
     /// <remarks>
-    ///     Forwarding from the legacy static <see cref="ThemeManager.ThemeChanged"/> event is wired up only while
-    ///     this instance has at least one subscriber. This avoids leaking the instance through the static event
-    ///     (which would otherwise keep every <see cref="MecThemeManager"/> alive for the lifetime of the process).
+    ///     Forwards <see cref="ThemeManager.ThemeChanged"/> only while this instance has a subscriber,
+    ///     so unused instances are not kept alive by the static event.
     /// </remarks>
     public event EventHandler<App.EventArgs<string>>? ThemeChanged
     {
@@ -54,7 +35,7 @@ public class MecThemeManager : IThemeManager
             {
                 if (_themeChanged is null)
                 {
-                    ThemeManager.ThemeChanged += OnLegacyThemeChanged;
+                    ThemeManager.ThemeChanged += OnStaticThemeChanged;
                 }
 
                 _themeChanged += value;
@@ -68,49 +49,12 @@ public class MecThemeManager : IThemeManager
 
                 if (_themeChanged is null)
                 {
-                    ThemeManager.ThemeChanged -= OnLegacyThemeChanged;
+                    ThemeManager.ThemeChanged -= OnStaticThemeChanged;
                 }
             }
         }
     }
 
     /// <inheritdoc/>
-    public bool SwitchTheme (string themeName)
-    {
-        if (string.IsNullOrEmpty (themeName))
-        {
-            return false;
-        }
-
-        // Verify the theme exists before switching
-        if (!ThemeNames.Contains (themeName))
-        {
-            return false;
-        }
-
-        // During transition, also update the existing ThemeManager. Its setter raises
-        // ThemeManager.ThemeChanged, which is forwarded to subscribers via OnLegacyThemeChanged
-        // (only while this instance has subscribers; see the ThemeChanged event above).
-        try
-        {
-            ThemeManager.Theme = themeName;
-        }
-        catch (InvalidOperationException)
-        {
-            return false;
-        }
-        catch (KeyNotFoundException)
-        {
-            return false;
-        }
-
-        // Re-apply all ThemeScope POCOs from configuration. This may rebind the scalar "Theme" key
-        // from config, so the switched theme is recorded afterwards to ensure the selection persists.
-        _builder.ApplyToStaticFacades ();
-
-        // Record the switched theme on success, overriding any value the config re-apply may have set.
-        ThemeSettings.Defaults.Theme = themeName;
-
-        return true;
-    }
+    public bool SwitchTheme (string themeName) => _builder.TrySwitchTheme (themeName);
 }

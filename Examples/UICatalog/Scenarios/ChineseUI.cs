@@ -1,4 +1,4 @@
-﻿
+
 namespace UICatalog.Scenarios;
 
 [ScenarioMetadata ("ChineseUI", "Chinese UI")]
@@ -8,7 +8,6 @@ public class ChineseUI : Scenario
 {
     public override void Main ()
     {
-        ConfigurationManager.Enable (ConfigLocations.All);
         using IApplication app = Application.Create ();
         app.Init ();
 

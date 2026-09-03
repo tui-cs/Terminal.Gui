@@ -130,13 +130,13 @@ dotnet run --project Tests/Benchmarks -c Release -- --filter '*Scroll*'
 
 The `Configuration/` directory contains benchmarks for the configuration, theming, and scheme subsystems.
 
-### ConfigurationManagerLoadBenchmark
+### TuiConfigurationBuilderBuildBenchmark
 
-Measures the cold-start cost of `ConfigurationManager.Disable(true)` → `Enable(ConfigLocations.LibraryResources)` → `Apply()`. This is the app-startup hot path covering embedded-config load, deserialization, and apply.
+Measures the cold-start cost of `new TuiConfigurationBuilder ().ApplyToStaticFacades ()`. This is the app-startup hot path covering embedded-config load, bind, and apply.
 
 ### ThemeSwitchBenchmark
 
-Measures `ThemeManager.Theme = "X"; ConfigurationManager.Apply()` against the embedded configuration. Parametric over all built-in theme names (`Default`, `Dark`, `Light`, `TurboPascal 5`, `Anders`, `Green Phosphor`, `Amber Phosphor`).
+Measures `ThemeManager.Theme = "X"` against the embedded configuration. Parametric over all built-in theme names (`Default`, `Dark`, `Light`, `TurboPascal 5`, `Anders`, `Green Phosphor`, `Amber Phosphor`).
 
 ### SchemeAttributeBenchmark
 
@@ -145,7 +145,7 @@ Measures `Scheme.GetAttributeForRole(VisualRole)` for roles at different depths 
 - **GetHotFocus**: Derived from `Focus` (which itself derives from `Normal`)
 - **GetCode**: Deepest derivation path (`Code` → `Editable` → `Normal`)
 
-No `ConfigurationManager` required; operates on a standalone `Scheme` instance.
+No configuration pipeline required; operates on a standalone `Scheme` instance.
 
 ### SchemeSerializationBenchmark
 

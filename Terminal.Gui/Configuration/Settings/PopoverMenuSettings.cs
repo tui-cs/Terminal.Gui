@@ -1,16 +1,22 @@
 namespace Terminal.Gui.Configuration;
 
 /// <summary>
-///     Settings POCO for <see cref="Views.PopoverMenu"/> defaults (SettingsScope).
+///     Immutable settings record for <see cref="Views.PopoverMenu"/> defaults (SettingsScope).
 /// </summary>
-public class PopoverMenuSettings
+public sealed record PopoverMenuSettings
 {
-    /// <summary>Gets or sets the default activation key for popover menus.</summary>
-    public Key DefaultKey { get; set; } = Key.F10.WithShift;
+    /// <summary>Gets the default activation key for popover menus.</summary>
+    public Key DefaultKey { get; init; } = Key.F10.WithShift;
 
-    /// <summary>
-    ///     The static facade instance. Always contains the current effective values.
-    ///     Updated by the MEC binding at <see cref="IApplication"/> initialization.
-    /// </summary>
-    public static PopoverMenuSettings Defaults { get; set; } = new ();
+    /// <summary>The compile-time-known defaults.</summary>
+    public static PopoverMenuSettings Default { get; } = new ();
+
+    /// <summary>The currently effective values, updated atomically by <see cref="MecThemeManager"/>.</summary>
+    public static PopoverMenuSettings Current
+    {
+        get => Volatile.Read (ref _current);
+        set => Volatile.Write (ref _current, value);
+    }
+
+    private static PopoverMenuSettings _current = Default;
 }

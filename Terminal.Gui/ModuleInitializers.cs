@@ -1,8 +1,6 @@
 using System.Runtime.CompilerServices;
 using Terminal.Gui.Configuration;
 
-#pragma warning disable CS0618 // Obsolete - ConfigurationManager still used internally during transition
-
 namespace Terminal.Gui;
 
 /// <summary>
@@ -11,28 +9,25 @@ namespace Terminal.Gui;
 internal static class ModuleInitializers
 {
     /// <summary>
-    /// Initializes the ConfigurationManager when the Terminal.Gui assembly is loaded.
-    /// Ensures configuration properties are loaded deterministically before any part
-    /// of the library is used.
+    ///     Applies MEC configuration to static settings facades when the Terminal.Gui assembly is loaded.
     /// </summary>
+    /// <remarks>
+    ///     Must never throw: an exception here kills the app (and any test host) with an opaque
+    ///     module-initializer error before <c>Main</c> runs. Bad configuration is collected in
+    ///     <see cref="TuiJsonErrors"/> and printed at shutdown; the app runs on defaults.
+    /// </remarks>
 #pragma warning disable CA2255
     [ModuleInitializer]
 #pragma warning restore CA2255
-    internal static void InitializeConfigurationManager ()
+    internal static void InitializeConfiguration ()
     {
-        // Initialize ConfigurationManager to ensure all configuration properties
-        // are loaded deterministically
-        ConfigurationManager.Initialize ();
-
-        // After CM initialization, also apply MEC-based settings.
-        // MEC values (from the same config files) take precedence over CM defaults.
-        TuiConfigurationBuilder mecBuilder = new ();
-        mecBuilder.ApplyToStaticFacades ();
-
-        // Note: We're only initializing the config properties structure here,
-        // not loading settings from files. That still happens during Application.Init()
-        // via InitializeConfigurationManagement()
+        try
+        {
+            TuiConfigurationBuilder.Shared.ApplyToStaticFacades ();
+        }
+        catch (Exception ex)
+        {
+            TuiJsonErrors.Add ($"Applying configuration failed: {ex.Message}. Running with default settings.");
+        }
     }
 }
-
-#pragma warning restore CS0618

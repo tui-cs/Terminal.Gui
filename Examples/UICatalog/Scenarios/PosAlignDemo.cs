@@ -11,7 +11,6 @@ public sealed class PosAlignDemo : Scenario
 
     public override void Main ()
     {
-        ConfigurationManager.Enable (ConfigLocations.All);
 
         // Init
         using IApplication app = Application.Create ();

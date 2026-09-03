@@ -1,4 +1,4 @@
-﻿#nullable enable
+#nullable enable
 
 using System.Diagnostics;
 
@@ -14,7 +14,6 @@ public class MenuBars : Scenario
 
     public override void Main ()
     {
-        ConfigurationManager.Enable (ConfigLocations.All);
 
         using IApplication app = Application.Create ();
         app.Init ();

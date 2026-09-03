@@ -80,12 +80,7 @@ public class HexView : View, IDesignable
     /// <summary>
     ///     Gets or sets the default cursor style.
     /// </summary>
-    [ConfigurationProperty (Scope = typeof (ThemeScope))]
-    public static CursorStyle DefaultCursorStyle
-    {
-        get => HexViewSettings.Defaults.DefaultCursorStyle;
-        set => HexViewSettings.Defaults.DefaultCursorStyle = value;
-    }
+    public static CursorStyle DefaultCursorStyle => HexViewSettings.Current.DefaultCursorStyle;
 
     /// <summary>
     ///     Gets or sets the view-specific default key bindings for <see cref="HexView"/>. Contains only bindings

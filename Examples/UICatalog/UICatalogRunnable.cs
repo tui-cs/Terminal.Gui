@@ -27,7 +27,7 @@ public sealed class UICatalogRunnable : Runnable
     {
         Title = "UICatalog";
         SchemeName = CachedRunnableScheme = SchemeManager.SchemesToSchemeName (Schemes.Base);
-        ConfigurationManager.Applied += ConfigAppliedHandler;
+        ThemeChanges.ThemeChanged += ConfigAppliedHandler;
     }
 
     /// <inheritdoc/>
@@ -128,7 +128,7 @@ public sealed class UICatalogRunnable : Runnable
             return;
         }
 
-        ConfigurationManager.Applied -= ConfigAppliedHandler;
+        ThemeChanges.ThemeChanged -= ConfigAppliedHandler;
     }
 
     // Track if this is the first time running the main UI Catalog screen
@@ -200,7 +200,6 @@ public sealed class UICatalogRunnable : Runnable
 
             menuItems.Add (new Line ());
 
-            if (ConfigurationManager.IsEnabled)
             {
                 _themesSelector = new OptionSelector { CanFocus = true };
                 _themesSelector.ValueChanged += OnThemesSelectorOnValueChanged;
@@ -223,10 +222,6 @@ public sealed class UICatalogRunnable : Runnable
                 menuItems.Add (menuItem);
 
                 UpdateThemesMenu ();
-            }
-            else
-            {
-                menuItems.Add (new MenuItem { Title = "Configuration Manager is not Enabled", Enabled = false });
             }
 
             return menuItems.ToArray ();
@@ -711,8 +706,6 @@ public sealed class UICatalogRunnable : Runnable
     #region StatusBar
 
     private StatusBar? _statusBar;
-
-    [ConfigurationProperty (Scope = typeof (AppSettingsScope), OmitClassName = true)]
     [JsonPropertyName ("UICatalog.StatusBar")]
     public static bool ShowStatusBar
     {
@@ -890,7 +883,7 @@ public sealed class UICatalogRunnable : Runnable
         App?.TopRunnableView?.SetNeedsDraw ();
     }
 
-    private void ConfigAppliedHandler (object? sender, ConfigurationManagerEventArgs? a) => ConfigApplied ();
+    private void ConfigAppliedHandler (object? sender, EventArgs<string>? a) => ConfigApplied ();
 
     #endregion Configuration Manager
 

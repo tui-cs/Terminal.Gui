@@ -14,7 +14,6 @@ public class TimeAndDate : Scenario
 
     public override void Main ()
     {
-        ConfigurationManager.Enable (ConfigLocations.All);
 
         using IApplication app = Application.Create ();
         app.Init ();

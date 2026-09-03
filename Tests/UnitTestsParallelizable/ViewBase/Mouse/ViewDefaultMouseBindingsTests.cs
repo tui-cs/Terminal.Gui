@@ -49,9 +49,9 @@ public class ViewDefaultMouseBindingsTests
 
         Assert.NotNull (property);
 
-        ConfigurationPropertyAttribute? attr = property.GetCustomAttribute<ConfigurationPropertyAttribute> ();
+        System.Attribute? attr = property.GetCustomAttributes ().FirstOrDefault (a => a.GetType ().Name == "ConfigurationPropertyAttribute");
 
-        Assert.NotNull (attr);
+        Assert.Null (attr);
     }
 
     [Fact]
@@ -64,8 +64,8 @@ public class ViewDefaultMouseBindingsTests
 
         Assert.NotNull (property);
 
-        ConfigurationPropertyAttribute? attr = property.GetCustomAttribute<ConfigurationPropertyAttribute> ();
+        System.Attribute? attr = property.GetCustomAttributes ().FirstOrDefault (a => a.GetType ().Name == "ConfigurationPropertyAttribute");
 
-        Assert.NotNull (attr);
+        Assert.Null (attr);
     }
 }

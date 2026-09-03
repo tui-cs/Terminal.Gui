@@ -228,7 +228,7 @@ foreach (Rune rune in text.EnumerateRunes ())
 - **Make tests granular** - Each test should cover smallest area possible
 - Follow existing test patterns in respective test projects
 - **Avoid adding new tests to the `UnitTests` Project** - Make them parallelizable and add them to `UnitTests.Parallelizable`
-- **Avoid static dependencies** - DO NOT use the legacy/static `Application` API or `ConfigurationManager` in tests unless the tests explicitly test related functionality.
+- **Avoid static dependencies** - DO NOT use the legacy/static `Application` API or mutate process-wide `*Settings` facades in tests unless the tests explicitly test related functionality. Use `SettingsFacadeSnapshot` when you must.
 - **Don't use `[AutoInitShutdown]` or `[SetupFakeApplication]`** - Legacy pattern, being phased out
 
 ### Test Configuration
@@ -292,7 +292,7 @@ foreach (Rune rune in text.EnumerateRunes ())
 
 **`/Terminal.Gui/`** - Core library (496 C# files):
 - `App/` - Application lifecycle (`Application.cs` static class, `SessionToken`, `MainLoop`)
-- `Configuration/` - `ConfigurationManager` for settings
+- `Configuration/` - `TuiConfigurationBuilder`, Settings POCOs, `ThemeManager` / `SchemeManager`
 - `Drivers/` - Console driver implementations (`dotnet`, `Windows`, `Unix`, `ansi`)
 - `Drawing/` - Rendering system (attributes, colors, glyphs)
 - `Input/` - Keyboard and mouse input handling

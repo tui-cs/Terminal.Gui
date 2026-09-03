@@ -26,7 +26,6 @@ public sealed class AnsiEscapeSequenceRequests : Scenario
     public override void Main ()
     {
         // Init
-        ConfigurationManager.Enable (ConfigLocations.All);
         using IApplication app = Application.Create ();
         app.Init ();
         _app = app;

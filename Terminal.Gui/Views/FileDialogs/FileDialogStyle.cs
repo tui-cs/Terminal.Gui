@@ -42,9 +42,8 @@ public class FileDialogStyle
 
     /// <summary>
     ///     Gets or sets the default value to use for <see cref="UseColors"/>. This can be populated from .tui config
-    ///     files via <see cref="ConfigurationManager"/>
+    ///     files via <see cref="TuiConfigurationBuilder"/>
     /// </summary>
-    [ConfigurationProperty (Scope = typeof (SettingsScope))]
     public static bool DefaultUseColors
     {
         get => FileDialogStyleSettings.Defaults.DefaultUseColors;
@@ -53,9 +52,8 @@ public class FileDialogStyle
 
     /// <summary>
     ///     Gets or sets the default value to use for <see cref="UseUnicodeCharacters"/>. This can be populated from .tui
-    ///     config files via <see cref="ConfigurationManager"/>
+    ///     config files via <see cref="TuiConfigurationBuilder"/>
     /// </summary>
-    [ConfigurationProperty (Scope = typeof (SettingsScope))]
     public static bool DefaultUseUnicodeCharacters
     {
         get => FileDialogStyleSettings.Defaults.DefaultUseUnicodeCharacters;

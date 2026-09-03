@@ -11,7 +11,7 @@ namespace UICatalog;
 public class Runner
 {
     /// <summary>
-    ///     Sets <see cref="ConfigurationManager.RuntimeConfig"/> with "Application.ForceDriver" and ["Driver.Force16Colors" based on the params.
+    ///     Sets <see cref="TuiConfigurationBuilder.RuntimeConfig"/> with Application.ForceDriver and Driver.Force16Colors.
     /// </summary>
     /// <param name="forceDriver">The driver to use, or null to use the default.</param>
     /// <param name="force16Colors">
@@ -24,19 +24,21 @@ public class Runner
 
         if (!string.IsNullOrEmpty (forceDriver))
         {
-            runtimeConfig ["Application.ForceDriver"] = forceDriver;
+            runtimeConfig ["Application"] = new Dictionary<string, object> { ["ForceDriver"] = forceDriver };
         }
 
         if (force16Colors.HasValue)
         {
-            runtimeConfig ["Driver.Force16Colors"] = force16Colors.Value;
+            runtimeConfig ["Driver"] = new Dictionary<string, object> { ["Force16Colors"] = force16Colors.Value };
         }
 
         if (runtimeConfig.Count == 0)
         {
             return;
         }
-        ConfigurationManager.RuntimeConfig = JsonSerializer.Serialize (runtimeConfig);
+
+        TuiConfigurationBuilder.Shared.RuntimeConfig = JsonSerializer.Serialize (runtimeConfig);
+        TuiConfigurationBuilder.Shared.ApplyToStaticFacades ();
     }
 
     /// <summary>
@@ -367,16 +369,46 @@ public class Runner
         _homeDirWatcher.EnableRaisingEvents = false;
         _homeDirWatcher.Changed -= ConfigFileChanged;
 
+        lock (_configReloadLock)
+        {
+            _configReloadTimer?.Dispose ();
+            _configReloadTimer = null;
+        }
+
         _configWatcherStarted = false;
     }
 
-    private static void ThemeManagerOnThemeChanged (object? sender, EventArgs<string> e) => ConfigurationManager.Apply ();
+    private static void ThemeManagerOnThemeChanged (object? sender, EventArgs<string> e) =>
+        TuiConfigurationBuilder.Shared.ApplyActiveThemeOverlays ();
+
+    private static readonly Lock _configReloadLock = new ();
+    private static Timer? _configReloadTimer;
 
     private static void ConfigFileChanged (object sender, FileSystemEventArgs e)
     {
-        Logging.Debug ($"{e.FullPath} {e.ChangeType} - Loading and Applying");
-        ConfigurationManager.Load (ConfigLocations.All);
-        ConfigurationManager.Apply ();
+        Logging.Debug ($"{e.FullPath} {e.ChangeType} - scheduling reload");
+
+        // Editors fire several Changed events per save (and may still hold the file mid-write);
+        // debounce so one settled reload runs instead of a rebuild per event.
+        lock (_configReloadLock)
+        {
+            _configReloadTimer ??= new (ReloadConfig);
+            _configReloadTimer.Change (250, System.Threading.Timeout.Infinite);
+        }
+    }
+
+    private static void ReloadConfig (object? state)
+    {
+        // Never let a bad config value kill the process from the watcher thread — collect and log instead.
+        try
+        {
+            TuiConfigurationBuilder.Shared.Reload ();
+            TuiConfigurationBuilder.Shared.ApplyToStaticFacades ();
+        }
+        catch (Exception ex)
+        {
+            Logging.Warning ($"Configuration reload failed: {ex.Message}");
+        }
     }
 
     #endregion Interactive Mode

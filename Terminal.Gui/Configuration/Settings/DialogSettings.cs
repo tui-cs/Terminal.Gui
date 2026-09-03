@@ -1,25 +1,31 @@
 namespace Terminal.Gui.Configuration;
 
 /// <summary>
-///     Settings POCO for <see cref="Views.Dialog"/> visual defaults (ThemeScope).
+///     Immutable settings record for <see cref="Views.Dialog"/> visual defaults (ThemeScope).
 /// </summary>
-public class DialogSettings
+public sealed record DialogSettings
 {
-    /// <summary>Gets or sets the default shadow style for dialogs.</summary>
-    public ShadowStyles DefaultShadow { get; set; } = ShadowStyles.Transparent;
+    /// <summary>Gets the default shadow style for dialogs.</summary>
+    public ShadowStyles DefaultShadow { get; init; } = ShadowStyles.Transparent;
 
-    /// <summary>Gets or sets the default border style for dialogs.</summary>
-    public LineStyle DefaultBorderStyle { get; set; } = LineStyle.Heavy;
+    /// <summary>Gets the default border style for dialogs.</summary>
+    public LineStyle DefaultBorderStyle { get; init; } = LineStyle.Heavy;
 
-    /// <summary>Gets or sets the default button alignment for dialogs.</summary>
-    public Alignment DefaultButtonAlignment { get; set; } = Alignment.End;
+    /// <summary>Gets the default button alignment for dialogs.</summary>
+    public Alignment DefaultButtonAlignment { get; init; } = Alignment.End;
 
-    /// <summary>Gets or sets the default button alignment modes for dialogs.</summary>
-    public AlignmentModes DefaultButtonAlignmentModes { get; set; } = AlignmentModes.StartToEnd | AlignmentModes.AddSpaceBetweenItems;
+    /// <summary>Gets the default button alignment modes for dialogs.</summary>
+    public AlignmentModes DefaultButtonAlignmentModes { get; init; } = AlignmentModes.StartToEnd | AlignmentModes.AddSpaceBetweenItems;
 
-    /// <summary>
-    ///     The static facade instance. Always contains the current effective values.
-    ///     Updated by the MEC binding at <see cref="IApplication"/> initialization.
-    /// </summary>
-    public static DialogSettings Defaults { get; set; } = new ();
+    /// <summary>The compile-time-known defaults.</summary>
+    public static DialogSettings Default { get; } = new ();
+
+    /// <summary>The currently effective values, updated atomically by <see cref="MecThemeManager"/>.</summary>
+    public static DialogSettings Current
+    {
+        get => Volatile.Read (ref _current);
+        set => Volatile.Write (ref _current, value);
+    }
+
+    private static DialogSettings _current = Default;
 }

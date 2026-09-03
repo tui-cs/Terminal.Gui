@@ -1,4 +1,4 @@
-﻿using Timer = System.Timers.Timer;
+using Timer = System.Timers.Timer;
 
 namespace UICatalog.Scenarios;
 
@@ -14,7 +14,6 @@ public class Clipping : Scenario
 
     public override void Main ()
     {
-        ConfigurationManager.Enable (ConfigLocations.All);
         using IApplication app = Application.Create ();
         app.Init ();
 

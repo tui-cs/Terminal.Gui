@@ -24,7 +24,6 @@ public class ProgressScenarioTests (ITestOutputHelper output)
     [Fact]
     public void Progress_With_Running_Threaded_Timer_Quits_Without_Crashing ()
     {
-        ConfigurationManager.Disable (true);
         Application.ResetState (true);
 
         IApplication? app = null;

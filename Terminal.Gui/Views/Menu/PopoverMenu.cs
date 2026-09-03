@@ -286,18 +286,25 @@ public class PopoverMenu : Popover<Menu, MenuItem>
     /// </summary>
     public event EventHandler<KeyChangedEventArgs>? KeyChanged;
 
+    private static Key? _defaultKeyOverride;
+
     /// <summary>
     ///     Gets or sets the default key for activating popover menus. The default value is <see cref="Key.F10"/> with Shift.
     /// </summary>
     /// <remarks>
     ///     This is a configuration property that affects all new <see cref="PopoverMenu"/> instances.
+    ///     Setting it overrides the configured value; the override survives theme switches and
+    ///     configuration re-application (<see cref="PopoverMenuSettings.Current"/> is wholesale-replaced
+    ///     on each apply, so a value written there would silently revert).
     /// </remarks>
-    [ConfigurationProperty (Scope = typeof (SettingsScope))]
     public static Key DefaultKey
     {
-        get => PopoverMenuSettings.Defaults.DefaultKey;
-        set => PopoverMenuSettings.Defaults.DefaultKey = value;
+        get => _defaultKeyOverride ?? PopoverMenuSettings.Current.DefaultKey;
+        set => _defaultKeyOverride = value;
     }
+
+    /// <summary>INTERNAL: Clears the app-set <see cref="DefaultKey"/> override (for tests).</summary>
+    internal static void ResetDefaultKeyOverride () => _defaultKeyOverride = null;
 
     /// <summary>
     ///     The mouse flags that will cause the popover menu to be visible. The default is

@@ -1,16 +1,22 @@
 namespace Terminal.Gui.Configuration;
 
 /// <summary>
-///     Settings POCO for <see cref="Text.NerdFonts"/> defaults (ThemeScope).
+///     Immutable settings record for <see cref="Text.NerdFonts"/> defaults (ThemeScope).
 /// </summary>
-public class NerdFontsSettings
+public sealed record NerdFontsSettings
 {
-    /// <summary>Gets or sets whether Nerd Fonts glyphs are enabled.</summary>
-    public bool Enable { get; set; } = false;
+    /// <summary>Gets whether Nerd Fonts glyphs are enabled.</summary>
+    public bool Enable { get; init; } = false;
 
-    /// <summary>
-    ///     The static facade instance. Always contains the current effective values.
-    ///     Updated by the MEC binding at <see cref="IApplication"/> initialization.
-    /// </summary>
-    public static NerdFontsSettings Defaults { get; set; } = new ();
+    /// <summary>The compile-time-known defaults.</summary>
+    public static NerdFontsSettings Default { get; } = new ();
+
+    /// <summary>The currently effective values, updated atomically by <see cref="MecThemeManager"/>.</summary>
+    public static NerdFontsSettings Current
+    {
+        get => Volatile.Read (ref _current);
+        set => Volatile.Write (ref _current, value);
+    }
+
+    private static NerdFontsSettings _current = Default;
 }

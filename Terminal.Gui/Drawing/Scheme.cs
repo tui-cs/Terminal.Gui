@@ -172,7 +172,7 @@ public record Scheme : IEqualityOperators<Scheme, Scheme, bool>
 {
     /// <summary>
     ///     INTERNAL: Gets the hard-coded set of <see cref="Scheme"/>s. Used for generating the built-in config.json and for
-    ///     unit tests that don't depend on ConfigurationManager.
+    ///     unit tests that don't depend on configuration.
     /// </summary>
     /// <returns></returns>
     internal static ImmutableSortedDictionary<string, Scheme> GetHardCodedSchemes ()

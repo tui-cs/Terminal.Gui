@@ -870,13 +870,13 @@ For debugging mouse event flow, use the `Trace` class from the `Terminal.Gui.Tra
 ```csharp
 using Terminal.Gui.Tracing;
 
-Trace.MouseEnabled = true;
+Trace.EnabledCategories |= TraceCategory.Mouse;
 ```
 
 When enabled, mouse events are logged via `Logging.Trace` showing the flow from Driver → Application → View. Enable via:
 
-- **Code**: `Trace.MouseEnabled = true;`
-- **Config**: `"Trace.MouseEnabled": true`
+- **Code**: `Trace.EnabledCategories |= TraceCategory.Mouse;`
+- **Config**: `{ "Trace": { "EnabledCategories": "Mouse" } }`
 - **UICatalog**: Logging menu → Mouse Trace
 
 See [Logging - View Event Tracing](logging.md#view-event-tracing) for more details.

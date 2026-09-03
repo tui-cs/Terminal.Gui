@@ -1,4 +1,4 @@
-﻿using System.Diagnostics;
+using System.Diagnostics;
 using System.Globalization;
 using System.Reflection;
 using Xunit.v3;
@@ -78,22 +78,13 @@ public class AutoInitShutdownAttribute : BeforeAfterTestAttribute
             }
         }
 
-        Debug.Assert (!CM.IsEnabled, "This test left ConfigurationManager enabled!");
-
-        // Force the ConfigurationManager to reset to its hardcoded defaults
-        CM.Disable (true);
     }
 
     public override void Before (MethodInfo methodUnderTest, IXunitTest test)
     {
         Debug.WriteLine ($"Before: {methodUnderTest?.Name ?? "Unknown Test"}");
 
-        Debug.Assert (!CM.IsEnabled, "A previous test left ConfigurationManager enabled!");
 
-        // Disable & force the ConfigurationManager to reset to its hardcoded defaults
-        CM.Disable (true);
-
-        //Debug.Assert(!CM.IsEnabled, "Some other test left ConfigurationManager enabled.");
 
         if (_autoInit)
         {

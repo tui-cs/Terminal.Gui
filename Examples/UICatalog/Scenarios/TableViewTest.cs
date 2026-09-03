@@ -1,4 +1,4 @@
-﻿namespace UICatalog.Scenarios;
+namespace UICatalog.Scenarios;
 
 [ScenarioMetadata ("TableViewTest", "Demonstrates and tests TableView.")]
 [ScenarioCategory ("TableView")]
@@ -11,7 +11,6 @@ public class TableViewTest : Scenario
 
     public override void Main ()
     {
-        ConfigurationManager.Enable (ConfigLocations.All);
 
         using IApplication app = Application.Create ();
         app.Init ();

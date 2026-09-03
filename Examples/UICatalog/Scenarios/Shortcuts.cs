@@ -13,7 +13,6 @@ public class Shortcuts : Scenario
 
     public override void Main ()
     {
-        ConfigurationManager.Enable (ConfigLocations.All);
         _app = Application.Create ();
         _app.Init ();
         _window = new Window ();
@@ -342,7 +341,6 @@ public class Shortcuts : Scenario
         framedShortcut.SchemeName = SchemeManager.SchemesToSchemeName (Schemes.Accent);
         _window.Add (framedShortcut);
 
-        if (ConfigurationManager.IsEnabled)
         {
             OptionSelector themesSelector = new ();
             themesSelector.Id = "themesSelector";

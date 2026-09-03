@@ -1,4 +1,4 @@
-﻿#nullable enable
+#nullable enable
 using Terminal.Gui.App;
 using Terminal.Gui.Configuration;
 using Terminal.Gui.Drawing;
@@ -8,22 +8,19 @@ using Terminal.Gui.Views;
 using Attribute = Terminal.Gui.Drawing.Attribute;
 
 // Disable all shadows and highlights
-ConfigurationManager.RuntimeConfig = """
-                                     {
-                                         "Themes": [
-                                             {   
-                                                 "Default": {
-                                                     "Window.DefaultShadow": "None",
-                                                     "Dialog.DefaultShadow": "None",
-                                                     "Button.DefaultShadow": "None",
-                                                     "Menu.DefaultBorderStyle": "Single"
-                                                 }
-                                             }
-                                         ]
-                                     }
-                                     """;
-
-ConfigurationManager.Enable (ConfigLocations.Runtime);
+TuiConfigurationBuilder.Shared.RuntimeConfig = """
+{
+  "Themes": {
+    "Default": {
+      "Window": { "DefaultShadow": "None" },
+      "Dialog": { "DefaultShadow": "None" },
+      "Button": { "DefaultShadow": "None" },
+      "Menu": { "DefaultBorderStyle": "Single" }
+    }
+  }
+}
+""";
+TuiConfigurationBuilder.Shared.ApplyToStaticFacades ();
 
 // Get the view name and output file from commandline
 string? viewName = null;

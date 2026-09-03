@@ -24,12 +24,7 @@ public class CheckBox : View, IValue<CheckState>
     /// <summary>
     ///     Gets or sets the default Highlight Style.
     /// </summary>
-    [ConfigurationProperty (Scope = typeof (ThemeScope))]
-    public static MouseState DefaultMouseHighlightStates
-    {
-        get => CheckBoxSettings.Defaults.DefaultMouseHighlightStates;
-        set => CheckBoxSettings.Defaults.DefaultMouseHighlightStates = value;
-    }
+    public static MouseState DefaultMouseHighlightStates => CheckBoxSettings.Current.DefaultMouseHighlightStates;
 
     /// <summary>
     ///     Initializes a new instance of <see cref="CheckBox"/>.

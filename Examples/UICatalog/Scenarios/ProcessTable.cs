@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 
@@ -12,7 +12,6 @@ public class ProcessTable : Scenario
 
     public override void Main ()
     {
-        ConfigurationManager.Enable (ConfigLocations.All);
 
         using IApplication app = Application.Create ();
         app.Init ();

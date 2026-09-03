@@ -1,6 +1,5 @@
-﻿global using Attribute = Terminal.Gui.Drawing.Attribute;
+global using Attribute = Terminal.Gui.Drawing.Attribute;
 global using Color = Terminal.Gui.Drawing.Color;
-global using CM = Terminal.Gui.Configuration.ConfigurationManager;
 global using Terminal.Gui.App;
 global using Terminal.Gui.Time;
 global using Terminal.Gui.Testing;

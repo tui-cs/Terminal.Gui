@@ -96,6 +96,38 @@ public class RunAsyncTests
         app.Dispose ();
     }
 
+    // Claude - Fable 5
+    // Repro for #5636: an await between Init and RunAsync must not deadlock. Pre-fix, Init
+    // installed the app's MainLoopSyncContext as the thread's ambient context; the await's
+    // continuation was posted to the not-yet-running main loop, so RunAsync was never reached.
+    [Fact]
+    public async Task RunAsync_AfterAwaitFollowingInit_DoesNotDeadlock ()
+    {
+        Task scenario = Task.Run (async () =>
+        {
+            IApplication app = Application.Create ();
+            app.Init (DriverRegistry.Names.ANSI);
+
+            // Resumes via the thread's ambient SynchronizationContext when one is installed.
+            await Task.Yield ();
+
+            Runnable runnable = new ();
+            using CancellationTokenSource cts = new ();
+
+            void OnIteration (object? s, EventArgs<IApplication?> a) => cts.Cancel ();
+
+            app.Iteration += OnIteration;
+            await app.RunAsync (runnable, cts.Token);
+            app.Iteration -= OnIteration;
+
+            runnable.Dispose ();
+            app.Dispose ();
+        });
+
+        // Fails with a timeout when the continuation after Task.Yield is stranded.
+        await scenario.WaitAsync (TimeSpan.FromSeconds (10), TestContext.Current.CancellationToken);
+    }
+
     [Fact]
     public async Task RunAsync_UnhandledException_FaultedTask ()
     {

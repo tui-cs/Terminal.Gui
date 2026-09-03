@@ -67,7 +67,7 @@ public abstract class LinearRangeViewBase<TOption, TValue> : View, IOrientation,
     /// </summary>
     /// <remarks>
     ///     <para>
-    ///         No <see cref="ConfigurationPropertyAttribute"/> is applied because this is a generic
+    ///         This property is not configuration-bound because this is a generic
     ///         type. Use <see cref="View.ViewKeyBindings"/> with key <c>"LinearRange"</c> to override bindings via
     ///         configuration.
     ///     </para>
@@ -111,7 +111,7 @@ public abstract class LinearRangeViewBase<TOption, TValue> : View, IOrientation,
         SubViewLayout += (_, _) => { SetContentSize (); };
     }
 
-    // TODO: Make configurable via ConfigurationManager
+    // TODO: Make configurable via TuiConfigurationBuilder
     private void SetDefaultStyle ()
     {
         _config._showLegends = true;

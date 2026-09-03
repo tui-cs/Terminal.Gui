@@ -1,19 +1,25 @@
 namespace Terminal.Gui.Configuration;
 
 /// <summary>
-///     Settings POCO for <see cref="MessageBox"/> visual defaults (ThemeScope).
+///     Immutable settings record for <see cref="MessageBox"/> visual defaults (ThemeScope).
 /// </summary>
-public class MessageBoxSettings
+public sealed record MessageBoxSettings
 {
-    /// <summary>Gets or sets the default border style for message boxes.</summary>
-    public LineStyle DefaultBorderStyle { get; set; } = LineStyle.Heavy;
+    /// <summary>Gets the default border style for message boxes.</summary>
+    public LineStyle DefaultBorderStyle { get; init; } = LineStyle.Heavy;
 
-    /// <summary>Gets or sets the default button alignment for message boxes.</summary>
-    public Alignment DefaultButtonAlignment { get; set; } = Alignment.Center;
+    /// <summary>Gets the default button alignment for message boxes.</summary>
+    public Alignment DefaultButtonAlignment { get; init; } = Alignment.Center;
 
-    /// <summary>
-    ///     The static facade instance. Always contains the current effective values.
-    ///     Updated by the MEC binding at <see cref="IApplication"/> initialization.
-    /// </summary>
-    public static MessageBoxSettings Defaults { get; set; } = new ();
+    /// <summary>The compile-time-known defaults.</summary>
+    public static MessageBoxSettings Default { get; } = new ();
+
+    /// <summary>The currently effective values, updated atomically by <see cref="MecThemeManager"/>.</summary>
+    public static MessageBoxSettings Current
+    {
+        get => Volatile.Read (ref _current);
+        set => Volatile.Write (ref _current, value);
+    }
+
+    private static MessageBoxSettings _current = Default;
 }

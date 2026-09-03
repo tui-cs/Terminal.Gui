@@ -1,19 +1,25 @@
 namespace Terminal.Gui.Configuration;
 
 /// <summary>
-///     Settings POCO for <see cref="Views.MenuBar"/> defaults.
+///     Immutable settings record for <see cref="Views.MenuBar"/> defaults.
 /// </summary>
-public class MenuBarSettings
+public sealed record MenuBarSettings
 {
-    /// <summary>Gets or sets the default border style for menu bars.</summary>
-    public LineStyle DefaultBorderStyle { get; set; } = LineStyle.None;
+    /// <summary>Gets the default border style for menu bars.</summary>
+    public LineStyle DefaultBorderStyle { get; init; } = LineStyle.None;
 
-    /// <summary>Gets or sets the default activation key for menu bars.</summary>
-    public Key DefaultKey { get; set; } = Key.F10;
+    /// <summary>Gets the default activation key for menu bars.</summary>
+    public Key DefaultKey { get; init; } = Key.F10;
 
-    /// <summary>
-    ///     The static facade instance. Always contains the current effective values.
-    ///     Updated by the MEC binding at <see cref="IApplication"/> initialization.
-    /// </summary>
-    public static MenuBarSettings Defaults { get; set; } = new ();
+    /// <summary>The compile-time-known defaults.</summary>
+    public static MenuBarSettings Default { get; } = new ();
+
+    /// <summary>The currently effective values, updated atomically by <see cref="MecThemeManager"/>.</summary>
+    public static MenuBarSettings Current
+    {
+        get => Volatile.Read (ref _current);
+        set => Volatile.Write (ref _current, value);
+    }
+
+    private static MenuBarSettings _current = Default;
 }

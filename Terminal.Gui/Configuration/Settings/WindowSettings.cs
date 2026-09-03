@@ -1,19 +1,25 @@
 namespace Terminal.Gui.Configuration;
 
 /// <summary>
-///     Settings POCO for <see cref="Views.Window"/> visual defaults (ThemeScope).
+///     Immutable settings record for <see cref="Views.Window"/> visual defaults (ThemeScope).
 /// </summary>
-public class WindowSettings
+public sealed record WindowSettings
 {
-    /// <summary>Gets or sets the default shadow style for windows.</summary>
-    public ShadowStyles DefaultShadow { get; set; } = ShadowStyles.None;
+    /// <summary>Gets the default shadow style for windows.</summary>
+    public ShadowStyles DefaultShadow { get; init; } = ShadowStyles.None;
 
-    /// <summary>Gets or sets the default border style for windows.</summary>
-    public LineStyle DefaultBorderStyle { get; set; } = LineStyle.Single;
+    /// <summary>Gets the default border style for windows.</summary>
+    public LineStyle DefaultBorderStyle { get; init; } = LineStyle.Single;
 
-    /// <summary>
-    ///     The static facade instance. Always contains the current effective values.
-    ///     Updated by the MEC binding at <see cref="IApplication"/> initialization.
-    /// </summary>
-    public static WindowSettings Defaults { get; set; } = new ();
+    /// <summary>The compile-time-known defaults.</summary>
+    public static WindowSettings Default { get; } = new ();
+
+    /// <summary>The currently effective values, updated atomically by <see cref="MecThemeManager"/>.</summary>
+    public static WindowSettings Current
+    {
+        get => Volatile.Read (ref _current);
+        set => Volatile.Write (ref _current, value);
+    }
+
+    private static WindowSettings _current = Default;
 }

@@ -5,7 +5,6 @@ namespace Terminal.Gui.App;
 public static partial class Application // Mouse handling
 {
     /// <summary>Disable or enable the mouse. The mouse is enabled by default.</summary>
-    [ConfigurationProperty (Scope = typeof (SettingsScope))]
     [Obsolete ("The legacy static Application object is going away.")]
     public static bool IsMouseDisabled
     {

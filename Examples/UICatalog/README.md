@@ -55,7 +55,7 @@ Usage: `UICatalog [<scenario>] [options]`
 | `-t`, `--timeout <ms>` | Max time in milliseconds per benchmark. Default: `2500`. |
 | `-f`, `--file <path>` | File to save benchmark results to. If omitted, results are displayed in a `TableView`. |
 | `-d`, `--driver <name>` | The `IDriver` to use (`ansi`, `dotnet`, `windows`). |
-| `-dcm`, `--disable-cm` | Disables Configuration Management. Only `ConfigLocations.HardCoded` settings will be loaded. |
+| `-dcm`, `--disable-cm` | Skip applying CLI driver / 16-color overlays via `TuiConfigurationBuilder.RuntimeConfig`. Library defaults still load when `Terminal.Gui.dll` loads. |
 | `-16`, `--force-16-colors` | Forces 16-color mode instead of TrueColor. |
 | `--help` | Show help (renders this README as formatted markdown). |
 | `--version` | Show version information. |

@@ -21,8 +21,6 @@ public class TestRespondersDisposedAttribute : BeforeAfterTestAttribute
     {
         Debug.WriteLine ($"After: {methodUnderTest.Name}");
 
-        Debug.Assert (!CM.IsEnabled, "This test left ConfigurationManager enabled!");
-
         base.After (methodUnderTest, test);
 
 #if DEBUG_IDISPOSABLE

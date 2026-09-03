@@ -105,11 +105,11 @@ public class MecThemeManagerLeakTests
         void Handler (object? sender, EventArgs<string> e) => count++;
 
         manager.ThemeChanged += Handler;
-        ThemeManager.OnThemeChanged ("A", "B");
+        ThemeManager.RaiseThemeChanged ("B");
         Assert.Equal (1, count);
 
         manager.ThemeChanged -= Handler;
-        ThemeManager.OnThemeChanged ("B", "C");
+        ThemeManager.RaiseThemeChanged ("C");
         Assert.Equal (1, count);
     }
 

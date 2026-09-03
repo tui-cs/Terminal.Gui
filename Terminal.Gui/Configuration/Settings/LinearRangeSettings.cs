@@ -1,16 +1,22 @@
 namespace Terminal.Gui.Configuration;
 
 /// <summary>
-///     Settings POCO for <see cref="Views.LinearRangeDefaults"/> defaults (ThemeScope).
+///     Immutable settings record for <see cref="Views.LinearRangeDefaults"/> defaults (ThemeScope).
 /// </summary>
-public class LinearRangeSettings
+public sealed record LinearRangeSettings
 {
-    /// <summary>Gets or sets the default cursor style for linear range views.</summary>
-    public CursorStyle DefaultCursorStyle { get; set; } = CursorStyle.BlinkingBlock;
+    /// <summary>Gets the default cursor style for linear range views.</summary>
+    public CursorStyle DefaultCursorStyle { get; init; } = CursorStyle.BlinkingBlock;
 
-    /// <summary>
-    ///     The static facade instance. Always contains the current effective values.
-    ///     Updated by the MEC binding at <see cref="IApplication"/> initialization.
-    /// </summary>
-    public static LinearRangeSettings Defaults { get; set; } = new ();
+    /// <summary>The compile-time-known defaults.</summary>
+    public static LinearRangeSettings Default { get; } = new ();
+
+    /// <summary>The currently effective values, updated atomically by <see cref="MecThemeManager"/>.</summary>
+    public static LinearRangeSettings Current
+    {
+        get => Volatile.Read (ref _current);
+        set => Volatile.Write (ref _current, value);
+    }
+
+    private static LinearRangeSettings _current = Default;
 }

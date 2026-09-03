@@ -53,22 +53,12 @@ public class Button : View, IDesignable, IAcceptTarget
     /// <summary>
     ///     Gets or sets whether <see cref="Button"/>s are shown with a shadow effect by default.
     /// </summary>
-    [ConfigurationProperty (Scope = typeof (ThemeScope))]
-    public static ShadowStyles DefaultShadow
-    {
-        get => ButtonSettings.Defaults.DefaultShadow;
-        set => ButtonSettings.Defaults.DefaultShadow = value;
-    }
+    public static ShadowStyles DefaultShadow => ButtonSettings.Current.DefaultShadow;
 
     /// <summary>
     ///     Gets or sets the default Highlight Style.
     /// </summary>
-    [ConfigurationProperty (Scope = typeof (ThemeScope))]
-    public static MouseState DefaultMouseHighlightStates
-    {
-        get => ButtonSettings.Defaults.DefaultMouseHighlightStates;
-        set => ButtonSettings.Defaults.DefaultMouseHighlightStates = value;
-    }
+    public static MouseState DefaultMouseHighlightStates => ButtonSettings.Current.DefaultMouseHighlightStates;
 
     /// <summary>Initializes a new instance of <see cref="Button"/>.</summary>
     public Button ()
@@ -108,7 +98,7 @@ public class Button : View, IDesignable, IAcceptTarget
 
     /// <summary>
     ///     Called before the Button's initial <see cref="View.ShadowStyle"/> is applied during construction.
-    ///     Override to change or suppress the default shadow — set <see cref="ValueChangingEventArgs{T}.NewValue"/>
+    ///     Override to change or suppress the default shadow â€” set <see cref="ValueChangingEventArgs{T}.NewValue"/>
     ///     to the desired style, or set <see cref="ValueChangingEventArgs{T}.Handled"/> to
     ///     <see langword="true"/> to skip applying any shadow.
     /// </summary>
@@ -131,10 +121,10 @@ public class Button : View, IDesignable, IAcceptTarget
     {
         ValueChangingEventArgs<ShadowStyles?> args = new (null, DefaultShadow);
 
-        // 1. Virtual method — subclasses override to change/suppress the default shadow.
+        // 1. Virtual method â€” subclasses override to change/suppress the default shadow.
         OnInitializingShadowStyle (args);
 
-        // 2. Event — external subscribers get a chance to customize.
+        // 2. Event â€” external subscribers get a chance to customize.
         InitializingShadowStyle?.Invoke (this, args);
 
         // 3. Apply the (potentially modified) shadow style unless already handled.
