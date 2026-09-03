@@ -42,6 +42,11 @@ internal sealed class WindowsVTOutputHelper : IDisposable
     private uint _originalConsoleMode;
     private bool _disposed;
 
+    // PERF: Reusable buffers to avoid per-write allocations (string + byte[]).
+    // Grows as needed; stable-state zero-allocation writes.
+    private char []? _charBuffer;
+    private byte []? _byteBuffer;
+
     /// <summary>
     ///     Gets whether VTS output mode was successfully enabled.
     /// </summary>
@@ -169,10 +174,53 @@ internal sealed class WindowsVTOutputHelper : IDisposable
 
     public void Write (StringBuilder output)
     {
-        // Convert StringBuilder to string and then to byte array
-        byte [] byteArray = Encoding.UTF8.GetBytes (output.ToString ());
+        int charLen = output.Length;
+        if (charLen == 0) return;
 
-        WriteFile (OutputHandle, byteArray, (uint)byteArray.Length, out _, nint.Zero);
+        // Ensure char buffer is large enough
+        if (_charBuffer is null || _charBuffer.Length < charLen)
+        {
+            _charBuffer = new char [charLen];
+        }
+
+        // Copy StringBuilder contents to reusable char[] — avoids allocating a string
+        output.CopyTo (0, _charBuffer, 0, charLen);
+
+        // Calculate UTF-8 byte count
+        int byteLen = Encoding.UTF8.GetByteCount (_charBuffer, 0, charLen);
+
+        // Ensure byte buffer is large enough
+        if (_byteBuffer is null || _byteBuffer.Length < byteLen)
+        {
+            _byteBuffer = new byte [byteLen];
+        }
+
+        // Encode to reusable byte[] — avoids allocating a new byte[] each call
+        Encoding.UTF8.GetBytes (_charBuffer, 0, charLen, _byteBuffer, 0);
+
+        WriteFile (OutputHandle, _byteBuffer, (uint)byteLen, out _, nint.Zero);
+    }
+
+    /// <summary>
+    ///     PERF: Writes pre-encoded UTF-8 bytes directly to the console via WriteFile.
+    ///     Zero conversion — bytes are written as-is.
+    /// </summary>
+    public void Write (ReadOnlySpan<byte> utf8)
+    {
+        if (utf8.IsEmpty)
+        {
+            return;
+        }
+
+        // Ensure byte buffer is large enough
+        if (_byteBuffer is null || _byteBuffer.Length < utf8.Length)
+        {
+            _byteBuffer = new byte [utf8.Length];
+        }
+
+        utf8.CopyTo (_byteBuffer);
+
+        WriteFile (OutputHandle, _byteBuffer, (uint)utf8.Length, out _, nint.Zero);
     }
 
     /// <summary>
