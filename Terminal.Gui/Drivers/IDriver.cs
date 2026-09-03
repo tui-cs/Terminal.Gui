@@ -383,15 +383,21 @@ public interface IDriver : IDisposable
     ConcurrentQueue<SixelToRender> GetSixels ();
 
     /// <summary>
-    ///     Gets a string representation of <see cref="Contents"/>.
+    ///     Gets a full-grid textual representation of <see cref="Contents"/>.
     /// </summary>
+    /// <remarks>
+    ///     This returns the complete current screen grid and is suitable for deterministic snapshot/golden comparisons.
+    /// </remarks>
     /// <returns></returns>
     public string ToString ();
 
     /// <summary>
-    ///     Gets an ANSI escape sequence representation of <see cref="Contents"/>. This is the
-    ///     same output as would be written to the terminal to recreate the current screen contents.
+    ///     Gets an ANSI escape sequence representation of <see cref="Contents"/> for terminal output.
     /// </summary>
+    /// <remarks>
+    ///     This output is intended for terminal replay and may include incremental escape-sequence behavior.
+    ///     Prefer <see cref="ToString"/> as the canonical source for snapshot/golden assertions.
+    /// </remarks>
     /// <returns></returns>
     public string ToAnsi ();
 
