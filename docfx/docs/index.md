@@ -12,6 +12,7 @@ Welcome to the Terminal.Gui documentation! This comprehensive guide covers every
 - [Getting Started](~/docs/getting-started.md) - Quick start guide to create your first Terminal.Gui application
 - [Migrating from v1 to v2](~/docs/migratingfromv1.md) - Complete guide for upgrading existing applications
 - [What's New in v2](~/docs/newinv2.md) - Overview of new features and improvements
+- [2.5.0 Breaking Changes](~/docs/breaking-changes-2.5.0.md) - `View.Text` CWP, `IAcceptTarget` namespace, `ConfigurationManager` removal, nested `config.json`
 - [Showcase](~/docs/showcase.md) - Showcase of TUI apps built with Terminal.Gui
 - [Lexicon & Taxonomy](~/docs/lexicon.md) - Terminology and concepts used throughout Terminal.Gui
 - [Views](~/docs/views.md) - Comprehensive list of built-in views and controls

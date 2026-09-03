@@ -27,7 +27,7 @@
 | `view.Bounds` | `view.Viewport` |
 | `LayoutStyle.Computed` | Removed — all layout is declarative via `Pos`/`Dim` |
 | `new RadioGroup (...)` | `new OptionSelector { ... }` |
-| `Colors.ColorSchemes ["name"]` | `Schemes.Resolve ("name")` or use `Scheme` directly |
+| `Colors.ColorSchemes ["name"]` | `SchemeManager.GetScheme ("name")` or use `Scheme` directly |
 | `Application.RequestStop ()` | `App!.RequestStop ()` (from inside a `Runnable`) |
 
 > **Full v1→v2 corrections**: See [ai-v2-primer.md](ai-v2-primer.md)
