@@ -1248,13 +1248,19 @@ public class DropDownListTests (ITestOutputHelper output)
         Assert.Contains ("Equipment", openBuffer, StringComparison.Ordinal);
 
         repro.App.InjectKey (Key.CursorDown);
+        Assert.False (repro.CoveredLabel.NeedsDraw);
+        Assert.False (repro.Dialog.NeedsDraw);
+
         repro.App.InjectKey (Key.Enter);
-        repro.App.LayoutAndDraw ();
 
         Assert.Equal ("Fuel/Energy", repro.DropDown.Text);
         Assert.True (repro.NextView.HasFocus);
         Assert.False (popover.Visible);
         Assert.NotEqual (popover, repro.App.Popovers?.GetActivePopover ());
+        Assert.True (repro.Dialog.NeedsDraw, "Hide must invalidate the dialog so covered cells are repainted.");
+        Assert.True (repro.CoveredLabel.NeedsDraw, "The label the popover covered must be invalidated.");
+
+        repro.App.LayoutAndDraw ();
 
         string closedBuffer = ReadScreen (repro.App);
         output.WriteLine ("Closed:\n{0}", closedBuffer);
@@ -1291,12 +1297,15 @@ public class DropDownListTests (ITestOutputHelper output)
         injector.InjectMouse (new Mouse { ScreenPosition = clickPos, Flags = MouseFlags.LeftButtonPressed, Timestamp = baseTime }, options);
         injector.InjectMouse (new Mouse { ScreenPosition = clickPos, Flags = MouseFlags.LeftButtonReleased, Timestamp = baseTime.AddMilliseconds (50) }, options);
 
-        repro.App.LayoutAndDraw ();
-
+        // Mouse selection uses Activate, not Accept. The Accepting handler may not move focus.
+        // The covered region must still be invalidated.
         Assert.Equal ("Fuel/Energy", repro.DropDown.Text);
-        Assert.True (repro.NextView.HasFocus);
         Assert.False (popover.Visible);
         Assert.NotEqual (popover, repro.App.Popovers?.GetActivePopover ());
+        Assert.True (repro.Dialog.NeedsDraw, "Hide must invalidate the dialog so covered cells are repainted.");
+        Assert.True (repro.CoveredLabel.NeedsDraw, "The label the popover covered must be invalidated.");
+
+        repro.App.LayoutAndDraw ();
 
         string closedBuffer = ReadScreen (repro.App);
         output.WriteLine ("Closed:\n{0}", closedBuffer);
@@ -1336,12 +1345,13 @@ public class DropDownListTests (ITestOutputHelper output)
     {
         private readonly SessionToken? _token;
 
-        private HandledAcceptRepro (IApplication app, Dialog dialog, DropDownList dropDown, ListView nextView, SessionToken? token)
+        private HandledAcceptRepro (IApplication app, Dialog dialog, DropDownList dropDown, ListView nextView, Label coveredLabel, SessionToken? token)
         {
             App = app;
             Dialog = dialog;
             DropDown = dropDown;
             NextView = nextView;
+            CoveredLabel = coveredLabel;
             _token = token;
         }
 
@@ -1352,6 +1362,8 @@ public class DropDownListTests (ITestOutputHelper output)
         public DropDownList DropDown { get; }
 
         public ListView NextView { get; }
+
+        public Label CoveredLabel { get; }
 
         public static HandledAcceptRepro Create ()
         {
@@ -1405,7 +1417,7 @@ public class DropDownListTests (ITestOutputHelper output)
             SessionToken? token = app.Begin (dialog);
             app.LayoutAndDraw ();
 
-            return new HandledAcceptRepro (app, dialog, dropDown, nextView, token);
+            return new HandledAcceptRepro (app, dialog, dropDown, nextView, covered3, token);
         }
 
         public void Dispose ()
