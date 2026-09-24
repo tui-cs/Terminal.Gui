@@ -120,25 +120,70 @@ public partial class ColorClassTests
     }
 
     [Fact]
-    public void GetDimmerColor_VeryDarkInput_DarkBackground_ReturnsDarkGray ()
+    public void GetDimmerColor_VeryDarkInput_DarkBackground_ReturnsTheColorUnchanged ()
     {
         Color veryDark = new (10, 10, 10);
         Color dimmed = veryDark.GetDimmerColor (0.2, true);
 
-        // Very dark color on dark bg should fall back to DarkGray
-        Color darkGray = new (ColorName16.DarkGray);
-        Assert.Equal (darkGray, dimmed);
+        // A color with no room left to dim keeps what it has: a named gray would be brighter than the
+        // color it replaced, and black would take the little contrast the color still carries
+        Assert.Equal (veryDark, dimmed);
     }
 
     [Fact]
-    public void GetDimmerColor_VeryLightInput_LightBackground_ReturnsGray ()
+    public void GetDimmerColor_VeryLightInput_LightBackground_ReturnsTheColorUnchanged ()
     {
         Color veryLight = new (240, 240, 240);
         Color dimmed = veryLight.GetDimmerColor (0.2, false);
 
-        // Very light color on light bg should fall back to Gray
-        Color gray = new (ColorName16.Gray);
-        Assert.Equal (gray, dimmed);
+        Assert.Equal (veryLight, dimmed);
+    }
+
+    // Text drawn in a color that was dimmed against a ground dimmed the same way has to stay legible:
+    // neither may be flattened onto the end of the range, where both become the same color.
+    [Fact]
+    public void GetDimmerColor_DarkBackground_KeepsDarkTextOffItsGround ()
+    {
+        Color ground = new (16, 16, 20);
+        Color text = new (47, 47, 54);
+
+        Assert.NotEqual (ground.GetDimmerColor (0.2, true), text.GetDimmerColor (0.2, true));
+    }
+
+    // A dimmer that brightens is what this guards: on a dark background no input may come back
+    // lighter than it went in, and a near-black one used to come back as DarkGray (#767676).
+    [Theory]
+    [InlineData (0, 0, 0)]
+    [InlineData (16, 16, 20)]
+    [InlineData (26, 26, 26)]
+    [InlineData (47, 47, 54)]
+    [InlineData (150, 150, 150)]
+    [InlineData (255, 255, 255)]
+    public void GetDimmerColor_DarkBackground_NeverBrightens (byte r, byte g, byte b)
+    {
+        Color color = new (r, g, b);
+        Color dimmed = color.GetDimmerColor (0.2, true);
+
+        Assert.True (
+                     dimmed.R <= color.R && dimmed.G <= color.G && dimmed.B <= color.B,
+                     $"Dimming #{color.R:x2}{color.G:x2}{color.B:x2} returned the brighter #{dimmed.R:x2}{dimmed.G:x2}{dimmed.B:x2}");
+    }
+
+    // The same contract in the other direction: dimming toward a light background washes a color out,
+    // and a near-white one must not come back darker.
+    [Theory]
+    [InlineData (255, 255, 255)]
+    [InlineData (240, 240, 240)]
+    [InlineData (100, 100, 100)]
+    [InlineData (0, 0, 0)]
+    public void GetDimmerColor_LightBackground_NeverDarkens (byte r, byte g, byte b)
+    {
+        Color color = new (r, g, b);
+        Color dimmed = color.GetDimmerColor (0.2, false);
+
+        Assert.True (
+                     dimmed.R >= color.R && dimmed.G >= color.G && dimmed.B >= color.B,
+                     $"Dimming #{color.R:x2}{color.G:x2}{color.B:x2} returned the darker #{dimmed.R:x2}{dimmed.G:x2}{dimmed.B:x2}");
     }
 
     [Fact]

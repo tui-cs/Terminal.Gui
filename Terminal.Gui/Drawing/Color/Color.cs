@@ -321,9 +321,9 @@ public readonly partial record struct Color : ISpanParsable<Color>, IUtf8SpanPar
     ///         <list type="bullet">
     ///             <item>
     ///                 <description>
-    ///                     If the color is already at the extreme for the given direction, returns a context-appropriate
-    ///                     gray (<see cref="ColorName16.DarkGray"/> for dark backgrounds,
-    ///                     <see cref="ColorName16.Gray"/> for light backgrounds).
+    ///                     If the color has no room left for the step in the given direction, it is returned unchanged.
+    ///                     Dimming never moves a color the other way, and never flattens it onto the end of the range,
+    ///                     where text drawn in it would vanish into the ground it is drawn against.
     ///                 </description>
     ///             </item>
     ///             <item>
@@ -353,24 +353,28 @@ public readonly partial record struct Color : ISpanParsable<Color>, IUtf8SpanPar
         // Determine direction: on dark bg (or null/default), reduce L; on light bg, increase L
         bool shouldDecrease = isDarkBackground ?? true;
 
-        // If the color is already at the extreme for the given direction, return a context-appropriate gray.
-        // Note: ColorHelper's HSL uses L in range 0-100.
-        if (shouldDecrease && hsl.L <= 10)
+        double newL = shouldDecrease ? lNorm - dimAmount : lNorm + dimAmount;
+
+        // A color with no room left for the step keeps what it has. Two other answers were tried here
+        // and both cost the caller something: a named gray (DarkGray when reducing, Gray when
+        // increasing) moves the color the wrong way - dimming #101014 returned the brighter #767676 -
+        // and clamping to the end of the range sinks the color into the ground it is drawn against,
+        // which is where text drawn in it stops being readable. Returning it unchanged does neither.
+        if (newL <= 0.0 || newL >= 1.0)
         {
-            return new Color (ColorName16.DarkGray);
+            return this;
         }
 
-        if (!shouldDecrease && hsl.L >= 90)
-        {
-            return new Color (ColorName16.Gray);
-        }
-
-        double newL = shouldDecrease ? Math.Max (0.0, lNorm - dimAmount) : Math.Min (1.0, lNorm + dimAmount);
-
-        // If the new lightness is too close to the original, force a bigger change
+        // If the new lightness is too close to the original, force a bigger change - unless that step
+        // is the one that has no room.
         if (Math.Abs (newL - lNorm) < 0.1)
         {
-            newL = shouldDecrease ? Math.Max (0.0, lNorm - 2 * dimAmount) : Math.Min (1.0, lNorm + 2 * dimAmount);
+            double furtherL = shouldDecrease ? lNorm - 2 * dimAmount : lNorm + 2 * dimAmount;
+
+            if (furtherL > 0.0 && furtherL < 1.0)
+            {
+                newL = furtherL;
+            }
         }
 
         HSL newHsl = new (hsl.H, hsl.S, (byte)(newL * 100));
