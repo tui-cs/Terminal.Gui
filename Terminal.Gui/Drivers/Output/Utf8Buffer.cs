@@ -189,6 +189,12 @@ public sealed class Utf8Buffer
         // Perform doubling in long to avoid int overflow, then cast back.
         long newSize = _buffer.Length;
 
+        // Guard against zero-length buffer: doubling zero stays zero (infinite loop).
+        if (newSize == 0)
+        {
+            newSize = 1;
+        }
+
         while (newSize < required)
         {
             newSize *= 2;
