@@ -5,10 +5,10 @@ namespace Terminal.Gui.Drivers;
 /// </summary>
 public class ProgressIndicator
 {
-    private readonly IDriver _driver;
+    private readonly DriverImpl _driver;
     private string? _lastSequence;
 
-    internal ProgressIndicator (IDriver driver)
+    internal ProgressIndicator (DriverImpl driver)
     {
         ArgumentNullException.ThrowIfNull (driver);
         _driver = driver;
@@ -44,11 +44,10 @@ public class ProgressIndicator
             return;
         }
 
-        string clearSequence = EscSeqUtils.OSC_ClearProgress ();
-
-        if (_lastSequence != clearSequence)
+        // Keep the last sequence if the clear fails so a later Clear retries it.
+        if (!WriteSequence (EscSeqUtils.OSC_ClearProgress ()))
         {
-            WriteSequence (clearSequence);
+            return;
         }
 
         _lastSequence = null;
@@ -77,14 +76,21 @@ public class ProgressIndicator
     /// </summary>
     public void SetIndeterminate () => WriteSequence (EscSeqUtils.OSC_SetProgressIndeterminate ());
 
-    private void WriteSequence (string sequence)
+    private bool WriteSequence (string sequence)
     {
         if (_lastSequence == sequence || _driver.IsLegacyConsole)
         {
-            return;
+            return true;
         }
 
-        _driver.GetOutput ().Write (sequence.AsSpan ());
+        // Only remember sequences the terminal actually received; otherwise a repeat would be skipped.
+        if (!_driver.TryWriteRaw (sequence))
+        {
+            return false;
+        }
+
         _lastSequence = sequence;
+
+        return true;
     }
 }

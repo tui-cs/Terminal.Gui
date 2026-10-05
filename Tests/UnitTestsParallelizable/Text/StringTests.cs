@@ -4,6 +4,18 @@
 
 public class StringTests
 {
+    // Claude - Opus 5.5
+    [Theory]
+    [InlineData ("a", true, 1)]
+    [InlineData ("你", true, 2)]
+    [InlineData ("\u0301", true, 0)]
+    [InlineData ("\u0007", true, 0)]
+    [InlineData ("\u0007", false, -1)]
+    public void TestGetColumns_SingleChar_MatchesGraphemePath (string str, bool ignoreLessThanZero, int expected)
+    {
+        Assert.Equal (expected, str.GetColumns (ignoreLessThanZero));
+    }
+
     [Fact]
     public void TestGetColumns_Null ()
     {

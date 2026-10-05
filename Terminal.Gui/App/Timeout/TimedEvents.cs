@@ -7,7 +7,6 @@ namespace Terminal.Gui.App;
 ///     <para>
 ///         Allows scheduling of callbacks to be invoked after a specified delay, with optional repetition.
 ///         Timeouts are stored in a sorted list by their scheduled execution time (high-resolution ticks).
-///         Thread-safe for concurrent access.
 ///     </para>
 ///     <para>
 ///         Typical usage:
@@ -29,6 +28,17 @@ namespace Terminal.Gui.App;
 /// </summary>
 /// <remarks>
 ///     <para>
+///         <see cref="Add(TimeSpan, Func{bool})"/>, <see cref="Add(Timeout)"/>, <see cref="Remove"/>,
+///         <see cref="StopAll"/>, <see cref="GetTimeout"/>, <see cref="CheckTimers"/>, and <see cref="RunTimers"/> are
+///         safe to call concurrently from any thread. Timeout callbacks, <see cref="Timeout.Span"/> access,
+///         <see cref="Added"/> handlers, and time-provider reads occur outside the timeout queue lock, so user code can
+///         schedule or cancel timeouts without deadlocking.
+///     </para>
+///     <para>
+///         <see cref="Timeouts"/> returns a snapshot so the queue can be inspected safely while another thread schedules
+///         or cancels timeouts.
+///     </para>
+///     <para>
 ///         By default, uses <see cref="Stopwatch.GetTimestamp"/> for high-resolution timing to provide microsecond-level
 ///         precision and eliminate race conditions from timer resolution issues.
 ///     </para>
@@ -40,8 +50,16 @@ namespace Terminal.Gui.App;
 public class TimedEvents : ITimedEvents
 {
     internal SortedList<long, Timeout> _timeouts = new ();
+
+    // ActiveTimeoutState is a mutable struct, so TryGetValue hands back a copy. Every mutation must be written back
+    // with _activeTimeoutStates [timeout] = state (or the entry removed) before _timeoutsLockToken is released.
+    private readonly Dictionary<Timeout, ActiveTimeoutState> _activeTimeoutStates = new (ReferenceEqualityComparer.Instance);
+    private readonly Dictionary<long, long> _queuedTimeoutOccurrenceIds = [];
+    private readonly object _runTimersLockToken = new ();
     private readonly object _timeoutsLockToken = new ();
     private readonly ITimeProvider? _timeProvider;
+    private long _nextTimeoutOccurrenceId;
+    private long _stopAllEpoch;
 
     /// <summary>
     ///     Initializes a new instance of <see cref="TimedEvents"/> with the default system time provider.
@@ -68,7 +86,20 @@ public class TimedEvents : ITimedEvents
     ///     Gets the list of all timeouts sorted by the <see cref="TimeSpan"/> time ticks. A shorter limit time can be
     ///     added at the end, but it will be called before an earlier addition that has a longer limit time.
     /// </summary>
-    public SortedList<long, Timeout> Timeouts => _timeouts;
+    /// <remarks>
+    ///     Returns a snapshot. Mutating the returned list does not change the scheduled timeouts. A timeout whose
+    ///     callback is currently executing has already been dequeued and is not present.
+    /// </remarks>
+    public SortedList<long, Timeout> Timeouts
+    {
+        get
+        {
+            lock (_timeoutsLockToken)
+            {
+                return new (_timeouts);
+            }
+        }
+    }
 
     /// <inheritdoc/>
     public event EventHandler<TimeoutEventArgs>? Added;
@@ -102,31 +133,65 @@ public class TimedEvents : ITimedEvents
     /// <inheritdoc/>
     public void RunTimers ()
     {
-        lock (_timeoutsLockToken)
+        // A monitor is reentrant, so nested runs on this thread remain supported. A competing caller returns while the
+        // active runner drains the due timeouts.
+        if (!Monitor.TryEnter (_runTimersLockToken))
         {
-            if (_timeouts.Count > 0)
-            {
-                RunTimersImpl ();
-            }
+            return;
+        }
+
+        try
+        {
+            RunTimersImpl ();
+        }
+        finally
+        {
+            Monitor.Exit (_runTimersLockToken);
         }
     }
 
     /// <inheritdoc/>
     public bool Remove (object token)
     {
-        lock (_timeoutsLockToken)
+        Timeout? timeout = token as Timeout;
+
+        if (timeout is null)
         {
-            int idx = _timeouts.IndexOfValue ((token as Timeout)!);
-
-            if (idx == -1)
-            {
-                return false;
-            }
-
-            _timeouts.RemoveAt (idx);
+            return false;
         }
 
-        return true;
+        lock (_timeoutsLockToken)
+        {
+            var found = false;
+
+            // The same Timeout instance can be queued more than once, so the whole queue is scanned. Do not replace
+            // this with an early-exiting lookup such as IndexOfValue.
+            for (var i = _timeouts.Count - 1; i >= 0; i--)
+            {
+                if (!ReferenceEquals (_timeouts.Values [i], timeout))
+                {
+                    continue;
+                }
+
+                long key = _timeouts.Keys [i];
+                bool occurrenceRemoved = _queuedTimeoutOccurrenceIds.Remove (key);
+                Debug.Assert (occurrenceRemoved);
+                _timeouts.RemoveAt (i);
+                found = true;
+            }
+
+            if (_activeTimeoutStates.TryGetValue (timeout, out ActiveTimeoutState state)
+                && state.StopAllEpoch == _stopAllEpoch
+                && state.UncancelledActiveCount > 0)
+            {
+                state.RemovalGeneration++;
+                state.UncancelledActiveCount = 0;
+                _activeTimeoutStates [timeout] = state;
+                found = true;
+            }
+
+            return found;
+        }
     }
 
     /// <inheritdoc/>
@@ -143,12 +208,26 @@ public class TimedEvents : ITimedEvents
     /// <inheritdoc/>
     public object Add (Timeout timeout)
     {
+        ArgumentNullException.ThrowIfNull (timeout);
+        ArgumentNullException.ThrowIfNull (timeout.Callback);
+
         AddTimeout (timeout.Span, timeout);
 
         return timeout;
     }
 
-    /// <inheritdoc/>
+    /// <summary>
+    ///     Determines whether any timeout is queued and calculates how long the caller may wait before the earliest one
+    ///     is due.
+    /// </summary>
+    /// <param name="waitTimeout">
+    ///     The number of milliseconds until the earliest queued timeout is due, <c>0</c> if one is already due, or
+    ///     <c>-1</c> if no timeout is queued. <c>-1</c> indicates the caller may wait indefinitely.
+    /// </param>
+    /// <returns><see langword="true"/> if at least one timeout is queued; otherwise, <see langword="false"/>.</returns>
+    /// <remarks>
+    ///     A timeout whose callback is currently executing has been dequeued and is therefore not counted.
+    /// </remarks>
     public bool CheckTimers (out int waitTimeout)
     {
         long now = GetTimestampTicks ();
@@ -183,36 +262,64 @@ public class TimedEvents : ITimedEvents
     /// <inheritdoc/>
     public TimeSpan? GetTimeout (object token)
     {
+        if (token is not Timeout timeout)
+        {
+            return null;
+        }
+
+        var found = false;
+
         lock (_timeoutsLockToken)
         {
-            int idx = _timeouts.IndexOfValue ((token as Timeout)!);
-
-            if (idx == -1)
+            foreach (Timeout queuedTimeout in _timeouts.Values)
             {
-                return null;
-            }
+                if (!ReferenceEquals (queuedTimeout, timeout))
+                {
+                    continue;
+                }
 
-            return _timeouts.Values [idx].Span;
+                found = true;
+
+                break;
+            }
         }
+
+        return found ? timeout.Span : null;
     }
 
     private void AddTimeout (TimeSpan time, Timeout timeout)
     {
+        long timestampTicks = GetTimestampTicks ();
+        long k;
+
         lock (_timeoutsLockToken)
         {
-            long k = GetTimestampTicks () + time.Ticks;
-
-            // if user wants to run as soon as possible set timer such that it expires right away (no race conditions)
-            if (time == TimeSpan.Zero)
-            {
-                // Use a more substantial buffer (1ms) to ensure it's truly in the past
-                // even under debugger overhead and extreme timing variations
-                k -= TimeSpan.TicksPerMillisecond;
-            }
-
-            _timeouts.Add (NudgeToUniqueKey (k), timeout);
-            Added?.Invoke (this, new (timeout, k));
+            k = AddTimeoutCore (timestampTicks, time, timeout);
         }
+
+        Added?.Invoke (this, new (timeout, k));
+    }
+
+    private long AddTimeoutCore (long timestampTicks, TimeSpan time, Timeout timeout)
+    {
+        // Caller must hold _timeoutsLockToken.
+        Debug.Assert (Monitor.IsEntered (_timeoutsLockToken));
+
+        long k = timestampTicks + time.Ticks;
+
+        // if user wants to run as soon as possible set timer such that it expires right away (no race conditions)
+        if (time == TimeSpan.Zero)
+        {
+            // Use a more substantial buffer (1ms) to ensure it's truly in the past
+            // even under debugger overhead and extreme timing variations
+            k -= TimeSpan.TicksPerMillisecond;
+        }
+
+        k = NudgeToUniqueKey (k);
+        _timeouts.Add (k, timeout);
+        _queuedTimeoutOccurrenceIds.Add (k, _nextTimeoutOccurrenceId++);
+
+        return k;
     }
 
     /// <summary>
@@ -223,12 +330,12 @@ public class TimedEvents : ITimedEvents
     /// <returns></returns>
     private long NudgeToUniqueKey (long k)
     {
-        lock (_timeoutsLockToken)
+        // Caller must hold _timeoutsLockToken.
+        Debug.Assert (Monitor.IsEntered (_timeoutsLockToken));
+
+        while (_timeouts.ContainsKey (k))
         {
-            while (_timeouts.ContainsKey (k))
-            {
-                k++;
-            }
+            k++;
         }
 
         return k;
@@ -236,51 +343,184 @@ public class TimedEvents : ITimedEvents
 
     private void RunTimersImpl ()
     {
-        long now = GetTimestampTicks ();
+        long occurrenceIdCutoff;
 
-        // Process due timeouts one at a time, without blocking the entire queue
+        lock (_timeoutsLockToken)
+        {
+            if (_timeouts.Count == 0)
+            {
+                return;
+            }
+
+            occurrenceIdCutoff = _nextTimeoutOccurrenceId;
+        }
+
+        long passStart = GetTimestampTicks ();
+
+        // Execute only queue occurrences that were due when this pass started. A repeating timeout with a zero or
+        // negative span reschedules as already due, but receives a new occurrence ID and is deferred to a later pass.
+        // Without occurrence identity, it can reuse its freed queue key and starve an already-due peer indefinitely.
         while (true)
         {
-            Timeout? timeoutToExecute = null;
-            long scheduledTime = 0;
+            ActiveTimeoutOccurrence occurrence;
 
-            // Find the next due timeout
             lock (_timeoutsLockToken)
             {
-                if (_timeouts.Count == 0)
+                int timeoutIndex = GetNextDueTimeoutIndex (passStart, occurrenceIdCutoff);
+
+                if (timeoutIndex == -1)
                 {
-                    break; // No more timeouts
+                    return;
                 }
 
-                // Re-evaluate current time for each iteration
-                now = GetTimestampTicks ();
+                long scheduledTime = _timeouts.Keys [timeoutIndex];
+                Timeout timeoutToExecute = _timeouts.Values [timeoutIndex];
+                bool occurrenceRemoved = _queuedTimeoutOccurrenceIds.Remove (scheduledTime);
+                Debug.Assert (occurrenceRemoved);
+                _timeouts.RemoveAt (timeoutIndex);
+                _activeTimeoutStates.TryGetValue (timeoutToExecute, out ActiveTimeoutState state);
 
-                // Check if the earliest timeout is due
-                scheduledTime = _timeouts.Keys [0];
-
-                if (scheduledTime > now)
+                if (state.StopAllEpoch != _stopAllEpoch)
                 {
-                    // Earliest timeout is not yet due, we're done
-                    break;
+                    state.StopAllEpoch = _stopAllEpoch;
+                    state.UncancelledActiveCount = 0;
                 }
 
-                // This timeout is due - remove it from the queue
-                timeoutToExecute = _timeouts.Values [0];
-                _timeouts.RemoveAt (0);
+                occurrence = new (timeoutToExecute, _stopAllEpoch, state.RemovalGeneration);
+                state.ActiveCount++;
+                state.UncancelledActiveCount++;
+                _activeTimeoutStates [timeoutToExecute] = state;
             }
 
             // Execute the callback outside the lock
-            // This allows nested Run() calls to access the timeout queue
-            if (timeoutToExecute != null)
-            {
-                bool repeat = timeoutToExecute.Callback! ();
+            // This allows nested RunTimers() calls to access the timeout queue
+            bool repeat = false;
 
-                if (repeat)
-                {
-                    AddTimeout (timeoutToExecute.Span, timeoutToExecute);
-                }
+            try
+            {
+                repeat = occurrence.Timeout.Callback! ();
+            }
+            finally
+            {
+                CompleteTimeout (occurrence, repeat);
             }
         }
+    }
+
+    private int GetNextDueTimeoutIndex (long passStart, long occurrenceIdCutoff)
+    {
+        // Caller must hold _timeoutsLockToken.
+        Debug.Assert (Monitor.IsEntered (_timeoutsLockToken));
+        Debug.Assert (_timeouts.Count == _queuedTimeoutOccurrenceIds.Count);
+
+        for (var i = 0; i < _timeouts.Count; i++)
+        {
+            long scheduledTime = _timeouts.Keys [i];
+
+            if (scheduledTime > passStart)
+            {
+                return -1;
+            }
+
+            bool found = _queuedTimeoutOccurrenceIds.TryGetValue (scheduledTime, out long occurrenceId);
+            Debug.Assert (found);
+
+            if (found && occurrenceId < occurrenceIdCutoff)
+            {
+                return i;
+            }
+        }
+
+        return -1;
+    }
+
+    private void CompleteTimeout (ActiveTimeoutOccurrence occurrence, bool repeat)
+    {
+        if (!repeat || !CanReschedule (occurrence))
+        {
+            CompleteTimeoutCore (occurrence, false, default, 0);
+
+            return;
+        }
+
+        TimeSpan repeatInterval = default;
+        long timestampTicks = 0;
+        var rescheduleInputsRead = false;
+
+        try
+        {
+            repeatInterval = occurrence.Timeout.Span;
+            timestampTicks = GetTimestampTicks ();
+            rescheduleInputsRead = true;
+        }
+        finally
+        {
+            // Span and the time provider are user-overridable. Read them without the queue lock, then revalidate the
+            // occurrence in CompleteTimeoutCore before enqueueing it. The finally also releases active-state bookkeeping
+            // if either read throws.
+            CompleteTimeoutCore (occurrence, rescheduleInputsRead, repeatInterval, timestampTicks);
+        }
+    }
+
+    private bool CanReschedule (ActiveTimeoutOccurrence occurrence)
+    {
+        lock (_timeoutsLockToken)
+        {
+            bool found = _activeTimeoutStates.TryGetValue (occurrence.Timeout, out ActiveTimeoutState state);
+            Debug.Assert (found);
+
+            return found
+                   && occurrence.StopAllEpoch == _stopAllEpoch
+                   && occurrence.RemovalGeneration == state.RemovalGeneration;
+        }
+    }
+
+    private void CompleteTimeoutCore (
+        ActiveTimeoutOccurrence occurrence,
+        bool repeat,
+        TimeSpan repeatInterval,
+        long timestampTicks)
+    {
+        long k;
+
+        lock (_timeoutsLockToken)
+        {
+            bool found = _activeTimeoutStates.TryGetValue (occurrence.Timeout, out ActiveTimeoutState state);
+            Debug.Assert (found);
+
+            if (!found)
+            {
+                return;
+            }
+
+            state.ActiveCount--;
+            bool canReschedule = occurrence.StopAllEpoch == _stopAllEpoch
+                                 && occurrence.RemovalGeneration == state.RemovalGeneration;
+
+            if (canReschedule)
+            {
+                state.UncancelledActiveCount--;
+                Debug.Assert (state.UncancelledActiveCount >= 0);
+            }
+
+            if (state.ActiveCount == 0)
+            {
+                _activeTimeoutStates.Remove (occurrence.Timeout);
+            }
+            else
+            {
+                _activeTimeoutStates [occurrence.Timeout] = state;
+            }
+
+            if (!repeat || !canReschedule)
+            {
+                return;
+            }
+
+            k = AddTimeoutCore (timestampTicks, repeatInterval, occurrence.Timeout);
+        }
+
+        Added?.Invoke (this, new (occurrence.Timeout, k));
     }
 
     /// <inheritdoc/>
@@ -289,6 +529,38 @@ public class TimedEvents : ITimedEvents
         lock (_timeoutsLockToken)
         {
             _timeouts.Clear ();
+            _queuedTimeoutOccurrenceIds.Clear ();
+            _stopAllEpoch++;
         }
+    }
+
+    /// <summary>
+    ///     Identifies a single in-flight execution of a <see cref="Timeout"/>, capturing the cancellation state that was
+    ///     current when the occurrence was dequeued. <see cref="CompleteTimeout"/> reschedules only if both values still
+    ///     match, which is how <see cref="Remove"/> and <see cref="StopAll"/> cancel an active occurrence without
+    ///     affecting occurrences created after them.
+    /// </summary>
+    private readonly record struct ActiveTimeoutOccurrence (Timeout Timeout, long StopAllEpoch, long RemovalGeneration);
+
+    /// <summary>
+    ///     Per-<see cref="Timeout"/> cancellation bookkeeping. Mutable; see the comment on
+    ///     <see cref="_activeTimeoutStates"/> for the write-back requirement.
+    /// </summary>
+    private struct ActiveTimeoutState
+    {
+        /// <summary>Number of occurrences of this timeout that are currently executing.</summary>
+        public int ActiveCount { get; set; }
+
+        /// <summary>Incremented by <see cref="Remove"/> to invalidate every occurrence dequeued before it.</summary>
+        public long RemovalGeneration { get; set; }
+
+        /// <summary>The <see cref="_stopAllEpoch"/> value that <see cref="UncancelledActiveCount"/> is scoped to.</summary>
+        public long StopAllEpoch { get; set; }
+
+        /// <summary>
+        ///     Number of active occurrences still matching <see cref="StopAllEpoch"/> and <see cref="RemovalGeneration"/>,
+        ///     used so <see cref="Remove"/> can report whether it actually cancelled anything.
+        /// </summary>
+        public int UncancelledActiveCount { get; set; }
     }
 }

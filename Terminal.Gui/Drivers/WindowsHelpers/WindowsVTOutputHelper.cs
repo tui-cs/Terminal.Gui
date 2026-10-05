@@ -1,3 +1,4 @@
+using System.ComponentModel;
 using System.Runtime.InteropServices;
 
 namespace Terminal.Gui.Drivers;
@@ -14,7 +15,7 @@ namespace Terminal.Gui.Drivers;
 ///         Console APIs. Ensure <c>ENABLE_PROCESSED_OUTPUT</c> is set when using this flag
 ///     </para>
 /// </remarks>
-internal sealed class WindowsVTOutputHelper : IDisposable
+internal sealed partial class WindowsVTOutputHelper : IDisposable
 {
     #region P/Invoke Declarations
 
@@ -30,8 +31,13 @@ internal sealed class WindowsVTOutputHelper : IDisposable
     [DllImport ("kernel32.dll")]
     private static extern uint GetLastError ();
 
-    [DllImport ("kernel32.dll")]
-    public static extern bool WriteFile (nint hConsoleHandle, byte [] lpBuffer, uint nNumberOfBytesToWrite, out uint lpNumberOfBytesWritten, nint lpOverlapped);
+    [LibraryImport ("kernel32.dll", SetLastError = true)]
+    [return: MarshalAs (UnmanagedType.Bool)]
+    private static partial bool WriteFile (nint hConsoleHandle,
+                                           ReadOnlySpan<byte> lpBuffer,
+                                           uint nNumberOfBytesToWrite,
+                                           out uint lpNumberOfBytesWritten,
+                                           nint lpOverlapped);
 
     [DllImport ("kernel32.dll", SetLastError = true)]
     [return: MarshalAs (UnmanagedType.Bool)]
@@ -41,6 +47,11 @@ internal sealed class WindowsVTOutputHelper : IDisposable
 
     private uint _originalConsoleMode;
     private bool _disposed;
+
+    internal delegate bool WriteFileDelegate (ReadOnlySpan<byte> bytes, out uint written, out int error);
+    private readonly WriteFileDelegate? _writer;
+
+    internal WindowsVTOutputHelper (WriteFileDelegate? writer = null) => _writer = writer;
 
     /// <summary>
     ///     Gets whether VTS output mode was successfully enabled.
@@ -167,12 +178,44 @@ internal sealed class WindowsVTOutputHelper : IDisposable
         _disposed = true;
     }
 
-    public void Write (StringBuilder output)
-    {
-        // Convert StringBuilder to string and then to byte array
-        byte [] byteArray = Encoding.UTF8.GetBytes (output.ToString ());
+    public void Write (StringBuilder output) => Write (Encoding.UTF8.GetBytes (output.ToString ()));
 
-        WriteFile (OutputHandle, byteArray, (uint)byteArray.Length, out _, nint.Zero);
+    /// <summary>Writes UTF-8 directly, retrying short writes without copying their tail.</summary>
+    public void Write (ReadOnlySpan<byte> utf8)
+    {
+        while (!utf8.IsEmpty)
+        {
+            uint written;
+            int error;
+            bool succeeded;
+
+            if (_writer is { })
+            {
+                succeeded = _writer (utf8, out written, out error);
+            }
+            else
+            {
+                succeeded = WriteFile (OutputHandle, utf8, (uint)utf8.Length, out written, nint.Zero);
+                error = Marshal.GetLastWin32Error ();
+            }
+
+            if (!succeeded)
+            {
+                if (error == 0)
+                {
+                    throw new IOException ("WriteFile failed without an error code.");
+                }
+
+                throw new Win32Exception (error);
+            }
+
+            if (written == 0 || written > utf8.Length)
+            {
+                throw new IOException ($"WriteFile reported {written} of {utf8.Length} bytes.");
+            }
+
+            utf8 = utf8 [(int)written..];
+        }
     }
 
     /// <summary>

@@ -8,6 +8,85 @@ namespace ApplicationTests.Timeout;
 [Collection("Application Tests")]
 public class NestedRunTimeoutTests (ITestOutputHelper output)
 {
+    // CoPilot - GPT-5
+    [Fact]
+    public async Task CrossThread_Invoke_Executes_During_Nested_Run_Started_From_Timeout ()
+    {
+        using IApplication app = Application.Create ();
+        app.Init (DriverRegistry.Names.ANSI);
+        CancellationToken cancellationToken = TestContext.Current.CancellationToken;
+        using ManualResetEventSlim nestedRunStarted = new ();
+        Window mainWindow = new () { Title = "Main Window" };
+        Dialog dialog = new () { Title = "Nested Dialog", Buttons = [new () { Text = "Ok" }] };
+        Task? invokeTask = null;
+        Exception? invokeError = null;
+        var invokedDuringNestedRun = false;
+        var nestedRunCompleted = false;
+        var safetyTimeoutFired = false;
+
+        object safetyTimeout = app.AddTimeout (
+                                                   TimeSpan.FromSeconds (5),
+                                                   () =>
+                                                   {
+                                                       safetyTimeoutFired = true;
+                                                       app.RequestStop (dialog);
+
+                                                       return false;
+                                                   })!;
+
+        app.AddTimeout (
+                        TimeSpan.Zero,
+                        () =>
+                        {
+                            invokeTask = Task.Factory.StartNew (
+                                                                () =>
+                                                                {
+                                                                    try
+                                                                    {
+                                                                        nestedRunStarted.Wait (cancellationToken);
+                                                                        app.Invoke (
+                                                                                    () =>
+                                                                                    {
+                                                                                        invokedDuringNestedRun = app.TopRunnableView == dialog;
+                                                                                        app.RequestStop (dialog);
+                                                                                    });
+                                                                    }
+                                                                    catch (Exception ex)
+                                                                    {
+                                                                        invokeError = ex;
+                                                                    }
+                                                                },
+                                                                CancellationToken.None,
+                                                                TaskCreationOptions.LongRunning,
+                                                                TaskScheduler.Default);
+
+                            nestedRunStarted.Set ();
+                            app.Run (dialog);
+                            nestedRunCompleted = true;
+                            app.RemoveTimeout (safetyTimeout);
+                            app.RequestStop (mainWindow);
+
+                            return false;
+                        });
+
+        try
+        {
+            app.Run (mainWindow);
+            Assert.NotNull (invokeTask);
+            await invokeTask.WaitAsync (TimeSpan.FromSeconds (5), cancellationToken);
+        }
+        finally
+        {
+            dialog.Dispose ();
+            mainWindow.Dispose ();
+        }
+
+        Assert.Null (invokeError);
+        Assert.False (safetyTimeoutFired, "The cross-thread Invoke should close the dialog before the safety timeout.");
+        Assert.True (invokedDuringNestedRun, "Invoke should execute while the nested dialog is the top runnable.");
+        Assert.True (nestedRunCompleted);
+    }
+
     [Fact]
     public void Multiple_Timeouts_Fire_In_Correct_Order_With_Nested_Run ()
     {

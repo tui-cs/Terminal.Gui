@@ -45,7 +45,7 @@ public class KittyKeyboardProtocolDetector
         }
 
         Trace.Lifecycle (nameof (KittyKeyboardProtocolDetector), "Enable", $"Writing enable sequence for flags {flags}");
-        _driver?.GetOutput ().Write (EscSeqUtils.CSI_EnableKittyKeyboardFlags (flags));
+        _driver?.WriteRaw (EscSeqUtils.CSI_EnableKittyKeyboardFlags (flags));
 
         Trace.Lifecycle (nameof (KittyKeyboardProtocolDetector), "Enable", "Running Detector again, to get reported flags...");
 
@@ -78,7 +78,7 @@ public class KittyKeyboardProtocolDetector
         }
 
         Trace.Lifecycle (nameof (KittyKeyboardProtocolDetector), "Disable", "Writing disable sequence");
-        _driver?.GetOutput ().Write (EscSeqUtils.CSI_DisableKittyKeyboardFlags);
+        _driver?.WriteRaw (EscSeqUtils.CSI_DisableKittyKeyboardFlags);
     }
 
     /// <summary>

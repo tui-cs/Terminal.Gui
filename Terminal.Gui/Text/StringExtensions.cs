@@ -62,6 +62,14 @@ public static class StringExtensions
             return 0;
         }
 
+        // Fast path: renderers measure one cell at a time; avoid allocating a grapheme enumerator.
+        if (str.Length == 1 && !char.IsSurrogate (str [0]))
+        {
+            int width = new Rune (str [0]).GetColumns ();
+
+            return ignoreLessThanZero && width < 0 ? 0 : Math.Min (width, 2);
+        }
+
         var total = 0;
 
         foreach (string grapheme in GraphemeHelper.GetGraphemes (str))

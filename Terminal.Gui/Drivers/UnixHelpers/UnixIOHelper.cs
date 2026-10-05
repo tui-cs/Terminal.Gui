@@ -100,6 +100,9 @@ internal static class UnixIOHelper
     [DllImport ("libc", SetLastError = true)]
     public static extern int write (int fd, byte [] buf, int count);
 
+    [DllImport ("libc", EntryPoint = "write", SetLastError = true)]
+    private static extern nint WriteSpanNative (int fd, ref byte buffer, nuint count);
+
     /// <summary>
     ///     Flush (discard) data in the terminal input or output queue.
     /// </summary>
@@ -305,7 +308,7 @@ internal static class UnixIOHelper
                 return false;
             }
 
-            return TryWriteAll (fd, buffer, write);
+            return TryWriteAll (fd, buffer, WriteSpan);
         }
         catch
         {
@@ -313,28 +316,100 @@ internal static class UnixIOHelper
         }
     }
 
-    internal static bool TryWriteAll (int fd, byte [] buffer, Func<int, byte [], int, int> writeFunc)
+    /// <summary>
+    ///     Writes <paramref name="count"/> bytes from <paramref name="buffer"/> to stdout.
+    ///     Avoids allocating a new array when the caller already has a reusable buffer.
+    /// </summary>
+    /// <param name="buffer">Buffer containing data to write.</param>
+    /// <param name="count">Number of bytes to write (starting from index 0).</param>
+    /// <returns>True if write was successful, false otherwise.</returns>
+    public static bool TryWriteStdout (byte [] buffer, int count)
     {
-        int offset = 0;
-        int remaining = buffer.Length;
-
-        while (remaining > 0)
+        try
         {
-            // P/Invoke always writes from index 0, so slice when offset > 0.
-            byte [] slice = offset == 0 ? buffer : buffer [offset..];
-            int written = writeFunc (fd, slice, remaining);
+            int fd = TerminalDevice.OutputFd;
 
-            if (written <= 0)
+            if (fd < 0)
             {
                 return false;
             }
 
-            offset += written;
-            remaining -= written;
+            // Guard against out-of-range count to prevent native read beyond buffer bounds.
+            if (count < 0 || count > buffer.Length)
+            {
+                return false;
+            }
+
+            return TryWriteAll (fd, buffer.AsSpan (0, count), WriteSpan);
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    /// <summary>Writes a span without copying a reusable caller buffer.</summary>
+    public static bool TryWriteStdout (ReadOnlySpan<byte> buffer)
+    {
+        try
+        {
+            int fd = TerminalDevice.OutputFd;
+
+            return fd >= 0 && TryWriteAll (fd, buffer, WriteSpan);
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    internal delegate nint WriteBytes (int fd, ReadOnlySpan<byte> buffer);
+
+    internal static bool TryWriteAll (int fd, ReadOnlySpan<byte> buffer, WriteBytes writeFunc, Func<int>? getError = null)
+    {
+        int offset = 0;
+        int transientFailures = 0;
+        int wouldBlock = OperatingSystem.IsMacOS () || OperatingSystem.IsFreeBSD () ? 35 : 11;
+
+        while (offset < buffer.Length)
+        {
+            ReadOnlySpan<byte> remaining = buffer [offset..];
+            nint written = writeFunc (fd, remaining);
+
+            if (written == -1)
+            {
+                int error = getError?.Invoke () ?? Marshal.GetLastPInvokeError ();
+
+                // Bound consecutive stalls so a broken nonblocking terminal cannot monopolize the
+                // UI thread; the next frame retries. Progress resets the budget so a slow terminal
+                // draining its buffer still receives the whole frame.
+                if ((error == 4 || error == wouldBlock) && transientFailures++ < 8)
+                {
+                    if (error == wouldBlock)
+                    {
+                        Thread.Sleep (1);
+                    }
+
+                    continue;
+                }
+
+                return false;
+            }
+
+            if (written <= 0 || written > remaining.Length)
+            {
+                return false;
+            }
+
+            offset += (int)written;
+            transientFailures = 0;
         }
 
         return true;
     }
+
+    internal static nint WriteSpan (int fd, ReadOnlySpan<byte> buffer) =>
+        WriteSpanNative (fd, ref MemoryMarshal.GetReference (buffer), (nuint)buffer.Length);
 
     /// <summary>
     ///     Writes a UTF-8 string to stdout.

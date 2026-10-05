@@ -244,6 +244,28 @@ public class ViewPasteTests
         Assert.False (anyFired);
     }
 
+    // CoPilot - GPT-5
+    [Fact]
+    public void ApplicationPaste_BeginWithNestedFocusableView_DispatchesToMostFocusedView ()
+    {
+        using IApplication app = Application.Create ();
+        using Runnable runnable = new ();
+        View wrapper = new () { CanFocus = true };
+        TextField field = new () { Text = string.Empty };
+        wrapper.Add (field);
+        runnable.Add (wrapper);
+
+        app.Begin (runnable);
+
+        Assert.Same (field, runnable.MostFocused);
+        Assert.Same (field, app.Navigation!.GetFocused ());
+
+        bool handled = app.RaisePasteEvent ("hello");
+
+        Assert.True (handled);
+        Assert.Equal ("hello", field.Text);
+    }
+
     [Fact]
     public void ApplicationPaste_Handled_DoesNotDispatchToFocusedView ()
     {

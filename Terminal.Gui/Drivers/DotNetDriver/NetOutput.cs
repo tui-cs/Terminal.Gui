@@ -9,6 +9,7 @@ namespace Terminal.Gui.Drivers;
 public class NetOutput : OutputBase, IOutput
 {
     private readonly bool _isWinPlatform;
+    private char []? _utf16DecodeBuffer;
 
     /// <summary>
     ///     Creates a new instance of the <see cref="NetOutput"/> class.
@@ -80,14 +81,7 @@ public class NetOutput : OutputBase, IOutput
             return;
         }
 
-        try
-        {
-            Console.Out.Write (text);
-        }
-        catch (IOException)
-        {
-            // Not connected to a terminal; do nothing
-        }
+        Console.Out.Write (text);
     }
 
     /// <inheritdoc/>
@@ -100,14 +94,69 @@ public class NetOutput : OutputBase, IOutput
             return;
         }
 
-        try
+        Console.Out.Write (output);
+    }
+
+    /// <inheritdoc/>
+    private protected override void WriteEncodedString (string output)
+    {
+        if (HasCustomStringWriter (typeof (NetOutput)))
         {
-            Console.Out.Write (output);
+            WriteLegacyString (new StringBuilder (output));
+            return;
         }
-        catch (IOException)
+
+        CaptureText (output.AsSpan ());
+
+        if (!IsAttachedToTerminal)
         {
-            // Not connected to a terminal; do nothing
+            return;
         }
+
+        Console.Out.Write (output.AsSpan ());
+    }
+
+    /// <inheritdoc/>
+    protected override void Write (ReadOnlySpan<byte> output)
+    {
+        if (HasCustomStringWriter (typeof (NetOutput)))
+        {
+            base.Write (output);
+            return;
+        }
+
+        if (output.IsEmpty)
+        {
+            return;
+        }
+
+        int maxCharCount = Encoding.UTF8.GetMaxCharCount (output.Length);
+        char [] decoded;
+
+        if (maxCharCount > Utf8Buffer.RetainedCapacityLimit)
+        {
+            decoded = new char [maxCharCount];
+        }
+        else
+        {
+            if (_utf16DecodeBuffer is null || _utf16DecodeBuffer.Length < maxCharCount)
+            {
+                _utf16DecodeBuffer = new char [maxCharCount];
+            }
+
+            decoded = _utf16DecodeBuffer;
+        }
+
+        int charCount = Encoding.UTF8.GetChars (output, decoded);
+        ReadOnlySpan<char> text = decoded.AsSpan (0, charCount);
+        CaptureText (text);
+
+        if (!IsAttachedToTerminal)
+        {
+            return;
+        }
+
+        Console.Out.Write (text);
     }
 
     private Cursor _currentCursor = new ();
@@ -133,27 +182,20 @@ public class NetOutput : OutputBase, IOutput
 
                 Write (EscSeqUtils.CSI_ShowCursor);
             }
-        }
-        catch
-        {
-            // Ignore any exceptions
-        }
-        finally
-        {
-            SetCursorPositionImpl (cursor.Position?.X ?? 0, cursor.Position?.Y ?? 0);
 
+            SetCursorPositionImpl (cursor.Position?.X ?? 0, cursor.Position?.Y ?? 0);
             _currentCursor = cursor;
+        }
+        catch (IOException ex)
+        {
+            // Best effort: a broken sink also fails the next frame, which DriverImpl logs once.
+            Logging.Debug ($"Error updating .NET console cursor: {ex.Message}");
         }
     }
 
     /// <inheritdoc/>
     protected override bool SetCursorPositionImpl (int col, int row)
     {
-        if (_currentCursor.Position is { } && _currentCursor.Position.Value.X == col && _currentCursor.Position.Value.Y == row)
-        {
-            return false;
-        }
-
         if (_isWinPlatform)
         {
             try

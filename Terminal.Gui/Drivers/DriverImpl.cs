@@ -1,4 +1,5 @@
 using System.Collections.Concurrent;
+using System.ComponentModel;
 using System.Runtime.InteropServices;
 using Terminal.Gui.Tracing;
 
@@ -92,18 +93,76 @@ internal class DriverImpl : IDriver
     /// <inheritdoc/>
     public void Refresh ()
     {
-        // Hide cursor during rendering to prevent flicker
-        Cursor cursor = _output.GetCursor ();
-
-        if (cursor.IsVisible)
+        // While backing off after repeated failures, keep the dirty cells for the next due attempt.
+        // Gating here covers every flush path, including views that redraw every iteration.
+        if (NeedsOutputRetry && !IsOutputRetryDue)
         {
-            Cursor hiddenCursor = cursor with { Position = null, Style = cursor.Style };
-            _output.SetCursor (hiddenCursor);
-            SetCursorNeedsUpdate (true);
+            return;
         }
-        _output.Write (_outputBuffer);
 
-        // Cursor visibility restored by ApplicationMainLoop to reduce flicker
+        try
+        {
+            // Hide cursor during rendering to prevent flicker.
+            Cursor cursor = _output.GetCursor ();
+
+            if (cursor.IsVisible)
+            {
+                Cursor hiddenCursor = cursor with { Position = null, Style = cursor.Style };
+                _output.SetCursor (hiddenCursor);
+                SetCursorNeedsUpdate (true);
+            }
+
+            _output.Write (_outputBuffer);
+            RecordOutputSuccess ();
+        }
+        catch (Exception ex) when (ex is IOException or Win32Exception)
+        {
+            // OutputBase has restored the exact dirty cells and invalidated graphics state.
+            // Retry even if no view requests another draw; keep input and dispatch responsive.
+            RecordOutputFailure ("refreshing terminal output", ex);
+        }
+
+        // Cursor visibility restored by ApplicationMainLoop to reduce flicker.
+    }
+
+    private const int MAX_OUTPUT_RETRY_DELAY_MS = 1000;
+    private int _outputFailures;
+    private long _nextOutputRetryTicks;
+
+    /// <summary>Gets whether a failed physical write left output that must be retried.</summary>
+    internal bool NeedsOutputRetry => _outputFailures > 0;
+
+    /// <summary>Gets whether a failed write should be retried now. Repeated failures back off up to one second.</summary>
+    internal bool IsOutputRetryDue => NeedsOutputRetry && Environment.TickCount64 >= _nextOutputRetryTicks;
+
+    private void RecordOutputFailure (string operation, Exception ex)
+    {
+        _outputFailures++;
+
+        // Retry the first failure immediately; then back off so a terminal that stays broken
+        // (e.g. a hung-up tty) does not cost a full frame write on every main loop iteration.
+        int delayMs = _outputFailures == 1 ? 0 : Math.Min (MAX_OUTPUT_RETRY_DELAY_MS, 25 << Math.Min (_outputFailures - 2, 6));
+        _nextOutputRetryTicks = Environment.TickCount64 + delayMs;
+
+        if (_outputFailures == 1)
+        {
+            Logging.Error ($"Error {operation}: {ex.Message}");
+
+            return;
+        }
+
+        Logging.Debug ($"Error {operation} (failure {_outputFailures}): {ex.Message}");
+    }
+
+    private void RecordOutputSuccess ()
+    {
+        if (_outputFailures == 0)
+        {
+            return;
+        }
+
+        Logging.Information ($"Terminal output recovered after {_outputFailures} failed write(s).");
+        _outputFailures = 0;
     }
 
     /// <inheritdoc/>
@@ -449,7 +508,32 @@ internal class DriverImpl : IDriver
     public Attribute GetAttribute () => _outputBuffer.CurrentAttribute;
 
     /// <inheritdoc/>
-    public void WriteRaw (string ansi) => _output.Write (ansi);
+    public void WriteRaw (string ansi) => TryWriteRaw (ansi);
+
+    /// <summary>Writes <paramref name="ansi"/>, containing terminal I/O failures.</summary>
+    /// <returns><see langword="true"/> if the sequence was written; otherwise, <see langword="false"/>.</returns>
+    internal bool TryWriteRaw (string ansi)
+    {
+        try
+        {
+            _output.Write (ansi);
+
+            return true;
+        }
+        catch (Exception ex) when (ex is IOException or Win32Exception)
+        {
+            // Startup queries, terminal titles and inline scrolling use this path outside
+            // Refresh. A failed query must not terminate the main loop either.
+            if (_output is OutputBase outputBase)
+            {
+                outputBase.InvalidatePhysicalState (_outputBuffer);
+            }
+
+            RecordOutputFailure ("writing raw terminal output", ex);
+
+            return false;
+        }
+    }
 
     /// <inheritdoc/>
     public void SetTerminalTitle (string title, int mode = 0)

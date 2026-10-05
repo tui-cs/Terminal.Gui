@@ -790,11 +790,15 @@ public interface IApplication : IDisposable
     /// </remarks>
     object? AddTimeout (TimeSpan time, Func<bool> callback);
 
-    /// <summary>Removes a previously scheduled timeout.</summary>
+    /// <summary>Cancels all timeout occurrences associated with a previously returned token.</summary>
     /// <param name="token">The token returned by <see cref="AddTimeout"/>.</param>
+    /// <remarks>
+    ///     A matching callback that is already executing is not interrupted, but it will not be rescheduled if it returns
+    ///     <see langword="true"/>.
+    /// </remarks>
     /// <returns>
-    ///     <see langword="true"/> if the timeout is successfully removed; otherwise, <see langword="false"/>.
-    ///     This method also returns <see langword="false"/> if the timeout is not found.
+    ///     <see langword="true"/> if at least one queued occurrence was removed or a cancellation request was recorded for
+    ///     at least one active occurrence; otherwise, <see langword="false"/>.
     /// </returns>
     bool RemoveTimeout (object token);
 

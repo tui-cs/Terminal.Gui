@@ -462,12 +462,6 @@ public class MenuBar : Menu, IDesignable
     {
         base.EndInit ();
 
-        if (Border is { })
-        {
-            Border.Thickness = new Thickness (0);
-            Border.LineStyle = LineStyle.None;
-        }
-
         // TODO: This needs to be done whenever a menuitem in any MenuBarItem changes
         foreach (View sv in SubViews)
         {

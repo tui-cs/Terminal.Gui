@@ -309,6 +309,13 @@ internal partial class ApplicationImpl
             Driver?.Refresh ();
         }
 
+        // A failed physical frame leaves output dirty after View.Draw has cleared NeedsDraw.
+        // Retry those cells without forcing a full repaint (which would erase inline content).
+        if (!neededLayout && !needsDraw && Driver is DriverImpl { IsOutputRetryDue: true } retryDriver)
+        {
+            retryDriver.Refresh ();
+        }
+
         if (neededLayout || needsDraw)
         {
             LayoutAndDrawComplete?.Invoke (this, EventArgs.Empty);

@@ -38,16 +38,21 @@ public class OutputWriteBenchmark
     {
         _fullBuffer = CreateBuffer ();
         _sparseBuffer = CreateBuffer ();
-        _output = new ();
+        _output = new () { CaptureOutput = false };
 
         _output.Write (_fullBuffer);
+
+        if (_output.Writes == 0 || _output.PayloadBytesWritten == 0)
+        {
+            throw new InvalidOperationException ("The benchmark output sink did not receive the frame.");
+        }
+
         _output.Write (_sparseBuffer);
     }
 
     /// <summary>
     ///     Marks every cell dirty before measuring a full-frame flush.
     /// </summary>
-    [IterationSetup (Target = nameof (FullFrame))]
     public void PrepareFullFrame ()
     {
         MarkFullFrame (_fullBuffer);
@@ -57,7 +62,6 @@ public class OutputWriteBenchmark
     /// <summary>
     ///     Marks only the first and last cells of every row dirty before measuring a sparse flush.
     /// </summary>
-    [IterationSetup (Target = nameof (SparseBorderFrame))]
     public void PrepareSparseBorderFrame ()
     {
         MarkSparseBorderFrame (_sparseBuffer);
@@ -70,9 +74,15 @@ public class OutputWriteBenchmark
     [Benchmark (Baseline = true)]
     public long FullFrame ()
     {
+        PrepareFullFrame ();
         _output.Write (_fullBuffer);
 
-        return _output.CharactersWritten;
+        if (_output.Writes == 0 || _output.PayloadBytesWritten == 0)
+        {
+            throw new InvalidOperationException ("The full-frame benchmark did not flush rendered cells.");
+        }
+
+        return _output.BytesWritten;
     }
 
     /// <summary>
@@ -81,9 +91,15 @@ public class OutputWriteBenchmark
     [Benchmark]
     public long SparseBorderFrame ()
     {
+        PrepareSparseBorderFrame ();
         _output.Write (_sparseBuffer);
 
-        return _output.CharactersWritten;
+        if (_output.Writes == 0 || _output.PayloadBytesWritten == 0)
+        {
+            throw new InvalidOperationException ("The sparse-frame benchmark did not flush rendered cells.");
+        }
+
+        return _output.BytesWritten;
     }
 
     /// <summary>
@@ -198,7 +214,9 @@ public class OutputWriteBenchmark
 
     private sealed class MeasuringOutput : OutputBase
     {
-        public long CharactersWritten { get; private set; }
+        public long BytesWritten { get; private set; }
+
+        public long PayloadBytesWritten { get; private set; }
 
         public int CursorMoves { get; private set; }
 
@@ -206,7 +224,8 @@ public class OutputWriteBenchmark
 
         public void ResetCounters ()
         {
-            CharactersWritten = 0;
+            BytesWritten = 0;
+            PayloadBytesWritten = 0;
             CursorMoves = 0;
             Writes = 0;
         }
@@ -218,7 +237,7 @@ public class OutputWriteBenchmark
             StringBuilder sequence = new ();
             EscSeqUtils.CSI_AppendCursorPosition (sequence, screenPositionY + 1, screenPositionX + 1);
             string cursorSequence = sequence.ToString ();
-            CharactersWritten += cursorSequence.Length;
+            BytesWritten += cursorSequence.Length;
 
             return true;
         }
@@ -226,7 +245,16 @@ public class OutputWriteBenchmark
         protected override void Write (StringBuilder output)
         {
             Writes++;
-            CharactersWritten += output.Length;
+            int bytes = Encoding.UTF8.GetByteCount (output.ToString ());
+            PayloadBytesWritten += bytes;
+            BytesWritten += bytes;
+        }
+
+        protected override void Write (ReadOnlySpan<byte> output)
+        {
+            Writes++;
+            PayloadBytesWritten += output.Length;
+            BytesWritten += output.Length;
         }
     }
 }

@@ -638,6 +638,37 @@ hree - lon",
         Assert.Equal (5, lv.SelectedItem); // "candle"
     }
 
+    // Codex - GPT-5.6
+    [Fact]
+    public void KeystrokeNavigator_CollectionChanged_SnapshotSource_SyncsAfterRemoval ()
+    {
+        ObservableCollection<string> source = ["Alpha", "Bravo", "Zulu"];
+        using ListView listView = new () { Source = new SnapshotListDataSource (source), SelectedItem = 0 };
+
+        source.RemoveAt (0);
+        source.RemoveAt (0);
+
+        Assert.Single (listView.KeystrokeNavigator!.Collection);
+        Assert.Equal ("Zulu", listView.KeystrokeNavigator.Collection [0]);
+        Assert.True (listView.NewKeyDownEvent (Key.Z));
+        Assert.Equal (0, listView.SelectedItem);
+    }
+
+    // Codex - GPT-5.6
+    [Fact]
+    public void KeystrokeNavigator_CollectionChanged_SnapshotSource_SyncsAfterMove ()
+    {
+        ObservableCollection<string> source = ["Alpha", "Bravo", "Zulu"];
+        using ListView listView = new () { Source = new SnapshotListDataSource (source), SelectedItem = 0 };
+
+        source.Move (2, 0);
+
+        Assert.Equal ("Zulu", listView.KeystrokeNavigator!.Collection [0]);
+        Assert.True (listView.NewKeyDownEvent (Key.Z));
+        Assert.Equal (0, listView.SelectedItem);
+        Assert.Equal ("Zulu", listView.Source!.ToList () [listView.SelectedItem.Value]);
+    }
+
     [Fact]
     public void ListViewCollectionNavigatorMatcher_OverrideMatching ()
     {
@@ -899,6 +930,18 @@ Five ",
         public IList ToList () => new List<string> { "One", "Two", "Three" };
 
         public void Dispose () => throw new NotImplementedException ();
+    }
+
+    private sealed class SnapshotListDataSource : ListWrapper<string>, IListDataSource
+    {
+        private readonly ObservableCollection<string> _source;
+
+        public SnapshotListDataSource (ObservableCollection<string> source) : base (source)
+        {
+            _source = source;
+        }
+
+        IList IListDataSource.ToList () => _source.ToList ();
     }
 
     [Fact]

@@ -214,6 +214,7 @@ public partial class ListView : View, IDesignable, IValue<int?>
     private void SourceOnCollectionChanged (object? sender, NotifyCollectionChangedEventArgs e)
     {
         SetContentSize (new Size (EffectiveMaxItemLength, Source?.Count ?? Viewport.Height));
+        KeystrokeNavigator?.Collection = Source?.ToList ();
 
         if (Source is { Count: > 0 } && SelectedItem.HasValue && SelectedItem > Source.Count - 1)
         {

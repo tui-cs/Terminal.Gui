@@ -97,7 +97,7 @@ jobs:
             --configuration Release \
             --no-build \
             -- \
-            --filter '*Scroll*' '*Config*' '*Scheme*' '*Theme*' \
+            --filter '*Scroll*' '*Config*' '*Scheme*' '*Theme*' '*OutputWriteBenchmark*' '*UnixRawOutputBenchmark*' \
             --job short \
             --exporters json \
             --artifacts ./BenchmarkResults

@@ -14,6 +14,49 @@ internal partial class WindowsOutput : OutputBase, IOutput
                                               out uint lpNumberOfCharsWritten,
                                               nint lpReserved);
 
+    internal static void ValidateConsoleWriteResult (bool succeeded, uint written, uint expected, int error)
+    {
+        if (!succeeded)
+        {
+            if (error == 0)
+            {
+                throw new IOException ("WriteConsoleW failed without an error code.");
+            }
+
+            throw new Win32Exception (error);
+        }
+
+        if (written == 0 || written > expected)
+        {
+            throw new IOException ($"WriteConsoleW wrote {written} of {expected} characters.");
+        }
+    }
+
+    internal delegate bool ConsoleWriter (nint handle, ReadOnlySpan<char> text, out uint written, out int error);
+
+    internal static void WriteConsoleChecked (nint handle, ReadOnlySpan<char> text, ConsoleWriter? writer = null)
+    {
+        while (!text.IsEmpty)
+        {
+            bool succeeded;
+            uint written;
+            int error;
+
+            if (writer is { })
+            {
+                succeeded = writer (handle, text, out written, out error);
+            }
+            else
+            {
+                succeeded = WriteConsole (handle, text, (uint)text.Length, out written, nint.Zero);
+                error = Marshal.GetLastWin32Error ();
+            }
+
+            ValidateConsoleWriteResult (succeeded, written, (uint)text.Length, error);
+            text = text [(int)written..];
+        }
+    }
+
     [LibraryImport ("kernel32.dll", SetLastError = true)]
     private static partial nint GetStdHandle (int nStdHandle);
 
@@ -89,6 +132,9 @@ internal partial class WindowsOutput : OutputBase, IOutput
     private nint _screenBuffer;
     private readonly ConsoleColor _foreground;
     private readonly ConsoleColor _background;
+
+    // Reusable buffer for UTF-8 → UTF-16 decode in Write(ReadOnlySpan<byte>).
+    private char []? _utf16DecodeBuffer;
 
     public WindowsOutput ()
     {
@@ -201,15 +247,12 @@ internal partial class WindowsOutput : OutputBase, IOutput
                     Write (EscSeqUtils.CSI_ShowCursor);
                 }
             }
+            SetCursorPositionImpl (cursor.Position?.X ?? 0, cursor.Position?.Y ?? 0);
+            _currentCursor = cursor;
         }
         catch
         {
-            // Ignore any exceptions
-        }
-        finally
-        {
-            SetCursorPositionImpl (cursor.Position?.X ?? 0, cursor.Position?.Y ?? 0);
-            _currentCursor = cursor;
+            // Cursor updates are best effort, including the final position write.
         }
     }
 
@@ -256,20 +299,12 @@ internal partial class WindowsOutput : OutputBase, IOutput
 
     public void Write (ReadOnlySpan<char> str)
     {
-        if (!IsAttachedToTerminal)
+        if (!IsAttachedToTerminal || !OperatingSystem.IsWindows () || str.IsEmpty)
         {
             return;
         }
 
-        if (!OperatingSystem.IsWindows ())
-        {
-            return;
-        }
-
-        if (!WriteConsole (!IsLegacyConsole ? _outputHandle : _screenBuffer, str, (uint)str.Length, out uint _, nint.Zero))
-        {
-            // Don't throw in unit tests
-        }
+        WriteConsoleChecked (!IsLegacyConsole ? _outputHandle : _screenBuffer, str);
     }
 
     public Size ResizeBuffer (Size size)
@@ -337,68 +372,6 @@ internal partial class WindowsOutput : OutputBase, IOutput
         }
     }
 
-    public override void Write (IOutputBuffer outputBuffer)
-    {
-        _everythingStringBuilder.Clear ();
-
-        // for 16 color mode we will write to a backing buffer, then flip it to the active one at the end to avoid jitter.
-        _consoleBuffer = 0;
-
-        if (Force16Colors)
-        {
-            _consoleBuffer = !IsLegacyConsole ? _outputHandle : _screenBuffer;
-        }
-        else
-        {
-            _consoleBuffer = _outputHandle;
-        }
-
-        try
-        {
-            base.Write (outputBuffer);
-
-            if (!IsAttachedToTerminal)
-            {
-                return;
-            }
-
-            ReadOnlySpan<char> span = _everythingStringBuilder.ToString ().AsSpan (); // still allocates the string
-
-            bool result = WriteConsole (_consoleBuffer, span, (uint)span.Length, out _, nint.Zero);
-
-            if (result)
-            {
-                return;
-            }
-            int err = Marshal.GetLastWin32Error ();
-
-            if (err == 1)
-            {
-                Logging.Error ($"Error: {Marshal.GetLastWin32Error ()} in {nameof (WindowsOutput)}");
-
-                return;
-            }
-
-            if (err != 0)
-            {
-                throw new Win32Exception (err);
-            }
-        }
-        catch (DllNotFoundException)
-        {
-            // Running unit tests or in an environment where writing is not possible.
-        }
-        catch (Exception e)
-        {
-            Logging.Error ($"Error: {e.Message} in {nameof (WindowsOutput)}");
-
-            if (OperatingSystem.IsWindows ())
-            {
-                throw;
-            }
-        }
-    }
-
     /// <inheritdoc/>
     protected override void Write (StringBuilder output)
     {
@@ -409,74 +382,85 @@ internal partial class WindowsOutput : OutputBase, IOutput
 
         base.Write (output);
 
-        if (!IsAttachedToTerminal)
+        if (!IsAttachedToTerminal || !OperatingSystem.IsWindows ())
         {
             return;
         }
 
-        var str = output.ToString ();
-
-        if (Force16Colors && IsLegacyConsole)
-        {
-            char [] a = str.ToCharArray ();
-            WriteConsole (_screenBuffer, a, (uint)a.Length, out _, nint.Zero);
-        }
-        else
-        {
-            try
-            {
-                ReadOnlySpan<char> span = str.AsSpan (); // still allocates the string
-
-                bool result = WriteConsole (_outputHandle, span, (uint)span.Length, out _, nint.Zero);
-
-                if (result)
-                {
-                    return;
-                }
-                int err = Marshal.GetLastWin32Error ();
-
-                if (err == 1)
-                {
-                    Logging.Error ($"Error: {Marshal.GetLastWin32Error ()} in {nameof (WindowsOutput)}");
-
-                    return;
-                }
-
-                if (err != 0)
-                {
-                    throw new Win32Exception (err);
-                }
-            }
-            catch (DllNotFoundException)
-            {
-                // Running unit tests or in an environment where writing is not possible.
-            }
-            catch (Exception e)
-            {
-                Logging.Error ($"Error: {e.Message} in {nameof (WindowsOutput)}");
-
-                if (OperatingSystem.IsWindows ())
-                {
-                    throw;
-                }
-            }
-        }
+        nint handle = !IsLegacyConsole ? _outputHandle : _screenBuffer;
+        WriteConsoleChecked (handle, output.ToString ().AsSpan ());
     }
 
     /// <inheritdoc/>
-    protected override void AppendOrWriteAttribute (StringBuilder output, Attribute attr, TextStyle redrawTextStyle)
+    protected override void Write (ReadOnlySpan<byte> output)
+    {
+        if (output.IsEmpty)
+        {
+            return;
+        }
+
+        // Decode once for both the optional capture and WriteConsoleW.
+        int maxCharCount = Encoding.UTF8.GetMaxCharCount (output.Length);
+        char [] decoded;
+
+        if (maxCharCount > Utf8Buffer.RetainedCapacityLimit)
+        {
+            decoded = new char [maxCharCount];
+        }
+        else
+        {
+            if (_utf16DecodeBuffer is null || _utf16DecodeBuffer.Length < maxCharCount)
+            {
+                _utf16DecodeBuffer = new char [maxCharCount];
+            }
+
+            decoded = _utf16DecodeBuffer;
+        }
+
+        int charCount = Encoding.UTF8.GetChars (output, decoded);
+        ReadOnlySpan<char> charSpan = decoded.AsSpan (0, charCount);
+        CaptureText (charSpan);
+
+        if (!IsAttachedToTerminal || !OperatingSystem.IsWindows ())
+        {
+            return;
+        }
+
+        nint handle = !IsLegacyConsole ? _outputHandle : _screenBuffer;
+        WriteConsoleChecked (handle, charSpan);
+    }
+
+    /// <inheritdoc/>
+    private protected override void WriteEncodedString (string output)
+    {
+        CaptureText (output.AsSpan ());
+
+        if (!IsAttachedToTerminal || !OperatingSystem.IsWindows () || output.Length == 0)
+        {
+            return;
+        }
+
+        nint handle = !IsLegacyConsole ? _outputHandle : _screenBuffer;
+        WriteConsoleChecked (handle, output.AsSpan ());
+    }
+
+    /// <inheritdoc/>
+    internal override void AppendOrWriteAttributeUtf8 (Utf8Buffer output, Attribute attr, TextStyle redrawTextStyle)
     {
         if (Force16Colors && IsLegacyConsole)
         {
             // Legacy Windows console doesn't support ANSI — use Win32 API directly
-            Write (output);
+            Write (output.AsSpan ());
             output.Clear ();
             var as16ColorInt = (ushort)((int)attr.Foreground.GetClosestNamedColor16 () | ((int)attr.Background.GetClosestNamedColor16 () << 4));
-            SetConsoleTextAttribute (_screenBuffer, as16ColorInt);
+            if (IsAttachedToTerminal && OperatingSystem.IsWindows ())
+            {
+                SetConsoleTextAttribute (_screenBuffer, as16ColorInt);
+            }
         }
         else
         {
-            base.AppendOrWriteAttribute (output, attr, redrawTextStyle);
+            base.AppendOrWriteAttributeUtf8 (output, attr, redrawTextStyle);
         }
     }
 
@@ -597,8 +581,6 @@ internal partial class WindowsOutput : OutputBase, IOutput
     }
 
     private bool _isDisposed;
-    private nint _consoleBuffer;
-    private readonly StringBuilder _everythingStringBuilder = new ();
 
     /// <inheritdoc/>
     public void Dispose ()
@@ -615,35 +597,46 @@ internal partial class WindowsOutput : OutputBase, IOutput
             return;
         }
 
-        if (IsLegacyConsole)
+        try
         {
-            if (_screenBuffer != nint.Zero)
+            if (IsLegacyConsole)
             {
-                CloseHandle (_screenBuffer);
+                if (_screenBuffer != nint.Zero)
+                {
+                    CloseHandle (_screenBuffer);
+                }
+
+                _screenBuffer = nint.Zero;
+                return;
             }
 
-            _screenBuffer = nint.Zero;
-        }
-        else
-        {
             if (Environment.GetEnvironmentVariable ("VSAPPIDNAME") is null)
             {
-                //Disable alternative screen buffer.
-                Console.Out.Write (EscSeqUtils.CSI_RestoreCursorAndRestoreAltBufferWithBackscroll);
+                Restore (() => Write (EscSeqUtils.CSI_RestoreCursorAndRestoreAltBufferWithBackscroll));
+                Restore (() => Write (EscSeqUtils.CSI_ShowCursor));
+                return;
+            }
 
-                //Set cursor key to cursor.
-                Write (EscSeqUtils.CSI_ShowCursor);
-            }
-            else
-            {
-                // Simulate restoring the color and clearing the screen.
-                Console.ForegroundColor = _foreground;
-                Console.BackgroundColor = _background;
-                Console.Clear ();
-            }
+            Restore (() => Console.ForegroundColor = _foreground);
+            Restore (() => Console.BackgroundColor = _background);
+            Restore (Console.Clear);
+        }
+        finally
+        {
+            _isDisposed = true;
         }
 
-        _isDisposed = true;
+        static void Restore (Action restore)
+        {
+            try
+            {
+                restore ();
+            }
+            catch (Exception ex)
+            {
+                Logging.Error ($"Error restoring Windows console: {ex.Message}");
+            }
+        }
     }
 
     /// <inheritdoc/>
