@@ -1,9 +1,9 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
-	      <OutputType>Exe</OutputType>
-	      <UseAppHost>true</UseAppHost>
-	      <IsTestProject>true</IsTestProject>
+        <OutputType>Exe</OutputType>
+        <UseAppHost>true</UseAppHost>
+        <IsTestProject>true</IsTestProject>
         <Nullable>enable</Nullable>
         <IsPackable>false</IsPackable>
         <DefineConstants>$(DefineConstants);JETBRAINS_ANNOTATIONS;CONTRACTS_FULL</DefineConstants>
@@ -26,7 +26,10 @@
           <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
         </PackageReference>
         <PackageReference Include="Microsoft.NET.Test.Sdk" />
-        <PackageReference Include="xunit.runner.visualstudio" />
+        <PackageReference Include="xunit.runner.visualstudio">
+          <PrivateAssets>all</PrivateAssets>
+          <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+        </PackageReference>
         <PackageReference Include="xunit.v3" />
     </ItemGroup>
     <ItemGroup>
