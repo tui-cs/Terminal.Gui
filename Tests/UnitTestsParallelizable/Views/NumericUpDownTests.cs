@@ -652,37 +652,47 @@ public class NumericUpDownTests
     [Fact]
     public void CanEdit_Parses_Valid_Text_And_Resyncs_Invalid_Text_On_Increment ()
     {
-        NumericUpDown<decimal> numericUpDown = new ()
+        CultureInfo currentCulture = Thread.CurrentThread.CurrentCulture;
+        Thread.CurrentThread.CurrentCulture = CultureInfo.InvariantCulture; // Ensure consistent test results.
+
+        try
         {
-            CanEdit = true,
-            Value = 12.5m,
-            Increment = 0.25m,
-            Format = "{0:0.00}"
-        };
+            NumericUpDown<decimal> numericUpDown = new ()
+            {
+                CanEdit = true,
+                Value = 12.5m,
+                Increment = 0.25m,
+                Format = "{0:0.00}"
+            };
 
-        TextField editor = Assert.IsType<TextField> (numericUpDown.SubViews.OfType<TextField> ().Single ());
+            TextField editor = Assert.IsType<TextField> (numericUpDown.SubViews.OfType<TextField> ().Single ());
 
-        Assert.Equal ("12.50", editor.Text);
-        Assert.Equal (12.5m, numericUpDown.Value);
+            Assert.Equal ("12.50", editor.Text);
+            Assert.Equal (12.5m, numericUpDown.Value);
 
-        editor.Text = "3";
+            editor.Text = "3";
 
-        // The parsed value is applied, but the editor text is NOT reformatted while the user is typing.
-        Assert.Equal (3m, numericUpDown.Value);
-        Assert.Equal ("3", editor.Text);
+            // The parsed value is applied, but the editor text is NOT reformatted while the user is typing.
+            Assert.Equal (3m, numericUpDown.Value);
+            Assert.Equal ("3", editor.Text);
 
-        editor.Text = "3a.00";
+            editor.Text = "3a.00";
 
-        Assert.Equal (3m, numericUpDown.Value);
-        Assert.Equal ("3a.00", editor.Text);
+            Assert.Equal (3m, numericUpDown.Value);
+            Assert.Equal ("3a.00", editor.Text);
 
-        // Increment resyncs the editor text to the formatted value.
-        numericUpDown.InvokeCommand (Command.Up);
+            // Increment resyncs the editor text to the formatted value.
+            numericUpDown.InvokeCommand (Command.Up);
 
-        Assert.Equal (3.25m, numericUpDown.Value);
-        Assert.Equal ("3.25", editor.Text);
+            Assert.Equal (3.25m, numericUpDown.Value);
+            Assert.Equal ("3.25", editor.Text);
 
-        numericUpDown.Dispose ();
+            numericUpDown.Dispose ();
+        }
+        finally
+        {
+            Thread.CurrentThread.CurrentCulture = currentCulture;
+        }
     }
 
     // Claude - Opus 4.8
@@ -707,33 +717,43 @@ public class NumericUpDownTests
     [Fact]
     public void CanEdit_Typing_Does_Not_Reformat_Editor_Text_Until_Increment ()
     {
-        NumericUpDown<decimal> numericUpDown = new ()
+        CultureInfo currentCulture = Thread.CurrentThread.CurrentCulture;
+        Thread.CurrentThread.CurrentCulture = CultureInfo.InvariantCulture; // Ensure consistent test results.
+
+        try
         {
-            CanEdit = true,
-            Value = 0m,
-            Increment = 0.25m,
-            Format = "{0:0.00}"
-        };
+            NumericUpDown<decimal> numericUpDown = new ()
+            {
+                CanEdit = true,
+                Value = 0m,
+                Increment = 0.25m,
+                Format = "{0:0.00}"
+            };
 
-        TextField editor = numericUpDown.SubViews.OfType<TextField> ().Single ();
+            TextField editor = numericUpDown.SubViews.OfType<TextField> ().Single ();
 
-        // Simulate mid-typing a fractional value; the trailing "." must not be wiped out by reformatting.
-        editor.Text = "3.";
+            // Simulate mid-typing a fractional value; the trailing "." must not be wiped out by reformatting.
+            editor.Text = "3.";
 
-        Assert.Equal (3m, numericUpDown.Value);
-        Assert.Equal ("3.", editor.Text);
+            Assert.Equal (3m, numericUpDown.Value);
+            Assert.Equal ("3.", editor.Text);
 
-        editor.Text = "3.5";
+            editor.Text = "3.5";
 
-        Assert.Equal (3.5m, numericUpDown.Value);
-        Assert.Equal ("3.5", editor.Text);
+            Assert.Equal (3.5m, numericUpDown.Value);
+            Assert.Equal ("3.5", editor.Text);
 
-        // An external Value change resyncs the editor to the formatted display.
-        numericUpDown.InvokeCommand (Command.Up);
+            // An external Value change resyncs the editor to the formatted display.
+            numericUpDown.InvokeCommand (Command.Up);
 
-        Assert.Equal (3.75m, numericUpDown.Value);
-        Assert.Equal ("3.75", editor.Text);
+            Assert.Equal (3.75m, numericUpDown.Value);
+            Assert.Equal ("3.75", editor.Text);
 
-        numericUpDown.Dispose ();
+            numericUpDown.Dispose ();
+        }
+        finally
+        {
+            Thread.CurrentThread.CurrentCulture = currentCulture;
+        }
     }
 }
