@@ -41,8 +41,11 @@
   <ItemGroup>
     <ProjectReference Include="..\..\Terminal.Gui\Terminal.Gui.csproj" />
     <ProjectReference Include="..\AppTestHelpers\AppTestHelpers.csproj" />
-    <ProjectReference Include="..\TestAssets\ConfigPropertyTypeLoad\ConsumerLib\ConsumerLib.csproj" Condition="Exists('..\TestAssets\ConfigPropertyTypeLoad\ConsumerLib\ConsumerLib.csproj') and Exists('..\TestAssets\ConfigPropertyTypeLoad\ConsumerLib\obj\project.assets.json')" ReferenceOutputAssembly="false" OutputItemType="ConfigPropertyTypeLoadFixture" />
-    <ProjectReference Include="..\TestAssets\ConfigPropertyTypeLoad\AttrProviderMissing\AttrProviderMissing.csproj" Condition="Exists('..\TestAssets\ConfigPropertyTypeLoad\AttrProviderMissing\AttrProviderMissing.csproj') and Exists('..\TestAssets\ConfigPropertyTypeLoad\AttrProviderMissing\obj\project.assets.json')" ReferenceOutputAssembly="false" OutputItemType="ConfigPropertyTypeLoadFixture" />
+    <!-- Only gate on the referenced project file existing so `dotnet restore` can generate project.assets.json
+         and include these fixtures in the restore/build graph from a clean checkout. If you want to opt-out
+         in CI or locally, set the MSBuild property `IncludeTestFixtures` to false. -->
+    <ProjectReference Include="..\TestAssets\ConfigPropertyTypeLoad\ConsumerLib\ConsumerLib.csproj" Condition="Exists('..\TestAssets\ConfigPropertyTypeLoad\ConsumerLib\ConsumerLib.csproj') and '$(IncludeTestFixtures)' != 'false'" ReferenceOutputAssembly="false" OutputItemType="ConfigPropertyTypeLoadFixture" />
+    <ProjectReference Include="..\TestAssets\ConfigPropertyTypeLoad\AttrProviderMissing\AttrProviderMissing.csproj" Condition="Exists('..\TestAssets\ConfigPropertyTypeLoad\AttrProviderMissing\AttrProviderMissing.csproj') and '$(IncludeTestFixtures)' != 'false'" ReferenceOutputAssembly="false" OutputItemType="ConfigPropertyTypeLoadFixture" />
   </ItemGroup>
   <ItemGroup>
     <None Update="xunit.runner.json">
