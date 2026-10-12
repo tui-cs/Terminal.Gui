@@ -101,7 +101,31 @@ public partial class AppTestHelper
             return overrideDir;
         }
 
-        string? sourceDir = Path.GetDirectoryName (callerFile);
+        string? sourceDir;
+
+        // On Linux, the callerFile path may contain a Windows-style drive letter or backslashes (for WSL remote testing).
+        // Convert it to a Linux-compatible format before resolving the snapshot directory.
+        if (OperatingSystem.IsLinux () && (callerFile.Contains (':') || callerFile.Contains ('\\')))
+        {
+            string driveLetter = callerFile.Split (':') [0];
+            string [] pathParts;
+
+            if (!string.IsNullOrEmpty (driveLetter))
+            {
+                driveLetter = $"/mnt/{driveLetter.ToLower ()}";
+                pathParts = [.. callerFile.Split ('\\').Skip (1)];
+                sourceDir = Path.GetDirectoryName (Path.Combine (driveLetter, Path.Combine (pathParts)));
+            }
+            else
+            {
+                pathParts = [.. callerFile.Split ('\\')];
+                sourceDir = Path.GetDirectoryName (Path.Combine (pathParts));
+            }
+        }
+        else
+        {
+            sourceDir = Path.GetDirectoryName (callerFile);
+        }
 
         if (string.IsNullOrEmpty (sourceDir))
         {
