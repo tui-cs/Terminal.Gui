@@ -101,31 +101,16 @@ public partial class AppTestHelper
             return overrideDir;
         }
 
-        string? sourceDir;
+        string callerPath = callerFile;
 
-        // On Linux, the callerFile path may contain a Windows-style drive letter or backslashes (for WSL remote testing).
-        // Convert it to a Linux-compatible format before resolving the snapshot directory.
-        if (OperatingSystem.IsLinux () && (callerFile.Contains (':') || callerFile.Contains ('\\')))
+        // On Linux, Visual Studio WSL testing can supply a Windows-style caller path.
+        // Windows accepts both '\\' and '/' in drive-qualified paths, so keep both.
+        if (OperatingSystem.IsLinux () && IsWindowsStylePath (callerFile))
         {
-            string driveLetter = callerFile.Split (':') [0];
-            string [] pathParts;
+            callerPath = ToWslPath (callerFile);
+        }
 
-            if (!string.IsNullOrEmpty (driveLetter))
-            {
-                driveLetter = $"/mnt/{driveLetter.ToLower ()}";
-                pathParts = [.. callerFile.Split ('\\').Skip (1)];
-                sourceDir = Path.GetDirectoryName (Path.Combine (driveLetter, Path.Combine (pathParts)));
-            }
-            else
-            {
-                pathParts = [.. callerFile.Split ('\\')];
-                sourceDir = Path.GetDirectoryName (Path.Combine (pathParts));
-            }
-        }
-        else
-        {
-            sourceDir = Path.GetDirectoryName (callerFile);
-        }
+        string? sourceDir = Path.GetDirectoryName (callerPath);
 
         if (string.IsNullOrEmpty (sourceDir))
         {
@@ -134,6 +119,19 @@ public partial class AppTestHelper
         }
 
         return Path.Combine (sourceDir, "__snapshots__");
+    }
+
+    internal static bool IsWindowsStylePath (string path)
+    {
+        return path.Length >= 3
+               && char.IsAsciiLetter (path [0])
+               && path [1] == ':'
+               && (path [2] == '\\' || path [2] == '/');
+    }
+
+    internal static string ToWslPath (string windowsPath)
+    {
+        return $"/mnt/{char.ToLowerInvariant (windowsPath [0])}/{windowsPath [3..].Replace ('\\', '/')}";
     }
 
     private static string NormalizeAnsiLineEndings (string ansi) => ansi.Replace ("\r\n", "\n").Replace ("\r", "\n");
