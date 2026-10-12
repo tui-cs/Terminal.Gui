@@ -2,9 +2,9 @@ using AppTestHelpers;
 
 namespace AppTestHelpersTests;
 
+// CoPilot - GitHub Copilot
 public class AppTestHelperSnapshotPathTests
 {
-    // Copilot
     [Theory]
     [InlineData ("C:\\src\\Tests.cs")]
     [InlineData ("C:/src/Tests.cs")]
@@ -14,7 +14,6 @@ public class AppTestHelperSnapshotPathTests
         Assert.True (AppTestHelper.IsWindowsStylePath (path));
     }
 
-    // Copilot
     [Theory]
     [InlineData ("/tmp/suite:case/Test.cs")]
     [InlineData ("/mnt/c/src/Tests.cs")]
@@ -24,7 +23,6 @@ public class AppTestHelperSnapshotPathTests
         Assert.False (AppTestHelper.IsWindowsStylePath (path));
     }
 
-    // Copilot
     [Fact]
     public void ToWslPath_Maps_Windows_Path_With_Mixed_Separators ()
     {
