@@ -97,8 +97,10 @@ public class AnsiComponentFactory : ComponentFactoryImpl<char>
 
     /// <summary>
     ///     Returns a delegate that queries the real terminal size from the OS.
-    ///     On Windows this uses <see cref="Console.WindowWidth"/> / <see cref="Console.WindowHeight"/>;
-    ///     on Unix/macOS it uses <c>ioctl(TIOCGWINSZ)</c> via <see cref="UnixIOHelper.TryGetTerminalSize"/>.
+    ///     On Windows this uses <see cref="Console.WindowWidth"/> / <see cref="Console.WindowHeight"/>, and returns
+    ///     <see langword="null"/> when the <c>DisableRealDriverIO</c> environment variable is <c>1</c>.
+    ///     On Unix/macOS it uses <c>ioctl(TIOCGWINSZ)</c> via <see cref="UnixIOHelper.TryGetTerminalSize"/>, and returns
+    ///     <see langword="null"/> when <see cref="TerminalDevice.OutputFd"/> is <c>-1</c> (no terminal attached).
     /// </summary>
     internal static Func<Size?> CreateNativeSizeQuery ()
     {
@@ -106,6 +108,12 @@ public class AnsiComponentFactory : ComponentFactoryImpl<char>
         {
             return () =>
                    {
+                       // Tests must not see the real terminal size (e.g. VS Code doesn't throw on Console.WindowWidth).
+                       if (string.Equals (Environment.GetEnvironmentVariable ("DisableRealDriverIO"), "1", StringComparison.Ordinal))
+                       {
+                           return null;
+                       }
+
                        try
                        {
                            int w = Console.WindowWidth;
