@@ -236,7 +236,7 @@ public class AnsiComponentFactorySizeMonitorTests
         Assert.Null (ex);
     }
 
-    // Copilot
+    // CoPilot - GPT-5
     /// <summary>
     ///     Verifies that the native size query returns <see langword="null"/> when real driver I/O is disabled
     ///     (the test harness sets <c>DisableRealDriverIO=1</c>), so the real terminal size (e.g. in VS Code on
