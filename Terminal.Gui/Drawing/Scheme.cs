@@ -232,7 +232,14 @@ public record Scheme : IEqualityOperators<Scheme, Scheme, bool>
         Color resolvedBg = ResolveNone (baseScheme.Normal.Background, defaultTerminalColors);
         Color resolvedFg = ResolveNone (baseScheme.Normal.Foreground, defaultTerminalColors, true);
         bool isDark = resolvedBg.IsDarkColor ();
-        Color accentBg = isDark ? resolvedBg.GetBrighterColor (0.1, isDark) : resolvedBg.GetDimmerColor (0.1, isDark);
+        // Both branches move the accent away from the base: brighter on a dark background, darker on a
+        // light one. The flag on these two selects the direction the color is moved, not the theme it
+        // is moved for, so the light-background branch asks for the dark direction on purpose. It used
+        // to pass isDark here and be saved by GetDimmerColor's named-gray fallback, which moved a
+        // near-white background to Gray - the accent it produced was an accident of that fallback.
+        Color accentBg = isDark
+                             ? resolvedBg.GetBrighterColor (0.1, isDark)
+                             : resolvedBg.GetDimmerColor (0.1, isDarkBackground: true);
 
         // Force opaque
         accentBg = new Color (accentBg.R, accentBg.G, accentBg.B, 255);

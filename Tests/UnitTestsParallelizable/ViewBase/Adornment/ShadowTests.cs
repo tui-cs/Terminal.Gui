@@ -526,9 +526,10 @@ public class ShadowTests (ITestOutputHelper output)
         string output1 = app.Driver.GetOutput ().GetLastOutput ();
         output.WriteLine (output1);
 
-        // Printed with bright black (dark gray) text on bright black (dark gray) background making it invisible
+        // The cell under the shadow keeps its glyph on a darkened ground: the shadow dims what it covers
+        // rather than hiding it
         DriverAssert.AssertDriverOutputIs ("""
-                                           \x1b[30m\x1b[107m*\x1b[93m\x1b[100mB
+                                           \x1b[30m\x1b[107m*\x1b[93m\x1b[40mB
                                            """,
                                            output,
                                            app.Driver);
@@ -572,7 +573,7 @@ public class ShadowTests (ITestOutputHelper output)
         output.WriteLine (output1);
 
         DriverAssert.AssertDriverOutputIs ("""
-                                           \x1b[30m\x1b[107m*\x1b[90m\x1b[40m \x1b[97m\x1b[40m \x1b[93m\x1b[100m \x1b[97m\x1b[40m🍎
+                                           \x1b[30m\x1b[107m*\x1b[30m\x1b[40m \x1b[97m\x1b[40m \x1b[93m\x1b[40m \x1b[97m\x1b[40m🍎
                                            """,
                                            output,
                                            app.Driver);
