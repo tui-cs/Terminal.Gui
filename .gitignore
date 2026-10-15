@@ -91,3 +91,9 @@ artifacts/
 docfx/artifacts/
 local_packages/
 *.cast
+
+# Graphic memory & plan markdown files
+GRAPHIC_MEMORY.md
+plans/
+*.skill.md
+

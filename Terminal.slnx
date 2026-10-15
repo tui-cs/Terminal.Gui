@@ -101,9 +101,12 @@
     <Project Path="Tests/StressTests/StressTests.csproj" />
     <Project Path="Tests/UnitTests.Legacy/UnitTests.Legacy.csproj" />
     <Project Path="Tests/UnitTests.NonParallelizable/UnitTests.NonParallelizable.csproj" />
+    <Project Path="Tests/Terminal.Gui.Analyzers.Tests/Terminal.Gui.Analyzers.Tests.csproj" />
     <Project Path="Tests/UnitTestsParallelizable/UnitTests.Parallelizable.csproj" />
   </Folder>
+  <Project Path="Terminal.Gui.Analyzers/Terminal.Gui.Analyzers.csproj" />
   <Project Path="Terminal.Gui.Analyzers.Internal/Terminal.Gui.Analyzers.Internal.csproj" />
   <Project Path="Terminal.Gui.Interop.Spectre/Terminal.Gui.Interop.Spectre.csproj" />
   <Project Path="Terminal.Gui/Terminal.Gui.csproj" />
 </Solution>
+

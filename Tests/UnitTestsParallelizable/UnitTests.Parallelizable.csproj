@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
 	  <OutputType>Exe</OutputType>
 	  <UseAppHost>true</UseAppHost>
@@ -27,7 +27,9 @@
   <ItemGroup>
     <Compile Include="..\UnitTests.Legacy\OutputAssert.cs" Link="OutputAssert.cs" />
     <Compile Include="..\..\Tools\MigrateConfig\ConfigJsonMigrator.cs" Link="Configuration\ConfigJsonMigrator.cs" />
+    <Compile Include="..\Terminal.Gui.Analyzers.Tests\V1ApiDiagnosticAnalyzerTests.cs" Link="Analyzers\V1ApiDiagnosticAnalyzerTests.cs" />
   </ItemGroup>
+
 
   <ItemGroup>
     <PackageReference Include="JetBrains.Annotations" PrivateAssets="all" />
@@ -47,7 +49,9 @@
   <ItemGroup>
     <ProjectReference Include="..\..\Examples\UICatalog\UICatalog.csproj" />
     <ProjectReference Include="..\..\Terminal.Gui.Interop.Spectre\Terminal.Gui.Interop.Spectre.csproj" />
+    <ProjectReference Include="..\..\Terminal.Gui.Analyzers\Terminal.Gui.Analyzers.csproj" />
     <ProjectReference Include="..\..\Terminal.Gui\Terminal.Gui.csproj">
+
     </ProjectReference>
     <ProjectReference Include="..\AppTestHelpers\AppTestHelpers.csproj" />
     <ProjectReference Include="..\UnitTests.Legacy\UnitTests.Legacy.csproj" />
