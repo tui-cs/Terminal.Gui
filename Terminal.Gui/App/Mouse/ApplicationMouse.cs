@@ -17,10 +17,14 @@ internal class ApplicationMouse : IMouse, IDisposable
     ///     Initializes a new instance of the <see cref="ApplicationMouse"/> class and subscribes to Application configuration
     ///     property events.
     /// </summary>
-    public ApplicationMouse () =>
+    public ApplicationMouse ()
+    {
+        // Seed from configuration before App is set so this has no terminal side effects.
+        _isMouseDisabled = ApplicationSettings.Defaults.IsMouseDisabled;
 
         // Subscribe to Application static property change events
         Application.IsMouseDisabledChanged += OnIsMouseDisabledChanged;
+    }
 
     /// <summary>
     ///     The popover that was just dismissed by a mouse-press-outside event.
@@ -59,8 +63,65 @@ internal class ApplicationMouse : IMouse, IDisposable
     /// <inheritdoc/>
     public Point? LastMousePosition { get; set; }
 
+    private long _mouseDisableGeneration;
+
+    /// <summary>
+    ///     Identifies the current mouse-disable cycle so holds cannot resume after reporting is re-enabled.
+    /// </summary>
+    internal long MouseDisableGeneration => Interlocked.Read (ref _mouseDisableGeneration);
+
+    private volatile bool _isMouseDisabled;
+
     /// <inheritdoc/>
-    public bool IsMouseDisabled { get; set; }
+    public bool IsMouseDisabled
+    {
+        get => _isMouseDisabled;
+        set
+        {
+            // Use the render gate for the entire transition, not just the physical mode write. A separate mouse
+            // lock would invert the lock order when rendering invokes a mouse callback that changes this property.
+            if (App is ApplicationImpl { Initialized: true, Coordinator: IInlineRenderCoordinator coordinator })
+            {
+                coordinator.WithRenderGate (() => SetMouseDisabled (value));
+                return;
+            }
+
+            SetMouseDisabled (value);
+        }
+    }
+
+    private void SetMouseDisabled (bool value)
+    {
+        if (_isMouseDisabled == value)
+        {
+            return;
+        }
+
+        if (App is ApplicationImpl { Initialized: true } app)
+        {
+            (app.Coordinator as IMouseReportingCoordinator)?.SetMouseDisabled (value);
+        }
+
+        _isMouseDisabled = value;
+
+        if (!value)
+        {
+            return;
+        }
+
+        // Invalidate every existing hold, including those no longer grabbed or in the hover cache.
+        Interlocked.Increment (ref _mouseDisableGeneration);
+
+        // View state belongs to the UI thread; queue the release when called from another thread.
+        if (App is ApplicationImpl { Initialized: true, MainThreadId: { } mainThreadId } uiApp
+            && mainThreadId != Environment.CurrentManagedThreadId)
+        {
+            uiApp.Invoke (ReleaseMouseState);
+            return;
+        }
+
+        ReleaseMouseState ();
+    }
 
     /// <inheritdoc/>
     public List<View?> CachedViewsUnderMouse { get; } = [];
@@ -121,7 +182,7 @@ internal class ApplicationMouse : IMouse, IDisposable
             Trace.Mouse ("app", mouseEvent.Flags, mouseEvent.ScreenPosition, "Entry", "Invoking MouseEvent");
             MouseEvent?.Invoke (this, mouseEvent);
 
-            if (mouseEvent.Handled)
+            if (mouseEvent.Handled || IsMouseDisabled)
             {
                 return;
             }
@@ -239,9 +300,15 @@ internal class ApplicationMouse : IMouse, IDisposable
                 RaiseMouseEnterLeaveEvents (viewMouseEvent.ScreenPosition, currentViewsUnderMouse);
             }
 
+            // A handler may disable the mouse mid-dispatch; stop so no view grabs or highlights afterward.
+            if (IsMouseDisabled)
+            {
+                return;
+            }
+
             Trace.Mouse ("app", viewMouseEvent.Flags, viewMouseEvent.ScreenPosition, "Dispatch");
 
-            while (deepestViewUnderMouse.NewMouseEvent (viewMouseEvent) is not true && _mouseGrabViewRef is null)
+            while (deepestViewUnderMouse.NewMouseEvent (viewMouseEvent) is not true && _mouseGrabViewRef is null && !IsMouseDisabled)
             {
                 if (deepestViewUnderMouse is AdornmentView adornmentView)
                 {
@@ -298,18 +365,30 @@ internal class ApplicationMouse : IMouse, IDisposable
 
         foreach (View? view in viewsToLeave)
         {
-            if (view is null)
+            // Remove before callbacks so reentrant disable cleanup cannot notify the same departure twice.
+            if (view is null || !CachedViewsUnderMouse.Remove (view))
             {
                 continue;
             }
 
             view.NewMouseLeaveEvent ();
-            CachedViewsUnderMouse.Remove (view);
+            if (!IsMouseDisabled)
+            {
+                continue;
+            }
+            view.MouseHoldRepeater?.Stop ();
+            view.MouseState = MouseState.None;
         }
 
         // Tell any views that are now under the mouse that the mouse has entered and add them to the list
         foreach (View? view in currentViewsUnderMouse)
         {
+            // An enter handler may disable the mouse, which clears the hover cache; don't repopulate it.
+            if (IsMouseDisabled)
+            {
+                break;
+            }
+
             if (view is null)
             {
                 continue;
@@ -350,6 +429,13 @@ internal class ApplicationMouse : IMouse, IDisposable
             var eventArgs = new CancelEventArgs ();
             bool? cancelled = view.NewMouseEnterEvent (eventArgs);
 
+            if (IsMouseDisabled)
+            {
+                // Disable already cleared the cache and raised MouseLeave, but the enter callback resumed afterward.
+                view.MouseState = MouseState.None;
+                break;
+            }
+
             if (cancelled is true || eventArgs.Cancel)
             {
                 break;
@@ -382,8 +468,61 @@ internal class ApplicationMouse : IMouse, IDisposable
     private bool IsGrabbedByViewInHierarchy (View hierarchyRoot) =>
         _mouseGrabViewRef?.TryGetTarget (out View? grabbed) is true && View.IsInHierarchy (hierarchyRoot, grabbed, true);
 
+    /// <summary>
+    ///     Force-releases the mouse grab, stops hold repetition, and clears hover and popover press state so no view is
+    ///     left waiting for a mouse event that will not arrive while the mouse is disabled.
+    /// </summary>
+    private void ReleaseMouseState ()
+    {
+        // The mouse may have been re-enabled before a queued release ran.
+        if (!_isMouseDisabled)
+        {
+            return;
+        }
+
+        View? grabbed = null;
+        _mouseGrabViewRef?.TryGetTarget (out grabbed);
+        _mouseGrabViewRef = null;
+        grabbed?.MouseHoldRepeater?.Stop ();
+
+        if (grabbed is { })
+        {
+            grabbed.MouseState = MouseState.None;
+            RaiseUnGrabbedMouseEvent (grabbed);
+        }
+
+        View? [] hovered = [.. CachedViewsUnderMouse];
+        CachedViewsUnderMouse.Clear ();
+        _activePopoverAtPress = null;
+        _dismissedByMousePress = null;
+
+        foreach (View? view in hovered)
+        {
+            if (view is null)
+            {
+                continue;
+            }
+
+            // A canceled grab can leave an active repeater on a hovered view without a grabbed view.
+            view.MouseHoldRepeater?.Stop ();
+            view.MouseState = MouseState.None;
+            view.NewMouseLeaveEvent ();
+        }
+    }
+
     // Event handler for Application static property changes
-    private void OnIsMouseDisabledChanged (object? sender, ValueChangedEventArgs<bool> e) => IsMouseDisabled = e.NewValue;
+    private void OnIsMouseDisabledChanged (object? sender, ValueChangedEventArgs<bool> e)
+    {
+        // The legacy static setting fans out to every live instance; one failing terminal must not block the rest.
+        try
+        {
+            IsMouseDisabled = e.NewValue;
+        }
+        catch (Exception error)
+        {
+            Logging.Error ($"Failed to apply Application.IsMouseDisabled = {e.NewValue}: {error}");
+        }
+    }
 
     #region IMouseGrabHandler Implementation
 
@@ -420,6 +559,12 @@ internal class ApplicationMouse : IMouse, IDisposable
     {
         Trace.Mouse ("app", MouseFlags.None, LastMousePosition ?? Point.Empty, "Grab");
 
+        // No release event can arrive while the mouse is disabled, so a new grab would never end.
+        if (view is { } && IsMouseDisabled)
+        {
+            return;
+        }
+
         if (RaiseGrabbingMouseEvent (view))
         {
             return;
@@ -432,7 +577,17 @@ internal class ApplicationMouse : IMouse, IDisposable
             return;
         }
 
+        if (IsMouseDisabled)
+        {
+            return;
+        }
+
         RaiseGrabbedMouseEvent (view);
+
+        if (IsMouseDisabled)
+        {
+            return;
+        }
 
         // _mouseGrabViewRef is only set if the application is initialized.
         _mouseGrabViewRef = new WeakReference<View> (view);
@@ -441,7 +596,8 @@ internal class ApplicationMouse : IMouse, IDisposable
     /// <inheritdoc/>
     public void UngrabMouse ()
     {
-        if (_mouseGrabViewRef is null || !_mouseGrabViewRef.TryGetTarget (out View? grabbedView))
+        WeakReference<View>? grab = _mouseGrabViewRef;
+        if (grab is null || !grab.TryGetTarget (out View? grabbedView))
         {
             return;
         }
@@ -452,6 +608,13 @@ internal class ApplicationMouse : IMouse, IDisposable
         {
             return;
         }
+
+        // A callback can release this grab or replace it, even with a new grab on the same view.
+        if (!ReferenceEquals (_mouseGrabViewRef, grab))
+        {
+            return;
+        }
+
         _mouseGrabViewRef = null;
         RaiseUnGrabbedMouseEvent (grabbedView);
 

@@ -15,7 +15,7 @@ namespace Terminal.Gui.App;
 ///     <para>This class is designed to be managed by <see cref="ApplicationImpl"/></para>
 /// </summary>
 /// <typeparam name="TInputRecord">Type of raw input events, e.g. <see cref="ConsoleKeyInfo"/> for .NET driver</typeparam>
-internal class MainLoopCoordinator<TInputRecord> : IMainLoopCoordinator, IInlineRenderCoordinator where TInputRecord : struct
+internal class MainLoopCoordinator<TInputRecord> : IMainLoopCoordinator, IInlineRenderCoordinator, IMouseReportingCoordinator where TInputRecord : struct
 {
     /// <summary>
     ///     Creates a new coordinator that will manage the main UI loop and input thread.
@@ -101,6 +101,39 @@ internal class MainLoopCoordinator<TInputRecord> : IMainLoopCoordinator, IInline
     }
 
     int IInlineRenderCoordinator.InitialCursorRow => _loop.SizeMonitor.InitialCursorRow;
+
+    void IMouseReportingCoordinator.SetMouseDisabled (bool disabled)
+    {
+        lock (_oLockInitialization)
+        {
+            if (_stopCalled || _output is not AnsiOutput output)
+            {
+                return;
+            }
+
+            bool previous = output.IsMouseDisabled;
+            output.SetMouseDisabled (disabled);
+
+            try
+            {
+                (_input as AnsiInput)?.SetMouseDisabled (disabled);
+            }
+            catch
+            {
+                try
+                {
+                    output.SetMouseDisabled (previous);
+                }
+                catch (Exception rollbackError)
+                {
+                    // Keep the original failure; the rollback failure is secondary.
+                    Logging.Error ($"Failed to restore mouse reporting after a failed change: {rollbackError}");
+                }
+
+                throw;
+            }
+        }
+    }
 
     void IInlineRenderCoordinator.WithRenderGate (Action action)
     {

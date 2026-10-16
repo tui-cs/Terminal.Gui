@@ -249,7 +249,7 @@ See `.claude/cookbook/` for common UI patterns:
 |App/CWP:{CancelEventArgs.cs,CWPEventHelper.cs,CWPPropertyHelper.cs,CWPWorkflowHelper.cs,EventArgs.cs,ResultEventArgs.cs,ValueChangedEventArgs.cs,ValueChangingEventArgs.cs}
 |App/Keyboard:{ApplicationKeyboard.cs,IKeyboard.cs}
 |App/Legacy:{Application.Clipboard.cs,Application.Driver.cs,Application.Keyboard.cs,Application.Lifecycle.cs,Application.Mouse.cs,Application.Navigation.cs,Application.Popovers.cs,Application.Run.cs,Application.Screen.cs,Application.TopRunnable.cs}
-|App/MainLoop:{ApplicationMainLoop.cs,IApplicationMainLoop.cs,IInlineRenderCoordinator.cs,IMainLoopCoordinator.cs,MainLoopCoordinator.cs,MainLoopSyncContext.cs}
+|App/MainLoop:{ApplicationMainLoop.cs,IApplicationMainLoop.cs,IInlineRenderCoordinator.cs,IMainLoopCoordinator.cs,IMouseReportingCoordinator.cs,MainLoopCoordinator.cs,MainLoopSyncContext.cs}
 |App/Mouse:{ApplicationMouse.cs,IMouse.cs,IMouseGrabHandler.cs}
 |App/Popovers:{IPopover.cs,IPopoverView.cs,Popover.cs,PopoverImpl.cs,ToolTipHost.cs,ToolTipProvider.cs}
 |App/Runnable:{IRunnable.cs,SessionToken.cs,SessionTokenEventArgs.cs}

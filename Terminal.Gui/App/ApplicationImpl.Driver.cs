@@ -174,6 +174,11 @@ internal partial class ApplicationImpl
         // knows whether to use alternate screen buffer (Inline vs FullScreen).
         cf.AppModel = AppModel;
 
+        if (cf is AnsiComponentFactory ansiFactory)
+        {
+            ansiFactory.IsMouseDisabled = Mouse.IsMouseDisabled;
+        }
+
         // In inline mode, create the startup gate so the driver and size monitor can
         // register queries (size, cursor position) that must complete before the first render.
         if (AppModel == AppModel.Inline)

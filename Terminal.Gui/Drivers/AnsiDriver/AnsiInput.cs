@@ -79,7 +79,9 @@ public class AnsiInput : InputImpl<char>, ITestableInput<char>
     /// <summary>
     ///     Creates a new ANSIInput.
     /// </summary>
-    public AnsiInput ()
+    public AnsiInput () : this (false) { }
+
+    internal AnsiInput (bool isMouseDisabled)
     {
         _platform = AnsiPlatform.Degraded;
 
@@ -98,7 +100,7 @@ public class AnsiInput : InputImpl<char>, ITestableInput<char>
             {
                 _windowsVTInput = new WindowsVTInputHelper ();
 
-                if (!_windowsVTInput.TryEnable ())
+                if (!_windowsVTInput.TryEnable (isMouseDisabled))
                 {
                     _windowsVTInput.Dispose ();
                     _windowsVTInput = null;
@@ -153,6 +155,8 @@ public class AnsiInput : InputImpl<char>, ITestableInput<char>
             _platform = AnsiPlatform.Degraded;
         }
     }
+
+    internal void SetMouseDisabled (bool disabled) => _windowsVTInput?.SetMouseDisabled (disabled);
 
     /// <inheritdoc/>
     public override bool Peek ()

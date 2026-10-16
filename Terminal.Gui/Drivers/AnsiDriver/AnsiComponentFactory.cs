@@ -29,6 +29,8 @@ public class AnsiComponentFactory : ComponentFactoryImpl<char>
     private readonly ISizeMonitor? _injectedSizeMonitor;
     private readonly Func<Size?>? _nativeSizeQuery;
 
+    internal bool IsMouseDisabled { get; set; }
+
     /// <summary>
     ///     Creates a new ANSIComponentFactory with optional output capture.
     /// </summary>
@@ -134,7 +136,17 @@ public class AnsiComponentFactory : ComponentFactoryImpl<char>
     }
 
     /// <inheritdoc/>
-    public override IInput<char> CreateInput () => _input ?? new AnsiInput ();
+    public override IInput<char> CreateInput ()
+    {
+        if (_input is null)
+        {
+            return new AnsiInput (IsMouseDisabled);
+        }
+
+        _input.SetMouseDisabled (IsMouseDisabled);
+
+        return _input;
+    }
 
     /// <inheritdoc/>
     public override IInputProcessor CreateInputProcessor (ConcurrentQueue<char> inputBuffer, ITimeProvider? timeProvider = null) =>
@@ -143,7 +155,12 @@ public class AnsiComponentFactory : ComponentFactoryImpl<char>
     /// <inheritdoc/>
     public override IOutput CreateOutput ()
     {
-        IOutput output = _output ?? new AnsiOutput (AppModel);
+        IOutput output = _output ?? new AnsiOutput (AppModel, IsMouseDisabled);
+
+        if (output is AnsiOutput ansiMouseOutput)
+        {
+            ansiMouseOutput.SetMouseDisabled (IsMouseDisabled);
+        }
 
         if (Driver.SizeDetection == SizeDetectionMode.Polling
             && output is AnsiOutput { NativeSizeQuery: null } ansiOutput)

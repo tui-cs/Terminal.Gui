@@ -31,10 +31,10 @@ internal sealed class WindowsVTInputHelper : IDisposable
     // to use GetNumberOfConsoleInputEvents to poll for availability. With such APIs, this helper class would be unnecessary.
     // If this were the case, the only API the ANSI driver would require on Windows is GetStdHandle and ReadFile.
 
-    [DllImport ("kernel32.dll")]
+    [DllImport ("kernel32.dll", SetLastError = true)]
     private static extern bool GetConsoleMode (nint hConsoleHandle, out uint lpMode);
 
-    [DllImport ("kernel32.dll")]
+    [DllImport ("kernel32.dll", SetLastError = true)]
     private static extern bool SetConsoleMode (nint hConsoleHandle, uint dwMode);
 
     // Equivalent of poll() on Unix — needed because ReadFile blocks and the input loop
@@ -115,8 +115,9 @@ internal sealed class WindowsVTInputHelper : IDisposable
     /// <summary>
     ///     Attempts to enable Windows Virtual Terminal Input mode.
     /// </summary>
+    /// <param name="isMouseDisabled">Enables native selection instead of console mouse input.</param>
     /// <returns>True if VTS mode was enabled successfully; false otherwise.</returns>
-    public bool TryEnable ()
+    public bool TryEnable (bool isMouseDisabled = false)
     {
         if (IsEnabled)
         {
@@ -150,13 +151,10 @@ internal sealed class WindowsVTInputHelper : IDisposable
                 return false;
             }
 
-            // Configure VTS input mode:
-            // - Enable: VTS input, mouse input, extended flags
-            // - Disable: processed input, line input, echo, quick edit
-            // This allows raw ANSI sequence reading
-            uint newMode = _originalConsoleMode;
-            newMode |= ENABLE_VIRTUAL_TERMINAL_INPUT | ENABLE_MOUSE_INPUT | ENABLE_EXTENDED_FLAGS;
-            newMode &= ~(ENABLE_PROCESSED_INPUT | ENABLE_LINE_INPUT | ENABLE_ECHO_INPUT | ENABLE_QUICK_EDIT_MODE);
+            // Keep raw keyboard input while allowing native selection when mouse reporting is disabled.
+            uint newMode = _originalConsoleMode | ENABLE_VIRTUAL_TERMINAL_INPUT;
+            newMode &= ~(ENABLE_PROCESSED_INPUT | ENABLE_LINE_INPUT | ENABLE_ECHO_INPUT);
+            newMode = GetMouseMode (newMode, isMouseDisabled);
 
             if (!SetConsoleMode (InputHandle, newMode))
             {
@@ -180,6 +178,24 @@ internal sealed class WindowsVTInputHelper : IDisposable
             Logging.Warning ($"{nameof (WindowsVTInputHelper)}: Failed to enable Windows VTS mode: {ex.Message}");
 
             return false;
+        }
+    }
+
+    internal static uint GetMouseMode (uint mode, bool disabled) =>
+        disabled
+            ? (mode | ENABLE_EXTENDED_FLAGS | ENABLE_QUICK_EDIT_MODE) & ~ENABLE_MOUSE_INPUT
+            : (mode | ENABLE_EXTENDED_FLAGS | ENABLE_MOUSE_INPUT) & ~ENABLE_QUICK_EDIT_MODE;
+
+    internal void SetMouseDisabled (bool disabled)
+    {
+        if (!IsEnabled || _disposed)
+        {
+            return;
+        }
+
+        if (!GetConsoleMode (InputHandle, out uint mode) || !SetConsoleMode (InputHandle, GetMouseMode (mode, disabled)))
+        {
+            throw new System.ComponentModel.Win32Exception (Marshal.GetLastWin32Error (), "Failed to change Windows console mouse mode.");
         }
     }
 

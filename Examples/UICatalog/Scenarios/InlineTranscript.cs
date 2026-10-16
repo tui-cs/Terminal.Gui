@@ -13,13 +13,27 @@ public sealed class InlineTranscript : Scenario
     {
         using IApplication app = Application.Create ();
         app.AppModel = AppModel.Inline;
+        app.Mouse.IsMouseDisabled = true;
         app.Init (DriverRegistry.Names.ANSI);
         using CancellationTokenSource lifetime = new ();
         using Runnable composer = new () { Width = Dim.Fill (), Height = 3 };
-        Label title = new () { Text = "Inline transcript · Enter sends · Esc exits", Width = Dim.Fill () };
+        Label title = new () { Text = "Inline transcript · Enter sends · F2 mouse · Esc exits", Width = Dim.Fill () };
         TextField input = new () { Y = 1, Width = Dim.Fill () };
-        Label status = new () { Y = 2, Text = "Completed messages appear above this three-row composer.", Width = Dim.Fill () };
+        Label status = new () { Y = 2, Text = "Mouse off: native select/copy. F2: UI mouse.", Width = Dim.Fill () };
         composer.Add (title, input, status);
+        composer.KeyDown += (_, key) =>
+        {
+            if (key != Key.F2)
+            {
+                return;
+            }
+
+            app.Mouse.IsMouseDisabled = !app.Mouse.IsMouseDisabled;
+            status.Text = app.Mouse.IsMouseDisabled
+                              ? "Mouse off: native select/copy. F2: UI mouse."
+                              : "Mouse on: UI handles mouse. F2: native select.";
+            key.Handled = true;
+        };
 
         Task producer = Task.CompletedTask;
         Task latestSubmission = Task.CompletedTask;

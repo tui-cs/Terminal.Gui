@@ -61,6 +61,11 @@ public partial class AnsiOutput : OutputBase, IOutput, IInlineOutput
     internal Func<Rectangle>? AppScreenGetter { get; set; }
 
     /// <summary>
+    ///     Gets whether terminal mouse reporting is disabled. Changed only by <see cref="SetMouseDisabled"/>.
+    /// </summary>
+    internal bool IsMouseDisabled { get; private set; }
+
+    /// <summary>
     ///     Initializes a new instance of <see cref="AnsiOutput"/>.
     ///     Checks if a real console is available for ANSI output and activates the alternate screen buffer.
     /// </summary>
@@ -68,9 +73,12 @@ public partial class AnsiOutput : OutputBase, IOutput, IInlineOutput
     ///     The rendering mode. When <see cref="AppModel.Inline"/>, the alternate screen buffer is not activated
     ///     and the terminal's primary (scrollback) buffer is used instead.
     /// </param>
-    public AnsiOutput (AppModel appModel = AppModel.FullScreen)
+    public AnsiOutput (AppModel appModel = AppModel.FullScreen) : this (appModel, false) { }
+
+    internal AnsiOutput (AppModel appModel, bool isMouseDisabled)
     {
         AppModel = appModel;
+        IsMouseDisabled = isMouseDisabled;
         _platform = AnsiPlatform.Degraded;
 
         _lastBuffer = new OutputBufferImpl ();
@@ -127,29 +135,7 @@ public partial class AnsiOutput : OutputBase, IOutput, IInlineOutput
                 _platform = AnsiPlatform.UnixRaw;
             }
 
-            // Initialize terminal for ANSI output
-            if (AppModel == AppModel.Inline)
-            {
-                // Inline mode: do NOT switch to alternate screen buffer.
-                // Stay in the primary (scrollback) buffer.
-                Write (EscSeqUtils.CSI_HideCursor);
-
-                // TODO: Move Input related CSI sequences to AnsiInput
-                Write (EscSeqUtils.CSI_EnableMouseEvents);
-                Write (EscSeqUtils.CSI_EnableBracketedPaste);
-            }
-            else
-            {
-                // FullScreen mode: activate alternate screen buffer, hide cursor, enable mouse tracking
-                Write (EscSeqUtils.CSI_SaveCursorAndActivateAltBufferNoBackscroll);
-                Write (EscSeqUtils.CSI_ClearScreen (EscSeqUtils.ClearScreenOptions.EntireScreen));
-                Write (EscSeqUtils.CSI_SetCursorPosition (1, 1)); // Move to top-left
-                Write (EscSeqUtils.CSI_HideCursor);
-
-                // TODO: Move Input related CSI sequences to AnsiInput
-                Write (EscSeqUtils.CSI_EnableMouseEvents);
-                Write (EscSeqUtils.CSI_EnableBracketedPaste);
-            }
+            InitializeTerminal ();
 
             // Flush to ensure all sequences are sent
             AnsiTerminalHelper.FlushNative (_platform);
@@ -165,16 +151,56 @@ public partial class AnsiOutput : OutputBase, IOutput, IInlineOutput
     }
 
     // Exercises UnixRaw framing without opening a terminal or changing process-wide stdout.
-    internal AnsiOutput (UnixWriter unixWriter, AppModel appModel = AppModel.FullScreen)
+    internal AnsiOutput (UnixWriter unixWriter, AppModel appModel = AppModel.FullScreen, bool isMouseDisabled = false, bool initializeTerminal = false)
     {
         AppModel = appModel;
+        IsMouseDisabled = isMouseDisabled;
         _platform = AnsiPlatform.UnixRaw;
         _unixWriter = unixWriter;
         _lastBuffer = new OutputBufferImpl ();
         _currentCursor = new Cursor ();
         _consoleSize = new Size (80, 25);
         _lastBuffer.SetSize (_consoleSize.Width, _consoleSize.Height);
+
+        if (initializeTerminal)
+        {
+            InitializeTerminal ();
+        }
     }
+
+    private void InitializeTerminal ()
+    {
+        if (AppModel == AppModel.FullScreen)
+        {
+            Write (EscSeqUtils.CSI_SaveCursorAndActivateAltBufferNoBackscroll);
+            Write (EscSeqUtils.CSI_ClearScreen (EscSeqUtils.ClearScreenOptions.EntireScreen));
+            Write (EscSeqUtils.CSI_SetCursorPosition (1, 1));
+        }
+
+        Write (EscSeqUtils.CSI_HideCursor);
+        RestoreMouseReporting ();
+        Write (EscSeqUtils.CSI_EnableBracketedPaste);
+    }
+
+    /// <summary>
+    ///     Writes the sequence that enables or disables terminal mouse reporting, then records the new state.
+    ///     Does nothing if the state is unchanged.
+    /// </summary>
+    internal void SetMouseDisabled (bool disabled)
+    {
+        if (IsMouseDisabled == disabled)
+        {
+            return;
+        }
+
+        Write (disabled ? EscSeqUtils.CSI_DisableMouseEvents : EscSeqUtils.CSI_EnableMouseEvents);
+        IsMouseDisabled = disabled;
+    }
+
+    /// <summary>
+    ///     Re-sends the sequence for the current <see cref="IsMouseDisabled"/> state, for example after resuming from suspend.
+    /// </summary>
+    internal void RestoreMouseReporting () => Write (IsMouseDisabled ? EscSeqUtils.CSI_DisableMouseEvents : EscSeqUtils.CSI_EnableMouseEvents);
 
     /// <inheritdoc/>
     public void Suspend () => UnixTerminalHelper.Suspend (this);

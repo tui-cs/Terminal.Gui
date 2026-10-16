@@ -35,6 +35,36 @@ The [Inline Transcript UICatalog scenario](https://github.com/tui-cs/Terminal.Gu
 provides an editable three-row composer and an awaited background producer.
 To run it directly, run `dotnet run --project Examples/ScenarioRunner -- run "Inline Transcript"`.
 
+## Native text selection
+
+To select and copy completed output with the terminal's normal mouse gestures, disable
+mouse reporting before initialization:
+
+```csharp
+using IApplication app = Application.Create ();
+app.AppModel = AppModel.Inline;
+app.Mouse.IsMouseDisabled = true;
+app.Init (DriverRegistry.Names.ANSI);
+```
+
+The built-in ANSI driver honors this setting at startup and during a session, in both
+inline and fullscreen modes. Mouse reporting remains enabled by default. To disable it for
+every application, set `"Application": { "IsMouseDisabled": true }` in configuration and apply it
+with `TuiConfigurationBuilder.ApplyToStaticFacades ()` before calling `Application.Create ()`. To change the
+setting while running, use the UI thread or `app.Invoke(...)`. Disabling releases an
+active mouse grab, stops hold repetition, and clears hover state. Keyboard editing,
+bracketed paste, and `PrintAboveAsync` continue to work. Other drivers suppress application
+mouse events but do not configure native terminal selection.
+
+On Windows, the ANSI driver also disables console mouse input and enables Quick Edit
+while mouse reporting is disabled; the original console mode is restored on disposal.
+Classic conhost may pause application activity while a Quick Edit selection is active.
+The terminal controls selection and copying, including whether a selection persists
+while new output arrives.
+
+The Inline Transcript scenario starts with mouse reporting disabled. To toggle between
+terminal selection and application mouse interaction, press **F2**.
+
 ## Text and ordering
 
 Each <xref:Terminal.Gui.Drawing.InlineOutputLine> is a logical line, wrapped using the

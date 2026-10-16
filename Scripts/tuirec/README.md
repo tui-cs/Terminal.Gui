@@ -249,6 +249,21 @@ tuirec record `
 
 ---
 
+## Verifying inline output and mouse reporting
+
+To check the Inline Transcript scenario's history, keyboard editing, and F2 mouse toggle,
+build ScenarioRunner in Release, install `pyte`, and run:
+
+```bash
+python3 Scripts/tuirec/verify-inline-output.py --verify-mouse
+python3 Scripts/tuirec/verify-inline-output.py --columns 50 --rows 3 --verify-mouse
+```
+
+The verifier asserts all 24 completed messages appear once and in order, editing submits
+`hello` once, and mouse reporting is disabled at startup, toggled on/off, and disabled on
+exit. To inspect a saved recording, pass `--cast path/to/InlineTranscript.cast --verify-mouse`.
+Terminal-native selection and clipboard behavior still require checks in a real terminal.
+
 ## Recording Individual View Sub-classes with EnableForDesign
 
 (Coming soon — will use a dedicated design-mode runner that instantiates
