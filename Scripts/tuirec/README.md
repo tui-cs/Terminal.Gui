@@ -257,12 +257,18 @@ build ScenarioRunner in Release, install `pyte`, and run:
 ```bash
 python3 Scripts/tuirec/verify-inline-output.py --verify-mouse
 python3 Scripts/tuirec/verify-inline-output.py --columns 50 --rows 3 --verify-mouse
+python3 Scripts/tuirec/verify-inline-output.py --verify-mouse --verify-shrink
 ```
 
 The verifier asserts all 24 completed messages appear once and in order, editing submits
 `hello` once, and mouse reporting is disabled at startup, toggled on/off, and disabled on
 exit. To inspect a saved recording, pass `--cast path/to/InlineTranscript.cast --verify-mouse`.
 Terminal-native selection and clipboard behavior still require checks in a real terminal.
+
+The `--verify-shrink` check also expands the live preview with F5, commits it with F6,
+and expands/collapses it again. It checks that the completed preview appears once, no
+live preview enters history, and released rows below the composer are blank. A terminal
+with at least seven rows also verifies that all four preview rows were visible.
 
 ## Recording Individual View Sub-classes with EnableForDesign
 

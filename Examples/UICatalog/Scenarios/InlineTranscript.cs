@@ -3,8 +3,8 @@ using TgAttribute = Terminal.Gui.Drawing.Attribute;
 
 namespace UICatalog.Scenarios;
 
-/// <summary>Demonstrates awaited styled output above an editable inline composer.</summary>
-[ScenarioMetadata ("Inline Transcript", "Print completed messages above a live three-row composer.")]
+/// <summary>Demonstrates awaited styled output above a composer that grows and shrinks with a live preview.</summary>
+[ScenarioMetadata ("Inline Transcript", "Print completed messages above a live composer with a collapsible preview.")]
 [ScenarioCategory ("AppModel")]
 [ScenarioCategory ("Threading")]
 public sealed class InlineTranscript : Scenario
@@ -16,13 +16,39 @@ public sealed class InlineTranscript : Scenario
         app.Mouse.IsMouseDisabled = true;
         app.Init (DriverRegistry.Names.ANSI);
         using CancellationTokenSource lifetime = new ();
-        using Runnable composer = new () { Width = Dim.Fill (), Height = 3 };
-        Label title = new () { Text = "Inline transcript · Enter sends · F2 mouse · Esc exits", Width = Dim.Fill () };
+        using Runnable composer = new () { Width = Dim.Fill (), Height = Dim.Auto (DimAutoStyle.Content, minimumContentDim: 3) };
+        Label title = new () { Text = "Inline transcript · Enter sends · F2 mouse · F5 preview · F6 commit · Esc exits", Width = Dim.Fill (), Height = 1 };
         TextField input = new () { Y = 1, Width = Dim.Fill () };
-        Label status = new () { Y = 2, Text = "Mouse off: select/copy terminal text. F2 enables UI mouse.", Width = Dim.Fill () };
+        Label status = new () { Y = 2, Text = "Mouse off: select/copy terminal text. F2 enables UI mouse.", Width = Dim.Fill (), Height = 1 };
+        using Label preview = new () { Y = 3, Text = "LIVE PREVIEW row 1\nLIVE PREVIEW row 2\nLIVE PREVIEW row 3\nLIVE PREVIEW row 4", Width = Dim.Fill () };
         composer.Add (title, input, status);
+        Task producer = Task.CompletedTask;
+        Task latestSubmission = Task.CompletedTask;
+        SessionToken? owner = null;
         composer.KeyDown += (_, key) =>
         {
+            if (key == Key.F5)
+            {
+                if (preview.SuperView is { })
+                {
+                    composer.Remove (preview);
+                    key.Handled = true;
+                    return;
+                }
+
+                composer.Add (preview);
+                key.Handled = true;
+                return;
+            }
+
+            if (key == Key.F6 && owner is { } && preview.SuperView is { })
+            {
+                composer.Remove (preview);
+                latestSubmission = SubmitAsync (owner, [new InlineOutputLine ([new InlineOutputSpan ("preview: completed preview")])]);
+                key.Handled = true;
+                return;
+            }
+
             if (key != Key.F2)
             {
                 return;
@@ -35,9 +61,6 @@ public sealed class InlineTranscript : Scenario
             key.Handled = true;
         };
 
-        Task producer = Task.CompletedTask;
-        Task latestSubmission = Task.CompletedTask;
-        SessionToken? owner = null;
         EventHandler<SessionTokenEventArgs> sessionBegun = (_, e) =>
         {
             owner = e.State;
@@ -64,6 +87,7 @@ public sealed class InlineTranscript : Scenario
         finally
         {
             app.SessionBegun -= sessionBegun;
+            composer.Remove (preview);
             lifetime.Cancel ();
             Task.WhenAll (producer, latestSubmission).GetAwaiter ().GetResult ();
         }

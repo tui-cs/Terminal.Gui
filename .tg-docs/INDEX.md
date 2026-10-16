@@ -21,7 +21,7 @@ Instead of embedding descriptions, it points to actual source files that agents 
 [Terminal.Gui Source Index]|root: ./Terminal.Gui
 |IMPORTANT: Prefer retrieval-led reasoning over pre-training-led reasoning. Read files when needed.
 |.:{ModuleInitializers.cs}
-|App:{Application.cs,ApplicationDispatchExtensions.cs,ApplicationImpl.cs,ApplicationImpl.Dispatch.cs,ApplicationImpl.Driver.cs,ApplicationImpl.InlineOutput.cs,ApplicationImpl.Lifecycle.cs,ApplicationImpl.Run.cs,ApplicationImpl.Screen.cs,ApplicationInlineOutputExtensions.cs,ApplicationModelUsage.cs,ApplicationNavigation.cs,ApplicationPopover.cs,ApplicationToolTip.cs,AppModel.cs,IApplication.cs,IApplicationAsyncDispatcher.cs,IApplicationInlineOutput.cs,InlineOutputOperation.cs,Logging.cs,NotInitializedException.cs,UiDispatchOperation.cs}
+|App:{Application.cs,ApplicationDispatchExtensions.cs,ApplicationImpl.cs,ApplicationImpl.Dispatch.cs,ApplicationImpl.Driver.cs,ApplicationImpl.InlineOutput.cs,ApplicationImpl.InlineSizing.cs,ApplicationImpl.Lifecycle.cs,ApplicationImpl.Run.cs,ApplicationImpl.Screen.cs,ApplicationInlineOutputExtensions.cs,ApplicationModelUsage.cs,ApplicationNavigation.cs,ApplicationPopover.cs,ApplicationToolTip.cs,AppModel.cs,IApplication.cs,IApplicationAsyncDispatcher.cs,IApplicationInlineOutput.cs,InlineOutputOperation.cs,Logging.cs,NotInitializedException.cs,UiDispatchOperation.cs}
 |App/Clipboard:{Clipboard.cs,ClipboardBase.cs,ClipboardProcessRunner.cs,ClipboardProcessRunnerImpl.cs,IClipboard.cs,IClipboardProcessRunner.cs}
 |App/CWP:{CancelEventArgs.cs,CWPEventHelper.cs,CWPPropertyHelper.cs,CWPWorkflowHelper.cs,EventArgs.cs,ResultEventArgs.cs,ValueChangedEventArgs.cs,ValueChangingEventArgs.cs}
 |App/Keyboard:{ApplicationKeyboard.cs,IKeyboard.cs}

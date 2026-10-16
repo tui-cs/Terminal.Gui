@@ -277,10 +277,15 @@ internal partial class ApplicationImpl
                 return;
             }
 
-            View? topView = views.LastOrDefault (v => v is { });
-
-            // Cap the view height at the terminal height — the inline region can never exceed it.
-            int viewHeight = Math.Min (topView?.Frame.Height ?? 0, Driver.Screen.Height);
+            // Reserve every visible active runnable's frame bottom, but at least its height: bottom-anchored
+            // views can extend above the current reservation while waiting for it to grow.
+            // Cap the reservation at the terminal height — the inline region can never exceed it.
+            int viewHeight = 0;
+            foreach (View runnable in SessionStack.Select (token => token.Runnable).OfType<View> ().Where (view => view.Visible))
+            {
+                long requiredHeight = GetRequiredInlineHeight (runnable);
+                viewHeight = Math.Max (viewHeight, (int)Math.Clamp (requiredHeight, 0, Driver.Screen.Height));
+            }
 
             if (viewHeight > Screen.Height)
             {
@@ -291,10 +296,11 @@ internal partial class ApplicationImpl
                 int bottomEdge = Screen.Y + Screen.Height;
                 int canGrowDown = Math.Min (extraRows, termHeight - bottomEdge);
 
-                // Reserve the new rows by scrolling them into existence.
-                if (canGrowDown > 0)
+                // Start at the last owned row, not at the live caret. A zero-height region has no last row;
+                // its new rows are already available below the origin and need no cursor movement.
+                if (canGrowDown > 0 && Screen.Height > 0)
                 {
-                    if (!WriteInlineMovement (new string ('\n', canGrowDown)))
+                    if (!WriteInlineMovement (EscSeqUtils.CSI_SetCursorPosition (bottomEdge, 1) + new string ('\n', canGrowDown)))
                     {
                         return;
                     }
@@ -314,7 +320,7 @@ internal partial class ApplicationImpl
 
                     if (canScrollUp > 0)
                     {
-                        if (!WriteInlineMovement (new string ('\n', canScrollUp)))
+                        if (!WriteInlineMovement (EscSeqUtils.CSI_SetCursorPosition (termHeight, 1) + new string ('\n', canScrollUp)))
                         {
                             return;
                         }
@@ -332,6 +338,7 @@ internal partial class ApplicationImpl
 
                 if (newHeight != Screen.Height)
                 {
+                    Driver.InlinePosition = new Point (0, newY);
                     Screen = new Rectangle (0, newY, Screen.Width, newHeight);
                     if (!PassIsValid ())
                     {
@@ -345,6 +352,15 @@ internal partial class ApplicationImpl
                     forceRedraw = true;
                 }
             }
+        }
+
+        if (AppModel == AppModel.Inline && TryShrinkInlineRegion ())
+        {
+            forceRedraw = true;
+        }
+        if (!PassIsValid ())
+        {
+            return;
         }
 
         if (DrainInlineOutput (candidate))

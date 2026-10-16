@@ -32,7 +32,7 @@ before the first Begin wait for that session. Calls after final End cancel rathe
 migrating to a later session. Calls before Init or during disposal throw.
 
 The [Inline Transcript UICatalog scenario](https://github.com/tui-cs/Terminal.Gui/blob/develop/Examples/UICatalog/Scenarios/InlineTranscript.cs)
-provides an editable three-row composer and an awaited background producer.
+provides an editable composer, a collapsible live preview, and an awaited background producer.
 To run it directly, run `dotnet run --project Examples/ScenarioRunner -- run "Inline Transcript"`.
 
 ## Native text selection
@@ -103,6 +103,40 @@ prevents the rendering boundary from executing. Manually calling `Begin` establi
 session but does not pump iterations continuously. Startup waits for the existing cursor
 and size readiness gate; optional-probe completion alone cannot force an early insertion.
 
+## Automatic live-region shrink
+
+To let an inline composer shrink after removing a live preview, use a content-sized root:
+
+```csharp
+using Runnable composer = new ()
+{
+    Width = Dim.Fill (),
+    Height = Dim.Auto (DimAutoStyle.Content, minimumContentDim: 3)
+};
+```
+
+The built-in ANSI driver reduces the reservation after layout reports a smaller height.
+Explicit height changes and content-based `Dim.Func` sizes also work. Shrink keeps the
+top row fixed, erases only the old live region, and repaints the compact view. It leaves
+blank space below the region until growth or new output uses it. It does not scroll,
+replay completed output, or erase shell output above the region. The next `PrintAboveAsync`
+uses the smaller reservation, including when removing a preview and queuing its completed
+text in one UI callback or owned dispatch.
+
+Active runnable frames set a lower bound on the reserved height. Visible popovers and
+active, pending, or retained raster graphics defer shrink. Space-dependent root positions
+and heights (`Pos.Center`, `Dim.Fill`, `Dim.Percent`, and percentage/fill auto-size bounds)
+retain their reservation to avoid layout feedback. To use `Dim.Func` for a shrinking root,
+calculate its height from content rather than from `app.Screen.Height`.
+
+A root can shrink to zero; queued printing waits until a positive live height returns.
+A failed physical erase retains the published geometry and suppresses further inline
+placement under the same failure policy as printing. Shrink publishes its new geometry
+and schedules repaint before raising `ScreenChanged`.
+
+To exercise this in Inline Transcript, press **F5** to expand/collapse the four-row preview.
+To remove it and print its completed text in one callback, press **F6** while it is visible.
+
 ## Completion, failures and supported terminals
 
 A successful task means insertion bytes and the final live-area erase were accepted by
@@ -131,8 +165,7 @@ lifetime because cleanup cannot be proven. Exhausting the bounded Sixel placemen
 requires a fresh output lifetime. Ordinary raster rendering remains available
 for applications that do not use this API.
 
-The live region keeps its reserved height and can grow as before. Automatic shrink and
-resize preservation are separate work: the current resize handler still clears visible
+Resize preservation remains separate work: the current resize handler still clears visible
 rows and resets origin. Terminal reflow during a physical write, external Console writes,
 raw cursor/mode changes, or another application sharing the terminal are outside the
 serialization contract. Terminal width disagreement can affect wrapping.

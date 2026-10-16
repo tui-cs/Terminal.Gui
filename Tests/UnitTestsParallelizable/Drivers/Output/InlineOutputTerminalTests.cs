@@ -60,6 +60,164 @@ public class InlineOutputTerminalTests
         Assert.Equal (["a", "b", "c"], terminal.History.Concat (terminal.Rows.Select (row => new string (row))).Where (row => row != " "));
     }
 
+    // CoPilot - GPT-6
+    [Fact]
+    public void ShrinkErasesReleasedRowsAndPreservesUnownedRowsWithoutScrolling ()
+    {
+        Grid terminal = new (20, 12);
+        terminal.Rows [0] = "SHELL BEFORE".PadRight (20).ToCharArray ();
+        terminal.Rows [10] = "UNOWNED BELOW".PadRight (20).ToCharArray ();
+        AnsiOutput output = new (chunk => { terminal.Feed (Encoding.UTF8.GetString (chunk)); return true; }, AppModel.Inline);
+        output.SetSize (20, 12);
+        using ApplicationImpl app = new (new AnsiComponentFactory (output: output)) { AppModel = AppModel.Inline, ForceInlinePosition = new Point (0, 2) };
+        app.Init ();
+        using Runnable composer = new () { Width = Dim.Fill (), Height = 6, Text = "preview\npreview\npreview\npreview\npreview\npreview" };
+        SessionToken owner = app.Begin (composer)!;
+        app.LayoutAndDraw ();
+        Assert.Contains ("preview", new string (terminal.Rows [7]));
+        composer.Text = "ready";
+        composer.Height = 2;
+
+        app.LayoutAndDraw ();
+
+        Assert.Empty (terminal.History);
+        Assert.Equal ("SHELL BEFORE", new string (terminal.Rows [0]).TrimEnd ());
+        Assert.Equal ("UNOWNED BELOW", new string (terminal.Rows [10]).TrimEnd ());
+        Assert.Equal ("ready", new string (terminal.Rows [2]).TrimEnd ());
+        Assert.All (terminal.Rows.Skip (4).Take (4), row => Assert.Equal (string.Empty, new string (row).TrimEnd ()));
+        app.End (owner);
+    }
+
+    // CoPilot - GPT-6
+    [Fact]
+    public void ShrinkAndCommitInOnePass_NeverScrollsPreviewIntoHistory ()
+    {
+        Grid terminal = new (20, 8);
+        terminal.Rows [0] = "SHELL ZERO".PadRight (20).ToCharArray ();
+        terminal.Rows [1] = "SHELL ONE".PadRight (20).ToCharArray ();
+        AnsiOutput output = new (chunk => { terminal.Feed (Encoding.UTF8.GetString (chunk)); return true; }, AppModel.Inline);
+        output.SetSize (20, 8);
+        using ApplicationImpl app = new (new AnsiComponentFactory (output: output)) { AppModel = AppModel.Inline, ForceInlinePosition = new Point (0, 2) };
+        app.Init ();
+        using Runnable composer = new () { Width = Dim.Fill (), Height = 6, Text = "preview\npreview\npreview\npreview\npreview\npreview" };
+        SessionToken owner = app.Begin (composer)!;
+        app.LayoutAndDraw ();
+        composer.Text = "ready";
+        composer.Height = 2;
+        Task completed = app.PrintAboveAsync (owner, "DONE", TestContext.Current.CancellationToken);
+
+        app.LayoutAndDraw ();
+
+        Assert.True (completed.IsCompletedSuccessfully);
+        Assert.Equal (new Rectangle (0, 3, 20, 2), app.Screen);
+        for (int index = 0; index < 12; index++)
+        {
+            Task print = app.PrintAboveAsync (owner, $"P{index}", TestContext.Current.CancellationToken);
+            app.LayoutAndDraw ();
+            Assert.True (print.IsCompletedSuccessfully);
+        }
+
+        List<string> lines = [.. terminal.History, .. terminal.Rows.Select (row => new string (row).TrimEnd ())];
+        Assert.DoesNotContain (lines, line => line.Contains ("preview"));
+        Assert.DoesNotContain (terminal.History, line => line.Contains ("ready"));
+        Assert.Equal (["SHELL ZERO", "SHELL ONE", "DONE", .. Enumerable.Range (0, 12).Select (index => $"P{index}"), "ready"], lines.Where (line => line.Length > 0));
+        app.End (owner);
+    }
+
+    // CoPilot - GPT-6
+    [Fact]
+    public void RegrowthAtBottom_ScrollsFromTerminalBottomRegardlessOfCaretPosition ()
+    {
+        Grid terminal = new (20, 8);
+        AnsiOutput output = new (chunk => { terminal.Feed (Encoding.UTF8.GetString (chunk)); return true; }, AppModel.Inline);
+        output.SetSize (20, 8);
+        using ApplicationImpl app = new (new AnsiComponentFactory (output: output)) { AppModel = AppModel.Inline, ForceInlinePosition = Point.Empty };
+        app.Init ();
+        using Runnable composer = new () { Width = Dim.Fill (), Height = 6, Text = "ready" };
+        SessionToken owner = app.Begin (composer)!;
+        app.LayoutAndDraw ();
+        composer.Height = 2;
+        app.LayoutAndDraw ();
+        for (int index = 0; index < 9; index++)
+        {
+            _ = app.PrintAboveAsync (owner, $"P{index}", TestContext.Current.CancellationToken);
+            app.LayoutAndDraw ();
+        }
+        output.SetCursor (new Cursor { Position = Point.Empty });
+
+        composer.Height = 6;
+        app.LayoutAndDraw ();
+        composer.Height = 2;
+        app.LayoutAndDraw ();
+
+        List<string> lines = [.. terminal.History, .. terminal.Rows.Select (row => new string (row).TrimEnd ())];
+        Assert.Equal ([.. Enumerable.Range (0, 9).Select (index => $"P{index}"), "ready"], lines.Where (line => line.Length > 0));
+        Assert.DoesNotContain (terminal.History, line => line.Contains ("ready"));
+        app.End (owner);
+    }
+
+    // CoPilot - GPT-6
+    [Fact]
+    public void ModalRegrowthAfterShrink_RendersAtScrolledOriginWithoutClipping ()
+    {
+        Grid terminal = new (20, 8);
+        terminal.Rows [0] = "SHELL ZERO".PadRight (20).ToCharArray ();
+        terminal.Rows [1] = "SHELL ONE".PadRight (20).ToCharArray ();
+        AnsiOutput output = new (chunk => { terminal.Feed (Encoding.UTF8.GetString (chunk)); return true; }, AppModel.Inline);
+        output.SetSize (20, 8);
+        using ApplicationImpl app = new (new AnsiComponentFactory (output: output)) { AppModel = AppModel.Inline, ForceInlinePosition = new Point (0, 2) };
+        app.Init ();
+        using Runnable outer = new () { Width = Dim.Fill (), Height = 6, Text = "outer" };
+        SessionToken outerOwner = app.Begin (outer)!;
+        app.LayoutAndDraw ();
+        using Runnable modal = new () { Y = 1, Width = Dim.Fill (), Height = 4 };
+        SessionToken modalOwner = app.Begin (modal)!;
+        outer.Height = 2;
+        app.LayoutAndDraw ();
+        modal.Height = 1;
+        app.LayoutAndDraw ();
+        Assert.Equal (2, app.Screen.Height);
+
+        modal.Height = 7;
+        modal.Text = "M0\nM1\nM2\nM3\nM4\nM5\nM6";
+        app.LayoutAndDraw ();
+
+        Assert.Equal (new Rectangle (0, 0, 20, 8), app.Screen);
+        Assert.Equal (["SHELL ZERO", "SHELL ONE"], terminal.History);
+        Assert.Equal (["outer", .. Enumerable.Range (0, 7).Select (index => $"M{index}")], terminal.Rows.Select (row => new string (row).TrimEnd ()));
+        app.End (modalOwner);
+        app.End (outerOwner);
+    }
+
+    // CoPilot - GPT-6
+    [Fact]
+    public void BottomAnchoredRegrowthAfterShrink_RendersEntireFrame ()
+    {
+        Grid terminal = new (20, 8);
+        terminal.Rows [0] = "SHELL ZERO".PadRight (20).ToCharArray ();
+        terminal.Rows [1] = "SHELL ONE".PadRight (20).ToCharArray ();
+        AnsiOutput output = new (chunk => { terminal.Feed (Encoding.UTF8.GetString (chunk)); return true; }, AppModel.Inline);
+        output.SetSize (20, 8);
+        using ApplicationImpl app = new (new AnsiComponentFactory (output: output)) { AppModel = AppModel.Inline, ForceInlinePosition = new Point (0, 2) };
+        app.Init ();
+        using Runnable composer = new () { Width = Dim.Fill (), Height = 6 };
+        SessionToken owner = app.Begin (composer)!;
+        app.LayoutAndDraw ();
+        composer.Height = 2;
+        app.LayoutAndDraw ();
+        Assert.Equal (2, app.Screen.Height);
+
+        composer.Y = Pos.AnchorEnd ();
+        composer.Height = 6;
+        composer.Text = "R0\nR1\nR2\nR3\nR4\nR5";
+        app.LayoutAndDraw ();
+
+        Assert.Equal (new Rectangle (0, 2, 20, 6), app.Screen);
+        Assert.Empty (terminal.History);
+        Assert.Equal (["SHELL ZERO", "SHELL ONE", .. Enumerable.Range (0, 6).Select (index => $"R{index}")], terminal.Rows.Select (row => new string (row).TrimEnd ()));
+        app.End (owner);
+    }
+
     // Minimal VT state model for the emitted subset, including delayed autowrap and actual scroll history.
     private sealed class Grid
     {
