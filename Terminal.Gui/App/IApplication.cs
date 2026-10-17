@@ -202,8 +202,12 @@ public interface IApplication : IDisposable
     ///     <para>
     ///         This method prepares the provided <see cref="IRunnable"/> for running. It adds this to the
     ///         <see cref="SessionStack"/>, lays out the SubViews, focuses the first element, and draws the
-    ///         runnable on the screen. This is usually followed by starting the main loop, and then the
-    ///         <see cref="End(SessionToken)"/> method upon termination which will undo these changes.
+    ///         runnable on the screen. It does not start the continuous main loop; use
+    ///         <see cref="Run(IRunnable, Func{Exception, bool})"/> for ongoing input and UI processing. While the
+    ///         a session is active before any session has ended and no
+    ///         <see cref="Run(IRunnable, Func{Exception, bool})"/> loop is running, a posted asynchronous continuation
+    ///         may pump one main-loop iteration. Call <see cref="End(SessionToken)"/> upon termination to undo these
+    ///         changes.
     ///     </para>
     ///     <para>
     ///         Raises the <see cref="IRunnable.IsRunningChanging"/>, <see cref="IRunnable.IsRunningChanged"/>,

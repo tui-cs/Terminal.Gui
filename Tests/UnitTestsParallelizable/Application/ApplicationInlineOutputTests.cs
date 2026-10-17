@@ -694,6 +694,39 @@ public class ApplicationInlineOutputTests
         }
     }
 
+    [Fact]
+    public void CapturedAwaitContinuationFromInlineOutputWaitsForDispatchDrain ()
+    {
+        using ApplicationImpl app = Create (new StringBuilder (), out _);
+        using Runnable view = new () { Height = 2 };
+        SessionToken owner = app.Begin (view)!;
+        app.LayoutAndDraw ();
+        Task print = app.PrintAboveAsync ("awaited", TestContext.Current.CancellationToken);
+        var continued = false;
+        var continuedDuringDraw = false;
+        Task continuation = ContinueAsync ();
+
+        // Regression guard: settling inline output must not pump posted continuations
+        // before the render pass unwinds.
+        app.LayoutAndDraw ();
+        Assert.False (continuation.IsCompleted);
+        Assert.False (continued);
+        Assert.False (continuedDuringDraw);
+
+        app.DrainDispatches ();
+        Assert.True (continuation.IsCompletedSuccessfully);
+        Assert.True (continued);
+        Assert.False (continuedDuringDraw);
+        app.End (owner);
+
+        async Task ContinueAsync ()
+        {
+            await print;
+            continued = true;
+            continuedDuringDraw = (bool)typeof (ApplicationImpl).GetField ("_layoutAndDrawActive", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)!.GetValue (app)!;
+        }
+    }
+
     private static void VerifyWorkerDisposalFromRenderingNotification (AppModel model, bool throughIteration, bool insertion)
     {
         StringBuilder bytes = new ();

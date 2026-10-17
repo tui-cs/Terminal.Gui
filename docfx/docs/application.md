@@ -653,6 +653,8 @@ if (token != null)
 // TopRunnable restored to previous runnable (if any)
 ```
 
+`Begin` prepares and starts the session but does not start the continuous event loop. Use `Run` for interactive input and ongoing UI processing. In the first active session, when no session has ended and no `Run` loop is active, a posted `await` continuation can pump one main-loop iteration; this limited behavior lets async work resume without `Run`, but is not a replacement for the event loop.
+
 ### Nested Sessions
 
 Multiple sessions can run nested:

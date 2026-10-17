@@ -162,10 +162,12 @@ public class ApplicationDispatchTests
             owner = app.Begin (runnable)!;
             RunOnWorker (() =>
                          {
+                             callbackThreadId = Thread.CurrentThread.ManagedThreadId;
                              app.TimedEvents!.RunTimers ();
                              ((ApplicationImpl)app).DrainDispatches ();
                          });
-            Assert.Null (callbackThreadId);
+            Assert.NotNull (callbackThreadId);
+            Assert.NotEqual (app.MainThreadId, callbackThreadId);
 
             PumpUiDispatches (app);
 
@@ -794,6 +796,175 @@ public class ApplicationDispatchTests
             Assert.True (sender.Join (TimeSpan.FromSeconds (5)));
             Assert.Equal (1, runs);
             Assert.Equal (0, ((ApplicationImpl)app).QueuedPostCount);
+        }
+        finally
+        {
+            runnable.Dispose ();
+            app.Dispose ();
+        }
+    }
+
+    // Copilot - GPT-5.4 mini
+    [Fact]
+    public void Send_RacingWithEnd_ExecutesAtMostOnce_AndCompletesAfterShutdown ()
+    {
+        for (int iteration = 0; iteration < 25; iteration++)
+        {
+            IApplication app = Application.Create ().Init (DriverRegistry.Names.ANSI);
+            Runnable runnable = new ();
+            SessionToken owner = app.Begin (runnable)!;
+            SynchronizationContext context = ((ApplicationImpl)app).SynchronizationContext!;
+            ManualResetEventSlim senderStarted = new (false);
+            int runs = 0;
+            int? callbackThreadId = null;
+            Exception? senderError = null;
+            Exception? endError = null;
+
+            try
+            {
+                Thread sender = new (() =>
+                                     {
+                                         try
+                                         {
+                                             senderStarted.Set ();
+                                             context.Send (_ =>
+                                                           {
+                                                               callbackThreadId = Thread.CurrentThread.ManagedThreadId;
+                                                               Interlocked.Increment (ref runs);
+                                                           },
+                                                           null);
+                                         }
+                                         catch (Exception ex)
+                                         {
+                                             senderError = ex;
+                                         }
+                                     })
+                                { IsBackground = true };
+                Thread ender = new (() =>
+                                    {
+                                        try
+                                        {
+                                            Assert.True (senderStarted.Wait (TimeSpan.FromSeconds (5)));
+                                            Assert.True (SpinWait.SpinUntil (() => ((ApplicationImpl)app).QueuedPostCount > 0, TimeSpan.FromSeconds (5)));
+                                            app.End (owner);
+                                        }
+                                        catch (Exception ex)
+                                        {
+                                            endError = ex;
+                                        }
+                                    })
+                               { IsBackground = true };
+
+                sender.Start ();
+                ender.Start ();
+
+                Assert.True (sender.Join (TimeSpan.FromSeconds (10)), $"Sender did not complete for iteration {iteration}.");
+                Assert.True (ender.Join (TimeSpan.FromSeconds (10)), $"End did not complete for iteration {iteration}.");
+                Assert.Null (senderError);
+                Assert.Null (endError);
+                Assert.Equal (1, runs);
+                Assert.NotNull (callbackThreadId);
+                Assert.Equal (0, ((ApplicationImpl)app).QueuedPostCount);
+            }
+            finally
+            {
+                runnable.Dispose ();
+                app.Dispose ();
+            }
+        }
+    }
+
+    // Copilot - GPT-5.3-Codex
+    [Fact]
+    public void Send_PropagatesCallbackException ()
+    {
+        IApplication app = Application.Create ().Init (DriverRegistry.Names.ANSI);
+        Runnable runnable = new ();
+        SessionToken owner = app.Begin (runnable)!;
+        SynchronizationContext context = ((ApplicationImpl)app).SynchronizationContext!;
+        InvalidOperationException failure = new ("callback failed");
+
+        try
+        {
+            Exception? thrown = null;
+            Thread sender = new (() =>
+                                 {
+                                     try
+                                     {
+                                         context.Send (_ => throw failure, null);
+                                     }
+                                     catch (Exception ex)
+                                     {
+                                         thrown = ex;
+                                     }
+                                 })
+                            { IsBackground = true };
+
+            sender.Start ();
+            Assert.True (SpinWait.SpinUntil (() => ((ApplicationImpl)app).QueuedPostCount > 0, TimeSpan.FromSeconds (5)));
+
+            PumpUiDispatches (app);
+
+            Assert.True (sender.Join (TimeSpan.FromSeconds (5)));
+            Assert.Same (failure, thrown);
+        }
+        finally
+        {
+            app.End (owner);
+            runnable.Dispose ();
+            app.Dispose ();
+        }
+    }
+
+    // Copilot - GPT-5.3-Codex
+    [Fact]
+    public void Send_DoesNotDeadlock_WhenRunLoopStops ()
+    {
+        IApplication app = Application.Create ().Init (DriverRegistry.Names.ANSI);
+        Runnable runnable = new ();
+        SessionToken owner = app.Begin (runnable)!;
+        SynchronizationContext context = ((ApplicationImpl)app).SynchronizationContext!;
+
+        try
+        {
+            int runs = 0;
+            Exception? sendError = null;
+            Exception? endError = null;
+            Thread sender = new (() =>
+                                 {
+                                     try
+                                     {
+                                         context.Send (_ => Interlocked.Increment (ref runs), null);
+                                     }
+                                     catch (Exception ex)
+                                     {
+                                         sendError = ex;
+                                     }
+                                 })
+                            { IsBackground = true };
+            Thread ender = new (() =>
+                                {
+                                    try
+                                    {
+                                        app.End (owner);
+                                    }
+                                    catch (Exception ex)
+                                    {
+                                        endError = ex;
+                                    }
+                                })
+                           { IsBackground = true };
+
+            sender.Start ();
+            Assert.True (SpinWait.SpinUntil (() => ((ApplicationImpl)app).QueuedPostCount > 0, TimeSpan.FromSeconds (5)));
+
+            ender.Start ();
+
+            Assert.True (sender.Join (TimeSpan.FromSeconds (10)));
+            Assert.True (ender.Join (TimeSpan.FromSeconds (10)));
+            Assert.Null (sendError);
+            Assert.Null (endError);
+            Assert.Equal (1, runs);
         }
         finally
         {

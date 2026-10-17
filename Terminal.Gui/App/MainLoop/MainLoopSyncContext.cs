@@ -24,17 +24,20 @@ internal sealed class MainLoopSyncContext : SynchronizationContext
     {
         ArgumentNullException.ThrowIfNull (d);
 
-        // ApplicationImpl runs the callback on the main loop, or on the thread pool if the loop is not pumping
-        // or stops before running it, so an awaiter is never stranded (#5636). Posts made between Init and the
-        // first Run stay queued for that Run.
+        // ApplicationImpl runs the callback on the main loop, or pumps one iteration for a newly started Begin-only
+        // session. If the app cannot pump or stops before running it, it uses the thread pool so an awaiter is never
+        // stranded (#5636). Posts made between Init and the first Run stay queued for that Run. Send does not use this
+        // path because it retains its blocking semantics.
+        SendOrPostCallback callback = _ => RunCallback (d, state);
+
         if (_app is ApplicationImpl app)
         {
-            app.PostToMainLoop (d, state);
+            app.PostToMainLoop (callback, null);
 
             return;
         }
 
-        ApplicationImpl.RunOnThreadPool (d, state);
+        ApplicationImpl.RunOnThreadPool (callback, null);
     }
 
     /// <inheritdoc/>
@@ -59,25 +62,34 @@ internal sealed class MainLoopSyncContext : SynchronizationContext
         bool wasExecuted = false;
         Exception? error = null;
 
-        Post (_ =>
+        SendOrPostCallback callback = _ =>
+                                      {
+                                          try
+                                          {
+                                              d (state);
+                                          }
+                                          catch (Exception ex)
+                                          {
+                                              error = ex;
+                                          }
+                                          finally
+                                          {
+                                              lock (gate)
+                                              {
+                                                  wasExecuted = true;
+                                                  Monitor.Pulse (gate);
+                                              }
+                                          }
+                                      };
+
+        if (_app is ApplicationImpl app)
         {
-            try
-            {
-                d (state);
-            }
-            catch (Exception ex)
-            {
-                error = ex;
-            }
-            finally
-            {
-                lock (gate)
-                {
-                    wasExecuted = true;
-                    Monitor.Pulse (gate);
-                }
-            }
-        }, null);
+            app.PostToMainLoop (callback, null, false);
+        }
+        else
+        {
+            ApplicationImpl.RunOnThreadPool (callback, null);
+        }
 
         lock (gate)
         {
@@ -90,6 +102,21 @@ internal sealed class MainLoopSyncContext : SynchronizationContext
         if (error is { })
         {
             System.Runtime.ExceptionServices.ExceptionDispatchInfo.Capture (error).Throw ();
+        }
+    }
+
+    private void RunCallback (SendOrPostCallback callback, object? state)
+    {
+        SynchronizationContext? previousContext = SynchronizationContext.Current;
+        SynchronizationContext.SetSynchronizationContext (this);
+
+        try
+        {
+            callback (state);
+        }
+        finally
+        {
+            SynchronizationContext.SetSynchronizationContext (previousContext);
         }
     }
 }

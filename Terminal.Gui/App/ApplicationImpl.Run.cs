@@ -37,6 +37,8 @@ internal partial class ApplicationImpl
 
     #region Main Loop Iteration
 
+    private int _runLoopCount;
+
     /// <inheritdoc/>
     public bool StopAfterFirstIteration { get; set; }
 
@@ -45,6 +47,8 @@ internal partial class ApplicationImpl
 
     /// <inheritdoc/>
     public void RaiseIteration () => Iteration?.Invoke (this, new EventArgs<IApplication?> (this));
+
+    internal bool IsRunLoopRunning => Volatile.Read (ref _runLoopCount) > 0;
 
     #endregion Main Loop Iteration
 
@@ -411,37 +415,46 @@ internal partial class ApplicationImpl
 
         Trace.Lifecycle (MainThreadId.ToString (), "Run", $"{(runnable as Runnable)?.ToIdentifyingString ()}");
 
-        // Disposal publishes shutdown before waiting for the coordinator's render gate. A synchronous
-        // modal entered from a rendering notification must unwind so that gate can be released.
-        while (!Volatile.Read (ref _dispatchStopping) && runnable is { StopRequested: false, IsRunning: true })
+        Interlocked.Increment (ref _runLoopCount);
+
+        try
         {
-            if (Coordinator is null)
+            // Disposal publishes shutdown before waiting for the coordinator's render gate. A synchronous
+            // modal entered from a rendering notification must unwind so that gate can be released.
+            while (!Volatile.Read(ref _dispatchStopping) && runnable is { StopRequested: false, IsRunning: true })
             {
-                throw new Exception ($"{nameof (IMainLoopCoordinator)} inexplicably became null during Run");
-            }
-
-            try
-            {
-                // Process one iteration of the event loop
-                Coordinator.RunIteration ();
-            }
-            catch (Exception ex)
-            {
-                if (errorHandler is null || !errorHandler (ex))
+                if (Coordinator is null)
                 {
-                    throw;
+                    throw new Exception ($"{nameof (IMainLoopCoordinator)} inexplicably became null during Run");
                 }
-            }
 
-            if (StopAfterFirstIteration && firstIteration)
-            {
-                Trace.Lifecycle (MainThreadId.ToString (),
-                                 "Run",
-                                 $"{(runnable as Runnable)?.ToIdentifyingString ()} Stopping after first iteration as requested");
-                RequestStop (runnable);
-            }
+                try
+                {
+                    // Process one iteration of the event loop
+                    Coordinator.RunIteration ();
+                }
+                catch (Exception ex)
+                {
+                    if (errorHandler is null || !errorHandler (ex))
+                    {
+                        throw;
+                    }
+                }
 
-            firstIteration = false;
+                if (StopAfterFirstIteration && firstIteration)
+                {
+                    Trace.Lifecycle (MainThreadId.ToString (),
+                                     "Run",
+                                     $"{(runnable as Runnable)?.ToIdentifyingString ()} Stopping after first iteration as requested");
+                    RequestStop (runnable);
+                }
+
+                firstIteration = false;
+            }
+        }
+        finally
+        {
+            Interlocked.Decrement (ref _runLoopCount);
         }
 
         Trace.Lifecycle (MainThreadId.ToString (), "Run", $"{(runnable as Runnable)?.ToIdentifyingString ()} Stopped");
@@ -629,10 +642,11 @@ internal partial class ApplicationImpl
                                        && (!HasEndedSession || HasRunningSession);
 
     /// <summary>
-    ///     INTERNAL: Whether queued UI work may start on the calling thread now: it is the UI thread, dispatch is not
-    ///     stopping, and a session is running. Check it under <c>_dispatchLock</c> when claiming queued work.
+    ///     INTERNAL: Whether queued UI work may start on the calling thread now: it is the UI thread or is pumping a
+    ///     Begin-only session, dispatch is not stopping, and a session is running. Check it under <c>_dispatchLock</c>
+    ///     when claiming queued work.
     /// </summary>
-    internal bool CanStartUiWork => MainThreadId == Thread.CurrentThread.ManagedThreadId
+    internal bool CanStartUiWork => (MainThreadId == Thread.CurrentThread.ManagedThreadId || _isPumpingPostedWork.Value)
                                     && !Volatile.Read (ref _dispatchStopping)
                                     && HasRunningSession;
 
