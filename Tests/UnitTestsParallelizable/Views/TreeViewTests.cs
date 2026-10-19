@@ -111,6 +111,48 @@ public class TreeViewTests (ITestOutputHelper output) : TestDriverBase
         tree.Dispose ();
     }
 
+    [Theory]
+    [InlineData ("😀ABC", 1, "─😀ABC\n─ABCDEFGHI")]
+    [InlineData ("😀ABC", 2, "😀ABC\nABCDEFGHIJ")]
+    [InlineData ("😀ABC", 3, " ABC\nBCDEFGHIJK")]
+    [InlineData ("😀ABC", 4, "ABC\nCDEFGHIJKL")]
+    [InlineData ("界ABC", 1, "─界ABC\n─ABCDEFGHI")]
+    [InlineData ("界ABC", 2, "界ABC\nABCDEFGHIJ")]
+    [InlineData ("界ABC", 3, " ABC\nBCDEFGHIJK")]
+    [InlineData ("界ABC", 4, "ABC\nCDEFGHIJKL")]
+    [InlineData ("👨‍👩‍👧ABC", 1, "─👨‍👩‍👧ABC\n─ABCDEFGHI")]
+    [InlineData ("👨‍👩‍👧ABC", 2, "👨‍👩‍👧ABC\nABCDEFGHIJ")]
+    [InlineData ("👨‍👩‍👧ABC", 3, " ABC\nBCDEFGHIJK")]
+    [InlineData ("👨‍👩‍👧ABC", 4, "ABC\nCDEFGHIJKL")]
+    public void Draw_HorizontalScroll_Preserves_Wide_Grapheme_Boundaries (
+        string text,
+        int scrollOffsetHorizontal,
+        string expectedOutput
+    )
+    {
+        // Arrange
+        IDriver driver = CreateTestDriver ();
+
+        TreeView<string> tree = new (new DelegateTreeBuilder<string> (_ => [], _ => false))
+        {
+            Driver = driver,
+            Frame = new Rectangle (0, 0, 10, 3)
+        };
+
+        tree.AddObject (text);
+        tree.AddObject ("ABCDEFGHIJKLMNOPQRSTUVWXYZ");
+
+        tree.ScrollOffsetHorizontal = scrollOffsetHorizontal;
+
+        // Act
+        tree.Draw ();
+
+        // Assert
+        DriverAssert.AssertDriverContentsAre (expectedOutput, output, driver);
+
+        tree.Dispose ();
+    }
+
     [Fact]
     public void Draw_EnableForDesign_Size_Auto_Draws_Correctly ()
     {
