@@ -60,11 +60,11 @@ public class TreeViewTests (ITestOutputHelper output) : TestDriverBase
 
     // CoPilot - GPT-6
     [Theory]
-    [InlineData ("file-\U0001F600.txt", "\U0001F600", false, "")]
+    [InlineData ("file-\U0001F600.txt", "\U0001F600", false, "└─file-")] // The emoji is on the right edge of the cell and cannot be displayed.
     [InlineData ("e\u0301", "e\u0301", true, "└─é")]
     [InlineData ("\U0001F600ABC", "\U0001F600", true, "└─😀ABC")]
     [InlineData ("ABC\U0001F468\u200D\U0001F469\u200D\U0001F467", "\U0001F468\u200D\U0001F469\u200D\U0001F467", true, "└─ABC👨‍👩‍👧")]
-    [InlineData ("\U0001F34E\U0001F9AE\U0001F468\u200D\U0001F469\u200D\U0001F467", "\U0001F34E", false, "")]
+    [InlineData ("\U0001F34E\U0001F9AE\U0001F468\u200D\U0001F469\u200D\U0001F467", "\U0001F34E", true, "└─🍎🦮👨‍👩‍👧")]
     public void Draw_Preserves_Unicode_Grapheme_Clusters (
         string text,
         string expectedGrapheme,
@@ -78,7 +78,7 @@ public class TreeViewTests (ITestOutputHelper output) : TestDriverBase
         TreeView<string> tree = new (new DelegateTreeBuilder<string> (_ => [], _ => false))
         {
             Driver = driver,
-            Frame = new Rectangle (0, 0, 7, 1)
+            Frame = new Rectangle (0, 0, 8, 2) // 2 ensure at least one row is drawn
         };
         tree.AddObject (text);
 
