@@ -64,7 +64,7 @@ public class TreeViewTests (ITestOutputHelper output) : TestDriverBase
     [InlineData ("e\u0301", "e\u0301", true, "└─é")]
     [InlineData ("\U0001F600ABC", "\U0001F600", true, "└─😀ABC")]
     [InlineData ("ABC\U0001F468\u200D\U0001F469\u200D\U0001F467", "\U0001F468\u200D\U0001F469\u200D\U0001F467", true, "└─ABC👨‍👩‍👧")]
-    [InlineData ("\U0001F34E\U0001F9AE\U0001F468\\u200D\\U0001F469\\u200D\\U0001F467", "\U0001F34E", false, "")]
+    [InlineData ("\U0001F34E\U0001F9AE\U0001F468\u200D\U0001F469\u200D\U0001F467", "\U0001F34E", false, "")]
     public void Draw_Preserves_Unicode_Grapheme_Clusters (
         string text,
         string expectedGrapheme,
