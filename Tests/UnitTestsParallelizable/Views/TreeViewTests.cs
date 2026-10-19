@@ -136,8 +136,8 @@ public class TreeViewTests (ITestOutputHelper output) : TestDriverBase
     [InlineData ("\U0001F468\u200D\U0001F692\U0001F468\u200D\U0001F469\u200D\U0001F467ABC", 2, "👨‍🚒👨‍👩‍👧ABC\nABCDEFGHIJ")]
     [InlineData ("\U0001F468\u200D\U0001F692\U0001F468\u200D\U0001F469\u200D\U0001F467ABC", 3, " 👨‍👩‍👧ABC\nBCDEFGHIJK")]
     [InlineData ("\U0001F468\u200D\U0001F692\U0001F468\u200D\U0001F469\u200D\U0001F467ABC", 4, "👨‍👩‍👧ABC\nCDEFGHIJKL")]
-    [InlineData ("\u00AD\u0192\u00FF\u00C7", 1, "─­ƒÿÇ\n─ABCDEFGHI")]
-    [InlineData ("\u00AD\u0192\u00FF\u00C7", 2, "­ƒÿÇ\nABCDEFGHIJ")]
+    [InlineData ("\u00AD\u0192\u00FF\u00C7", 1, "─\u00ADƒÿÇ\n─ABCDEFGHI")] // Soft Hyphen (SHY) is hidden and only affects line breaking, so it is not visible in the output.
+    [InlineData ("\u00AD\u0192\u00FF\u00C7", 2, "\u00ADƒÿÇ\nABCDEFGHIJ")]
     [InlineData ("\u00AD\u0192\u00FF\u00C7", 3, "ƒÿÇ\nBCDEFGHIJK")]
     [InlineData ("\u00AD\u0192\u00FF\u00C7", 4, "ÿÇ\nCDEFGHIJKL")]
     public void Draw_HorizontalScroll_Preserves_Wide_Grapheme_Boundaries (
