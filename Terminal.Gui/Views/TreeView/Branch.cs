@@ -209,11 +209,11 @@ internal class Branch<T> where T : class
             indexOfModelText = cells.Count + (_tree.CheckboxMode ? 2 : 0);
         }
 
-        StringBuilder truncated = new ();
-
         // If body of line is too long
         if (lineBody.GetColumns () > availableWidth)
         {
+            StringBuilder truncated = new ();
+
             // remaining space is zero and truncate the line
             foreach (string grapheme in GraphemeHelper.GetGraphemes (lineBody))
             {
