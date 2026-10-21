@@ -18,7 +18,7 @@ public class TreeViewTests (ITestOutputHelper output) : TestDriverBase
         tree.Draw ();
 
         DriverAssert.AssertDriverContentsAre ("""
-                                              ├-Root1
+                                              ├-😀ABC
                                               │ ├─Child1.1
                                               │ └─Child1.2
                                               └-Root2
@@ -45,7 +45,7 @@ public class TreeViewTests (ITestOutputHelper output) : TestDriverBase
         tree.Draw ();
 
         DriverAssert.AssertDriverContentsAre ("""
-                                              ├-Root1
+                                              ├-😀ABC
                                               │ ├─Child1.1
                                               │ └─Child1.2
                                               └-Root2
@@ -58,7 +58,7 @@ public class TreeViewTests (ITestOutputHelper output) : TestDriverBase
                                               driver);
     }
 
-    // CoPilot - GPT-6
+    // CoPilot - Grok 4.6
     [Theory]
     [InlineData ("file-\U0001F600.txt", "\U0001F600", false, "└─file-")] // The emoji is on the right edge of the cell and cannot be displayed.
     [InlineData ("e\u0301", "e\u0301", true, "└─é")]
@@ -68,8 +68,8 @@ public class TreeViewTests (ITestOutputHelper output) : TestDriverBase
     public void Draw_Preserves_Unicode_Grapheme_Clusters (
         string text,
         string expectedGrapheme,
-        bool expectedFlag,
-        string expectedNormalizedGrapheme
+        bool expectedFound,
+        string expectedOutput
     )
     {
         // Arrange
@@ -89,11 +89,10 @@ public class TreeViewTests (ITestOutputHelper output) : TestDriverBase
 
         // The expected grapheme must remain intact in a single cell.
         bool found = false;
+        string normalizedGrapheme = expectedGrapheme.Normalize ();
 
         for (int x = 0; x < driver.Contents!.GetLength (1); x++)
         {
-            var normalizedGrapheme = expectedGrapheme.Normalize ();
-
             if (normalizedGrapheme == driver.Contents [0, x].Grapheme)
             {
                 found = true;
@@ -104,13 +103,34 @@ public class TreeViewTests (ITestOutputHelper output) : TestDriverBase
 
         // Assert
         // The expected grapheme must be preserved in a single cell if not truncated.
-        Assert.Equal (found, expectedFlag);
+        Assert.Equal (expectedFound, found);
 
-        DriverAssert.AssertDriverContentsAre (expectedNormalizedGrapheme, output, driver);
+        DriverAssert.AssertDriverContentsWithFrameAre (expectedOutput, output, driver);
 
         tree.Dispose ();
     }
 
+    // CoPilot - Grok 4.6
+    [Fact]
+    public void Draw_RightEdge_Wide_Grapheme_Leaves_Blank_Column ()
+    {
+        IDriver driver = CreateTestDriver ();
+
+        TreeView<string> tree = new (new DelegateTreeBuilder<string> (_ => [], _ => false))
+        {
+            Driver = driver,
+            Frame = new Rectangle (0, 0, 8, 2)
+        };
+        tree.AddObject ("file-\U0001F600.txt");
+        tree.Draw ();
+
+        // └─file- uses columns 0-6; the emoji needs 2 columns so column 7 is padded.
+        Assert.Equal (" ", driver.Contents! [0, 7].Grapheme);
+
+        tree.Dispose ();
+    }
+
+    // CoPilot - Grok 4.6
     [Theory]
     [InlineData ("\U0001F600ABC", 1, "─😀ABC\n─ABCDEFGHI")]
     [InlineData ("\U0001F600ABC", 2, "😀ABC\nABCDEFGHIJ")]
@@ -164,7 +184,108 @@ public class TreeViewTests (ITestOutputHelper output) : TestDriverBase
         tree.Draw ();
 
         // Assert
-        DriverAssert.AssertDriverContentsAre (expectedOutput, output, driver);
+        // WithFrameAre keeps first-line fill spaces when a longer row sets the frame width.
+        DriverAssert.AssertDriverContentsWithFrameAre (PadFirstLineToWidth (expectedOutput, 10), output, driver);
+
+        tree.Dispose ();
+    }
+
+    // CoPilot - Grok 4.6
+    [Theory]
+    [InlineData ("\U0001F600ABC", 0, "├─☐ 😀ABC\n└─☐ ABCDEF")]
+    [InlineData ("\U0001F600ABC", 1, "─☐ 😀ABC\n─☐ ABCDEFG")]
+    [InlineData ("\U0001F600ABC", 2, "☐ 😀ABC\n☐ ABCDEFGH")]
+    [InlineData ("\U0001F600ABC", 3, " 😀ABC\n ABCDEFGHI")]
+    [InlineData ("\U0001F600ABC", 4, "😀ABC\nABCDEFGHIJ")]
+    [InlineData ("\U0001F600ABC", 5, " ABC\nBCDEFGHIJK")]
+    [InlineData ("\U0001F600ABC", 6, "ABC\nCDEFGHIJKL")]
+    [InlineData ("\U0000754CABC", 0, "├─☐ 界ABC\n└─☐ ABCDEF")]
+    [InlineData ("\U0000754CABC", 4, "界ABC\nABCDEFGHIJ")]
+    [InlineData ("\U0000754CABC", 5, " ABC\nBCDEFGHIJK")]
+    [InlineData ("ABC\U0001F468\u200D\U0001F469\u200D\U0001F467", 4, "ABC👨‍👩‍👧\nABCDEFGHIJ")]
+    [InlineData ("ABC\U0001F468\u200D\U0001F469\u200D\U0001F467", 7, "👨‍👩‍👧\nDEFGHIJKLM")]
+    [InlineData ("ABC\U0001F468\u200D\U0001F469\u200D\U0001F467", 8, "EFGHIJKLMN")]
+    public void Draw_HorizontalScroll_CheckboxMode_Preserves_Wide_Grapheme_Boundaries (
+        string text,
+        int scrollOffsetHorizontal,
+        string expectedOutput
+    )
+    {
+        IDriver driver = CreateTestDriver ();
+
+        TreeView<string> tree = new (new DelegateTreeBuilder<string> (_ => [], _ => false))
+        {
+            Driver = driver,
+            Frame = new Rectangle (0, 0, 10, 3),
+            CheckboxMode = true
+        };
+
+        tree.AddObject (text);
+        tree.AddObject ("ABCDEFGHIJKLMNOPQRSTUVWXYZ");
+        tree.ScrollOffsetHorizontal = scrollOffsetHorizontal;
+        tree.Draw ();
+
+        string expected = expectedOutput.Replace ("☐", Glyphs.CheckStateUnChecked.ToString ());
+        DriverAssert.AssertDriverContentsWithFrameAre (PadFirstLineToWidth (expected, 10), output, driver);
+
+        tree.Dispose ();
+    }
+
+    // CoPilot - Grok 4.6
+    [Fact]
+    public void Draw_CheckboxMode_RightEdge_Wide_Grapheme_Leaves_Blank_Column ()
+    {
+        IDriver driver = CreateTestDriver ();
+
+        TreeView<string> tree = new (new DelegateTreeBuilder<string> (_ => [], _ => false))
+        {
+            Driver = driver,
+            Frame = new Rectangle (0, 0, 10, 2),
+            CheckboxMode = true
+        };
+
+        // └─☐ file- uses columns 0-8; the emoji needs 2 columns so column 9 is padded.
+        tree.AddObject ("file-\U0001F600.txt");
+        tree.Draw ();
+
+        Assert.Equal (" ", driver.Contents! [0, 9].Grapheme);
+        Assert.Equal (Glyphs.CheckStateUnChecked.ToString (), driver.Contents! [0, 2].Grapheme);
+
+        tree.Dispose ();
+    }
+
+    // CoPilot - Grok 4.6
+    [Fact]
+    public void Draw_HorizontalScroll_Preserves_ZeroWidth_Grapheme_At_Skip_Boundary ()
+    {
+        IDriver driver = CreateTestDriver ();
+
+        TreeView<string> tree = new (new DelegateTreeBuilder<string> (_ => [], _ => false))
+        {
+            Driver = driver,
+            Frame = new Rectangle (0, 0, 10, 2)
+        };
+
+        // Prefix └─ (2 columns) then 'X' (1). Scroll 3 lands on the ZWSP before ABC.
+        // Extra letters keep content wider than the viewport so the offset is not clamped.
+        tree.AddObject ("X\u200BABCDEFGHIJKLMN");
+        tree.ScrollOffsetHorizontal = 3;
+        tree.Draw ();
+
+        bool foundZwsp = false;
+
+        for (int x = 0; x < driver.Contents!.GetLength (1); x++)
+        {
+            if (driver.Contents [0, x].Grapheme == "\u200B")
+            {
+                foundZwsp = true;
+
+                break;
+            }
+        }
+
+        Assert.True (foundZwsp);
+        Assert.Equal ("A", driver.Contents! [0, 1].Grapheme);
 
         tree.Dispose ();
     }
@@ -184,7 +305,7 @@ public class TreeViewTests (ITestOutputHelper output) : TestDriverBase
         tree.Draw ();
 
         DriverAssert.AssertDriverContentsAre ("""
-                                              ├-Root1
+                                              ├-😀ABC
                                               │ ├─Child1.1
                                               │ └─Child1.2
                                               └-Root2
@@ -1511,6 +1632,23 @@ public class TreeViewTests (ITestOutputHelper output) : TestDriverBase
         public override bool Equals (object? obj) => obj is EqualityTestObject eto && Equals (Name, eto.Name);
         public override int GetHashCode () => Name.GetHashCode ();
         public required string Name { get; init; }
+    }
+
+    private static string PadFirstLineToWidth (string expected, int width)
+    {
+        string normalized = expected.Replace ("\r\n", "\n");
+        int newline = normalized.IndexOf ('\n');
+        string firstLine = newline < 0 ? normalized : normalized [..newline];
+        int pad = width - firstLine.GetColumns ();
+
+        if (pad <= 0)
+        {
+            return expected;
+        }
+
+        string padded = firstLine + new string (' ', pad);
+
+        return newline < 0 ? padded : padded + normalized [newline..];
     }
 
     #region Test Setup Methods

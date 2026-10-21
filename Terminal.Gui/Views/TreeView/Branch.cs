@@ -109,15 +109,15 @@ internal class Branch<T> where T : class
         // Draw the line prefix (all parallel lanes or whitespace and an expand/collapse/leaf symbol)
         foreach (string s in prefix)
         {
-            if (toSkip > 0)
+            string? visible = TakeVisibleGrapheme (s, ref toSkip);
+
+            if (visible is null)
             {
-                toSkip--;
+                continue;
             }
-            else
-            {
-                cells.Add (NewCell (attr, s));
-                availableWidth -= s.GetColumns ();
-            }
+
+            cells.Add (NewCell (attr, visible));
+            availableWidth -= visible.GetColumns ();
         }
 
         // pick color for expanded symbol
@@ -150,16 +150,20 @@ internal class Branch<T> where T : class
             attr = color;
         }
 
-        if (toSkip > 0)
+        string? visibleExpansion = TakeVisibleGrapheme (expansion, ref toSkip);
+
+        if (visibleExpansion is { })
         {
-            toSkip--;
+            if (visibleExpansion == expansion)
+            {
+                indexOfExpandCollapseSymbol = cells.Count;
+            }
+
+            cells.Add (NewCell (attr, visibleExpansion));
+            availableWidth -= visibleExpansion.GetColumns ();
         }
-        else
-        {
-            indexOfExpandCollapseSymbol = cells.Count;
-            cells.Add (NewCell (attr, expansion));
-            availableWidth -= expansion.GetColumns ();
-        }
+
+        List<string> lineBodyGraphemes = lineBody.ToStringList ();
 
         // horizontal scrolling has already skipped the prefix but now must also skip some of the line body
         if (toSkip > 0)
@@ -172,36 +176,43 @@ internal class Branch<T> where T : class
             if (toSkip >= lineBody.GetColumns ())
             {
                 indexOfModelText = -(toSkip - checkboxOffset);
-                lineBody = "";
+                lineBodyGraphemes = [];
             }
             else
             {
                 int columnsSkipped = 0;
-                StringBuilder remaining = new ();
+                List<string> remaining = [];
 
-                foreach (string grapheme in GraphemeHelper.GetGraphemes (lineBody))
+                foreach (string grapheme in lineBodyGraphemes)
                 {
+                    if (columnsSkipped >= toSkip)
+                    {
+                        remaining.Add (grapheme);
+
+                        continue;
+                    }
+
                     int graphemeColumns = grapheme.GetColumns ();
 
                     if (columnsSkipped + graphemeColumns <= toSkip)
                     {
                         columnsSkipped += graphemeColumns;
+
                         continue;
                     }
 
-                    // If scrolling starts inside a wide grapheme, skip it entirely.
-                    if (columnsSkipped < toSkip)
+                    int leftover = columnsSkipped + graphemeColumns - toSkip;
+                    columnsSkipped += graphemeColumns;
+
+                    if (leftover > 0)
                     {
-                        columnsSkipped += graphemeColumns;
-                        continue;
+                        remaining.Add (new string (' ', leftover));
                     }
-
-                    remaining.Append (grapheme);
                 }
 
                 // Use the actual display-column width skipped, not the requested offset.
                 indexOfModelText = -(columnsSkipped - checkboxOffset);
-                lineBody = remaining.ToString ();
+                lineBodyGraphemes = remaining;
             }
         }
         else
@@ -209,31 +220,27 @@ internal class Branch<T> where T : class
             indexOfModelText = cells.Count + (_tree.CheckboxMode ? 2 : 0);
         }
 
-        // If body of line is too long
-        if (lineBody.GetColumns () > availableWidth)
+        List<string> visibleLineBody = [];
+
+        foreach (string grapheme in lineBodyGraphemes)
         {
-            StringBuilder truncated = new ();
+            int columns = grapheme.GetColumns ();
 
-            // remaining space is zero and truncate the line
-            foreach (string grapheme in GraphemeHelper.GetGraphemes (lineBody))
+            if (columns <= availableWidth)
             {
-                int columns = grapheme.GetColumns ();
+                visibleLineBody.Add (grapheme);
+                availableWidth -= columns;
 
-                if ((availableWidth -= columns) < 0)
-                {
-                    break;
-                }
-
-                truncated.Append (grapheme);
+                continue;
             }
 
-            lineBody = truncated.ToString ();
-            availableWidth = 0;
-        }
-        else
-        {
-            // line is short so remaining width will be whatever comes after the line body
-            availableWidth -= lineBody.GetColumns ();
+            if (availableWidth > 0)
+            {
+                visibleLineBody.Add (new string (' ', availableWidth));
+                availableWidth = 0;
+            }
+
+            break;
         }
 
         // default behaviour is for model to use the scheme
@@ -261,7 +268,7 @@ internal class Branch<T> where T : class
 
         attr = modelColor;
 
-        foreach (string grapheme in GraphemeHelper.GetGraphemes (lineBody))
+        foreach (string grapheme in visibleLineBody)
         {
             cells.Add (NewCell (attr, grapheme));
         }
@@ -580,4 +587,34 @@ internal class Branch<T> where T : class
     }
 
     private static Cell NewCell (Attribute attr, string s) => new () { Grapheme = s, Attribute = new Attribute (attr) };
+
+    /// <summary>
+    ///     Consumes <paramref name="toSkip"/> display columns from <paramref name="grapheme"/>.
+    ///     Returns the grapheme when it is fully visible, leftover blank columns when a wide cluster is split by
+    ///     the scroll offset, or <see langword="null"/> when it lies entirely in the skipped region.
+    /// </summary>
+    /// <param name="grapheme">The grapheme cluster to consider.</param>
+    /// <param name="toSkip">Remaining display columns to skip; updated to reflect columns consumed.</param>
+    /// <returns>The visible remainder, or <see langword="null"/> if nothing should be drawn.</returns>
+    private static string? TakeVisibleGrapheme (string grapheme, ref int toSkip)
+    {
+        if (toSkip <= 0)
+        {
+            return grapheme;
+        }
+
+        int graphemeColumns = grapheme.GetColumns ();
+
+        if (graphemeColumns <= toSkip)
+        {
+            toSkip -= graphemeColumns;
+
+            return null;
+        }
+
+        int leftover = graphemeColumns - toSkip;
+        toSkip = 0;
+
+        return leftover > 0 ? new string (' ', leftover) : null;
+    }
 }
