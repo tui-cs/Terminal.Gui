@@ -64,6 +64,7 @@ internal partial class ApplicationImpl
             return false;
         }
 
+        output.InlineCursorRow = region.Y;
         // Publish the compact geometry and invalidate the live frame before invoking ScreenChanged subscribers.
         // A throwing subscriber must not leave an empty buffer with no repaint scheduled.
         _screen = region with { Height = height };

@@ -11,7 +11,7 @@ public static class ApplicationInlineOutputExtensions
     /// <remarks>
     ///     To print from a UI handler, await without blocking the event loop. Calls always queue in admission order.
     ///     Empty text prints one blank line. Styled text uses the line overload. Raw ANSI controls are rejected.
-    ///     Content-sized inline views can shrink before insertion. Visible printed text is subject to the existing resize clear.
+    ///     Content-sized inline views can shrink before insertion. Resize recovers the live origin without clearing printed text.
     ///     Requires the ANSI driver in Inline mode; raster graphics and headless output are unsupported.
     ///     Pending output ends with its session or disposal. After an uncertain I/O failure, stop the application;
     ///     further inline placement is suppressed until a new initialized lifetime. Never blindly retry a failed insertion.

@@ -15,7 +15,7 @@ namespace Terminal.Gui.Drivers;
 ///         Supports both test injection via <see cref="ITestableInput{TInputRecord}"/> and real console reading.
 ///     </para>
 ///     <para>
-///         This driver reads raw bytes from different sources depending on platform and processes them as
+///         This driver reads character input from different sources depending on platform and processes it as
 ///         ANSI escape sequences. It configures the terminal for proper ANSI input:
 ///     </para>
 ///     <list type="bullet">
@@ -26,7 +26,7 @@ namespace Terminal.Gui.Drivers;
 ///         <item>
 ///             <b>Windows</b> - Uses <see cref="WindowsVTInputHelper"/> to enable Virtual Terminal Input mode.
 ///             This mode converts console input to ANSI escape sequences that can be read via
-///             <c>ReadFile</c> API. Mouse events, keyboard input, etc. are all provided as VT sequences.
+///             <c>ReadConsoleW</c> API. Mouse events, keyboard input, etc. are all provided as VT sequences.
 ///         </item>
 ///     </list>
 ///     <para>
@@ -34,7 +34,8 @@ namespace Terminal.Gui.Drivers;
 ///     </para>
 ///     <list type="bullet">
 ///         <item>
-///             <b>Windows</b>: Uses <c>ReadFile</c> API (via <see cref="WindowsVTInputHelper"/>) to read ANSI sequences
+///             <b>Windows</b>: Uses <c>ReadConsoleW</c> API (via <see cref="WindowsVTInputHelper"/>) to read ANSI sequences
+///             as UTF-16, so surrogate pairs (e.g. emoji) arrive intact
 ///         </item>
 ///         <item>
 ///             <b>Unix/Mac</b>: Uses <see cref="UnixIOHelper"/> for <c>poll()</c> and <c>read()</c> syscalls
@@ -50,7 +51,7 @@ namespace Terminal.Gui.Drivers;
 ///         <b>Architecture:</b>
 ///     </para>
 ///     <para>
-///         Reads raw bytes from platform-specific APIs, converts them to UTF-8 characters,
+///         Reads UTF-16 code units on Windows or decodes UTF-8 bytes on Unix/Mac,
 ///         and feeds them to <see cref="AnsiResponseParser{TInputRecord}"/> which extracts keyboard events,
 ///         mouse events (SGR format), and terminal responses.
 ///     </para>
@@ -193,29 +194,25 @@ public class AnsiInput : InputImpl<char>, ITestableInput<char>
             yield return input;
         }
 
-        var buffer = new byte [256];
-
         switch (_platform)
         {
             case AnsiPlatform.WindowsVT:
-                if (!_windowsVTInput!.TryRead (buffer, out int bytesRead))
+                char [] chars = new char [256];
+
+                if (!_windowsVTInput!.TryRead (chars, out int charsRead))
                 {
                     yield break;
                 }
 
-                string text = _windowsVTInput!.ConsoleInputEncoding.GetString (buffer, 0, bytesRead);
-
-                //Trace.Lifecycle (nameof (AnsiInput), "Read", $"Read {bytesRead} bytes from Windows VT Input: {text}");
-
-                foreach (char ch in text)
+                for (var i = 0; i < charsRead; i++)
                 {
-                    yield return ch;
+                    yield return chars [i];
                 }
 
                 break;
 
             case AnsiPlatform.UnixRaw:
-                foreach (char c in ReadUnixInput (buffer))
+                foreach (char c in ReadUnixInput (new byte [256]))
                 {
                     yield return c;
                 }

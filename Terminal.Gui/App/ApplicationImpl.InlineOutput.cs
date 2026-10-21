@@ -183,6 +183,10 @@ internal partial class ApplicationImpl
             return false;
         }
         Size terminal = Driver.Screen.Size;
+        if (output is AnsiOutput ansiOutput && ansiOutput.HasPendingInlineSizeChange (terminal))
+        {
+            return false;
+        }
         if (terminal.Width <= 0 || terminal.Height <= 0 || region.Width <= 0 || region.Height <= 0)
         {
             return false;
@@ -252,7 +256,7 @@ internal partial class ApplicationImpl
 
     private bool InlinePlacementLost => Driver is DriverImpl driver && driver.GetOutput () is IInlineOutput { IsInlinePlacementKnown: false };
 
-    private bool WriteInlineMovement (string text)
+    private bool WriteInlineMovement (string text, Size? expectedSize = null)
     {
         if (InlinePlacementLost)
         {
@@ -262,6 +266,16 @@ internal partial class ApplicationImpl
         {
             Driver?.WriteRaw (text);
             return true;
+        }
+        if (output is AnsiOutput ansiOutput)
+        {
+            if (_inlineResize is { } resize
+                    ? ObserveNativeInlineResizeSize (resize, ansiOutput)
+                    : ansiOutput.HasPendingInlineSizeChange (expectedSize ?? driver.Screen.Size))
+            {
+                return false;
+            }
+            ansiOutput.InlineCursorRow = null;
         }
         if (driver.TryWriteRaw (text))
         {

@@ -11,7 +11,12 @@ namespace Terminal.Gui.Drivers;
 ///     <para>
 ///         When Virtual Terminal Sequences (VTS) Input mode is enabled via <c>ENABLE_VIRTUAL_TERMINAL_INPUT</c>,
 ///         the Windows Console converts user input (keyboard, mouse) into ANSI escape sequences that
-///         can be read via standard input APIs like <c>ReadFile</c> or <c>Console.OpenStandardInput()</c>.
+///         can be read via standard input APIs like <c>ReadFile</c> or <c>ReadConsoleW</c>.
+///     </para>
+///     <para>
+///         Input is read as UTF-16 with <c>ReadConsoleW</c>. <c>ReadFile</c> asks the console host to convert input
+///         to the input code page, and that conversion turns each half of a surrogate pair (e.g. emoji) into
+///         U+FFFD even when the code page is UTF-8.
 ///     </para>
 ///     <para>
 ///         This provides a unified, cross-platform ANSI input mechanism where:
@@ -29,7 +34,7 @@ internal sealed class WindowsVTInputHelper : IDisposable
     // In ideal world, Windows Console would have a way of setting VTS mode without having to use SetConsoleMode.
     // It would also provide a non-blocking API for reading input bytes directly as ANSI sequences without having
     // to use GetNumberOfConsoleInputEvents to poll for availability. With such APIs, this helper class would be unnecessary.
-    // If this were the case, the only API the ANSI driver would require on Windows is GetStdHandle and ReadFile.
+    // If this were the case, the only API the ANSI driver would require on Windows is GetStdHandle and ReadConsoleW.
 
     [DllImport ("kernel32.dll", SetLastError = true)]
     private static extern bool GetConsoleMode (nint hConsoleHandle, out uint lpMode);
@@ -37,22 +42,20 @@ internal sealed class WindowsVTInputHelper : IDisposable
     [DllImport ("kernel32.dll", SetLastError = true)]
     private static extern bool SetConsoleMode (nint hConsoleHandle, uint dwMode);
 
-    // Equivalent of poll() on Unix — needed because ReadFile blocks and the input loop
+    // Equivalent of poll() on Unix — needed because ReadConsoleW blocks and the input loop
     // requires a non-blocking availability check for throttling and cancellation.
     [DllImport ("kernel32.dll", SetLastError = true)]
     private static extern bool GetNumberOfConsoleInputEvents (nint hConsoleInput, out uint lpcNumberOfEvents);
 
-    [DllImport ("kernel32.dll", SetLastError = true)]
-    private static extern bool ReadFile (nint hFile, byte [] lpBuffer, uint nNumberOfBytesToRead, out uint lpNumberOfBytesRead, nint lpOverlapped);
+    [DllImport ("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+    private static extern bool ReadConsoleW (nint hConsoleInput,
+                                             [Out] char [] lpBuffer,
+                                             uint nNumberOfCharsToRead,
+                                             out uint lpNumberOfCharsRead,
+                                             nint pInputControl);
 
     [DllImport ("kernel32.dll", SetLastError = true)]
     private static extern bool CancelIoEx (nint hFile, nint lpOverlapped);
-
-    [DllImport ("kernel32.dll")]
-    private static extern uint GetConsoleCP ();
-
-    [DllImport ("kernel32.dll", SetLastError = true)]
-    private static extern bool SetConsoleCP (uint wCodePageID);
 
     #endregion
 
@@ -71,22 +74,6 @@ internal sealed class WindowsVTInputHelper : IDisposable
     private uint _originalConsoleMode;
     private bool _disposed;
 
-    private const uint CP_UTF8 = 65001;
-
-    private readonly uint _originalConsoleCP;
-
-    public WindowsVTInputHelper ()
-    {
-        _originalConsoleCP = GetConsoleCP ();
-
-        if (_originalConsoleCP == CP_UTF8 || SetConsoleCP (CP_UTF8))
-        {
-            return;
-        }
-        int error = Marshal.GetLastWin32Error ();
-        Logging.Warning ($"{nameof (WindowsVTInputHelper)}: Failed to set console input code page to UTF-8. Win32 error: {error}");
-    }
-
     /// <summary>
     ///     Gets whether VTS input mode was successfully enabled.
     /// </summary>
@@ -96,21 +83,6 @@ internal sealed class WindowsVTInputHelper : IDisposable
     ///     Gets the Windows console input handle.
     /// </summary>
     public nint InputHandle { get; private set; }
-
-    /// <summary>
-    ///     Gets the encoding for the console's input code page.
-    ///     On Windows, <c>ReadFile</c> returns bytes in the console's input code page (e.g., Windows-1252),
-    ///     not UTF-8. This encoding must be used to correctly decode those bytes.
-    /// </summary>
-    public Encoding ConsoleInputEncoding
-    {
-        get
-        {
-            uint codePage = GetConsoleCP ();
-
-            return Encoding.GetEncoding ((int)codePage);
-        }
-    }
 
     /// <summary>
     ///     Attempts to enable Windows Virtual Terminal Input mode.
@@ -163,8 +135,6 @@ internal sealed class WindowsVTInputHelper : IDisposable
                 return false;
             }
 
-            Encoding.RegisterProvider (CodePagesEncodingProvider.Instance);
-
             IsEnabled = true;
 
             Trace.Lifecycle (nameof (WindowsVTInputHelper),
@@ -202,12 +172,15 @@ internal sealed class WindowsVTInputHelper : IDisposable
     /// <summary>
     ///     Reads ANSI input sequences from the console.
     /// </summary>
-    /// <param name="buffer">Buffer to read into.</param>
-    /// <param name="bytesRead">Number of bytes actually read.</param>
-    /// <returns>True if read succeeded; false otherwise.</returns>
-    public bool TryRead (byte [] buffer, out int bytesRead)
+    /// <param name="buffer">Buffer to read UTF-16 code units into.</param>
+    /// <param name="charsRead">Number of UTF-16 code units actually read.</param>
+    /// <returns>True if at least one code unit was read; false if the read failed, was cancelled, or returned no input.</returns>
+    /// <remarks>
+    ///     A surrogate pair may be split across two reads; callers must treat the result as a stream of code units.
+    /// </remarks>
+    public bool TryRead (char [] buffer, out int charsRead)
     {
-        bytesRead = 0;
+        charsRead = 0;
 
         if (!IsEnabled || InputHandle == nint.Zero)
         {
@@ -216,10 +189,11 @@ internal sealed class WindowsVTInputHelper : IDisposable
 
         try
         {
-            // Read the VT byte stream via ReadFile. With ENABLE_VIRTUAL_TERMINAL_INPUT
+            // Read the VT stream as UTF-16 via ReadConsoleW. With ENABLE_VIRTUAL_TERMINAL_INPUT
             // enabled, the Windows console converts all input (keyboard, mouse, etc.)
-            // into ANSI escape sequences in this stream.
-            bool success = ReadFile (InputHandle, buffer, (uint)buffer.Length, out uint numBytesRead, nint.Zero);
+            // into ANSI escape sequences in this stream. ReadFile is not used because the console
+            // host's code page conversion replaces non-BMP characters (surrogate pairs) with U+FFFD.
+            bool success = ReadConsoleW (InputHandle, buffer, (uint)buffer.Length, out uint numCharsRead, nint.Zero);
 
             if (!success)
             {
@@ -230,26 +204,21 @@ internal sealed class WindowsVTInputHelper : IDisposable
                     return false;
                 }
 
-                Logging.Warning ($"{nameof (WindowsVTInputHelper)}: ReadFile failed with error code: {error}");
+                Logging.Warning ($"{nameof (WindowsVTInputHelper)}: ReadConsoleW failed with error code: {error}");
 
                 return false;
             }
 
-            if (numBytesRead == 0)
+            // Zero characters means the read was cancelled by WakePendingRead (CancelIoEx can complete
+            // ReadConsoleW successfully with no data). Unlike ReadFile, ReadConsoleW never converts Ctrl+Z
+            // into a zero-length EOF read: the console host only applies that to raw (ReadFile) reads, so
+            // Ctrl+Z arrives as 0x1A. See https://github.com/microsoft/terminal/issues/4958
+            if (numCharsRead == 0)
             {
-                // Workaround for Windows bug (since Win8, fix pending in microsoft/terminal#19940):
-                // ReadFile unconditionally treats Ctrl+Z as EOF and returns 0 bytes, even when
-                // ENABLE_PROCESSED_INPUT is disabled. Since we have a live console handle with
-                // processed input disabled, 0-byte success can only mean this bug.
-                // Synthesize the 0x1A (SUB) byte that ReadFile should have returned.
-                // See https://github.com/microsoft/terminal/issues/4958
-                buffer [0] = 0x1A;
-                bytesRead = 1;
-
-                return true;
+                return false;
             }
 
-            bytesRead = (int)numBytesRead;
+            charsRead = (int)numCharsRead;
 
             return true;
         }
@@ -273,7 +242,6 @@ internal sealed class WindowsVTInputHelper : IDisposable
 
         try
         {
-            SetConsoleCP (_originalConsoleCP);
             SetConsoleMode (InputHandle, _originalConsoleMode);
             IsEnabled = false;
         }
@@ -302,7 +270,7 @@ internal sealed class WindowsVTInputHelper : IDisposable
     public bool Peek () => GetNumberOfConsoleInputEvents (InputHandle, out uint count) && count > 0;
 
     /// <summary>
-    ///     Cancels any pending synchronous <see cref="ReadFile"/> on the Windows console input handle.
+    ///     Cancels any pending synchronous <see cref="ReadConsoleW"/> on the Windows console input handle.
     /// </summary>
     public static void WakePendingRead ()
     {

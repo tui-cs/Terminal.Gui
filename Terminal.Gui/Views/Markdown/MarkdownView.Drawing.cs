@@ -5,10 +5,10 @@ public partial class Markdown
 {
     /// <inheritdoc/>
     /// <remarks>
-    ///     Draws all markdown content (backgrounds, text, styles) before SubViews are drawn.
-    ///     This ensures copy <see cref="Button"/> SubViews render on top of code block backgrounds.
+    ///     Draws the background and styled lines only when this view's content needs repainting,
+    ///     before SubViews are drawn. Scrollbar hover redraws leave the existing content intact.
     /// </remarks>
-    protected override bool OnDrawingSubViews (DrawContext? context)
+    protected override bool OnClearingViewport ()
     {
         Attribute fillAttr = GetAttributeForRole (VisualRole.Normal);
 
@@ -18,7 +18,10 @@ public partial class Markdown
         }
 
         SetAttribute (fillAttr);
-        FillRect (Viewport with { X = 0, Y = 0 }, (Rune)' ');
+
+        // Clearing the full viewport also invalidates every visible SubView so tables,
+        // code blocks, and thematic breaks repaint any cells cleared outside a partial dirty region.
+        ClearViewport ();
 
         _visibleSixelIds.Clear ();
 
@@ -40,18 +43,17 @@ public partial class Markdown
             _sixelRenderMap.Remove (id);
         }
 
-        // Return false so SubViews (copy buttons) still draw on top
-        return false;
+        return true;
     }
 
     /// <inheritdoc/>
     protected override bool OnDrawingContent (DrawContext? context)
     {
-        // All visible content was drawn in OnDrawingSubViews; just register the drawn region.
+        // All visible content was drawn in OnClearingViewport; just register the drawn region.
         context?.AddDrawnRegion (new Region (new Rectangle (ContentToScreen (Point.Empty), Viewport.Size)));
 
         // OnDrawingContent is called AFTER SubViews have drawn.  Plain rendered lines are
-        // highlighted during DrawRenderedLine (in OnDrawingSubViews), but table and code-block
+        // highlighted during DrawRenderedLine (in OnClearingViewport), but table and code-block
         // rows are owned by their SubViews and don't receive that pass.  Draw the selection
         // overlay for those rows here, on top of what the SubViews rendered.
         if (_isSelecting)
@@ -66,7 +68,7 @@ public partial class Markdown
     ///     Draws the selection highlight over table and fenced-code-block rows.
     ///     Those rows are owned by SubViews (<see cref="MarkdownTable"/> /
     ///     <see cref="MarkdownCodeBlock"/>) that draw after
-    ///     <see cref="OnDrawingSubViews"/> returns.  This pass reads the graphemes
+    ///     <see cref="OnClearingViewport"/> returns.  This pass reads the graphemes
     ///     that the SubViews already placed in the screen buffer and re-draws them
     ///     with the selection attribute, preserving the rendered characters while
     ///     applying the selection background.
@@ -117,7 +119,7 @@ public partial class Markdown
         // resets the clip to allow drawing over SubView areas, but it also undoes the clip
         // exclusion that the popover's DoDrawComplete registered for its drawn cells.  Without
         // a guard, we would overwrite those cells with stale ScreenContents graphemes, erasing
-        // the popover.  (Paragraph-text selection is drawn in DrawRenderedLine / OnDrawingSubViews
+        // the popover.  (Paragraph-text selection is drawn in DrawRenderedLine / OnClearingViewport
         // before the clip reset, so it naturally inherits the popover's exclusion and is safe.)
         // Compute the popover's content rect (screen-relative) and skip any cells inside it.
         Rectangle? popoverScreenRect = null;

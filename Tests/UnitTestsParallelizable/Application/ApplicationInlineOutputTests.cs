@@ -7,11 +7,12 @@ namespace ApplicationTests;
 [Collection ("Application Tests")]
 public class ApplicationInlineOutputTests
 {
-    private static ApplicationImpl Create (StringBuilder bytes, out AnsiOutput output, int width = 12, int height = 6, AppModel model = AppModel.Inline)
+    private static ApplicationImpl Create (StringBuilder bytes, out AnsiOutput output, int width = 12, int height = 6, AppModel model = AppModel.Inline,
+                                           ISizeMonitor? sizeMonitor = null, ITimeProvider? timeProvider = null)
     {
         output = new AnsiOutput (chunk => { bytes.Append (Encoding.UTF8.GetString (chunk)); return true; }, model);
         output.SetSize (width, height);
-        ApplicationImpl app = new (new AnsiComponentFactory (output: output));
+        ApplicationImpl app = new (new AnsiComponentFactory (output: output, sizeMonitor: sizeMonitor), timeProvider ?? new SystemTimeProvider ());
         app.AppModel = model;
         if (model == AppModel.Inline)
         {
@@ -167,7 +168,8 @@ public class ApplicationInlineOutputTests
     public void InvalidGeometryFaultsBeforeInsertionAndResizeUsesExecutionWidth ()
     {
         StringBuilder bytes = new ();
-        using ApplicationImpl app = Create (bytes, out _);
+        VirtualTimeProvider time = new ();
+        using ApplicationImpl app = Create (bytes, out AnsiOutput output, sizeMonitor: Mock.Of<ISizeMonitor> (monitor => monitor.InitialSizeReceived == true), timeProvider: time);
         using Runnable view = new () { Width = Dim.Fill (), Height = 2 };
         SessionToken owner = app.Begin (view)!;
         app.LayoutAndDraw ();
@@ -177,11 +179,15 @@ public class ApplicationInlineOutputTests
         app.LayoutAndDraw ();
         Assert.True (invalid.IsFaulted);
         Assert.DoesNotContain ("invalid", bytes.ToString ());
-        app.Screen = new Rectangle (0, 0, 12, 2);
+        // Restore a valid full-width reservation before changing terminal width.
+        app.Screen = new Rectangle (0, 1, 12, 2);
+        output.SetCursor (new Cursor { Position = Point.Empty });
         Task print = app.PrintAboveAsync ("abcdefgh", TestContext.Current.CancellationToken);
         app.Driver!.SetScreenSize (4, 6);
+        time.Advance (TimeSpan.FromMilliseconds (500));
         app.LayoutAndDraw ();
         Assert.True (print.IsCompletedSuccessfully);
+        // Width reflow starts a fresh region at row zero, followed by two completed rows.
         Assert.Equal (2, app.Screen.Y);
         Assert.Equal (4, app.Screen.Width);
         app.End (owner);
@@ -401,7 +407,9 @@ public class ApplicationInlineOutputTests
     [Fact]
     public void ZeroTerminalSizeDefersAndRestoredSizeResumes ()
     {
-        using ApplicationImpl app = Create (new StringBuilder (), out _);
+        VirtualTimeProvider time = new ();
+        using ApplicationImpl app = Create (new StringBuilder (), out _, sizeMonitor: Mock.Of<ISizeMonitor> (monitor => monitor.InitialSizeReceived == true), timeProvider: time);
+        app.ForceInlinePosition = new Point (0, 1);
         using Runnable view = new () { Height = 2 };
         SessionToken owner = app.Begin (view)!;
         app.LayoutAndDraw ();
@@ -410,6 +418,8 @@ public class ApplicationInlineOutputTests
         app.LayoutAndDraw ();
         Assert.False (print.IsCompleted);
         app.Driver.SetScreenSize (12, 6);
+        time.Advance (TimeSpan.FromMilliseconds (500));
+        app.LayoutAndDraw ();
         app.LayoutAndDraw ();
         Assert.True (print.IsCompletedSuccessfully);
         app.End (owner);

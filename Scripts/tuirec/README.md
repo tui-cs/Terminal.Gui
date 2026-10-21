@@ -251,6 +251,34 @@ tuirec record `
 
 ## Verifying inline output and mouse reporting
 
+To verify non-clearing resize on Windows, install `pywinpty` and `pyte`, build ScenarioRunner in Release,
+then run `python Scripts/tuirec/verify-inline-resize.py`. This uses ConPTY directly because
+tuirec's keystroke scripts do not resize the PTY. The check resizes during streaming and an
+expanded preview, commits it, submits edited input after repeated resizes, and checks ordered,
+exactly-once history and clean exit. It saves `artifacts/InlineResize.cast`, including resize
+events, for replay. To select a different build, pass `--dll PATH`. A cast is also saved on
+failure as diagnostic evidence; script exit status determines whether verification passed.
+Old live frames may enter history during uncertain recovery; the live viewport must contain
+one current frame.
+
+To verify actual terminal reflow and cursor clamping on Linux or macOS, install `tmux`, build
+ScenarioRunner in Release, and run `python3 Scripts/tuirec/verify-inline-resize-tmux.py`.
+This creates an isolated tmux server with six shell sentinels and tests 30 height changes at
+40 ms intervals during streaming, after output settles, and with a seven-row preview. The burst
+loop injects no input/capture waits between changes. It checks all 24 messages and six shell lines
+after each phase, input-driven repaint, preview commitment, clean exit, and actual tmux line-extent
+behavior after CSI 2K. Snapshots include history/blank-row counts; evidence records the seed,
+resize timestamps and history growth for each burst, with an explicit `passed` field.
+
+```bash
+python3 Scripts/tuirec/verify-inline-resize-tmux.py --seed 7
+python3 Scripts/tuirec/verify-inline-resize-tmux.py --seed 7 --burst-mode width --burst-steps 40
+python3 Scripts/tuirec/verify-inline-resize-tmux.py --seed 7 --burst-mode mixed --burst-ms 60
+```
+
+Evidence defaults to `artifacts/InlineResize-tmux.json`. Pass `--dll PATH` or `--evidence PATH`
+to select a build or retain separate runs. Repeat seeds 0 through 9 to sweep different bursts.
+
 To check the Inline Transcript scenario's history, keyboard editing, and F2 mouse toggle,
 build ScenarioRunner in Release, install `pyte`, and run:
 

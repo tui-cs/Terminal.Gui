@@ -5,6 +5,8 @@ namespace Terminal.Gui.App;
 
 internal partial class ApplicationImpl
 {
+    private bool _inlineScreenHasValidOwnership;
+
     /// <inheritdoc/>
     public event EventHandler<EventArgs<Rectangle>>? ScreenChanged;
 
@@ -25,6 +27,13 @@ internal partial class ApplicationImpl
                 // Inline mode: store the sub-rectangle independently.
                 // Resize the output buffer to match the inline region dimensions.
                 _screen = value;
+                _inlineScreenHasValidOwnership = Driver is { } owner && value.X == 0 && value.Width == owner.Screen.Width
+                                                && value.Y >= 0 && value.Height >= 0 && (long)value.Y + value.Height <= owner.Screen.Height;
+                if (_inlineScreenHasValidOwnership && value.Height > 0 && Driver is DriverImpl inlineDriver
+                    && inlineDriver.GetOutput () is AnsiOutput output)
+                {
+                    output.InlineSizeTrackingEnabled = true;
+                }
                 (Driver as DriverImpl)?.ResizeOutputBuffer (value.Width, value.Height);
 
                 RaiseScreenChangedEvent (value);
@@ -62,7 +71,17 @@ internal partial class ApplicationImpl
     /// <param name="screen">The new screen size and position.</param>
     private void RaiseScreenChangedEvent (Rectangle screen)
     {
-        //Screen = new (Point.Empty, screen.Size);
+        if (AppModel == AppModel.Inline && _inlineResize is null && _inlineScreenHasValidOwnership && screen.Height > 0
+            && Driver is DriverImpl driver && driver.GetOutput () is AnsiOutput
+            { IsInlineOutputAvailable: true, InlineCursorRow: null, HasPendingOutputRecovery: false } output
+            && !InlinePlacementLost)
+        {
+            if (!WriteInlineMovement (EscSeqUtils.CSI_SetCursorPosition (screen.Y + 1, 1)))
+            {
+                return;
+            }
+            output.InlineCursorRow = screen.Y;
+        }
 
         ScreenChanged?.Invoke (this, new EventArgs<Rectangle> (screen));
 
@@ -94,28 +113,10 @@ internal partial class ApplicationImpl
 
         if (AppModel == AppModel.Inline && _screen is { } screen)
         {
-            // On resize in inline mode, reset to row 0 and clear the screen.
-            // The next LayoutAndDraw will re-size the inline region from scratch.
-            _inlineScreenSized = false;
-
-            if (Driver is { } driver)
-            {
-                driver.InlinePosition = Point.Empty;
-
-                // Clear the entire terminal
-                if (!WriteInlineMovement ($"{EscSeqUtils.CSI}H{EscSeqUtils.CSI}2J"))
-                {
-                    return;
-                }
-            }
-
-            Screen = new Rectangle (0, 0, newSize.Width, screen.Height);
-            ClearScreenNextIteration = true;
+            BeginInlineResize (screen, newSize);
+            return;
         }
-        else
-        {
-            RaiseScreenChangedEvent (new Rectangle (new Point (0, 0), newSize));
-        }
+        RaiseScreenChangedEvent (new Rectangle (new Point (0, 0), newSize));
     }
 
     /// <inheritdoc/>
@@ -163,6 +164,10 @@ internal partial class ApplicationImpl
         InlineOutputOperation? candidate = previousLayoutAndDrawActive ? null : CaptureInlineOutput ();
         try
         {
+            if (!CompleteInlineResize ())
+            {
+                return;
+            }
             LayoutAndDrawCore (forceRedraw, candidate);
         }
         finally
@@ -197,7 +202,8 @@ internal partial class ApplicationImpl
 
         IDriver? passDriver = Driver;
         long passGeneration = _inlineOutputGeneration;
-        bool PassIsValid () => Initialized && !_dispatchStopping && Driver == passDriver && passGeneration == _inlineOutputGeneration && !InlinePlacementLost && HasRunningSession;
+        bool PassIsValid () => Initialized && !_dispatchStopping && Driver == passDriver && passGeneration == _inlineOutputGeneration
+                              && !InlinePlacementLost && _inlineResize is null && HasRunningSession;
 
         // A session ended beneath the top stays on the stack without a runnable until the sessions above it end.
         List<View?> views = [.. SessionStack.Select (r => r.Runnable).OfType<View> ()];
@@ -235,11 +241,7 @@ internal partial class ApplicationImpl
 
                 if (overflow > 0)
                 {
-                    if (!WriteInlineMovement (new string ('\n', overflow)))
-                    {
-                        return;
-                    }
-                    if (!WriteInlineMovement ($"{EscSeqUtils.CSI}{overflow}A"))
+                    if (!WriteInlineMovement (new string ('\n', overflow) + $"{EscSeqUtils.CSI}{overflow}A"))
                     {
                         return;
                     }
@@ -300,11 +302,8 @@ internal partial class ApplicationImpl
                 // its new rows are already available below the origin and need no cursor movement.
                 if (canGrowDown > 0 && Screen.Height > 0)
                 {
-                    if (!WriteInlineMovement (EscSeqUtils.CSI_SetCursorPosition (bottomEdge, 1) + new string ('\n', canGrowDown)))
-                    {
-                        return;
-                    }
-                    if (!WriteInlineMovement ($"{EscSeqUtils.CSI}{canGrowDown}A"))
+                    if (!WriteInlineMovement (EscSeqUtils.CSI_SetCursorPosition (bottomEdge, 1) + new string ('\n', canGrowDown)
+                                              + $"{EscSeqUtils.CSI}{canGrowDown}A"))
                     {
                         return;
                     }
@@ -320,11 +319,8 @@ internal partial class ApplicationImpl
 
                     if (canScrollUp > 0)
                     {
-                        if (!WriteInlineMovement (EscSeqUtils.CSI_SetCursorPosition (termHeight, 1) + new string ('\n', canScrollUp)))
-                        {
-                            return;
-                        }
-                        if (!WriteInlineMovement ($"{EscSeqUtils.CSI}{canScrollUp}A"))
+                        if (!WriteInlineMovement (EscSeqUtils.CSI_SetCursorPosition (termHeight, 1) + new string ('\n', canScrollUp)
+                                                  + $"{EscSeqUtils.CSI}{canScrollUp}A"))
                         {
                             return;
                         }

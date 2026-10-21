@@ -229,7 +229,7 @@ public partial class AnsiOutput : OutputBase, IOutput, IInlineOutput
         {
             return _consoleSize;
         }
-        Size? native = NativeSizeQuery ();
+        Size? native = QueryNativeInlineSize ();
 
         if (native is { })
         {
@@ -293,11 +293,12 @@ public partial class AnsiOutput : OutputBase, IOutput, IInlineOutput
     /// <inheritdoc cref="IOutput.Write(IOutputBuffer)"/>
     public override void Write (IOutputBuffer buffer)
     {
-        if (!IsInlinePlacementKnown)
+        if (!IsInlinePlacementKnown || IsInlineResizePending || HasPendingInlineSizeChange ())
         {
             return;
         }
         _lastBuffer = buffer;
+        _stagedInlineCursorRow = InlineCursorRow;
         // An out-of-band legacy attribute hook must take effect between physical writes.
         _batchMode = !UsesLegacyAttributeWriter && !HasCustomStringWriter (typeof (AnsiOutput));
         _frameBuffer.Clear ();
@@ -305,6 +306,11 @@ public partial class AnsiOutput : OutputBase, IOutput, IInlineOutput
         try
         {
             base.Write (buffer);
+        }
+        catch
+        {
+            InlineCursorRow = null;
+            throw;
         }
         finally
         {
@@ -318,6 +324,15 @@ public partial class AnsiOutput : OutputBase, IOutput, IInlineOutput
 
     internal override void FlushFrame ()
     {
+        // Rendering hides the caret. Park at the first live row until the main loop restores it,
+        // reducing bottom-edge clamping if the terminal resizes between drawing and caret update.
+        if (_batchMode && AppModel == AppModel.Inline && AppScreenGetter?.Invoke () is { Height: > 0 } region
+            && (_frameBuffer.Length > 0 || _pendingCursorMoves.Length > 0))
+        {
+            _pendingCursorMoves.Clear ();
+            _pendingCursorMoves.AppendAscii (EscSeqUtils.CSI_SetCursorPosition (region.Y + 1, 1));
+            _stagedInlineCursorRow = region.Y;
+        }
         if (_pendingCursorMoves.Length > 0)
         {
             _frameBuffer.Append (_pendingCursorMoves);
@@ -329,6 +344,7 @@ public partial class AnsiOutput : OutputBase, IOutput, IInlineOutput
         if (_frameBuffer.Length > 0)
         {
             Write (_frameBuffer.AsSpan ());
+            InlineCursorRow = _stagedInlineCursorRow;
         }
     }
 
@@ -422,6 +438,69 @@ public partial class AnsiOutput : OutputBase, IOutput, IInlineOutput
 
     private Cursor _currentCursor;
 
+    private int? _inlineCursorRow;
+    // Absolute physical row, committed only after a successful CUP/frame write.
+    internal int? InlineCursorRow
+    {
+        get => HasPendingOutputRecovery ? null : _inlineCursorRow;
+        set
+        {
+            _inlineCursorRow = value;
+            if (value is null)
+            {
+                return;
+            }
+            if (!HasInlineSizeObservations)
+            {
+                _lastInlineObservedSize = _consoleSize;
+            }
+        }
+    }
+
+    internal bool InlineSizeTrackingEnabled { get; set; }
+    private Size? _lastInlineObservedSize;
+    private readonly Queue<Size> _inlineSizeObservations = [];
+    internal bool InlineSizeObservationOverflow { get; private set; }
+    internal bool HasInlineSizeObservations => _inlineSizeObservations.Count > 0 || InlineSizeObservationOverflow;
+
+    internal bool TryDequeueInlineSize (out Size size) => _inlineSizeObservations.TryDequeue (out size);
+
+    internal void CompleteInlineSizeRecovery () => InlineSizeObservationOverflow = false;
+
+    internal Size? QueryNativeInlineSize ()
+    {
+        Size? native = NativeSizeQuery?.Invoke ();
+        if (!InlineSizeTrackingEnabled || !IsInlineOutputAvailable || native is not { } size || size == _lastInlineObservedSize)
+        {
+            return native;
+        }
+        if (_lastInlineObservedSize is null)
+        {
+            _lastInlineObservedSize = size;
+            return native;
+        }
+        _lastInlineObservedSize = size;
+        if (_inlineSizeObservations.Count >= 64)
+        {
+            InlineSizeObservationOverflow = true;
+            // Overflow requires a fresh region, so intermediate coordinates are no longer
+            // useful. Retain the latest size so recovery can still catch up with polling.
+            _inlineSizeObservations.Clear ();
+        }
+
+        _inlineSizeObservations.Enqueue (size);
+        return native;
+    }
+    private int? _stagedInlineCursorRow;
+
+    // Keep the physical cursor fixed while inline resize recovery is pending.
+    internal bool IsInlineResizePending { get; set; }
+
+    private bool HasPendingInlineSizeChange () => HasPendingInlineSizeChange (_consoleSize);
+
+    internal bool HasPendingInlineSizeChange (Size expectedSize) =>
+        AppModel == AppModel.Inline && (QueryNativeInlineSize () is { } size && size != expectedSize || HasInlineSizeObservations);
+
     // PERF: Batch mode — defer cursor-move sequences to merge with cell content, reducing WriteFile P/Invoke count
     private readonly Utf8Buffer _pendingCursorMoves = new ();
     private readonly Utf8Buffer _frameBuffer = new ();
@@ -436,10 +515,11 @@ public partial class AnsiOutput : OutputBase, IOutput, IInlineOutput
     /// <inheritdoc/>
     public void SetCursor (Cursor cursor)
     {
-        if (!IsInlinePlacementKnown)
+        if (!IsInlinePlacementKnown || IsInlineResizePending || HasPendingInlineSizeChange ())
         {
             return;
         }
+
         try
         {
             if (!cursor.IsVisible)
@@ -460,6 +540,7 @@ public partial class AnsiOutput : OutputBase, IOutput, IInlineOutput
         }
         catch (Exception ex) when (ex is IOException or System.ComponentModel.Win32Exception)
         {
+            InlineCursorRow = null;
             // Best effort: a broken sink also fails the next frame, which DriverImpl logs once.
             Logging.Debug ($"Error updating ANSI cursor: {ex.Message}");
         }
@@ -485,10 +566,12 @@ public partial class AnsiOutput : OutputBase, IOutput, IInlineOutput
             // into a single WriteFile P/Invoke instead of one per cursor move.
             _pendingCursorMoves.Clear ();
             _pendingCursorMoves.AppendAscii (EscSeqUtils.CSI_SetCursorPosition (row + 1 + inlineRowOffset, col + 1));
+            _stagedInlineCursorRow = row + inlineRowOffset;
         }
         else
         {
             Write (EscSeqUtils.CSI_SetCursorPosition (row + 1 + inlineRowOffset, col + 1));
+            InlineCursorRow = row + inlineRowOffset;
         }
 
         return true;
@@ -553,10 +636,16 @@ public partial class AnsiOutput : OutputBase, IOutput, IInlineOutput
             if (AppModel == AppModel.Inline)
             {
                 Rectangle appScreen = AppScreenGetter?.Invoke () ?? default;
-                if (IsInlinePlacementKnown)
+                if (IsInlinePlacementKnown && !IsInlineResizePending && !HasPendingInlineSizeChange ())
                 {
                     Restore (EscSeqUtils.CSI_SetCursorPosition (appScreen.Y + appScreen.Height, 1));
                     Restore ("\n");
+                }
+                else if (QueryNativeInlineSize () is { Height: > 0, Width: > 0 } nativeSize)
+                {
+                    // Do not use an old live origin during recovery. Scroll a fresh prompt row
+                    // below the current viewport, preserving every surviving line.
+                    Restore (EscSeqUtils.CSI_SetCursorPosition (nativeSize.Height, 1) + "\n");
                 }
             }
             else
