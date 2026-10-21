@@ -18,7 +18,7 @@ public class TreeViewTests (ITestOutputHelper output) : TestDriverBase
         tree.Draw ();
 
         DriverAssert.AssertDriverContentsAre ("""
-                                              ├-😀ABC
+                                              ├-Root1
                                               │ ├─Child1.1
                                               │ └─Child1.2
                                               └-Root2
@@ -45,7 +45,7 @@ public class TreeViewTests (ITestOutputHelper output) : TestDriverBase
         tree.Draw ();
 
         DriverAssert.AssertDriverContentsAre ("""
-                                              ├-😀ABC
+                                              ├-Root1
                                               │ ├─Child1.1
                                               │ └─Child1.2
                                               └-Root2
@@ -305,7 +305,7 @@ public class TreeViewTests (ITestOutputHelper output) : TestDriverBase
         tree.Draw ();
 
         DriverAssert.AssertDriverContentsAre ("""
-                                              ├-😀ABC
+                                              ├-Root1
                                               │ ├─Child1.1
                                               │ └─Child1.2
                                               └-Root2
