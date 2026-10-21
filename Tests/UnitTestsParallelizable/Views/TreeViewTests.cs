@@ -185,7 +185,7 @@ public class TreeViewTests (ITestOutputHelper output) : TestDriverBase
 
         // Assert
         // WithFrameAre keeps first-line fill spaces when a longer row sets the frame width.
-        DriverAssert.AssertDriverContentsWithFrameAre (PadFirstLineToWidth (expectedOutput, 10), output, driver);
+        DriverAssert.AssertDriverContentsWithFrameAre (expectedOutput, output, driver);
 
         tree.Dispose ();
     }
@@ -226,7 +226,7 @@ public class TreeViewTests (ITestOutputHelper output) : TestDriverBase
         tree.Draw ();
 
         string expected = expectedOutput.Replace ("☐", Glyphs.CheckStateUnChecked.ToString ());
-        DriverAssert.AssertDriverContentsWithFrameAre (PadFirstLineToWidth (expected, 10), output, driver);
+        DriverAssert.AssertDriverContentsWithFrameAre (expected, output, driver);
 
         tree.Dispose ();
     }
@@ -1632,23 +1632,6 @@ public class TreeViewTests (ITestOutputHelper output) : TestDriverBase
         public override bool Equals (object? obj) => obj is EqualityTestObject eto && Equals (Name, eto.Name);
         public override int GetHashCode () => Name.GetHashCode ();
         public required string Name { get; init; }
-    }
-
-    private static string PadFirstLineToWidth (string expected, int width)
-    {
-        string normalized = expected.Replace ("\r\n", "\n");
-        int newline = normalized.IndexOf ('\n');
-        string firstLine = newline < 0 ? normalized : normalized [..newline];
-        int pad = width - firstLine.GetColumns ();
-
-        if (pad <= 0)
-        {
-            return expected;
-        }
-
-        string padded = firstLine + new string (' ', pad);
-
-        return newline < 0 ? padded : padded + normalized [newline..];
     }
 
     #region Test Setup Methods
