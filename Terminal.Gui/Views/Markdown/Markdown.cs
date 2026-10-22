@@ -407,24 +407,35 @@ public partial class Markdown : View, IDesignable
 
         int effectiveWidth = GetEffectiveLayoutWidth ();
 
-        if (effectiveWidth < MIN_WRAP_WIDTH || _layoutWidth == effectiveWidth)
+        // Tables retain minimum geometry and clear invisible focus even below the text-wrap minimum.
+        // Rebuilding at zero also keeps subsequent growth from reusing stale table coordinates.
+        if (_layoutWidth == effectiveWidth || (effectiveWidth < MIN_WRAP_WIDTH && _blocks.All (block => !block.IsTable)))
         {
             return;
         }
 
         _layoutWidth = effectiveWidth;
 
+        int focusedTable = _tableViews.FindIndex (table => table.HasFocus);
+        int focusedLink = focusedTable >= 0 ? _tableViews [focusedTable].ActiveLinkIndex : -1;
         RemoveCodeBlockViews ();
         RemoveTableViews ();
         RemoveThematicBreakViews ();
 
         BuildRenderedLines ();
 
+        if (focusedTable >= 0 && focusedTable < _tableViews.Count && _tableViews [focusedTable].HasLinks)
+        {
+            MarkdownTable table = _tableViews [focusedTable];
+            table.SetFocus ();
+            table.ActiveLinkIndex = focusedLink;
+        }
+
         // Clear any auto-focus that Add() triggered when a focusable table was added
         // while this view has focus. Tables should only receive focus via explicit Tab.
         // The cascade from HasFocus=false calls OnAdvancingFocus(Forward, TabStop) which
         // just sets _activeLinkIndex without focusing another table — safe here.
-        if (Focused is MarkdownTable)
+        if (focusedTable < 0 && Focused is MarkdownTable)
         {
             Focused.HasFocus = false;
             _activeLinkIndex = -1;

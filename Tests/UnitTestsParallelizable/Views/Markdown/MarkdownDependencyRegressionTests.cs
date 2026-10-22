@@ -133,7 +133,8 @@ public class MarkdownDependencyRegressionTests
         view.Layout ();
         MarkdownTable table = Assert.Single (view.SubViews.OfType<MarkdownTable> ());
 
-        Assert.Equal (["6", "1"], table.TableData.Headers);
+        Assert.Empty (table.TableData.Headers);
+        Assert.Equal (["6", "1"], Assert.Single (table.TableData.Rows));
     }
 
     [Fact]

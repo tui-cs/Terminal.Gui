@@ -308,82 +308,87 @@ public partial class Markdown
 
     private void HandleTableBlock (Table table)
     {
-        List<string> headers = [];
-        Alignment [] alignments = [];
-        List<string []> rows = [];
-        List<StyledSegment> [] headerSegments = [];
-        List<List<StyledSegment> []> rowSegments = [];
-        var headerParsed = false;
+        bool grid = table.Parser is GridTableParser;
+        List<TableRowData> rows = [];
+        List<MarkdownTableCellContent> cells = [];
+        HashSet<(int Row, int Column)> occupied = [];
+        int columnCount = table.ColumnDefinitions.Count;
+        int rowIndex = 0;
 
-        foreach (Block tableRow in table)
+        foreach (TableRow row in table.Cast<TableRow> ())
         {
-            if (tableRow is not TableRow row)
+            List<TableCellData> definitions = [];
+            int nextColumn = 0;
+
+            foreach (TableCell cell in row.Cast<TableCell> ())
             {
-                continue;
+                while (occupied.Contains ((rowIndex, nextColumn)))
+                {
+                    nextColumn++;
+                }
+
+                int column = cell.ColumnIndex >= 0 ? cell.ColumnIndex : nextColumn;
+                string source = grid ? MarkdownTableCellParser.Serialize (cell, GetCellInlineSource) : ExtractCellText (cell);
+                TableCellData definition = new (column, source, cell.ColumnSpan, cell.RowSpan);
+                definitions.Add (definition);
+                IReadOnlyList<IntermediateBlock> blocks = grid
+                                                             ? MarkdownTableCellParser.Lower (cell, _markdown)
+                                                             : [new (LowerCellInlines (cell.OfType<ParagraphBlock> ().FirstOrDefault ()?.Inline?.FirstChild,
+                                                                                      row.IsHeader ? MarkdownStyleRole.Heading : MarkdownStyleRole.Normal, _markdown), true)];
+                cells.Add (new (rowIndex, definition, blocks));
+                columnCount = Math.Max (columnCount, checked(column + cell.ColumnSpan));
+
+                for (int y = rowIndex; y < checked(rowIndex + cell.RowSpan); y++)
+                {
+                    for (int x = column; x < column + cell.ColumnSpan; x++)
+                    {
+                        occupied.Add ((y, x));
+                    }
+                }
+
+                nextColumn = column + cell.ColumnSpan;
             }
 
-            string [] cells = row.Select (cell => ExtractCellText ((TableCell)cell)).ToArray ();
-
-            if (!headerParsed)
-            {
-                headers.AddRange (cells);
-                headerSegments = [.. row.Select (cell => ExtractCellSegments ((TableCell)cell, MarkdownStyleRole.Heading))];
-
-                alignments = table.ColumnDefinitions.Take (headers.Count)
-                                  .Select (col => col.Alignment switch
-                                                  {
-                                                      TableColumnAlign.Center => Alignment.Center,
-                                                      TableColumnAlign.Right => Alignment.End,
-                                                      _ => Alignment.Start
-                                                  })
-                                  .ToArray ();
-                headerParsed = true;
-            }
-            else if (!row.IsHeader)
-            {
-                rows.Add (cells);
-                rowSegments.Add ([.. row.Select (cell => ExtractCellSegments ((TableCell)cell, MarkdownStyleRole.Normal))]);
-            }
+            rows.Add (new (row.IsHeader, definitions));
+            rowIndex++;
         }
 
-        if (headers.Count == 0)
+        if (columnCount == 0)
         {
             return;
         }
 
-        // Pad alignments if there are more headers than alignment definitions
-        if (alignments.Length < headers.Count)
+        int requiredRows = cells.Count == 0 ? rows.Count : cells.Max (cell => cell.Row + cell.Definition.RowSpan);
+
+        while (rows.Count < requiredRows)
         {
-            Alignment [] padded = new Alignment [headers.Count];
-            alignments.CopyTo (padded, 0);
-            alignments = padded;
+            rows.Add (new (false, []));
         }
 
-        TableData tableData = new (headers.ToArray (), alignments, rows.ToArray ());
-        MarkdownTableContent content = new (headerSegments, [.. rowSegments]);
-        _blocks.Add (new IntermediateBlock ([new InlineRun ("", MarkdownStyleRole.Table)], false, tableData: tableData, tableContent: content));
+        TableColumnData [] columns = [.. Enumerable.Range (0, columnCount).Select (column =>
+        {
+            TableColumnDefinition? definition = column < table.ColumnDefinitions.Count ? table.ColumnDefinitions [column] : null;
+            Alignment alignment = definition?.Alignment switch
+            {
+                TableColumnAlign.Center => Alignment.Center,
+                TableColumnAlign.Right => Alignment.End,
+                _ => Alignment.Start
+            };
+
+            return new TableColumnData (alignment, definition?.Width);
+        })];
+        string original = MarkdownTableSource.Extract (table, _markdown);
+        TableData data = new (columns, rows, grid, grid, original);
+        MarkdownTableContent content = new (data, cells);
+        _blocks.Add (new ([new ("", MarkdownStyleRole.Table)], false, tableData: data, tableContent: content));
     }
 
-    private List<StyledSegment> ExtractCellSegments (TableCell cell, MarkdownStyleRole defaultRole)
+    private string GetCellInlineSource (Inline? inline)
     {
-        List<StyledSegment> segments = [];
+        StringBuilder source = new ();
+        AppendInlineSource (inline, source);
 
-        foreach (Block content in cell)
-        {
-            if (content is not ParagraphBlock paragraph)
-            {
-                continue;
-            }
-
-            if (segments.Count > 0)
-            {
-                segments.Add (new StyledSegment (" ", defaultRole));
-            }
-
-            segments.AddRange (MarkdownAttributeHelper.ToStyledSegments (LowerCellInlines (paragraph.Inline?.FirstChild, defaultRole, _markdown)));
-        }
-
-        return segments;
+        return source.ToString ();
     }
 
     internal static List<InlineRun> LowerCellInlines (Inline? inline, MarkdownStyleRole defaultRole, string source) =>
@@ -732,13 +737,14 @@ public partial class Markdown
                     runs.AddRange (linkRuns.Select (r => r with
                     {
                         StyleRole = MarkdownStyleRole.Link,
-                        Url = url
+                        Url = url,
+                        LinkIdentity = link.Span.Start
                     }));
 
                     break;
 
                 case AutolinkInline auto:
-                    runs.Add (new InlineRun (auto.Url, MarkdownStyleRole.Link, auto.Url));
+                    runs.Add (new InlineRun (auto.Url, MarkdownStyleRole.Link, auto.Url) { LinkIdentity = auto.Span.Start });
 
                     break;
 

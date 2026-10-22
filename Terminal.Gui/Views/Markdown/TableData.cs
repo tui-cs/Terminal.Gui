@@ -1,6 +1,6 @@
 namespace Terminal.Gui.Views;
 
-/// <summary>Represents a Markdown table's cell sources and column alignments.</summary>
+/// <summary>Represents a Markdown table's source cells, column preferences, headers, and spans.</summary>
 /// <remarks>
 ///     Header and body cells contain Markdown inline source, including escapes needed to preserve literal text.
 ///     These strings are not display text. Tables lowered from an AST retain inline source where possible,
@@ -8,7 +8,7 @@ namespace Terminal.Gui.Views;
 ///     Cell paragraphs and soft breaks are separated by spaces; hard breaks use newline character entities.
 ///     The resulting source can differ from the input while retaining its rendered content and styles.
 /// </remarks>
-public sealed class TableData
+public sealed partial class TableData
 {
     /// <summary>Initializes a new <see cref="TableData"/> from parsed table rows.</summary>
     /// <param name="headers">The header cells as Markdown inline source.</param>
@@ -22,13 +22,13 @@ public sealed class TableData
         ColumnCount = headers.Length;
     }
 
-    /// <summary>Gets the header cells as Markdown inline source.</summary>
+    /// <summary>Gets the first header row's source projection, or an empty array for a headerless structured table.</summary>
     public string [] Headers { get; }
 
     /// <summary>Gets the alignment for each column, parsed from the separator row.</summary>
     public Alignment [] ColumnAlignments { get; }
 
-    /// <summary>Gets the body rows. Each cell contains Markdown inline source.</summary>
+    /// <summary>Gets the legacy source projection of all rows except the first explicit header row.</summary>
     public string [] [] Rows { get; }
 
     /// <summary>Gets the number of columns in the table.</summary>

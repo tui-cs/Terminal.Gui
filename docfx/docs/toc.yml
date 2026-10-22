@@ -52,6 +52,8 @@
   href: keyboard.md
 - name: Layout
   href: layout.md
+- name: Markdown Tables
+  href: markdown-tables.md
 - name: Logging
   href: logging.md
 - name: Menus

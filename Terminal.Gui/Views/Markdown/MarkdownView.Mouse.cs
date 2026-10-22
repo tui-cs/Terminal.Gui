@@ -153,6 +153,11 @@ public partial class Markdown
     /// </remarks>
     protected override bool OnAdvancingFocus (NavigationDirection direction, TabBehavior? behavior)
     {
+        if (Viewport.Width < MIN_WRAP_WIDTH)
+        {
+            return false;
+        }
+
         // Cancel auto-advance (behavior==null, used by SetHasFocusTrue) so that gaining
         // focus doesn't automatically drill into a table SubView or link region.
         // Only explicit Tab navigation (behavior==TabStop) should cycle through links.
@@ -310,6 +315,14 @@ public partial class Markdown
     /// </summary>
     private string? FindLinkUrlAt (int contentX, int contentY)
     {
+        if (contentY >= 0 && contentY < _renderedLines.Count && _renderedLines [contentY].TableView is { } table)
+        {
+            RenderedLine line = _renderedLines [contentY];
+            int link = table.HitTestLinkIndex (contentX - table.Frame.X - table.Viewport.X, line.TableRow - table.Viewport.Y);
+
+            return link >= 0 ? table.TableLayout.Links [link].Url : null;
+        }
+
         foreach (MarkdownLinkRegion region in _linkRegions)
         {
             if (region.Line != contentY)

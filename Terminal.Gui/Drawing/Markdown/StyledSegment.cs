@@ -64,10 +64,12 @@ public sealed class StyledSegment
 
     // Preserve nested Markdown styles without fixing colors before the view's scheme is resolved.
     internal TextStyle AdditionalStyle { get; init; }
+    internal int LinkIdentity { get; init; } = -1;
 
     internal StyledSegment WithText (string text, VisualRole? role = null) =>
         new (text, StyleRole, Url, ImageSource, Attribute, role ?? Role)
         {
-            AdditionalStyle = AdditionalStyle
+            AdditionalStyle = AdditionalStyle,
+            LinkIdentity = LinkIdentity
         };
 }

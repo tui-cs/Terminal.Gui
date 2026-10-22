@@ -144,7 +144,7 @@ public partial class Markdown
             }
 
             int drawRow = lineIdx - Viewport.Y;
-            Point screenOrigin = ContentToScreen (new Point (0, lineIdx));
+            Point screenOrigin = ContentToScreen (new Point (Viewport.X, lineIdx));
             int screenRow = screenOrigin.Y;
             int screenStartCol = screenOrigin.X;
             int cols = Viewport.Width;
@@ -164,6 +164,29 @@ public partial class Markdown
                 }
 
                 int contentX = col + Viewport.X;
+                MarkdownTableGlyph? tableGlyph = line.TableView?.TableLayout.GetLine (line.TableRow)
+                    .FirstOrDefault (glyph => contentX >= glyph.Position.X && contentX < glyph.Position.X + glyph.Width);
+
+                if (tableGlyph is { })
+                {
+                    if (contentX != tableGlyph.Position.X)
+                    {
+                        continue;
+                    }
+
+                    bool selected = Enumerable.Range (tableGlyph.Position.X, tableGlyph.Width).Any (column => IsInSelection (lineIdx, column));
+
+                    if (!selected)
+                    {
+                        continue;
+                    }
+
+                    SetAttribute (selAttr);
+                    AddStr (col, drawRow, tableGlyph.Text);
+                    col += tableGlyph.Width - 1;
+
+                    continue;
+                }
 
                 if (!IsInSelection (lineIdx, contentX))
                 {
