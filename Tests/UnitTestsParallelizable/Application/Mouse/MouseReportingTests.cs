@@ -728,6 +728,88 @@ public class MouseReportingTests
         app.End (token);
     }
 
+    // CoPilot - GPT-6.1
+    [Theory]
+    [InlineData (AppModel.Inline)]
+    [InlineData (AppModel.FullScreen)]
+    public void DisableFromApplicationMouseEvent_StopsDispatchBeforeViewHandlers (AppModel model)
+    {
+        using ApplicationImpl app = Create (new StringBuilder (), model: model);
+        using Runnable top = new () { Width = Dim.Fill (), Height = 3 };
+        View view = new () { Width = 5, Height = 1, CanFocus = true, MouseHighlightStates = MouseState.Pressed };
+        top.Add (view);
+        SessionToken token = app.Begin (top)!;
+        app.LayoutAndDraw ();
+        int applicationEvents = 0;
+        int viewEvents = 0;
+        int activated = 0;
+        view.MouseBindings.ReplaceCommands (MouseFlags.LeftButtonPressed, Command.Activate);
+        view.MouseEvent += (_, _) => viewEvents++;
+        view.Activated += (_, _) => activated++;
+        app.Mouse.MouseEvent += (_, mouseEvent) =>
+        {
+            Assert.Same (view, mouseEvent.View);
+            applicationEvents++;
+            app.Mouse.IsMouseDisabled = true;
+        };
+
+        app.Mouse.RaiseMouseEvent (new () { ScreenPosition = new (1, 0), Flags = MouseFlags.LeftButtonPressed });
+
+        Assert.Equal (1, applicationEvents);
+        Assert.True (app.Mouse.IsMouseDisabled);
+        Assert.Equal (0, viewEvents);
+        Assert.Equal (0, activated);
+        Assert.False (app.Mouse.IsGrabbed ());
+        Assert.Empty (app.Mouse.CachedViewsUnderMouse);
+        Assert.Equal (MouseState.None, view.MouseState);
+        app.End (token);
+    }
+
+    // CoPilot - GPT-6.1
+    [Theory]
+    [InlineData (AppModel.Inline)]
+    [InlineData (AppModel.FullScreen)]
+    public async Task DisableFromDrawingCallback_ReentersRenderGateAndReleasesMouse (AppModel model)
+    {
+        CancellationToken cancellationToken = TestContext.Current.CancellationToken;
+        // Keep a deadlocked render callback off the test thread so the regression fails within a bounded time.
+        await Task.Run (DrawWithMouseDisabled, cancellationToken).WaitAsync (TimeSpan.FromSeconds (10), cancellationToken);
+
+        void DrawWithMouseDisabled ()
+        {
+            StringBuilder bytes = new ();
+            using ApplicationImpl app = Create (bytes, model: model);
+            using Runnable top = new () { Width = Dim.Fill (), Height = 3 };
+            View view = new () { Width = 5, Height = 1, Text = "ready", CanFocus = true, MouseHighlightStates = MouseState.Pressed };
+            top.Add (view);
+            SessionToken token = app.Begin (top)!;
+            app.LayoutAndDraw ();
+            app.Mouse.RaiseMouseEvent (new () { ScreenPosition = new (1, 0), Flags = MouseFlags.LeftButtonPressed });
+            Assert.True (app.Mouse.IsGrabbed (view));
+            Assert.True (view.MouseState.HasFlag (MouseState.Pressed));
+            Assert.Contains (view, app.Mouse.CachedViewsUnderMouse);
+            int callbacks = 0;
+            top.DrawingContent += (_, _) =>
+            {
+                app.Mouse.IsMouseDisabled = true;
+                callbacks++;
+                Assert.False (app.Mouse.IsGrabbed ());
+                Assert.Empty (app.Mouse.CachedViewsUnderMouse);
+                Assert.Equal (MouseState.None, view.MouseState);
+            };
+            bytes.Clear ();
+
+            app.LayoutAndDraw (true);
+
+            Assert.Equal (1, callbacks);
+            Assert.True (app.Mouse.IsMouseDisabled);
+            Assert.Contains (EscSeqUtils.CSI_DisableMouseEvents, bytes.ToString ());
+            Assert.DoesNotContain (EscSeqUtils.CSI_EnableMouseEvents, bytes.ToString ());
+            Assert.Contains ("ready", bytes.ToString ());
+            app.End (token);
+        }
+    }
+
     // CoPilot - GPT-6
     [Theory]
     [InlineData (AppModel.Inline)]
