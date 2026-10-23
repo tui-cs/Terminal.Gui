@@ -681,26 +681,94 @@ public class ApplicationInlineOutputTests
     [Fact]
     public void CapturedAwaitDoesNotResumeInsideInlineRenderingPass ()
     {
-        using ApplicationImpl app = Create (new StringBuilder (), out _);
-        using Runnable view = new () { Height = 2 };
-        SessionToken owner = app.Begin (view)!;
-        app.LayoutAndDraw ();
-        Task print = app.PrintAboveAsync ("awaited", TestContext.Current.CancellationToken);
-        var continuedDuringDraw = false;
-        var continued = false;
-        Task continuation = ContinueAsync ();
-        app.LayoutAndDraw ();
-        app.DrainDispatches ();
-        Assert.True (continuation.IsCompletedSuccessfully);
-        Assert.True (continued);
-        Assert.False (continuedDuringDraw);
-        app.End (owner);
+        SynchronizationContext? before = SynchronizationContext.Current;
 
-        async Task ContinueAsync ()
+        try
         {
-            await print;
-            continued = true;
-            continuedDuringDraw = (bool)typeof (ApplicationImpl).GetField ("_layoutAndDrawActive", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)!.GetValue (app)!;
+            using ApplicationImpl app = Create (new StringBuilder (), out _);
+            using Runnable view = new () { Height = 2 };
+            SessionToken owner = app.Begin (view)!;
+            app.LayoutAndDraw ();
+            Task print = app.PrintAboveAsync ("awaited", TestContext.Current.CancellationToken);
+            var continuedDuringDraw = false;
+            var continued = false;
+
+            // The await captures the context current when it runs, so install the app's context only for that call.
+            SynchronizationContext.SetSynchronizationContext (app.SynchronizationContext);
+            Task continuation = ContinueAsync ();
+            SynchronizationContext.SetSynchronizationContext (before);
+
+            app.LayoutAndDraw ();
+            app.DrainDispatches ();
+            Assert.True (continuation.IsCompletedSuccessfully);
+            Assert.True (continued);
+            Assert.False (continuedDuringDraw);
+            app.End (owner);
+
+            async Task ContinueAsync ()
+            {
+                await print;
+                continued = true;
+
+                continuedDuringDraw =
+                    (bool)typeof (ApplicationImpl).GetField ("_layoutAndDrawActive",
+                                                             System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)!
+                                                  .GetValue (app)!;
+            }
+        }
+        finally
+        {
+            SynchronizationContext.SetSynchronizationContext (before);
+        }
+    }
+
+    [Fact]
+    public void CapturedAwaitContinuationFromInlineOutputWaitsForDispatchDrain ()
+    {
+        SynchronizationContext? before = SynchronizationContext.Current;
+
+        try
+        {
+            using ApplicationImpl app = Create (new StringBuilder (), out _);
+            using Runnable view = new () { Height = 2 };
+            SessionToken owner = app.Begin (view)!;
+            app.LayoutAndDraw ();
+            Task print = app.PrintAboveAsync ("awaited", TestContext.Current.CancellationToken);
+            var continued = false;
+            var continuedDuringDraw = false;
+
+            // The await captures the context current when it runs, so install the app's context only for that call.
+            SynchronizationContext.SetSynchronizationContext (app.SynchronizationContext);
+            Task continuation = ContinueAsync ();
+            SynchronizationContext.SetSynchronizationContext (before);
+
+            // Regression guard: settling inline output must not pump posted continuations
+            // before the render pass unwinds.
+            app.LayoutAndDraw ();
+            Assert.False (continuation.IsCompleted);
+            Assert.False (continued);
+            Assert.False (continuedDuringDraw);
+
+            app.DrainDispatches ();
+            Assert.True (continuation.IsCompletedSuccessfully);
+            Assert.True (continued);
+            Assert.False (continuedDuringDraw);
+            app.End (owner);
+
+            async Task ContinueAsync ()
+            {
+                await print;
+                continued = true;
+
+                continuedDuringDraw =
+                    (bool)typeof (ApplicationImpl).GetField ("_layoutAndDrawActive",
+                                                             System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)!
+                                                  .GetValue (app)!;
+            }
+        }
+        finally
+        {
+            SynchronizationContext.SetSynchronizationContext (before);
         }
     }
 

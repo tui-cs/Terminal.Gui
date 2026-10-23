@@ -79,6 +79,250 @@ public class SyncContextLifecycleTests
         }
     }
 
+    // Helper: a distinct, recognizable caller context.
+    private sealed class CallerSyncContext : SynchronizationContext
+    {
+    }
+
+    [Fact]
+    public void Run_SingleRunnable_InstallsAppContext_AndRestoresCallerContext ()
+    {
+        SynchronizationContext? before = SynchronizationContext.Current;
+
+        try
+        {
+            using IApplication app = Application.Create ();
+            app.Init (DriverRegistry.Names.ANSI);
+            SynchronizationContext appContext = ((ApplicationImpl)app).SynchronizationContext!;
+            using Runnable runnable = new ();
+
+            SynchronizationContext? duringBegin = null;
+            SynchronizationContext? duringIteration = null;
+
+            // Init alone does not install it.
+            Assert.Same (before, SynchronizationContext.Current);
+            Assert.NotSame (appContext, SynchronizationContext.Current);
+
+            app.SessionBegun += OnSessionBegun;
+            app.Iteration += OnIteration;
+            app.Run (runnable);
+            app.Iteration -= OnIteration;
+            app.SessionBegun -= OnSessionBegun;
+
+            // Installed before Begin ran, and while the loop ran.
+            Assert.Same (appContext, duringBegin);
+            Assert.Same (appContext, duringIteration);
+
+            // Restored once Run returns.
+            Assert.Same (before, SynchronizationContext.Current);
+
+            return;
+
+            void OnSessionBegun (object? _, SessionTokenEventArgs __) => duringBegin = SynchronizationContext.Current;
+
+            void OnIteration (object? _, EventArgs<IApplication?> __)
+            {
+                duringIteration = SynchronizationContext.Current;
+                app.RequestStop (runnable);
+            }
+        }
+        finally
+        {
+            SynchronizationContext.SetSynchronizationContext (before);
+        }
+    }
+
+    [Fact]
+    public void Run_SingleRunnable_RestoresExistingCallerContext ()
+    {
+        SynchronizationContext? before = SynchronizationContext.Current;
+        CallerSyncContext caller = new ();
+
+        try
+        {
+            SynchronizationContext.SetSynchronizationContext (caller);
+
+            using IApplication app = Application.Create ();
+            app.Init (DriverRegistry.Names.ANSI);
+            SynchronizationContext appContext = ((ApplicationImpl)app).SynchronizationContext!;
+            using Runnable runnable = new ();
+
+            SynchronizationContext? during = null;
+
+            app.Iteration += OnIteration;
+            app.Run (runnable);
+            app.Iteration -= OnIteration;
+
+            Assert.Same (appContext, during);
+            Assert.Same (caller, SynchronizationContext.Current);
+
+            return;
+
+            void OnIteration (object? _, EventArgs<IApplication?> __)
+            {
+                during = SynchronizationContext.Current;
+                app.RequestStop (runnable);
+            }
+        }
+        finally
+        {
+            SynchronizationContext.SetSynchronizationContext (before);
+        }
+    }
+
+    [Fact]
+    public void Run_SingleRunnable_RestoresCallerContext_WhenIterationThrows ()
+    {
+        SynchronizationContext? before = SynchronizationContext.Current;
+        CallerSyncContext caller = new ();
+
+        try
+        {
+            SynchronizationContext.SetSynchronizationContext (caller);
+
+            using IApplication app = Application.Create ();
+            app.Init (DriverRegistry.Names.ANSI);
+            using Runnable runnable = new ();
+            InvalidOperationException failure = new ("iteration failed");
+
+            app.Iteration += OnIteration;
+
+            Assert.Same (failure, Assert.Throws<InvalidOperationException> (() => app.Run (runnable)));
+
+            app.Iteration -= OnIteration;
+
+            Assert.Same (caller, SynchronizationContext.Current);
+
+            return;
+
+            void OnIteration (object? _, EventArgs<IApplication?> __) => throw failure;
+        }
+        finally
+        {
+            SynchronizationContext.SetSynchronizationContext (before);
+        }
+    }
+
+    [Fact]
+    public void Run_NestedRunnables_KeepsAppContext_UntilOutermostReturns ()
+    {
+        SynchronizationContext? before = SynchronizationContext.Current;
+        CallerSyncContext caller = new ();
+
+        try
+        {
+            SynchronizationContext.SetSynchronizationContext (caller);
+
+            using IApplication app = Application.Create ();
+            app.Init (DriverRegistry.Names.ANSI);
+            SynchronizationContext appContext = ((ApplicationImpl)app).SynchronizationContext!;
+
+            using Runnable outer = new () { Id = "outer" };
+            using Runnable inner = new () { Id = "inner" };
+
+            var depth = 0;
+            SynchronizationContext? insideOuter = null;
+            SynchronizationContext? insideInner = null;
+            SynchronizationContext? afterInnerReturned = null;
+
+            app.Iteration += OnIteration;
+            app.Run (outer);
+            app.Iteration -= OnIteration;
+
+            Assert.Same (appContext, insideOuter);
+            Assert.Same (appContext, insideInner);
+
+            // The inner Run returning must not hand the caller's context back while the outer loop still runs.
+            Assert.Same (appContext, afterInnerReturned);
+
+            // Only the outermost Run restores the caller's context.
+            Assert.Same (caller, SynchronizationContext.Current);
+
+            return;
+
+            void OnIteration (object? _, EventArgs<IApplication?> __)
+            {
+                depth++;
+
+                switch (depth)
+                {
+                    case 1:
+                        insideOuter = SynchronizationContext.Current;
+                        app.Run (inner); // re-enters this handler as depth 2
+                        afterInnerReturned = SynchronizationContext.Current;
+                        app.RequestStop (outer);
+
+                        break;
+
+                    case 2:
+                        insideInner = SynchronizationContext.Current;
+                        app.RequestStop (inner);
+
+                        break;
+                }
+            }
+        }
+        finally
+        {
+            SynchronizationContext.SetSynchronizationContext (before);
+        }
+    }
+
+    [Fact]
+    public void Run_NestedRunnables_RestoresCallerContext_WhenInnerRunThrows ()
+    {
+        SynchronizationContext? before = SynchronizationContext.Current;
+        CallerSyncContext caller = new ();
+
+        try
+        {
+            SynchronizationContext.SetSynchronizationContext (caller);
+
+            using IApplication app = Application.Create ();
+            app.Init (DriverRegistry.Names.ANSI);
+            SynchronizationContext appContext = ((ApplicationImpl)app).SynchronizationContext!;
+
+            using Runnable outer = new () { Id = "outer" };
+            using Runnable inner = new () { Id = "inner" };
+            InvalidOperationException failure = new ("inner failed");
+
+            var depth = 0;
+            SynchronizationContext? afterInnerThrew = null;
+
+            app.Iteration += OnIteration;
+            app.Run (outer);
+            app.Iteration -= OnIteration;
+
+            // The inner failure must not leak the caller's context early or leave the app's installed afterward.
+            Assert.Same (appContext, afterInnerThrew);
+            Assert.Same (caller, SynchronizationContext.Current);
+
+            return;
+
+            void OnIteration (object? _, EventArgs<IApplication?> __)
+            {
+                depth++;
+
+                switch (depth)
+                {
+                    case 1:
+                        Assert.Same (failure, Assert.Throws<InvalidOperationException> (() => app.Run (inner)));
+                        afterInnerThrew = SynchronizationContext.Current;
+                        app.RequestStop (outer);
+
+                        break;
+
+                    case 2:
+                        throw failure;
+                }
+            }
+        }
+        finally
+        {
+            SynchronizationContext.SetSynchronizationContext (before);
+        }
+    }
+
     // The documented Begin/End building-block sequence must restore the caller's ambient context
     // just like Run does — including nested sessions, where only the outermost End restores it.
     [Fact]
@@ -99,15 +343,18 @@ public class SyncContextLifecycleTests
             using Runnable inner = new ();
 
             SessionToken outerToken = app.Begin (outer)!;
-            Assert.Same (appContext, SynchronizationContext.Current);
+            Assert.NotSame (appContext, SynchronizationContext.Current);
+            Assert.Same (marker, SynchronizationContext.Current);
 
             SessionToken innerToken = app.Begin (inner)!;
-            Assert.Same (appContext, SynchronizationContext.Current);
+            Assert.NotSame (appContext, SynchronizationContext.Current);
+            Assert.Same (marker, SynchronizationContext.Current);
 
             app.End (innerToken);
 
             // The outer session is still active; the app context stays ambient.
-            Assert.Same (appContext, SynchronizationContext.Current);
+            Assert.NotSame (appContext, SynchronizationContext.Current);
+            Assert.Same (marker, SynchronizationContext.Current);
 
             app.End (outerToken);
 
@@ -123,7 +370,7 @@ public class SyncContextLifecycleTests
 
     // Claude - Opus 5.5
     [Fact]
-    public void Begin_End_OuterEndedFirst_KeepsAppContextUntilLastSessionEnds ()
+    public void Begin_End_OuterEndedFirst_DoesNotChangeCallerContextUntilLastSessionEnds ()
     {
         SynchronizationContext? previous = SynchronizationContext.Current;
         SynchronizationContext marker = new ();
@@ -144,8 +391,9 @@ public class SyncContextLifecycleTests
 
             app.End (outerToken);
 
-            // The inner session is still running, so its awaits must keep resuming on the UI loop.
-            Assert.Same (appContext, SynchronizationContext.Current);
+            // The inner session is still running, so its awaits must keep resuming on the thread loop.
+            Assert.NotSame (appContext, SynchronizationContext.Current);
+            Assert.Same (marker, SynchronizationContext.Current);
 
             app.End (innerToken);
 
@@ -193,7 +441,8 @@ public class SyncContextLifecycleTests
 
             // The session begun while the last one was ending is running, so its awaits must resume on the UI loop.
             Assert.True (next.IsRunning);
-            Assert.Same (appContext, SynchronizationContext.Current);
+            Assert.NotSame (appContext, SynchronizationContext.Current);
+            Assert.Same (marker, SynchronizationContext.Current);
 
             app.End (nextToken!);
 
@@ -256,7 +505,7 @@ public class SyncContextLifecycleTests
 
     // Claude - Opus 5.5
     [Fact]
-    public void Begin_AfterFinalSessionEndedOnWorker_StillRestoresCallerContext ()
+    public void Begin_EndedOnWorker_DoesNotChangeCallerContext ()
     {
         SynchronizationContext? previous = SynchronizationContext.Current;
         SynchronizationContext marker = new ();
@@ -277,7 +526,8 @@ public class SyncContextLifecycleTests
             Thread ender = new (() => app.End (firstToken));
             ender.Start ();
             Assert.True (ender.Join (TimeSpan.FromSeconds (10)));
-            Assert.Same (appContext, SynchronizationContext.Current);
+            Assert.NotSame (appContext, SynchronizationContext.Current);
+            Assert.Same (marker, SynchronizationContext.Current);
 
             SessionToken secondToken = app.Begin (second)!;
             app.End (secondToken);
@@ -314,7 +564,8 @@ public class SyncContextLifecycleTests
             Thread ender = new (() => app.End (token));
             ender.Start ();
             Assert.True (ender.Join (TimeSpan.FromSeconds (10)));
-            Assert.Same (appContext, SynchronizationContext.Current);
+            Assert.NotSame (appContext, SynchronizationContext.Current);
+            Assert.Same (marker, SynchronizationContext.Current);
 
             app.Dispose ();
 
@@ -385,5 +636,69 @@ public class SyncContextLifecycleTests
         Assert.True (
                      callbackCalled.Wait (TimeSpan.FromSeconds (10), TestContext.Current.CancellationToken),
                      "Post after Dispose must run on the thread pool.");
+    }
+
+    [Fact]
+    public void Post_AfterAppDisposed_TouchDisposedRunnable_WhenNextAppRuns ()
+    {
+        using ManualResetEventSlim posted = new (false);
+        using ManualResetEventSlim completed = new (false);
+        Exception? callbackEx = null;
+
+        IApplication app1 = Application.Create ();
+        app1.Init (DriverRegistry.Names.ANSI);
+        app1.Driver?.SetScreenSize (40, 10);
+
+        Runnable runnable1 = new () { Title = "App1" };
+        SessionToken? session1 = app1.Begin (runnable1);
+
+        SynchronizationContext context = ((ApplicationImpl)app1).SynchronizationContext!;
+        Assert.NotNull (context);
+
+        app1.End (session1!);
+        runnable1.Dispose ();
+        app1.Dispose ();
+
+#if DEBUG_IDISPOSABLE
+        Assert.True (runnable1.WasDisposed);
+#endif
+
+        using IApplication app2 = Application.Create ();
+        app2.Init (DriverRegistry.Names.ANSI);
+        app2.Driver?.SetScreenSize (40, 10);
+
+        using Runnable runnable2 = new ();
+        runnable2.Title = "App2";
+        SessionToken? session2 = app2.Begin (runnable2);
+
+        context!.Post (
+                       _ =>
+                       {
+                           posted.Set (); // first: Post is running (after app2 began)
+
+                           try
+                           {
+                               runnable1.Title = "Updated after dispose";
+                           }
+                           catch (Exception ex)
+                           {
+                               callbackEx = ex;
+                           }
+                           finally
+                           {
+                               completed.Set (); // after Title attempt
+                           }
+                       },
+                       null);
+
+        Assert.True (posted.Wait (TimeSpan.FromSeconds (5), TestContext.Current.CancellationToken), "Posted callback did not run.");
+        Assert.True (completed.Wait (TimeSpan.FromSeconds (5), TestContext.Current.CancellationToken), "Posted callback did not finish.");
+
+        app2.End (session2!);
+
+#if DEBUG_IDISPOSABLE
+        Assert.NotNull (callbackEx);
+        Assert.IsType<ObjectDisposedException> (callbackEx);
+#endif
     }
 }

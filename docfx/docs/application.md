@@ -653,6 +653,8 @@ if (token != null)
 // TopRunnable restored to previous runnable (if any)
 ```
 
+`Begin` prepares and starts the session but does not start the event loop, and it does not change `SynchronizationContext.Current`. Use `Run` for interactive input and ongoing UI processing; `Run` installs the application's synchronization context while it executes and restores the caller's context when it returns. Without `Run`, nothing drains work posted from other threads. `Invoke` queues work for the UI thread, but that work still runs only when the UI thread iterates — an idle Begin-only session does not process it.
+
 ### Nested Sessions
 
 Multiple sessions can run nested:
