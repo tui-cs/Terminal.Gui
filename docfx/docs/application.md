@@ -1063,3 +1063,14 @@ Color? result = app.Run (wrapper).Result;
 To print completed styled text above an inline UI, await `app.PrintAboveAsync(...)`.
 See [Printing above an inline application](inline-output.md) for ordering, cancellation,
 supported output, and partial-write behavior.
+
+## Clearing a ListView
+
+| Intent | API | Result |
+|--------|-----|--------|
+| Detach any data source | `listView.Source = null` | `Source` is `null` |
+| Clear items via `SetSource` | `listView.SetSource<T>(null)` | Empty default collection data source **or** `Source == null` if the current source was not that default (see API remarks) |
+| Clear items via `SetSourceAsync` | `listView.SetSourceAsync<T>(null)` | Empty default collection data source **or** `Source == null` if the current source was not that default (see API remarks) |
+| Custom rendering / data | `listView.Source = myDataSource` | `Source` is your `IListDataSource` |
+
+Do not treat these as synonyms.

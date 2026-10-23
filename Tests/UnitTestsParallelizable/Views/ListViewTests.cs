@@ -1263,6 +1263,218 @@ Five ",
         Assert.Throws<ArgumentException> (() => lv.KeyBindings.Add (Key.Space));
     }
 
+    [Theory]
+    [InlineData (1, true, null)]
+    [InlineData (2, false, 0)]
+    public void Source_Null_Then_Shorter_Source_Resets_Selection_And_Shows_Items (int setSource, bool expectedNull, int? expectedCount)
+    {
+        IApplication app = Application.Create ();
+        app.Init (DriverRegistry.Names.ANSI);
+        app.Driver?.SetScreenSize (12, 12);
+
+        ObservableCollection<string> longSource = [];
+
+        for (var i = 0; i < 20; i++)
+        {
+            longSource.Add ($"Line{i}");
+        }
+
+        var lv = new ListView
+        {
+            Width = Dim.Fill (),
+            Height = Dim.Fill (),
+            Source = new ListWrapper<string> (longSource)
+        };
+        var win = new Window ();
+        win.Add (lv);
+        var top = new Runnable ();
+        top.Add (win);
+        app.Begin (top);
+
+        try
+        {
+            app.LayoutAndDraw ();
+            Assert.Null (lv.SelectedItem);
+
+            // Select last item and scroll so the viewport is at the end of the long list.
+            lv.SelectedItem = 19;
+            Assert.True (lv.ScrollVertical (10));
+            app.LayoutAndDraw ();
+
+            Assert.Equal (19, lv.SelectedItem);
+
+            DriverAssert.AssertDriverContentsWithFrameAre (
+                                                           @"
+┌──────────┐
+│Line10    │
+│Line11    │
+│Line12    │
+│Line13    │
+│Line14    │
+│Line15    │
+│Line16    │
+│Line17    │
+│Line18    │
+│Line19    │
+└──────────┘",
+                                                           _output,
+                                                           app.Driver);
+
+            // Clear, then replace with a shorter list (same pattern as the scenario).
+            switch (setSource)
+            {
+                case 1:
+                    lv.Source = null;
+                    break;
+                default:
+                    lv.SetSource<string> (null);
+                    break;
+            }
+            Assert.Equal (expectedNull, lv.Source is null);
+            Assert.Equal (expectedCount, lv.Source?.Count);
+
+            // Selection must not remain at the old index (19).
+            Assert.Null (lv.SelectedItem);
+
+            ObservableCollection<string> shortSource = ["A", "B", "C"];
+
+            switch (setSource)
+            {
+                case 1:
+                    lv.Source = new ListWrapper<string> (shortSource);
+                    break;
+                default:
+                    lv.SetSource (shortSource);
+                    break;
+            }
+            app.LayoutAndDraw ();
+
+            // Selection must not remain at the old index (19).
+            Assert.Null (lv.SelectedItem);
+
+            // Viewport must not stay scrolled past the new content (items would be invisible).
+            Assert.Equal (0, lv.Viewport.Y);
+
+            DriverAssert.AssertDriverContentsWithFrameAre (
+                                                           @"
+┌──────────┐
+│A         │
+│B         │
+│C         │
+│          │
+│          │
+│          │
+│          │
+│          │
+│          │
+│          │
+└──────────┘",
+                                                           _output,
+                                                           app.Driver);
+        }
+        finally
+        {
+            top.Dispose ();
+            app.Dispose ();
+        }
+    }
+
+    [Fact]
+    public async Task SetSourceAsync_Null_Then_Shorter_Source_Resets_Selection_And_Shows_Items ()
+    {
+        IApplication app = Application.Create ();
+        app.Init (DriverRegistry.Names.ANSI);
+        app.Driver?.SetScreenSize (12, 12);
+
+        ObservableCollection<string> longSource = [];
+
+        for (var i = 0; i < 20; i++)
+        {
+            longSource.Add ($"Line{i}");
+        }
+
+        var lv = new ListView
+        {
+            Width = Dim.Fill (),
+            Height = Dim.Fill (),
+            Source = new ListWrapper<string> (longSource)
+        };
+        var win = new Window ();
+        win.Add (lv);
+        var top = new Runnable ();
+        top.Add (win);
+        app.Begin (top);
+
+        try
+        {
+            app.LayoutAndDraw ();
+            Assert.Null (lv.SelectedItem);
+
+            lv.SelectedItem = 19;
+            Assert.True (lv.ScrollVertical (10));
+            app.LayoutAndDraw ();
+            Assert.Equal (19, lv.SelectedItem);
+
+            // Complete on the thread pool — do not resume on MainLoopSyncContext (Begin may
+            // install it; nothing pumps here).
+            await AwaitWithoutUiContextAsync (lv.SetSourceAsync<string> (null));
+
+            Assert.NotNull (lv.Source); // empty ListWrapper, not a null Source
+            Assert.Equal (0, lv.Source!.Count);
+            Assert.Null (lv.SelectedItem); // enable once SelectedItem clears correctly
+
+            ObservableCollection<string> shortSource = ["A", "B", "C"];
+            await AwaitWithoutUiContextAsync (lv.SetSourceAsync (shortSource));
+
+            app.LayoutAndDraw ();
+
+            Assert.Null (lv.SelectedItem);
+            Assert.Equal (0, lv.Viewport.Y);
+            Assert.Equal (3, lv.Source!.Count);
+
+            DriverAssert.AssertDriverContentsWithFrameAre (
+                                                           @"
+┌──────────┐
+│A         │
+│B         │
+│C         │
+│          │
+│          │
+│          │
+│          │
+│          │
+│          │
+│          │
+└──────────┘",
+                                                           _output,
+                                                           app.Driver);
+        }
+        finally
+        {
+            top.Dispose ();
+            app.Dispose ();
+        }
+    }
+
+    /// <summary>
+    /// Awaits thread-pool work without posting the continuation to MainLoopSyncContext
+    /// (which nothing pumps in this test) and without ConfigureAwait(false) (xUnit1030).
+    /// </summary>
+    private static async Task AwaitWithoutUiContextAsync (Task task)
+    {
+        SynchronizationContext? old = SynchronizationContext.Current;
+        SynchronizationContext.SetSynchronizationContext (null);
+
+        try
+        {
+            await task.WaitAsync (TestContext.Current.CancellationToken);
+        }
+        finally
+        {
+            SynchronizationContext.SetSynchronizationContext (old);
+        }
+    }
+
     [Fact]
     public void SourceChanged_Event ()
     {
@@ -1488,6 +1700,51 @@ Five ",
         Assert.Equal (0, removed);
         Assert.Equal (0, otherActions);
         Assert.Empty (source1);
+    }
+
+    [Fact]
+    public void CollectionChanged_Remove_Clamps_SelectedItem_To_LastIndex ()
+    {
+        ObservableCollection<string> source = ["Zero", "One", "Two", "Three", "Four"];
+        var lv = new ListView { Source = new ListWrapper<string> (source) };
+
+        lv.SelectedItem = 4; // "Four"
+        Assert.Equal (4, lv.SelectedItem);
+        Assert.Equal (5, lv.Source!.Count);
+
+        // Remove last item: selection was 4, Count becomes 4 → clamp to 3 ("Three")
+        source.RemoveAt (4);
+        Assert.Equal (4, lv.Source.Count);
+        Assert.Equal (3, lv.SelectedItem);
+        Assert.Equal ("Three", source [lv.SelectedItem!.Value]);
+
+        // Remove new last item: selection was 3, Count becomes 3 → clamp to 2 ("Two")
+        source.RemoveAt (3);
+        Assert.Equal (3, lv.Source.Count);
+        Assert.Equal (2, lv.SelectedItem);
+        Assert.Equal ("Two", source [lv.SelectedItem!.Value]);
+
+        // Remove first item: list is ["One", "Two"]; selection was 2 → clamp to 1 ("Two")
+        // Note: removal before the selection is not tracked by index shift—only out-of-range clamp.
+        source.RemoveAt (0);
+        Assert.Equal (2, lv.Source.Count);
+        Assert.Equal (1, lv.SelectedItem);
+        Assert.Equal ("Two", source [lv.SelectedItem!.Value]);
+    }
+
+    [Fact]
+    public void CollectionChanged_Clear_Sets_SelectedItem_Null ()
+    {
+        ObservableCollection<string> source = ["Zero", "One", "Two"];
+        var lv = new ListView { Source = new ListWrapper<string> (source) };
+
+        lv.SelectedItem = 2;
+        Assert.Equal (2, lv.SelectedItem);
+
+        source.Clear ();
+
+        Assert.Equal (0, lv.Source!.Count);
+        Assert.Null (lv.SelectedItem);
     }
 
     [Fact]

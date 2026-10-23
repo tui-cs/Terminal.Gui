@@ -126,11 +126,41 @@ public partial class ListView : View, IDesignable, IValue<int?>
     /// </summary>
     public int MaxItemLength => Source?.MaxItemLength ?? 0;
 
-    /// <summary>Sets the source of the <see cref="ListView"/> to an <see cref="IList"/>.</summary>
-    /// <value>An object implementing the IList interface.</value>
+    /// <summary>
+    ///     Sets the items from an <see cref="ObservableCollection{T}"/> using the default
+    ///     <see cref="IListDataSource"/> for collections.
+    /// </summary>
+    /// <param name="source">
+    ///     The collection to display, or <see langword="null"/> to clear items through the default
+    ///     collection data-source path (see remarks).
+    /// </param>
     /// <remarks>
-    ///     Use the <see cref="Source"/> property to set a new <see cref="IListDataSource"/> source and use custom
-    ///     rendering.
+    ///     <para>
+    ///         When <paramref name="source"/> is non-<see langword="null"/>, <see cref="Source"/> is set to
+    ///         an <see cref="IListDataSource"/> that wraps that collection (the built-in implementation is
+    ///         <see cref="ListWrapper{T}"/>).
+    ///     </para>
+    ///     <para>
+    ///         When <paramref name="source"/> is <see langword="null"/>:
+    ///         <list type="bullet">
+    ///             <item>
+    ///                 <description>
+    ///                     If <see cref="Source"/> is already the default collection data source for
+    ///                     <typeparamref name="T"/>, it is replaced with an empty default data source
+    ///                     (<see cref="IListDataSource.Count"/> is 0). <see cref="Source"/> stays non-<see langword="null"/>.
+    ///                 </description>
+    ///             </item>
+    ///             <item>
+    ///                 <description>
+    ///                     Otherwise (no source, or a custom <see cref="IListDataSource"/>),
+    ///                     <see cref="Source"/> is set to <see langword="null"/>.
+    ///                 </description>
+    ///             </item>
+    ///         </list>
+    ///     </para>
+    ///     <para>
+    ///         To always detach the data source regardless of its type, assign <c>Source = null</c>.
+    ///     </para>
     /// </remarks>
     public void SetSource<T> (ObservableCollection<T>? source)
     {
@@ -144,11 +174,41 @@ public partial class ListView : View, IDesignable, IValue<int?>
         }
     }
 
-    /// <summary>Sets the source to an <see cref="IList"/> value asynchronously.</summary>
-    /// <value>An item implementing the IList interface.</value>
+    /// <summary>
+    ///     Sets the items from an <see cref="ObservableCollection{T}"/> using the default
+    ///     <see cref="IListDataSource"/> for collections.
+    /// </summary>
+    /// <param name="source">
+    ///     The collection to display, or <see langword="null"/> to clear items through the default
+    ///     collection data-source path (see remarks).
+    /// </param>
     /// <remarks>
-    ///     Use the <see cref="Source"/> property to set a new <see cref="IListDataSource"/> source and use custom
-    ///     rendering.
+    ///     <para>
+    ///         When <paramref name="source"/> is non-<see langword="null"/>, <see cref="Source"/> is set to
+    ///         an <see cref="IListDataSource"/> that wraps that collection (the built-in implementation is
+    ///         <see cref="ListWrapper{T}"/>).
+    ///     </para>
+    ///     <para>
+    ///         When <paramref name="source"/> is <see langword="null"/>:
+    ///         <list type="bullet">
+    ///             <item>
+    ///                 <description>
+    ///                     If <see cref="Source"/> is already the default collection data source for
+    ///                     <typeparamref name="T"/>, it is replaced with an empty default data source
+    ///                     (<see cref="IListDataSource.Count"/> is 0). <see cref="Source"/> stays non-<see langword="null"/>.
+    ///                 </description>
+    ///             </item>
+    ///             <item>
+    ///                 <description>
+    ///                     Otherwise (no source, or a custom <see cref="IListDataSource"/>),
+    ///                     <see cref="Source"/> is set to <see langword="null"/>.
+    ///                 </description>
+    ///             </item>
+    ///         </list>
+    ///     </para>
+    ///     <para>
+    ///         To always detach the data source regardless of its type, assign <c>Source = null</c>.
+    ///     </para>
     /// </remarks>
     public Task SetSourceAsync<T> (ObservableCollection<T>? source) =>
         Task.Factory.StartNew (() =>
@@ -168,9 +228,26 @@ public partial class ListView : View, IDesignable, IValue<int?>
                                TaskCreationOptions.DenyChildAttach,
                                TaskScheduler.Default);
 
-    /// <summary>Gets or sets the <see cref="IListDataSource"/> backing this <see cref="ListView"/>, enabling custom rendering.</summary>
-    /// <value>The source.</value>
-    /// <remarks>Use <see cref="SetSource{T}"/> to set a new <see cref="IList"/> source.</remarks>
+    /// <summary>
+    ///     Gets or sets the <see cref="IListDataSource"/> that provides items for this <see cref="ListView"/>.
+    /// </summary>
+    /// <value>
+    ///     The current data source, or <see langword="null"/> if none is attached.
+    /// </value>
+    /// <remarks>
+    ///     <para>
+    ///         Assign <see langword="null"/> to detach the data source completely.
+    ///     </para>
+    ///     <para>
+    ///         For an <see cref="ObservableCollection{T}"/>, <see cref="SetSource{T}"/> and
+    ///         <see cref="SetSourceAsync{T}"/> install a default <see cref="IListDataSource"/> implementation.
+    ///         Use this property directly when supplying a custom <see cref="IListDataSource"/>.
+    ///     </para>
+    ///     <para>
+    ///         Clearing via <see cref="SetSource{T}"/> with a <see langword="null"/> collection is not always
+    ///         the same as assigning <see langword="null"/> here; see those methods' remarks.
+    ///     </para>
+    /// </remarks>
     public IListDataSource? Source
     {
         get;
@@ -181,6 +258,11 @@ public partial class ListView : View, IDesignable, IValue<int?>
                 return;
             }
 
+            // Clear selection while Source is still the old non-null value (if any),
+            // so SelectedItem's setter can run; also force-clear after for the null case.
+            SelectedItem = null;
+            _lastSelectedItem = null;
+
             field?.Dispose ();
             field = value;
 
@@ -190,9 +272,21 @@ public partial class ListView : View, IDesignable, IValue<int?>
                 SetContentSize (new Size (EffectiveMaxItemLength, field?.Count ?? Viewport.Height));
                 KeystrokeNavigator?.Collection = field?.ToList ();
             }
+            else
+            {
+                // No source: empty content; ensure selection stays null even if setter was picky.
+                // (SelectedItem setter fix should make SelectedItem = null above sufficient;
+                //  setting field = null here is belt-and-braces if you assign via a private path.)
+                SetContentSize (new Size (0, Viewport.Height)); // or existing empty-size policy
+                KeystrokeNavigator?.Collection = null;
+            }
 
-            SelectedItem = null;
-            _lastSelectedItem = null;
+            // Reset scroll so a shorter/empty list is not drawn off-screen.
+            if (Viewport.Y != 0)
+            {
+                Viewport = Viewport with { Y = 0 };
+            }
+
             OnSourceChanged ();
             SourceChanged?.Invoke (this, EventArgs.Empty);
             SetNeedsDraw ();
@@ -219,6 +313,10 @@ public partial class ListView : View, IDesignable, IValue<int?>
         if (Source is { Count: > 0 } && SelectedItem.HasValue && SelectedItem > Source.Count - 1)
         {
             SelectedItem = Source.Count - 1;
+        }
+        else if (Source is null || Source.Count == 0)
+        {
+            SelectedItem = null;
         }
 
         SetNeedsDraw ();
