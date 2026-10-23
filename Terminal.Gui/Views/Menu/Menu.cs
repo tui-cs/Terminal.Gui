@@ -1,4 +1,5 @@
 using Terminal.Gui.Tracing;
+using Terminal.Gui.ViewBase;
 
 namespace Terminal.Gui.Views;
 
@@ -77,6 +78,13 @@ public class Menu : Bar, IValue<MenuItem?>
 
         KeyBindings.Clear ();
         MouseBindings.Clear ();
+
+        // Wrap-around navigation within this menu (CursorDown on last item wraps to first,
+        // CursorUp on first wraps to last), like VS/Windows. Issue #5201.
+        KeyBindings.Add (Key.CursorDown, Command.Down);
+        KeyBindings.Add (Key.CursorUp, Command.Up);
+        AddCommand (Command.Down, _ => MoveFocus (NavigationDirection.Forward));
+        AddCommand (Command.Up, _ => MoveFocus (NavigationDirection.Backward));
 
         ThemeChanges.ThemeChanged += OnThemeChanged;
     }
@@ -168,6 +176,43 @@ public class Menu : Bar, IValue<MenuItem?>
 
                 break;
         }
+    }
+
+    /// <summary>
+    ///     Moves focus to the next (or previous) focusable item in this menu, wrapping around
+    ///     at the boundaries. Skips non-focusable items (separators, disabled).
+    /// </summary>
+    private bool? MoveFocus (NavigationDirection direction)
+    {
+        List<View> items = [.. SubViews.Where (v => v is { CanFocus: true, Visible: true, Enabled: true })];
+
+        if (items.Count == 0)
+        {
+            return false;
+        }
+
+        View? focused = Focused;
+        int index = focused is null ? -1 : items.IndexOf (focused);
+
+        int next;
+
+        if (direction == NavigationDirection.Forward)
+        {
+            next = index < 0 ? 0 : (index + 1) % items.Count;
+        }
+        else
+        {
+            next = index <= 0 ? items.Count - 1 : index - 1;
+        }
+
+        // If there is only one focusable item (or navigation lands on the already-focused item),
+        // keep focus here and report success so focus does not escape to a parent view.
+        if (items [next] == focused)
+        {
+            return true;
+        }
+
+        return items [next].SetFocus ();
     }
 
     /// <inheritdoc/>
