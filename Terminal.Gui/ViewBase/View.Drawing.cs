@@ -118,12 +118,22 @@ public partial class View // Drawing APIs
 
         // Capture whether THIS view's own content needs redrawing BEFORE DoDrawAdornments
         // escalates NeedsDrawRect (see View.Drawing.Adornments.cs DoDrawAdornments).
-        // When only SubViewNeedsDraw is true, needsDrawSelf is false and we skip
-        // ClearViewport/DrawText/DrawContent so child-only invalidations stay narrow.
+        // SubView-only invalidations normally skip ClearViewport/DrawText/DrawContent.
+        // Content callbacks can contribute line geometry as well as viewport cells. A
+        // SubView-only pass cannot replace that contribution with adornments alone.
+        if (!NeedsDraw && SubViewNeedsDraw && _contentChangesLineCanvas)
+        {
+            SetNeedsDraw ();
+        }
+
         bool needsDrawSelf = NeedsDraw;
 
-        if (NeedsDraw || SubViewNeedsDraw)
+        bool drew = NeedsDraw || SubViewNeedsDraw;
+
+        if (drew)
         {
+            _sharedLineCanvasCache?.Invalidate ();
+
             // ------------------------------------
             // Draw the Border and Padding Adornments.
             // Note: Margin with a Shadow is special-cased and drawn in a separate pass to support
@@ -211,6 +221,15 @@ public partial class View // Drawing APIs
         // But the context contains the region that was drawn by this view
         DoDrawComplete (context);
 
+        if (drew && SuperViewRendersLineCanvas)
+        {
+            // Include lines supplied by DrawComplete subscribers before publishing the
+            // contribution, including when Draw was called directly by an application.
+            _sharedLineCanvasCache ??= new ();
+            _sharedLineCanvasCache.Update (this);
+            _sharedLineCanvasCache.PendingDraw = true;
+        }
+
         Trace.Draw (this.ToIdentifyingString (), "End");
 
         // When DoDrawComplete returns, Driver.Clip has been updated to exclude this view's area.
@@ -235,6 +254,7 @@ public partial class View // Drawing APIs
     /// </param>
     private void DrawSelfContent (DrawContext sharedContext)
     {
+        int canvasVersionBeforeContent = LineCanvas.Version;
         // Recreate the per-view context for this self-redraw pass. It is created here (rather than
         // alongside the viewport clear) so its creation, population, and merge stay in one place.
         _localDrawContext = new DrawContext ();
@@ -249,6 +269,7 @@ public partial class View // Drawing APIs
         // Draw the content — tracked in both shared (clip exclusion) and local (hit-testing) contexts
         Trace.Draw (this.ToIdentifyingString (), "Content");
         DoDrawContent (_localDrawContext);
+        _contentChangesLineCanvas = LineCanvas.Version != canvasVersionBeforeContent;
 
         // Merge this view's own draws into the shared context so the SuperView
         // can track the aggregate for clip exclusion.
@@ -713,11 +734,25 @@ public partial class View // Drawing APIs
                 // Fully occluded by higher-Z opaque peers. Clear the draw flags to mirror a
                 // drawn-but-fully-clipped pass (Draw() would have called ClearNeedsDraw at its end);
                 // otherwise this view would stay dirty forever and keep the SuperView redrawing.
+                // Mirror Draw's invalidation even though this branch skips Draw itself.
+                view._sharedLineCanvasCache?.Invalidate ();
                 view.ClearNeedsDraw ();
 
                 continue;
             }
 
+            // A clean shared canvas can reuse its last contribution without visiting
+            // its SubViews. Rebuild when geometry, theme, or effective visual state changes.
+            if (view.SuperViewRendersLineCanvas
+                && !view.NeedsDraw
+                && !view.SubViewNeedsDraw
+                && view._sharedLineCanvasCache?.Matches (view) != true)
+            {
+                view.RebuildSharedLineCanvas ();
+            }
+
+            // Clean shared views still need DrawComplete for clip exclusion and hit-testing.
+            // The cache avoids rebuilding their line data without bypassing that bookkeeping.
             view.Draw (context);
 
             if (opaque)
@@ -731,26 +766,35 @@ public partial class View // Drawing APIs
                 continue;
             }
 
-            if (view.Arrangement.FastHasFlags (ViewArrangement.Overlapped))
+            bool overlapped = view.Arrangement.FastHasFlags (ViewArrangement.Overlapped);
+            SharedLineCanvasCache sharedCanvas = view._sharedLineCanvasCache!;
+
+            if ((!sharedCanvas.PendingDraw || sharedCanvas.SourceVersion != view.LineCanvas.Version)
+                && (view.LineCanvas.LineCount > 0 || view.LineCanvas.GetReservedCells () is { }))
+            {
+                // New manually supplied lines extend a clean contribution. A direct Draw
+                // already captured the live canvas and must not merge it a second time.
+                if (!sharedCanvas.PendingDraw)
+                {
+                    sharedCanvas.Geometry!.MergeInto (view.LineCanvas, includeReserved: true);
+                }
+                sharedCanvas.Update (view);
+            }
+
+            if (overlapped)
             {
                 // Overlapped views: resolve independently so their lines don't
                 // auto-join with other Z-levels. Deferred for painters' algorithm
                 // compositing in RenderLineCanvas.
-                Dictionary<Point, Cell?>? resolvedCells = null;
-
-                if (view.LineCanvas.Bounds != Rectangle.Empty)
-                {
-                    resolvedCells = view.LineCanvas.GetCellMap ();
-                }
-
                 overlappedCellMaps ??= [];
-                overlappedCellMaps.Add ((resolvedCells ?? [], view.LineCanvas.GetReservedCells ()));
+                overlappedCellMaps.Add (sharedCanvas.OverlappedCells);
             }
             else
             {
                 // Tiled views: flat merge preserves cross-view auto-join.
-                LineCanvas.Merge (view.LineCanvas);
+                sharedCanvas.Geometry!.MergeInto (LineCanvas);
             }
+            sharedCanvas.PendingDraw = false;
             view.LineCanvas.Clear ();
         }
 

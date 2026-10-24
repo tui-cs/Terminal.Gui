@@ -114,6 +114,11 @@ public class LineCanvas : IDisposable
     /// <summary>Gets the lines in the canvas.</summary>
     public IReadOnlyCollection<StraightLine> Lines => _lines.AsReadOnly ();
 
+    internal int LineCount => _lines.Count;
+    internal int Version { get; private set; }
+
+    internal LineCanvasSnapshot Capture () => new ([.. _lines], _exclusionRegion?.Clone (), _reservedCells is { } ? [.. _reservedCells] : null);
+
     /// <summary>
     ///     <para>Adds a new <paramref name="length"/> long line to the canvas starting at <paramref name="start"/>.</para>
     ///     <para>
@@ -155,6 +160,7 @@ public class LineCanvas : IDisposable
     /// <param name="attribute">The color attribute for the line, or <see langword="null"/> to inherit.</param>
     public void AddLine (Point start, int length, Orientation orientation, LineStyle style, Attribute? attribute = null)
     {
+        Version++;
         _cachedBounds = Rectangle.Empty;
         _lines.Add (new StraightLine (start, length, orientation, style, attribute));
     }
@@ -163,6 +169,7 @@ public class LineCanvas : IDisposable
     /// <param name="line"></param>
     public void AddLine (StraightLine line)
     {
+        Version++;
         _cachedBounds = Rectangle.Empty;
         _lines.Add (line);
     }
@@ -201,6 +208,7 @@ public class LineCanvas : IDisposable
     /// <param name="rect">The rectangle of cells to reserve, in canvas coordinates.</param>
     public void Reserve (Rectangle rect)
     {
+        Version++;
         _reservedCells ??= [];
 
         for (int y = rect.Y; y < rect.Bottom; y++)
@@ -239,6 +247,7 @@ public class LineCanvas : IDisposable
     /// </remarks>
     public void Exclude (Region region)
     {
+        Version++;
         _exclusionRegion ??= new Region ();
         _exclusionRegion.Union (region);
     }
@@ -247,7 +256,11 @@ public class LineCanvas : IDisposable
     ///     Clears the exclusion region. After calling this method, <see cref="GetCellMap"/> and <see cref="GetMap()"/> will
     ///     return all points in the canvas.
     /// </summary>
-    public void ClearExclusions () => _exclusionRegion = null;
+    public void ClearExclusions ()
+    {
+        Version++;
+        _exclusionRegion = null;
+    }
 
     /// <summary>Clears all lines from the LineCanvas.</summary>
     public void Clear ()
@@ -629,6 +642,7 @@ public class LineCanvas : IDisposable
     /// <returns></returns>
     public StraightLine RemoveLastLine ()
     {
+        Version++;
         StraightLine? l = _lines.LastOrDefault ();
 
         if (l is { })

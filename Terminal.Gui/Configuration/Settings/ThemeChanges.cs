@@ -8,8 +8,15 @@ public static class ThemeChanges
 {
     static ThemeChanges ()
     {
-        ThemeManager.ThemeChanged += (_, e) => ThemeChanged?.Invoke (null, e);
+        ThemeManager.ThemeChanged += (_, e) =>
+                                     {
+                                         Generation++;
+                                         ThemeChanged?.Invoke (null, e);
+                                     };
     }
+
+    /// <summary>Identifies the glyph/configuration generation used by resolved line caches.</summary>
+    internal static int Generation { get; private set; }
 
     /// <summary>
     ///     Raised after the active theme has changed.
