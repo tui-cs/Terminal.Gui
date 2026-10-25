@@ -19,17 +19,13 @@ public class MenuItemOpenAndSelectTests
 
         var menuBar = new MenuBar ([fileMenu]);
 
-        using IApplication app = Application.Create ();
-        app.Init ();
-
+        using IApplication app = Application.Create ().Init (DriverRegistry.Names.ANSI);
         using var top = new Window ();
         top.Add (menuBar);
         top.BeginInit ();
         top.EndInit ();
         top.LayoutSubViews ();
 
-        // Sanity: hierarchy is wired
-        Assert.Same (file1, file1); // no-op keep item alive
         Assert.IsType<Menu> (file1.SuperView);
         Assert.Same (recent, ((Menu)file1.SuperView!).SuperMenuItem);
 
@@ -52,9 +48,7 @@ public class MenuItemOpenAndSelectTests
 
         var menuBar = new MenuBar ([fileMenu]);
 
-        using IApplication app = Application.Create ();
-        app.Init ();
-
+        using IApplication app = Application.Create ().Init (DriverRegistry.Names.ANSI);
         using var top = new Window ();
         top.Add (menuBar);
         top.BeginInit ();
@@ -99,9 +93,7 @@ public class MenuItemOpenAndSelectTests
         MenuBarItem root = CreateInlineBarItem ("_Root", parentA, parentB);
         var menuBar = new MenuBar ([root]);
 
-        using IApplication app = Application.Create ();
-        app.Init ();
-
+        using IApplication app = Application.Create ().Init (DriverRegistry.Names.ANSI);
         using var top = new Window ();
         top.Add (menuBar);
         top.BeginInit ();
@@ -126,9 +118,7 @@ public class MenuItemOpenAndSelectTests
         MenuBarItem barItem = CreateInlineBarItem ("_File", item);
         var menuBar = new MenuBar ([barItem]);
 
-        using IApplication app = Application.Create ();
-        app.Init ();
-
+        using IApplication app = Application.Create ().Init (DriverRegistry.Names.ANSI);
         using var top = new Window ();
         top.Add (menuBar);
         top.BeginInit ();

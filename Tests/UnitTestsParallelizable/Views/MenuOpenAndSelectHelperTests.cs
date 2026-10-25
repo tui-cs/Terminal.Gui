@@ -11,9 +11,7 @@ public class MenuOpenAndSelectHelperTests
 
         var menuBar = new MenuBar ([fileMenu]);
 
-        IApplication app = Application.Create ();
-        app.Init ();
-
+        IApplication app = Application.Create ().Init (DriverRegistry.Names.ANSI);
         var top = new Window ();
         top.Add (menuBar);
         top.BeginInit ();
@@ -55,9 +53,7 @@ public class MenuOpenAndSelectHelperTests
         var orphan = new MenuItem { Title = "Orphan" };
         var menuBar = new MenuBar ([CreateInlineBarItem ("_File", new MenuItem { Title = "Other" })]);
 
-        using IApplication app = Application.Create ();
-        app.Init ();
-
+        using IApplication app = Application.Create ().Init (DriverRegistry.Names.ANSI);
         using var top = new Window ();
         top.Add (menuBar);
         top.BeginInit ();
@@ -73,9 +69,7 @@ public class MenuOpenAndSelectHelperTests
         var item = new MenuItem { Title = "Child" };
         var menu = new Menu ([item]);
 
-        using IApplication app = Application.Create ();
-        app.Init ();
-
+        using IApplication app = Application.Create ().Init (DriverRegistry.Names.ANSI);
         using var top = new Window ();
         top.Add (menu);
         top.BeginInit ();
@@ -102,9 +96,7 @@ public class MenuOpenAndSelectHelperTests
         var barItem = new MenuBarItem { Title = "_Root", UsePopoverMenu = false, SubMenu = rootMenu };
         var menuBar = new MenuBar ([barItem]);
 
-        using IApplication app = Application.Create ();
-        app.Init ();
-
+        using IApplication app = Application.Create ().Init (DriverRegistry.Names.ANSI);
         using var top = new Window ();
         top.Add (menuBar);
         top.BeginInit ();
