@@ -755,29 +755,33 @@ public partial class View // Drawing APIs
             // The cache avoids rebuilding their line data without bypassing that bookkeeping.
             view.Draw (context);
 
+            // A peer's draw callback can hide a view after drawOrder was captured.
+            if (!CanBeVisible (view))
+            {
+                continue;
+            }
+
             if (opaque)
             {
                 opaqueCoverage ??= new ();
                 opaqueCoverage.Union (coveredScreenRect);
             }
 
-            if (!view.SuperViewRendersLineCanvas)
+            if (!view.SuperViewRendersLineCanvas || view._sharedLineCanvasCache is not { } sharedCanvas)
             {
                 continue;
             }
 
             bool overlapped = view.Arrangement.FastHasFlags (ViewArrangement.Overlapped);
-            SharedLineCanvasCache sharedCanvas = view._sharedLineCanvasCache!;
-
-            if ((!sharedCanvas.PendingDraw || sharedCanvas.SourceVersion != view.LineCanvas.Version)
-                && (view.LineCanvas.LineCount > 0 || view.LineCanvas.GetReservedCells () is { }))
+            if (sharedCanvas.SourceVersion != view.LineCanvas.Version)
             {
-                // New manually supplied lines extend a clean contribution. A direct Draw
+                // Manual lines, exclusions, and reservations extend a clean contribution. A direct Draw
                 // already captured the live canvas and must not merge it a second time.
                 if (!sharedCanvas.PendingDraw)
                 {
                     sharedCanvas.Geometry!.MergeInto (view.LineCanvas, includeReserved: true);
                 }
+
                 sharedCanvas.Update (view);
             }
 
@@ -794,8 +798,8 @@ public partial class View // Drawing APIs
                 // Tiled views: flat merge preserves cross-view auto-join.
                 sharedCanvas.Geometry!.MergeInto (LineCanvas);
             }
-            sharedCanvas.PendingDraw = false;
-            view.LineCanvas.Clear ();
+
+            sharedCanvas.Consume (view.LineCanvas);
         }
 
         // Store for compositing during RenderLineCanvas.

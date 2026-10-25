@@ -1,4 +1,5 @@
 using System.Reflection;
+using System.Text;
 using UnitTests;
 
 namespace ViewBaseTests.Draw;
@@ -7,6 +8,46 @@ namespace ViewBaseTests.Draw;
 [Collection ("StaticSettingsTests")]
 public class SharedLineCanvasThemeTests : TestDriverBase
 {
+    [Theory]
+    [InlineData (false)]
+    [InlineData (true)]
+    public void GlyphSettingsReplacement_RefreshesCleanSharedContribution (bool applyConfiguration)
+    {
+        using ConfigurationTests.SettingsFacadeSnapshot snapshot = new ();
+        using IDriver driver = CreateTestDriver (24, 8);
+        using View root = new () { Driver = driver, Width = 24, Height = 8 };
+        View shared = new ()
+        {
+            Width = 12, Height = 6, BorderStyle = LineStyle.Single, SuperViewRendersLineCanvas = true,
+            Arrangement = ViewArrangement.Overlapped
+        };
+        Button button = new () { X = 14, Text = "B" };
+        root.Add (shared, button);
+        root.Layout ();
+        root.Draw ();
+
+        if (applyConfiguration)
+        {
+            TuiConfigurationBuilder builder = new () { RuntimeConfig = """{ "Glyphs": { "HLine": "=" } }""" };
+            builder.ApplyToStaticFacades ();
+        }
+        else
+        {
+            GlyphSettings.Current = GlyphSettings.Current with { HLine = new Rune ('=') };
+        }
+
+        button.SetNeedsDraw ();
+        root.SetClipToScreen ();
+        root.Draw ();
+
+        Assert.Equal ("=", driver.Contents! [5, 5].Grapheme);
+        string partial = driver.ToString ();
+        root.SetNeedsDraw ();
+        root.SetClipToScreen ();
+        root.Draw ();
+        Assert.Equal (partial, driver.ToString ());
+    }
+
     [Theory]
     [InlineData (false)]
     [InlineData (true)]

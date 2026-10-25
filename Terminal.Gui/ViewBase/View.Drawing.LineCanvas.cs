@@ -219,12 +219,14 @@ public partial class View
         private Rectangle _viewport;
         private bool _overlapped;
         private int _themeGeneration;
+        private GlyphSettings? _glyphSettings;
         private Scheme? _scheme;
         private Attribute _borderAttribute;
         private bool _hasFocus;
         private bool _enabled;
         private Thickness _borderThickness;
         private LineStyle? _borderStyle;
+        private BorderSettings _borderSettings;
         private string? _title;
 
         public (Dictionary<Point, Cell?> CellMap, HashSet<Point>? Reserved) OverlappedCells { get; private set; } = ( [], null);
@@ -238,15 +240,24 @@ public partial class View
             && _viewport == view.Viewport
             && _overlapped == view.Arrangement.FastHasFlags (ViewArrangement.Overlapped)
             && _themeGeneration == ThemeChanges.Generation
+            && ReferenceEquals (_glyphSettings, GlyphSettings.Current)
             && _hasFocus == view.HasFocus
             && _enabled == view.Enabled
             && _borderThickness == view.Border.Thickness
             && _borderStyle == view.Border.LineStyle
+            && _borderSettings == view.Border.Settings
             && _title == view.Title
             && _scheme == view.GetScheme ()
             && _borderAttribute == (view.Border.View ?? view).GetAttributeForRole (VisualRole.Normal);
 
         public void Invalidate () => _isValid = false;
+
+        public void Consume (LineCanvas canvas)
+        {
+            canvas.Clear ();
+            SourceVersion = canvas.Version;
+            PendingDraw = false;
+        }
 
         public void Update (View view)
         {
@@ -254,10 +265,12 @@ public partial class View
             _viewport = view.Viewport;
             _overlapped = view.Arrangement.FastHasFlags (ViewArrangement.Overlapped);
             _themeGeneration = ThemeChanges.Generation;
+            _glyphSettings = GlyphSettings.Current;
             _hasFocus = view.HasFocus;
             _enabled = view.Enabled;
             _borderThickness = view.Border.Thickness;
             _borderStyle = view.Border.LineStyle;
+            _borderSettings = view.Border.Settings;
             _title = view.Title;
             _scheme = view.GetScheme ();
             _borderAttribute = (view.Border.View ?? view).GetAttributeForRole (VisualRole.Normal);

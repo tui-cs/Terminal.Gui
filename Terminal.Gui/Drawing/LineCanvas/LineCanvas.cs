@@ -530,8 +530,7 @@ public class LineCanvas : IDisposable
             return;
         }
 
-        _exclusionRegion ??= new Region ();
-        _exclusionRegion.Union (lineCanvas._exclusionRegion);
+        Exclude (lineCanvas._exclusionRegion);
     }
 
     /// <summary>Merges one line canvas into this one, clipping all lines to the specified bounds.</summary>
@@ -560,8 +559,7 @@ public class LineCanvas : IDisposable
 
         Region clippedExclusion = lineCanvas._exclusionRegion.Clone ();
         clippedExclusion.Intersect (clipBounds);
-        _exclusionRegion ??= new Region ();
-        _exclusionRegion.Union (clippedExclusion);
+        Exclude (clippedExclusion);
     }
 
     /// <summary>Clips a <see cref="StraightLine"/> to the specified bounds rectangle.</summary>
@@ -642,12 +640,12 @@ public class LineCanvas : IDisposable
     /// <returns></returns>
     public StraightLine RemoveLastLine ()
     {
-        Version++;
         StraightLine? l = _lines.LastOrDefault ();
 
         if (l is { })
         {
             _lines.Remove (l);
+            Version++;
         }
 
         return l!;

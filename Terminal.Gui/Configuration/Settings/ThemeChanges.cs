@@ -16,6 +16,7 @@ public static class ThemeChanges
     }
 
     /// <summary>Identifies the glyph/configuration generation used by resolved line caches.</summary>
+    // Theme publication and view drawing run on the UI thread.
     internal static int Generation { get; private set; }
 
     /// <summary>

@@ -8,6 +8,100 @@ public class SharedLineCanvasCacheTests : TestDriverBase
     [Theory]
     [InlineData (false)]
     [InlineData (true)]
+    public void CleanPass_ExclusionOnlyContribution_IsRetained (bool overlapped)
+        => AssertExclusionOnlyContributionIsRetained (overlapped, canvas => canvas.Exclude (new Region (new Rectangle (18, 5, 1, 1))));
+
+    [Theory]
+    [InlineData (false, false)]
+    [InlineData (false, true)]
+    [InlineData (true, false)]
+    [InlineData (true, true)]
+    public void CleanPass_MergedExclusionOnlyContribution_IsRetained (bool overlapped, bool clipped)
+    {
+        using LineCanvas source = new ();
+        source.Exclude (new Region (new Rectangle (18, 5, 1, 1)));
+        AssertExclusionOnlyContributionIsRetained (overlapped, canvas =>
+                                                            {
+                                                                if (clipped)
+                                                                {
+                                                                    canvas.Merge (source, new Rectangle (0, 0, 24, 8));
+
+                                                                    return;
+                                                                }
+
+                                                                canvas.Merge (source);
+                                                            });
+    }
+
+    private void AssertExclusionOnlyContributionIsRetained (bool overlapped, Action<LineCanvas> exclude)
+    {
+        using IDriver driver = CreateTestDriver (24, 8);
+        using View root = CreateViews (driver, overlapped, out View left, out View right);
+        right.DrawComplete += (_, _) =>
+                              {
+                                  Region? clip = right.GetClip ();
+                                  right.SetClipToScreen ();
+                                  driver.Move (18, 5);
+                                  driver.AddStr ("X");
+                                  right.SetClip (clip);
+                                  exclude (right.LineCanvas);
+                              };
+
+        for (var i = 0; i < 3; i++)
+        {
+            left.SubViews.Single ().SetNeedsDraw ();
+            root.SetClipToScreen ();
+            root.Draw ();
+            Assert.Equal ("X", driver.Contents! [5, 18].Grapheme);
+        }
+    }
+
+    [Theory]
+    [InlineData (false)]
+    [InlineData (true)]
+    public void LeafSharedView_SchemeChangeWithClearedFlags_RebuildsContribution (bool overlapped)
+    {
+        using IDriver driver = CreateTestDriver (24, 8);
+        using View root = CreateViews (driver, overlapped, out View left, out View right);
+        foreach (View subView in right.RemoveAll ())
+        {
+            subView.Dispose ();
+        }
+
+        root.Layout ();
+        root.SetClipToScreen ();
+        root.Draw ();
+        right.SetScheme (new Scheme { Normal = new Attribute (Color.Red, Color.Blue) });
+        right.ClearNeedsDraw ();
+        left.SubViews.Single ().SetNeedsDraw ();
+        root.SetClipToScreen ();
+        root.Draw ();
+
+        Assert.Equal (right.Border.View!.GetAttributeForRole (VisualRole.Normal), driver.Contents! [4, 22].Attribute);
+        Assert.Empty (right.SubViews);
+        Assert.False (right.NeedsDraw);
+        Assert.False (root.SubViewNeedsDraw);
+    }
+
+    [Fact]
+    public void SharedView_HiddenByPeerDuringDraw_DoesNotPublishContribution ()
+    {
+        using IDriver driver = CreateTestDriver (24, 8);
+        using View root = new () { Driver = driver, Width = 24, Height = 8 };
+        View shared = new () { Width = 10, Height = 6, BorderStyle = LineStyle.Single, SuperViewRendersLineCanvas = true };
+        View peer = new () { X = 12, Width = 10, Height = 6 };
+        peer.DrawComplete += (_, _) => shared.Visible = false;
+        root.Add (shared, peer);
+        root.Layout ();
+        root.Draw ();
+
+        Assert.False (shared.Visible);
+        Assert.Equal (" ", driver.Contents! [0, 0].Grapheme);
+    }
+
+    [Theory]
+    [InlineData (false)]
+    [InlineData (true)]
     public void ContentLines_SurviveRepeatedSubViewOnlyRedraws (bool overlapped)
     {
         using IDriver driver = CreateTestDriver (24, 8);
@@ -79,6 +173,8 @@ public class SharedLineCanvasCacheTests : TestDriverBase
     [InlineData (true, "Attribute")]
     [InlineData (false, "Thickness")]
     [InlineData (true, "Thickness")]
+    [InlineData (false, "BorderSettings")]
+    [InlineData (true, "BorderSettings")]
     [InlineData (true, "ZOrder")]
     [InlineData (false, "ReAdd")]
     [InlineData (true, "ReAdd")]
@@ -108,6 +204,11 @@ public class SharedLineCanvasCacheTests : TestDriverBase
             case "Thickness":
                 right.Border.Thickness = new Thickness (2);
                 root.Layout ();
+                break;
+            case "BorderSettings":
+                right.Border.Settings = BorderSettings.Default;
+                root.Layout ();
+                right.ClearNeedsDraw ();
                 break;
             case "ZOrder":
                 root.MoveSubViewToStart (right);
