@@ -144,6 +144,161 @@ public class MenuItem : Shortcut, IValue
         }
     }
 
+    /// <summary>
+    ///     Ensures this <see cref="MenuItem"/> is visible and focused by opening every
+    ///     ancestor menu (including the root <see cref="MenuBar"/> / <see cref="PopoverMenu"/>
+    ///     if needed) and selecting this item.
+    /// </summary>
+    /// <param name="ensureVisible">
+    ///     If <see langword="true"/> (default), marks the containing menus for redraw so the
+    ///     item is brought into view when possible.
+    /// </param>
+    /// <returns>
+    ///     <see langword="true"/> if the item was successfully activated;
+    ///     <see langword="false"/> if it is not attached to any menu hierarchy.
+    /// </returns>
+    public bool OpenAndSelect (bool ensureVisible = true)
+    {
+        // Leaf must live in a Menu
+        if (SuperView is not Menu leafMenu)
+        {
+            return false;
+        }
+
+        // Chain of MenuItems from outermost parent → this
+        List<(Menu menu, MenuItem item)> chain = new ();
+        MenuItem? current = this;
+        Menu? menu = leafMenu;
+
+        while (current is { } && menu is { })
+        {
+            chain.Insert (0, (menu, current));
+
+            MenuItem? parent = menu.SuperMenuItem;
+
+            if (parent is null)
+            {
+                break;
+            }
+
+            current = parent;
+            menu = parent.SuperView as Menu;
+        }
+
+        // Resolve MenuBarItem / MenuBar
+        MenuBarItem? barItem = null;
+        MenuBar? menuBar = null;
+
+        // 1) SuperMenuItem of the outermost menu may itself be a MenuBarItem (inline mode)
+        if (chain [0].menu.SuperMenuItem is MenuBarItem inlineBar)
+        {
+            barItem = inlineBar;
+            menuBar = inlineBar.SuperView as MenuBar;
+        }
+
+        // 2) Walk SuperView from outermost menu (popover: Menu → PopoverMenu → Target)
+        if (barItem is null)
+        {
+            for (View? v = chain [0].menu; v is { }; v = v.SuperView)
+            {
+                if (v is MenuBarItem mbi)
+                {
+                    barItem = mbi;
+                    menuBar = mbi.SuperView as MenuBar;
+
+                    break;
+                }
+
+                if (v is PopoverMenu pop && pop.Target is { } weak && weak.TryGetTarget (out View? target) && target is MenuBarItem targetMbi)
+                {
+                    barItem = targetMbi;
+                    menuBar = targetMbi.SuperView as MenuBar;
+
+                    break;
+                }
+
+                if (v is MenuBar mb)
+                {
+                    menuBar = mb;
+
+                    break;
+                }
+            }
+        }
+
+        // 3) Fallback: scan MenuBar children for a RootMenu that contains this item
+        if (barItem is null && menuBar is null)
+        {
+            for (View? v = leafMenu; v is { }; v = v.SuperView)
+            {
+                if (v is MenuBar mb)
+                {
+                    menuBar = mb;
+
+                    break;
+                }
+            }
+        }
+
+        if (menuBar is { } && barItem is null)
+        {
+            foreach (MenuBarItem entry in menuBar.SubViews.OfType<MenuBarItem> ())
+            {
+                Menu? root = entry.UsePopoverMenu ? entry.PopoverMenu?.Root : entry.SubMenu;
+
+                if (root is null)
+                {
+                    continue;
+                }
+
+                if (root.GetMenuItemsOfAllSubMenus (mi => mi == this).Any ())
+                {
+                    barItem = entry;
+
+                    break;
+                }
+            }
+        }
+
+        // Open root
+        if (menuBar is { })
+        {
+            menuBar.Active = true;
+        }
+
+        if (barItem is { })
+        {
+            if (barItem.UsePopoverMenu)
+            {
+                barItem.PopoverMenuOpen = true;
+            }
+            else
+            {
+                ((IMenuBarEntry)barItem).IsMenuOpen = true;
+            }
+        }
+
+        // Open each level + focus
+        foreach ((Menu levelMenu, MenuItem levelItem) in chain)
+        {
+            if (!levelMenu.Visible)
+            {
+                levelMenu.ShowMenu ();
+            }
+
+            levelItem.SetFocus ();
+
+            if (ensureVisible)
+            {
+                levelMenu.SetNeedsDraw ();
+            }
+        }
+
+        SetFocus ();
+
+        return true;
+    }
+
     /// <inheritdoc/>
     public object GetValue () => Title;
 
