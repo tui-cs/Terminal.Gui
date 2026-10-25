@@ -659,22 +659,6 @@ editMe.OpenAndSelect ();
 | Caller only has a `MenuBar` reference | `menuBar.OpenAndSelect(item)` |
 | Item not in any menu | Returns `false`; no-op |
 
-### 5. Optional: Interactions / Event Flow
-
-If **Interactions** lists focus and open/close rules, add a short bullet:
-
-```markdown
-- **Programmatic open:** `MenuItem.OpenAndSelect` does not change the normal
-  close-on-Leave or modal cleanup rules; it only reopens the path and focuses
-  the item when the application chooses to restore state.
-```
-
-### What not to change
-
-- Class hierarchy diagram — no new types.
-- Command routing / keyboard navigation — unchanged.
-- Existing construction samples — keep as-is; the new section covers the API.
-
 ---
 
 ## Event Flow
