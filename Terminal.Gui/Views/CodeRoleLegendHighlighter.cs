@@ -41,7 +41,7 @@ internal sealed class CodeRoleLegendHighlighter : ISyntaxHighlighter
 
     public Attribute? GetAttributeForScope (MarkdownStyleRole role) => _textMate.GetAttributeForScope (role);
 
-    private static void AddRoleSegments (List<StyledSegment> segments, StyledSegment segment)
+    internal static void AddRoleSegments (List<StyledSegment> segments, StyledSegment segment)
     {
         int index = 0;
 
@@ -77,6 +77,6 @@ internal sealed class CodeRoleLegendHighlighter : ISyntaxHighlighter
 
     private static void AddSegment (List<StyledSegment> segments, StyledSegment source, string text, VisualRole? role)
     {
-        segments.Add (new StyledSegment (text, source.StyleRole, source.Url, source.ImageSource, source.Attribute, role));
+        segments.Add (source.WithText (text, role));
     }
 }

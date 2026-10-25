@@ -26,6 +26,11 @@ public static class Program
     {
         bool smokeTest = args.Length > 0 && args [0] == "--smoke-test";
 
+        if (smokeTest)
+        {
+            MarkdownSmokeTests.Run ();
+        }
+
         using IApplication app = Application.Create ().Init ();
 
         #region Localization sanity check
@@ -156,6 +161,7 @@ public sealed class AotAllViewsWindow : Runnable
         yield return Design (new HexView ());
         yield return Design (new Link { Text = "Terminal.Gui on GitHub", Url = "https://github.com/tui-cs/Terminal.Gui" });
         yield return Design (new ListView ());
+        yield return (nameof (Markdown), new Markdown { Text = "# Native AOT\n\nTerm\n: definition\n\n- first  \n  second" });
         yield return Design (new OptionSelector ());
         yield return Design (new ProgressBar ());
         yield return Design (new ScrollBar { Orientation = Orientation.Horizontal });

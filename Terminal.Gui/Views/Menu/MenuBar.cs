@@ -1030,6 +1030,19 @@ public class MenuBar : Menu, IDesignable
         menuBarItem.PopoverMenuOpen = true;
     }
 
+    /// <summary>
+    ///     Opens the menu hierarchy so that <paramref name="item"/> is visible and focused.
+    /// </summary>
+    /// <returns>
+    ///     <see langword="true"/> if <paramref name="item"/> was activated; otherwise <see langword="false"/>.
+    /// </returns>
+    public bool OpenAndSelect (MenuItem item, bool ensureVisible = true)
+    {
+        ArgumentNullException.ThrowIfNull (item);
+
+        return item.OpenAndSelect (ensureVisible);
+    }
+
     /// <inheritdoc/>
     string? IDesignable.GetDemoKeyStrokes () => "wait:500,F9,wait:800,CursorDown,wait:400,CursorDown,wait:400,Escape,wait:500";
 }

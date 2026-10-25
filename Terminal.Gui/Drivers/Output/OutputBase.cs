@@ -205,6 +205,7 @@ public abstract class OutputBase
     internal virtual void FlushFrame () { }
 
     private bool _recoverOutputState;
+    internal bool HasPendingOutputRecovery => _recoverOutputState;
     private int []? _dirtyChanges;
     private readonly HashSet<int> _kittyImagesTouchedThisFrame = [];
     private readonly HashSet<int> _kittyDeletesToRetry = [];

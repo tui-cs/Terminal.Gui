@@ -53,10 +53,12 @@ public partial class AnsiOutput
                 Write ($"{EscSeqUtils.CSI_SetCursorPosition (row + 1, 1)}{EscSeqUtils.CSI_ResetAttributes}{EscSeqUtils.CSI}2K");
             }
             Write (EscSeqUtils.OSC_EndHyperlink () + EscSeqUtils.CSI_ResetAttributes);
+            InlineCursorRow = destination + region.Height - 1;
             return destination;
         }
         catch
         {
+            InlineCursorRow = null;
             IsInlinePlacementKnown = false;
             throw;
         }
@@ -84,6 +86,8 @@ public partial class AnsiOutput
                 }
                 StringBuilder output = new (EscSeqUtils.CSI_SetCursorPosition (start + i + 1, 1));
                 output.Append (EscSeqUtils.CSI_ResetAttributes);
+                // Reset the terminal's stored line extent before replacing a live-frame row.
+                output.Append (EscSeqUtils.CSI + "2K");
                 Attribute? previous = null;
                 foreach (InlineOutputSpan span in rows.Current.Spans)
                 {
@@ -99,7 +103,6 @@ public partial class AnsiOutput
                     output.Append (span.Text);
                 }
                 output.Append (EscSeqUtils.CSI_ResetAttributes);
-                output.Append (' ', terminal.Width - rows.Current.Columns);
                 // Explicit CUP cancels pending autowrap even after an exact-width bottom row.
                 output.Append (EscSeqUtils.CSI_SetCursorPosition (start + i + 1, 1));
                 Write (output.ToString ().AsSpan ());

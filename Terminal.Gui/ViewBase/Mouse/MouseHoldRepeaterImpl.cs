@@ -49,6 +49,10 @@ internal sealed class MouseHoldRepeaterImpl : IMouseHoldRepeater
     private Timeout? _userTimeout;
     private bool _isDown;
     private object? _timeoutToken;
+    private long _mouseDisableGeneration;
+
+    private bool HoldWasInvalidated =>
+        _mouseGrabber is ApplicationMouse mouse && _mouseDisableGeneration != mouse.MouseDisableGeneration;
 
     /// <inheritdoc/>
     public Timeout? Timeout
@@ -71,11 +75,18 @@ internal sealed class MouseHoldRepeaterImpl : IMouseHoldRepeater
 
     public void Start (Mouse mouse)
     {
+        // A fresh press can arrive before the invalidated hold's next scheduled tick.
+        if (HoldWasInvalidated)
+        {
+            Stop ();
+        }
+
         if (_isDown)
         {
             return;
         }
 
+        _mouseDisableGeneration = (_mouseGrabber as ApplicationMouse)?.MouseDisableGeneration ?? 0;
         _mouseEvent = new Mouse
         {
             Timestamp = mouse.Timestamp,
@@ -89,6 +100,19 @@ internal sealed class MouseHoldRepeaterImpl : IMouseHoldRepeater
 
         _isDown = true;
         _mouseGrabber?.GrabMouse (_mouseGrabView);
+
+        // A grab callback can disable mouse handling and stop this repeater before startup resumes.
+        if (!_isDown)
+        {
+            return;
+        }
+
+        // A grab callback can disable and re-enable reporting before startup resumes.
+        if (HoldWasInvalidated)
+        {
+            Stop ();
+            return;
+        }
 
         // Use custom timeout if provided, otherwise default to SmoothAcceleratingTimeout
         if (_userTimeout != null)
@@ -175,6 +199,13 @@ internal sealed class MouseHoldRepeaterImpl : IMouseHoldRepeater
 
     private bool TickWhileMouseIsHeldDown ()
     {
+        // Checking only IsMouseDisabled would miss an off/on cycle between ticks.
+        if (HoldWasInvalidated)
+        {
+            Stop ();
+            return false;
+        }
+
         if (_isDown)
         {
             // Only advance stage if using SmoothAcceleratingTimeout

@@ -481,6 +481,11 @@ public partial class View // Mouse APIs
     /// <seealso cref="MouseHighlightStates"/>
     public bool? NewMouseEvent (Mouse mouse)
     {
+        if (StopMouseProcessingIfDisabled ())
+        {
+            return true;
+        }
+
         // 1. Pre-conditions
         mouse.Position ??= mouse.ScreenPosition;
 
@@ -517,6 +522,8 @@ public partial class View // Mouse APIs
         {
             if (mouse.IsPressed)
             {
+                // Disabling may stop repetition without delivering the release that normally detaches this handler.
+                MouseHoldRepeater.MouseIsHeldDownTick -= MouseHoldRepeaterOnMouseIsHeldDownTick;
                 MouseHoldRepeater.MouseIsHeldDownTick += MouseHoldRepeaterOnMouseIsHeldDownTick;
                 MouseHoldRepeater.Start (mouse);
             }
@@ -527,8 +534,15 @@ public partial class View // Mouse APIs
             }
         }
 
+        // Starting hold repetition can invoke grab callbacks that disable the mouse.
+        if (StopMouseProcessingIfDisabled ())
+        {
+            return true;
+        }
+
         // 4. Low-level MouseEvent (cancellable)
-        if (RaiseMouseEvent (mouse) || mouse.Handled)
+        bool handled = RaiseMouseEvent (mouse);
+        if (StopMouseProcessingIfDisabled () || handled || mouse.Handled)
         {
             Trace.Mouse (this, mouse, "Exit", $"{true}");
 
@@ -565,6 +579,12 @@ public partial class View // Mouse APIs
                     return mouse.Handled;
                 }
             }
+        }
+
+        // Auto-grab callbacks (including UnGrabbedMouse) may have disabled the mouse.
+        if (StopMouseProcessingIfDisabled ())
+        {
+            return true;
         }
 
         // 6. Command invocation
@@ -608,6 +628,18 @@ public partial class View // Mouse APIs
         Trace.Mouse (this, mouse, "Exit", $"{result}");
 
         return result;
+    }
+
+    private bool StopMouseProcessingIfDisabled ()
+    {
+        if (App?.Mouse.IsMouseDisabled is not true)
+        {
+            return false;
+        }
+
+        MouseHoldRepeater?.Stop ();
+        MouseState = MouseState.None;
+        return true;
     }
 
     /// <summary>
@@ -658,6 +690,13 @@ public partial class View // Mouse APIs
 
     private void MouseHoldRepeaterOnMouseIsHeldDownTick (object? sender, CancelEventArgs<Mouse> e)
     {
+        // A repeater may no longer be in the hover cache when the mouse is disabled.
+        if (StopMouseProcessingIfDisabled ())
+        {
+            e.Cancel = true;
+            return;
+        }
+
         // Use the configured MouseHoldRepeat flags, defaulting to LeftButtonPressed if not set
         e.NewValue.Flags = MouseHoldRepeat ?? MouseFlags.LeftButtonPressed;
 
@@ -732,6 +771,11 @@ public partial class View // Mouse APIs
         {
             App?.Mouse.GrabMouse (this);
 
+            if (StopMouseProcessingIfDisabled ())
+            {
+                return true;
+            }
+
             if (!HasFocus)
             {
                 if (CanFocus)
@@ -746,8 +790,19 @@ public partial class View // Mouse APIs
             }
         }
 
+        // Focus callbacks can also disable the mouse after a successful grab.
+        if (StopMouseProcessingIfDisabled ())
+        {
+            return true;
+        }
+
         // Update MouseState based on position
         UpdateMouseStateOnPress (mouse.Position);
+
+        if (StopMouseProcessingIfDisabled ())
+        {
+            return true;
+        }
 
         if (MouseHoldRepeat != null)
         {
@@ -782,6 +837,11 @@ public partial class View // Mouse APIs
 
         // Update MouseState
         UpdateMouseStateOnRelease ();
+
+        if (StopMouseProcessingIfDisabled ())
+        {
+            return true;
+        }
 
         if (MouseHoldRepeat != null)
         {

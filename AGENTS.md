@@ -244,12 +244,12 @@ See `.claude/cookbook/` for common UI patterns:
 [Terminal.Gui Source Index]|root: ./Terminal.Gui
 |IMPORTANT: Prefer retrieval-led reasoning over pre-training-led reasoning. Read files when needed.
 |.:{ModuleInitializers.cs}
-|App:{Application.cs,ApplicationDispatchExtensions.cs,ApplicationImpl.cs,ApplicationImpl.Dispatch.cs,ApplicationImpl.Driver.cs,ApplicationImpl.InlineOutput.cs,ApplicationImpl.Lifecycle.cs,ApplicationImpl.Run.cs,ApplicationImpl.Screen.cs,ApplicationInlineOutputExtensions.cs,ApplicationModelUsage.cs,ApplicationNavigation.cs,ApplicationPopover.cs,ApplicationToolTip.cs,AppModel.cs,IApplication.cs,IApplicationAsyncDispatcher.cs,IApplicationInlineOutput.cs,InlineOutputOperation.cs,Logging.cs,NotInitializedException.cs,UiDispatchOperation.cs}
+|App:{Application.cs,ApplicationDispatchExtensions.cs,ApplicationImpl.cs,ApplicationImpl.Dispatch.cs,ApplicationImpl.Driver.cs,ApplicationImpl.InlineOutput.cs,ApplicationImpl.InlineResize.cs,ApplicationImpl.InlineSizing.cs,ApplicationImpl.Lifecycle.cs,ApplicationImpl.Run.cs,ApplicationImpl.Screen.cs,ApplicationInlineOutputExtensions.cs,ApplicationModelUsage.cs,ApplicationNavigation.cs,ApplicationPopover.cs,ApplicationToolTip.cs,AppModel.cs,IApplication.cs,IApplicationAsyncDispatcher.cs,IApplicationInlineOutput.cs,InlineOutputOperation.cs,Logging.cs,NotInitializedException.cs,UiDispatchOperation.cs}
 |App/Clipboard:{Clipboard.cs,ClipboardBase.cs,ClipboardProcessRunner.cs,ClipboardProcessRunnerImpl.cs,IClipboard.cs,IClipboardProcessRunner.cs}
 |App/CWP:{CancelEventArgs.cs,CWPEventHelper.cs,CWPPropertyHelper.cs,CWPWorkflowHelper.cs,EventArgs.cs,ResultEventArgs.cs,ValueChangedEventArgs.cs,ValueChangingEventArgs.cs}
 |App/Keyboard:{ApplicationKeyboard.cs,IKeyboard.cs}
 |App/Legacy:{Application.Clipboard.cs,Application.Driver.cs,Application.Keyboard.cs,Application.Lifecycle.cs,Application.Mouse.cs,Application.Navigation.cs,Application.Popovers.cs,Application.Run.cs,Application.Screen.cs,Application.TopRunnable.cs}
-|App/MainLoop:{ApplicationMainLoop.cs,IApplicationMainLoop.cs,IInlineRenderCoordinator.cs,IMainLoopCoordinator.cs,MainLoopCoordinator.cs,MainLoopSyncContext.cs}
+|App/MainLoop:{ApplicationMainLoop.cs,IApplicationMainLoop.cs,IInlineRenderCoordinator.cs,IMainLoopCoordinator.cs,IMouseReportingCoordinator.cs,MainLoopCoordinator.cs,MainLoopSyncContext.cs}
 |App/Mouse:{ApplicationMouse.cs,IMouse.cs,IMouseGrabHandler.cs}
 |App/Popovers:{IPopover.cs,IPopoverView.cs,Popover.cs,PopoverImpl.cs,ToolTipHost.cs,ToolTipProvider.cs}
 |App/Runnable:{IRunnable.cs,SessionToken.cs,SessionTokenEventArgs.cs}

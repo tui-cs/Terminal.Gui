@@ -407,24 +407,35 @@ public partial class Markdown : View, IDesignable
 
         int effectiveWidth = GetEffectiveLayoutWidth ();
 
-        if (effectiveWidth < MIN_WRAP_WIDTH || _layoutWidth == effectiveWidth)
+        // Tables retain minimum geometry and clear invisible focus even below the text-wrap minimum.
+        // Rebuilding at zero also keeps subsequent growth from reusing stale table coordinates.
+        if (_layoutWidth == effectiveWidth || (effectiveWidth < MIN_WRAP_WIDTH && _blocks.All (block => !block.IsTable)))
         {
             return;
         }
 
         _layoutWidth = effectiveWidth;
 
+        int focusedTable = _tableViews.FindIndex (table => table.HasFocus);
+        int focusedLink = focusedTable >= 0 ? _tableViews [focusedTable].ActiveLinkIndex : -1;
         RemoveCodeBlockViews ();
         RemoveTableViews ();
         RemoveThematicBreakViews ();
 
         BuildRenderedLines ();
 
+        if (focusedTable >= 0 && focusedTable < _tableViews.Count && _tableViews [focusedTable].HasLinks)
+        {
+            MarkdownTable table = _tableViews [focusedTable];
+            table.SetFocus ();
+            table.ActiveLinkIndex = focusedLink;
+        }
+
         // Clear any auto-focus that Add() triggered when a focusable table was added
         // while this view has focus. Tables should only receive focus via explicit Tab.
         // The cascade from HasFocus=false calls OnAdvancingFocus(Forward, TabStop) which
         // just sets _activeLinkIndex without focusing another table — safe here.
-        if (Focused is MarkdownTable)
+        if (focusedTable < 0 && Focused is MarkdownTable)
         {
             Focused.HasFocus = false;
             _activeLinkIndex = -1;
@@ -532,6 +543,8 @@ public partial class Markdown : View, IDesignable
                                                           * [Basic Formatting](#basic-formatting)
                                                           * [Links](#links)
                                                           * [Checklist](#checklist)
+                                                          * [Definition Lists](#definition-lists)
+                                                          * [Hard Line Breaks](#hard-line-breaks)
                                                           * [Code Blocks](#code-blocks)
                                                           * [Tables](#tables)
                                                           * [Separators](#separators)
@@ -588,6 +601,9 @@ public partial class Markdown : View, IDesignable
                                                           | [Links](https://tui-cs.github.io/Terminal.Gui/api/Terminal.Gui.Views.MarkdownTable.html) | ✅ Totally! |
                                                           | Inline `code`  | ✅ *Awesome!*   |
                                                           | Emojis 🎉      | ✅ **Whoa!**      |
+                                                          | Code with a backtick | ``a`b`` |
+                                                          | Nested formatting | **bold *and italic*** with ~~strikethrough~~ |
+                                                          | Nested link label | [Testing [Header]](https://example.com/path_(part)) |
 
                                                           **table** with different alignments:
 
@@ -608,12 +624,25 @@ public partial class Markdown : View, IDesignable
 
                                                           > **Tip:** This is a block quote with *inline formatting*.
 
+                                                          > [!WARNING]
+                                                          > Alert kinds remain visible alongside their content.
+
                                                           Here's a multi-line block quote with a link, code, and more:
 
                                                           > **Tip:** Block quotes can contain *inline formatting*, **bold text**,
                                                           > `inline code`, and [links](https://example.com).
                                                           >
                                                           > They can also span multiple lines with blank quote lines between paragraphs.
+
+                                                          ## Definition Lists
+
+                                                          Terminal.Gui
+                                                          : A toolkit for terminal user interfaces.
+
+                                                          ## Hard Line Breaks
+
+                                                          This line ends with a backslash.\
+                                                          This starts on a new line without a new paragraph.
 
                                                           That's all folks! 👋
                                                           """;

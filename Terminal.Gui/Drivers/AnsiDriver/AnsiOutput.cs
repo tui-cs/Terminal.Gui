@@ -61,6 +61,11 @@ public partial class AnsiOutput : OutputBase, IOutput, IInlineOutput
     internal Func<Rectangle>? AppScreenGetter { get; set; }
 
     /// <summary>
+    ///     Gets whether terminal mouse reporting is disabled. Changed only by <see cref="SetMouseDisabled"/>.
+    /// </summary>
+    internal bool IsMouseDisabled { get; private set; }
+
+    /// <summary>
     ///     Initializes a new instance of <see cref="AnsiOutput"/>.
     ///     Checks if a real console is available for ANSI output and activates the alternate screen buffer.
     /// </summary>
@@ -68,9 +73,12 @@ public partial class AnsiOutput : OutputBase, IOutput, IInlineOutput
     ///     The rendering mode. When <see cref="AppModel.Inline"/>, the alternate screen buffer is not activated
     ///     and the terminal's primary (scrollback) buffer is used instead.
     /// </param>
-    public AnsiOutput (AppModel appModel = AppModel.FullScreen)
+    public AnsiOutput (AppModel appModel = AppModel.FullScreen) : this (appModel, false) { }
+
+    internal AnsiOutput (AppModel appModel, bool isMouseDisabled)
     {
         AppModel = appModel;
+        IsMouseDisabled = isMouseDisabled;
         _platform = AnsiPlatform.Degraded;
 
         _lastBuffer = new OutputBufferImpl ();
@@ -127,29 +135,7 @@ public partial class AnsiOutput : OutputBase, IOutput, IInlineOutput
                 _platform = AnsiPlatform.UnixRaw;
             }
 
-            // Initialize terminal for ANSI output
-            if (AppModel == AppModel.Inline)
-            {
-                // Inline mode: do NOT switch to alternate screen buffer.
-                // Stay in the primary (scrollback) buffer.
-                Write (EscSeqUtils.CSI_HideCursor);
-
-                // TODO: Move Input related CSI sequences to AnsiInput
-                Write (EscSeqUtils.CSI_EnableMouseEvents);
-                Write (EscSeqUtils.CSI_EnableBracketedPaste);
-            }
-            else
-            {
-                // FullScreen mode: activate alternate screen buffer, hide cursor, enable mouse tracking
-                Write (EscSeqUtils.CSI_SaveCursorAndActivateAltBufferNoBackscroll);
-                Write (EscSeqUtils.CSI_ClearScreen (EscSeqUtils.ClearScreenOptions.EntireScreen));
-                Write (EscSeqUtils.CSI_SetCursorPosition (1, 1)); // Move to top-left
-                Write (EscSeqUtils.CSI_HideCursor);
-
-                // TODO: Move Input related CSI sequences to AnsiInput
-                Write (EscSeqUtils.CSI_EnableMouseEvents);
-                Write (EscSeqUtils.CSI_EnableBracketedPaste);
-            }
+            InitializeTerminal ();
 
             // Flush to ensure all sequences are sent
             AnsiTerminalHelper.FlushNative (_platform);
@@ -165,16 +151,56 @@ public partial class AnsiOutput : OutputBase, IOutput, IInlineOutput
     }
 
     // Exercises UnixRaw framing without opening a terminal or changing process-wide stdout.
-    internal AnsiOutput (UnixWriter unixWriter, AppModel appModel = AppModel.FullScreen)
+    internal AnsiOutput (UnixWriter unixWriter, AppModel appModel = AppModel.FullScreen, bool isMouseDisabled = false, bool initializeTerminal = false)
     {
         AppModel = appModel;
+        IsMouseDisabled = isMouseDisabled;
         _platform = AnsiPlatform.UnixRaw;
         _unixWriter = unixWriter;
         _lastBuffer = new OutputBufferImpl ();
         _currentCursor = new Cursor ();
         _consoleSize = new Size (80, 25);
         _lastBuffer.SetSize (_consoleSize.Width, _consoleSize.Height);
+
+        if (initializeTerminal)
+        {
+            InitializeTerminal ();
+        }
     }
+
+    private void InitializeTerminal ()
+    {
+        if (AppModel == AppModel.FullScreen)
+        {
+            Write (EscSeqUtils.CSI_SaveCursorAndActivateAltBufferNoBackscroll);
+            Write (EscSeqUtils.CSI_ClearScreen (EscSeqUtils.ClearScreenOptions.EntireScreen));
+            Write (EscSeqUtils.CSI_SetCursorPosition (1, 1));
+        }
+
+        Write (EscSeqUtils.CSI_HideCursor);
+        RestoreMouseReporting ();
+        Write (EscSeqUtils.CSI_EnableBracketedPaste);
+    }
+
+    /// <summary>
+    ///     Writes the sequence that enables or disables terminal mouse reporting, then records the new state.
+    ///     Does nothing if the state is unchanged.
+    /// </summary>
+    internal void SetMouseDisabled (bool disabled)
+    {
+        if (IsMouseDisabled == disabled)
+        {
+            return;
+        }
+
+        Write (disabled ? EscSeqUtils.CSI_DisableMouseEvents : EscSeqUtils.CSI_EnableMouseEvents);
+        IsMouseDisabled = disabled;
+    }
+
+    /// <summary>
+    ///     Re-sends the sequence for the current <see cref="IsMouseDisabled"/> state, for example after resuming from suspend.
+    /// </summary>
+    internal void RestoreMouseReporting () => Write (IsMouseDisabled ? EscSeqUtils.CSI_DisableMouseEvents : EscSeqUtils.CSI_EnableMouseEvents);
 
     /// <inheritdoc/>
     public void Suspend () => UnixTerminalHelper.Suspend (this);
@@ -203,7 +229,7 @@ public partial class AnsiOutput : OutputBase, IOutput, IInlineOutput
         {
             return _consoleSize;
         }
-        Size? native = NativeSizeQuery ();
+        Size? native = QueryNativeInlineSize ();
 
         if (native is { })
         {
@@ -267,11 +293,12 @@ public partial class AnsiOutput : OutputBase, IOutput, IInlineOutput
     /// <inheritdoc cref="IOutput.Write(IOutputBuffer)"/>
     public override void Write (IOutputBuffer buffer)
     {
-        if (!IsInlinePlacementKnown)
+        if (!IsInlinePlacementKnown || IsInlineResizePending || HasPendingInlineSizeChange ())
         {
             return;
         }
         _lastBuffer = buffer;
+        _stagedInlineCursorRow = InlineCursorRow;
         // An out-of-band legacy attribute hook must take effect between physical writes.
         _batchMode = !UsesLegacyAttributeWriter && !HasCustomStringWriter (typeof (AnsiOutput));
         _frameBuffer.Clear ();
@@ -279,6 +306,11 @@ public partial class AnsiOutput : OutputBase, IOutput, IInlineOutput
         try
         {
             base.Write (buffer);
+        }
+        catch
+        {
+            InlineCursorRow = null;
+            throw;
         }
         finally
         {
@@ -292,6 +324,15 @@ public partial class AnsiOutput : OutputBase, IOutput, IInlineOutput
 
     internal override void FlushFrame ()
     {
+        // Rendering hides the caret. Park at the first live row until the main loop restores it,
+        // reducing bottom-edge clamping if the terminal resizes between drawing and caret update.
+        if (_batchMode && AppModel == AppModel.Inline && AppScreenGetter?.Invoke () is { Height: > 0 } region
+            && (_frameBuffer.Length > 0 || _pendingCursorMoves.Length > 0))
+        {
+            _pendingCursorMoves.Clear ();
+            _pendingCursorMoves.AppendAscii (EscSeqUtils.CSI_SetCursorPosition (region.Y + 1, 1));
+            _stagedInlineCursorRow = region.Y;
+        }
         if (_pendingCursorMoves.Length > 0)
         {
             _frameBuffer.Append (_pendingCursorMoves);
@@ -303,6 +344,7 @@ public partial class AnsiOutput : OutputBase, IOutput, IInlineOutput
         if (_frameBuffer.Length > 0)
         {
             Write (_frameBuffer.AsSpan ());
+            InlineCursorRow = _stagedInlineCursorRow;
         }
     }
 
@@ -396,6 +438,69 @@ public partial class AnsiOutput : OutputBase, IOutput, IInlineOutput
 
     private Cursor _currentCursor;
 
+    private int? _inlineCursorRow;
+    // Absolute physical row, committed only after a successful CUP/frame write.
+    internal int? InlineCursorRow
+    {
+        get => HasPendingOutputRecovery ? null : _inlineCursorRow;
+        set
+        {
+            _inlineCursorRow = value;
+            if (value is null)
+            {
+                return;
+            }
+            if (!HasInlineSizeObservations)
+            {
+                _lastInlineObservedSize = _consoleSize;
+            }
+        }
+    }
+
+    internal bool InlineSizeTrackingEnabled { get; set; }
+    private Size? _lastInlineObservedSize;
+    private readonly Queue<Size> _inlineSizeObservations = [];
+    internal bool InlineSizeObservationOverflow { get; private set; }
+    internal bool HasInlineSizeObservations => _inlineSizeObservations.Count > 0 || InlineSizeObservationOverflow;
+
+    internal bool TryDequeueInlineSize (out Size size) => _inlineSizeObservations.TryDequeue (out size);
+
+    internal void CompleteInlineSizeRecovery () => InlineSizeObservationOverflow = false;
+
+    internal Size? QueryNativeInlineSize ()
+    {
+        Size? native = NativeSizeQuery?.Invoke ();
+        if (!InlineSizeTrackingEnabled || !IsInlineOutputAvailable || native is not { } size || size == _lastInlineObservedSize)
+        {
+            return native;
+        }
+        if (_lastInlineObservedSize is null)
+        {
+            _lastInlineObservedSize = size;
+            return native;
+        }
+        _lastInlineObservedSize = size;
+        if (_inlineSizeObservations.Count >= 64)
+        {
+            InlineSizeObservationOverflow = true;
+            // Overflow requires a fresh region, so intermediate coordinates are no longer
+            // useful. Retain the latest size so recovery can still catch up with polling.
+            _inlineSizeObservations.Clear ();
+        }
+
+        _inlineSizeObservations.Enqueue (size);
+        return native;
+    }
+    private int? _stagedInlineCursorRow;
+
+    // Keep the physical cursor fixed while inline resize recovery is pending.
+    internal bool IsInlineResizePending { get; set; }
+
+    private bool HasPendingInlineSizeChange () => HasPendingInlineSizeChange (_consoleSize);
+
+    internal bool HasPendingInlineSizeChange (Size expectedSize) =>
+        AppModel == AppModel.Inline && (QueryNativeInlineSize () is { } size && size != expectedSize || HasInlineSizeObservations);
+
     // PERF: Batch mode — defer cursor-move sequences to merge with cell content, reducing WriteFile P/Invoke count
     private readonly Utf8Buffer _pendingCursorMoves = new ();
     private readonly Utf8Buffer _frameBuffer = new ();
@@ -410,10 +515,11 @@ public partial class AnsiOutput : OutputBase, IOutput, IInlineOutput
     /// <inheritdoc/>
     public void SetCursor (Cursor cursor)
     {
-        if (!IsInlinePlacementKnown)
+        if (!IsInlinePlacementKnown || IsInlineResizePending || HasPendingInlineSizeChange ())
         {
             return;
         }
+
         try
         {
             if (!cursor.IsVisible)
@@ -434,6 +540,7 @@ public partial class AnsiOutput : OutputBase, IOutput, IInlineOutput
         }
         catch (Exception ex) when (ex is IOException or System.ComponentModel.Win32Exception)
         {
+            InlineCursorRow = null;
             // Best effort: a broken sink also fails the next frame, which DriverImpl logs once.
             Logging.Debug ($"Error updating ANSI cursor: {ex.Message}");
         }
@@ -459,10 +566,12 @@ public partial class AnsiOutput : OutputBase, IOutput, IInlineOutput
             // into a single WriteFile P/Invoke instead of one per cursor move.
             _pendingCursorMoves.Clear ();
             _pendingCursorMoves.AppendAscii (EscSeqUtils.CSI_SetCursorPosition (row + 1 + inlineRowOffset, col + 1));
+            _stagedInlineCursorRow = row + inlineRowOffset;
         }
         else
         {
             Write (EscSeqUtils.CSI_SetCursorPosition (row + 1 + inlineRowOffset, col + 1));
+            InlineCursorRow = row + inlineRowOffset;
         }
 
         return true;
@@ -527,10 +636,16 @@ public partial class AnsiOutput : OutputBase, IOutput, IInlineOutput
             if (AppModel == AppModel.Inline)
             {
                 Rectangle appScreen = AppScreenGetter?.Invoke () ?? default;
-                if (IsInlinePlacementKnown)
+                if (IsInlinePlacementKnown && !IsInlineResizePending && !HasPendingInlineSizeChange ())
                 {
                     Restore (EscSeqUtils.CSI_SetCursorPosition (appScreen.Y + appScreen.Height, 1));
                     Restore ("\n");
+                }
+                else if (QueryNativeInlineSize () is { Height: > 0, Width: > 0 } nativeSize)
+                {
+                    // Do not use an old live origin during recovery. Scroll a fresh prompt row
+                    // below the current viewport, preserving every surviving line.
+                    Restore (EscSeqUtils.CSI_SetCursorPosition (nativeSize.Height, 1) + "\n");
                 }
             }
             else

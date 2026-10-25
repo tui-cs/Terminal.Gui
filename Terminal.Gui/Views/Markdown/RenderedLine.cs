@@ -1,9 +1,10 @@
 namespace Terminal.Gui.Views;
 
-internal sealed class RenderedLine (IReadOnlyList<StyledSegment> segments, bool wrapEligible, int width, bool isCodeBlock = false, bool isThematicBreak = false, bool isTable = false, string? codeLanguage = null, TableData? tableData = null)
+internal sealed class RenderedLine (IReadOnlyList<StyledSegment> segments, bool wrapEligible, int width, bool isCodeBlock = false, bool isThematicBreak = false, bool isTable = false, string? codeLanguage = null)
 {
     public IReadOnlyList<StyledSegment> Segments { get; } = segments;
     public bool WrapEligible { get; } = wrapEligible;
+    public string? SourceText { get; set; }
     public int Width { get; } = width;
     public bool IsCodeBlock { get; } = isCodeBlock;
     public bool IsThematicBreak { get; } = isThematicBreak;
@@ -15,10 +16,6 @@ internal sealed class RenderedLine (IReadOnlyList<StyledSegment> segments, bool 
     /// </summary>
     public string? CodeLanguage { get; } = codeLanguage;
 
-    /// <summary>
-    ///     The parsed table data when <see cref="IsTable"/> is <see langword="true"/>;
-    ///     otherwise <see langword="null"/>.  Used to reconstruct pipe-table markdown
-    ///     when this line falls within a partial selection.
-    /// </summary>
-    public TableData? TableData { get; } = tableData;
+    internal MarkdownTable? TableView { get; init; }
+    internal int TableRow { get; init; }
 }

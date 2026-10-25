@@ -32,8 +32,38 @@ before the first Begin wait for that session. Calls after final End cancel rathe
 migrating to a later session. Calls before Init or during disposal throw.
 
 The [Inline Transcript UICatalog scenario](https://github.com/tui-cs/Terminal.Gui/blob/develop/Examples/UICatalog/Scenarios/InlineTranscript.cs)
-provides an editable three-row composer and an awaited background producer.
+provides an editable composer, a collapsible live preview, and an awaited background producer.
 To run it directly, run `dotnet run --project Examples/ScenarioRunner -- run "Inline Transcript"`.
+
+## Native text selection
+
+To select and copy completed output with the terminal's normal mouse gestures, disable
+mouse reporting before initialization:
+
+```csharp
+using IApplication app = Application.Create ();
+app.AppModel = AppModel.Inline;
+app.Mouse.IsMouseDisabled = true;
+app.Init (DriverRegistry.Names.ANSI);
+```
+
+The built-in ANSI driver honors this setting at startup and during a session, in both
+inline and fullscreen modes. Mouse reporting remains enabled by default. To disable it for
+every application, set `"Application": { "IsMouseDisabled": true }` in configuration and apply it
+with `TuiConfigurationBuilder.ApplyToStaticFacades ()` before calling `Application.Create ()`. To change the
+setting while running, use the UI thread or `app.Invoke(...)`. Disabling releases an
+active mouse grab, stops hold repetition, and clears hover state. Keyboard editing,
+bracketed paste, and `PrintAboveAsync` continue to work. Other drivers suppress application
+mouse events but do not configure native terminal selection.
+
+On Windows, the ANSI driver also disables console mouse input and enables Quick Edit
+while mouse reporting is disabled; the original console mode is restored on disposal.
+Classic conhost may pause application activity while a Quick Edit selection is active.
+The terminal controls selection and copying, including whether a selection persists
+while new output arrives.
+
+The Inline Transcript scenario starts with mouse reporting disabled. To toggle between
+terminal selection and application mouse interaction, press **F2**.
 
 ## Text and ordering
 
@@ -75,6 +105,40 @@ prevents the rendering boundary from executing. Manually calling `Begin` establi
 session but does not pump iterations continuously. Startup waits for the existing cursor
 and size readiness gate; optional-probe completion alone cannot force an early insertion.
 
+## Automatic live-region shrink
+
+To let an inline composer shrink after removing a live preview, use a content-sized root:
+
+```csharp
+using Runnable composer = new ()
+{
+    Width = Dim.Fill (),
+    Height = Dim.Auto (DimAutoStyle.Content, minimumContentDim: 3)
+};
+```
+
+The built-in ANSI driver reduces the reservation after layout reports a smaller height.
+Explicit height changes and content-based `Dim.Func` sizes also work. Shrink keeps the
+top row fixed, erases only the old live region, and repaints the compact view. It leaves
+blank space below the region until growth or new output uses it. It does not scroll,
+replay completed output, or erase shell output above the region. The next `PrintAboveAsync`
+uses the smaller reservation, including when removing a preview and queuing its completed
+text in one UI callback or owned dispatch.
+
+Active runnable frames set a lower bound on the reserved height. Visible popovers and
+active, pending, or retained raster graphics defer shrink. Space-dependent root positions
+and heights (`Pos.Center`, `Dim.Fill`, `Dim.Percent`, and percentage/fill auto-size bounds)
+retain their reservation to avoid layout feedback. To use `Dim.Func` for a shrinking root,
+calculate its height from content rather than from `app.Screen.Height`.
+
+A root can shrink to zero; queued printing waits until a positive live height returns.
+A failed physical erase retains the published geometry and suppresses further inline
+placement under the same failure policy as printing. Shrink publishes its new geometry
+and schedules repaint before raising `ScreenChanged`.
+
+To exercise this in Inline Transcript, press **F5** to expand/collapse the four-row preview.
+To remove it and print its completed text in one callback, press **F6** while it is visible.
+
 ## Completion, failures and supported terminals
 
 A successful task means insertion bytes and the final live-area erase were accepted by
@@ -103,9 +167,48 @@ lifetime because cleanup cannot be proven. Exhausting the bounded Sixel placemen
 requires a fresh output lifetime. Ordinary raster rendering remains available
 for applications that do not use this API.
 
-The live region keeps its reserved height and can grow as before. Automatic shrink and
-resize preservation are separate work: the current resize handler still clears visible
-rows and resets origin. Terminal reflow during a physical write, external Console writes,
+## Terminal resize
+
+The built-in ANSI driver starts a fresh live region after every terminal resize. It moves
+to the bottom of the reported viewport, scrolls one viewport of blank rows into view,
+and repaints from row zero. It never uses a resize cursor report to infer an old live
+range to erase. A cursor report cannot prove ownership: a terminal can restore history
+and move the cursor before the new PTY dimensions reach the application.
+
+Recovery coalesces resize bursts and waits for 500 ms without another observed dimension
+change before reserving the region. This exceeds tmux 3.6's
+[250 ms PTY notification throttle](https://github.com/tmux/tmux/blob/3.6/server-client.c#L2727).
+Layout, queued printing and physical caret/frame writes remain suspended during the quiet
+period; input and dispatch continue. Repeated drag steps normally produce one reservation
+when the drag ends, rather than a viewport of blank history on every step.
+
+Surviving old cells, including old live frames, enter terminal-owned history. Blank rows
+and stale frames in history remain an intentional cost of fresh-region recovery. Completed
+messages are never replayed. `ScreenChanged` publishes the new geometry. Short completed
+lines erase the entire destination row with CSI 2K before drawing; CSI K after drawing can
+retain an old live row's line extent and produce blank continuation rows after narrowing.
+
+Resize sends no CPR, has no cursor-query timeout, and cannot consume modified F3 as a
+resize reply. Startup cursor discovery still uses CPR and retains that protocol ambiguity.
+A physical write failure still faults pending printing and suppresses placement under the
+insertion failure policy above.
+
+Zero-size terminals defer until positive dimensions return. Observed native transitions
+remain latched even if dimensions return to the polled size. Geometry is checked again
+immediately before reservation. If the native provider becomes unavailable while a newer
+size is pending, recovery waits for polling to catch up. Headless/custom drivers retain
+their known origin, clamped to fit, and do not wait for a terminal quiet period.
+
+Raster history is unsupported; fresh-region recovery does not extend the text preservation
+guarantee to active or pending raster placements. Disposal during pending recovery moves
+to the bottom of the currently reported native viewport and scrolls a fresh prompt row.
+If dimensions are unavailable, disposal restores modes without guessing a cursor position.
+
+The terminal owns resize reflow and history retention. It may move already displayed cells,
+including parts of an old live frame, into history during the resize itself; the renderer
+does not rewrite or delete terminal-owned history. Raster history remains unsupported.
+
+Terminal reflow during a physical write, external Console writes,
 raw cursor/mode changes, or another application sharing the terminal are outside the
 serialization contract. Terminal width disagreement can affect wrapping.
 

@@ -28,6 +28,13 @@ internal static class MarkdownAttributeHelper
     /// <returns>A fully resolved <see cref="Attribute"/> ready for drawing.</returns>
     public static Attribute GetAttributeForSegment (View view, StyledSegment segment, ISyntaxHighlighter? highlighter = null, Color? themeBackground = null)
     {
+        Attribute attribute = ResolveSegmentAttribute (view, segment, highlighter, themeBackground);
+
+        return attribute with { Style = attribute.Style | segment.AdditionalStyle };
+    }
+
+    private static Attribute ResolveSegmentAttribute (View view, StyledSegment segment, ISyntaxHighlighter? highlighter, Color? themeBackground)
+    {
         if (segment.Role is { } role)
         {
             Attribute roleAttr = view.GetAttributeForRole (role);
@@ -116,7 +123,7 @@ internal static class MarkdownAttributeHelper
 
         foreach (InlineRun run in runs)
         {
-            segments.Add (new StyledSegment (run.Text, run.StyleRole, run.Url, run.ImageSource, run.Attribute, run.Role));
+            segments.Add (run.ToStyledSegment ());
         }
 
         return segments;

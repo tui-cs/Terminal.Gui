@@ -370,10 +370,10 @@ public class InlineModeTests
     #region Resize Behavior
 
     /// <summary>
-    ///     Terminal resize in inline mode resets <c>App.Screen.Y</c> to 0.
+    ///     Headless inline resize preserves the known origin.
     /// </summary>
     [Fact]
-    public void Resize_Inline_ScreenY_ResetsToZero ()
+    public void Resize_Inline_ScreenY_PreservesOrigin ()
     {
         using IApplication app = CreateInlineApp (15, 120);
 
@@ -384,7 +384,7 @@ public class InlineModeTests
         app.Driver!.SetScreenSize (80, 25);
 
         // Assert
-        Assert.Equal (0, app.Screen.Y);
+        Assert.Equal (15, app.Screen.Y);
     }
 
     /// <summary>
@@ -404,24 +404,24 @@ public class InlineModeTests
     }
 
     /// <summary>
-    ///     Terminal resize resets <c>InlinePosition.Y</c> to 0.
+    ///     Headless resize preserves <c>InlinePosition.Y</c> while the region still fits.
     /// </summary>
     [Fact]
-    public void Resize_Inline_InlinePosition_ResetsToZero ()
+    public void Resize_Inline_InlinePosition_PreservesOrigin ()
     {
         using IApplication app = CreateInlineApp (20, 100);
         app.Screen = new Rectangle (0, 20, 100, 3);
 
         app.Driver!.SetScreenSize (80, 25);
 
-        Assert.Equal (0, app.Driver!.InlinePosition.Y);
+        Assert.Equal (20, app.Driver!.InlinePosition.Y);
     }
 
     /// <summary>
-    ///     Terminal resize sets <c>ClearScreenNextIteration</c> so the next draw is a full redraw.
+    ///     Inline resize does not request a display clear.
     /// </summary>
     [Fact]
-    public void Resize_Inline_SetsClearScreenNextIteration ()
+    public void Resize_Inline_DoesNotSetClearScreenNextIteration ()
     {
         using IApplication app = CreateInlineApp (10, 100);
 
@@ -429,15 +429,14 @@ public class InlineModeTests
 
         app.Driver!.SetScreenSize (80, 25);
 
-        Assert.True (app.ClearScreenNextIteration);
+        Assert.False (app.ClearScreenNextIteration);
     }
 
     /// <summary>
-    ///     After resize, the next <c>LayoutAndDraw</c> re-sizes the inline region from scratch
-    ///     (the <c>_inlineScreenSized</c> flag was reset).
+    ///     After resize, the next layout uses the new width and retained origin.
     /// </summary>
     [Fact]
-    public void Resize_Inline_NextLayoutAndDraw_ReSizesFromScratch ()
+    public void Resize_Inline_NextLayoutAndDraw_RetainsOrigin ()
     {
         using IApplication app = CreateInlineApp (10, 120, 40);
 
@@ -448,13 +447,13 @@ public class InlineModeTests
         // Capture initial state
         Assert.Equal (10, app.Screen.Y);
 
-        // Resize triggers reset
+        // Resize updates the available width.
         app.Driver!.SetScreenSize (80, 25);
 
-        // Next LayoutAndDraw should re-size from row 0 (InlinePosition was reset)
+        // The next layout retains the existing origin.
         app.LayoutAndDraw ();
 
-        Assert.Equal (0, app.Screen.Y);
+        Assert.Equal (10, app.Screen.Y);
         Assert.Equal (80, app.Screen.Width);
 
         if (token is { })

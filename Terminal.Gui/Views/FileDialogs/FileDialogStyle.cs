@@ -94,6 +94,11 @@ public class FileDialogStyle
     public string FileOrDirectoryMustExistFeedback { get; set; } = Strings.fdFileOrDirectoryMustExistFeedback;
 
     /// <summary>Gets or sets the class responsible for determining which symbol to use to represent files and directories.</summary>
+    /// <remarks>
+    ///     To supply custom icons without a Nerd Font, assign a <see cref="FileSystemIconProvider"/> subclass that overrides
+    ///     <see cref="FileSystemIconProvider.GetIcon"/> or <see cref="FileSystemIconProvider.GetIconWithOptionalSpace"/>.
+    ///     Configure the provider before showing the dialog.
+    /// </remarks>
     public FileSystemIconProvider IconProvider { get; set; } = new ();
 
     /// <summary>Gets or sets the header text displayed in the Modified column of the files table.</summary>

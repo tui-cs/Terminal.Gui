@@ -296,7 +296,7 @@ A read-only view that renders a single Markdown fenced code block with a dimmed 
 
 ## [MarkdownTable](xref:Terminal.Gui.Views.MarkdownTable)
 
-A read-only view that renders a single Markdown table with box-drawing borders via <xref:Terminal.Gui.Drawing.LineCanvas> and styled header/body text with inline Markdown formatting.
+A read-only view that renders a single Markdown table with box-drawing borders via <xref:Terminal.Gui.Drawing.LineCanvas> and styled header/body text with inline Markdown formatting. Supports proportional columns, explicit grid headers, spans, and block cells. See [Markdown tables](markdown-tables.md) for sizing, overflow, standalone data, and copying.
 
 
 ![MarkdownTable](../images/views/MarkdownTable.gif)

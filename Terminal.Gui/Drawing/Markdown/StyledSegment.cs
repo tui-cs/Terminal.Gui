@@ -61,4 +61,15 @@ public sealed class StyledSegment
     ///     if the role should be resolved from <see cref="StyleRole"/>.
     /// </summary>
     public VisualRole? Role { get; }
+
+    // Preserve nested Markdown styles without fixing colors before the view's scheme is resolved.
+    internal TextStyle AdditionalStyle { get; init; }
+    internal int LinkIdentity { get; init; } = -1;
+
+    internal StyledSegment WithText (string text, VisualRole? role = null) =>
+        new (text, StyleRole, Url, ImageSource, Attribute, role ?? Role)
+        {
+            AdditionalStyle = AdditionalStyle,
+            LinkIdentity = LinkIdentity
+        };
 }
