@@ -154,8 +154,9 @@ public class MenuItem : Shortcut, IValue
     ///     item is brought into view when possible.
     /// </param>
     /// <returns>
-    ///     <see langword="true"/> if the item was successfully activated;
-    ///     <see langword="false"/> if it is not attached to any menu hierarchy.
+    ///     <see langword="true"/> if the item is attached under a <see cref="Menu"/> and
+    ///     the path was opened (a <see cref="MenuBar"/> is activated when present);
+    ///     <see langword="false"/> if the item is not attached to any menu hierarchy.
     /// </returns>
     public bool OpenAndSelect (bool ensureVisible = true)
     {
@@ -189,14 +190,14 @@ public class MenuItem : Shortcut, IValue
         MenuBarItem? barItem = null;
         MenuBar? menuBar = null;
 
-        // 1) SuperMenuItem of the outermost menu may itself be a MenuBarItem (inline mode)
+        // 1) Inline: outermost SuperMenuItem is MenuBarItem
         if (chain [0].menu.SuperMenuItem is MenuBarItem inlineBar)
         {
             barItem = inlineBar;
             menuBar = inlineBar.SuperView as MenuBar;
         }
 
-        // 2) Walk SuperView from outermost menu (popover: Menu → PopoverMenu → Target)
+        // 2) SuperView walk (PopoverMenu.Target, etc.)
         if (barItem is null)
         {
             for (View? v = chain [0].menu; v is { }; v = v.SuperView)
@@ -205,62 +206,61 @@ public class MenuItem : Shortcut, IValue
                 {
                     barItem = mbi;
                     menuBar = mbi.SuperView as MenuBar;
-
                     break;
                 }
 
-                if (v is PopoverMenu pop && pop.Target is { } weak && weak.TryGetTarget (out View? target) && target is MenuBarItem targetMbi)
+                if (v is PopoverMenu pop
+                    && pop.Target is { } weak
+                    && weak.TryGetTarget (out View? t)
+                    && t is MenuBarItem targetMbi)
                 {
                     barItem = targetMbi;
                     menuBar = targetMbi.SuperView as MenuBar;
-
                     break;
                 }
 
                 if (v is MenuBar mb)
                 {
                     menuBar = mb;
-
                     break;
                 }
             }
         }
 
-        // 3) Fallback: scan MenuBar children for a RootMenu that contains this item
-        if (barItem is null && menuBar is null)
+        // 3) Popover fallback only — Root often not under MenuBar in the SuperView chain
+        if (barItem is null)
         {
-            for (View? v = leafMenu; v is { }; v = v.SuperView)
-            {
-                if (v is MenuBar mb)
-                {
-                    menuBar = mb;
+            Menu rootMenu = chain [0].menu;
 
+            foreach (MenuBar mb in FindMenuBars (this))
+            {
+                foreach (MenuBarItem entry in mb.SubViews.OfType<MenuBarItem> ())
+                {
+                    Menu? owned = entry.UsePopoverMenu
+                                      ? entry.PopoverMenu?.Root
+                                      : entry.SubMenu;
+
+                    if (owned is null)
+                    {
+                        continue;
+                    }
+
+                    if (owned == rootMenu
+                        || owned.GetMenuItemsOfAllSubMenus (mi => mi == this).Any ())
+                    {
+                        barItem = entry;
+                        menuBar = mb;
+                        break;
+                    }
+                }
+
+                if (barItem is { })
+                {
                     break;
                 }
             }
         }
 
-        if (menuBar is { } && barItem is null)
-        {
-            foreach (MenuBarItem entry in menuBar.SubViews.OfType<MenuBarItem> ())
-            {
-                Menu? root = entry.UsePopoverMenu ? entry.PopoverMenu?.Root : entry.SubMenu;
-
-                if (root is null)
-                {
-                    continue;
-                }
-
-                if (root.GetMenuItemsOfAllSubMenus (mi => mi == this).Any ())
-                {
-                    barItem = entry;
-
-                    break;
-                }
-            }
-        }
-
-        // Open root
         if (menuBar is { })
         {
             menuBar.Active = true;
@@ -278,7 +278,6 @@ public class MenuItem : Shortcut, IValue
             }
         }
 
-        // Open each level + focus
         foreach ((Menu levelMenu, MenuItem levelItem) in chain)
         {
             if (!levelMenu.Visible)
@@ -296,7 +295,57 @@ public class MenuItem : Shortcut, IValue
 
         SetFocus ();
 
+        // Success means the item is attached under a Menu and the path was opened.
+        // A MenuBar / MenuBarItem is activated when found; context-only hierarchies
+        // still return true without a bar.
         return true;
+    }
+
+    private static IEnumerable<MenuBar> FindMenuBars (View start)
+    {
+        for (View? v = start; v is { }; v = v.SuperView)
+        {
+            if (v is MenuBar mb)
+            {
+                yield return mb;
+
+                yield break;
+            }
+        }
+
+        View? root = start.App?.TopRunnableView;
+
+        if (root is null)
+        {
+            yield break;
+        }
+
+        HashSet<View> visited = new ();
+        Queue<View> queue = new ();
+        queue.Enqueue (root);
+
+        while (queue.Count > 0)
+        {
+            View v = queue.Dequeue ();
+
+            if (!visited.Add (v))
+            {
+                continue;
+            }
+
+            if (v is MenuBar mb)
+            {
+                yield return mb;
+            }
+
+            foreach (View child in v.SubViews)
+            {
+                if (!visited.Contains (child))
+                {
+                    queue.Enqueue (child);
+                }
+            }
+        }
     }
 
     /// <inheritdoc/>

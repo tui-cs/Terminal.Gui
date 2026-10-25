@@ -320,8 +320,9 @@ public class Menu : Bar, IValue<MenuItem?>
     }
 
     /// <summary>
-    ///     Ensures this menu is visible and focuses <paramref name="item"/> if it belongs to this menu
-    ///     (or a nested submenu). Delegates hierarchy opening to <see cref="MenuItem.OpenAndSelect"/>.
+    ///     Ensures this menu is visible and focuses <paramref name="item"/> if it belongs
+    ///     to this menu or a nested submenu. Delegates hierarchy opening to
+    ///     <see cref="MenuItem.OpenAndSelect"/>.
     /// </summary>
     internal void EnsureOpenAndSelect (MenuItem item)
     {
@@ -332,18 +333,12 @@ public class Menu : Bar, IValue<MenuItem?>
             ShowMenu ();
         }
 
-        // Prefer full hierarchy restore when the item is in this tree
-        if (GetMenuItemsOfAllSubMenus (mi => mi == item).Any ())
+        // Direct child of this menu, or anywhere under nested SubMenus
+        bool inTree = SubViews.Contains (item) || GetMenuItemsOfAllSubMenus (mi => mi == item).Any ();
+
+        if (inTree)
         {
             item.OpenAndSelect ();
-
-            return;
-        }
-
-        // Item not in this hierarchy — still try focus if it is a direct child
-        if (SubViews.Contains (item))
-        {
-            item.SetFocus ();
         }
     }
 

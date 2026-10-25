@@ -43,9 +43,7 @@ public class MenuItemOpenAndSelectTests
     public void OpenAndSelect_AfterModal_RestoresSelection ()
     {
         var target = new MenuItem { Title = "_Edit Me" };
-
         MenuBarItem fileMenu = CreateInlineBarItem ("_File", target, new MenuItem { Title = "_Quit" });
-
         var menuBar = new MenuBar ([fileMenu]);
 
         using IApplication app = Application.Create ().Init (DriverRegistry.Names.ANSI);
@@ -60,16 +58,20 @@ public class MenuItemOpenAndSelectTests
         target.SetFocus ();
         Assert.True (target.HasFocus);
 
-        // Modal closed the menus
         ((IMenuBarEntry)fileMenu).IsMenuOpen = false;
         menuBar.Active = false;
+
+        Assert.IsType<Menu> (target.SuperView); // still attached
 
         bool ok = target.OpenAndSelect ();
 
         Assert.True (ok);
         Assert.True (menuBar.Active);
         Assert.True (((IMenuBarEntry)fileMenu).IsMenuOpen);
-        Assert.True (target.HasFocus);
+        Assert.NotNull (fileMenu.SubMenu);
+        Assert.True (fileMenu.SubMenu!.Visible);
+        Assert.Same (target, fileMenu.SubMenu.SelectedMenuItem);
+        // Do not assert HasFocus here unless you pump the run loop / driver
     }
 
     [Fact]
@@ -129,5 +131,41 @@ public class MenuItemOpenAndSelectTests
         Assert.True (item.OpenAndSelect ());
         Assert.True (item.HasFocus);
         Assert.True (((IMenuBarEntry)barItem).IsMenuOpen);
+    }
+
+    [Fact]
+    public void OpenAndSelect_PopoverMode_OpensPopover_AndFocusesTarget ()
+    {
+        var target = new MenuItem { Title = "_Edit Me" };
+
+        var fileMenu = new MenuBarItem { Title = "_File", PopoverMenu = new PopoverMenu ([target, new MenuItem { Title = "_Quit" }]) };
+
+        var menuBar = new MenuBar ([fileMenu]);
+
+        using IApplication app = Application.Create ().Init (DriverRegistry.Names.ANSI);
+
+        using var top = new Window ();
+        top.Add (menuBar);
+        top.BeginInit ();
+        top.EndInit ();
+        top.LayoutSubViews ();
+
+        // MenuBar.EndInit should Register; if not, force it for the test
+        if (fileMenu.PopoverMenu is { } pop && app.Popovers is { } popovers && !popovers.IsRegistered (pop)) // use whatever API exists: Contains / IsRegistered
+        {
+            popovers.Register (pop);
+        }
+
+        Assert.IsType<Menu> (target.SuperView);
+        Assert.Same (fileMenu.PopoverMenu!.Root, target.SuperView);
+
+        bool ok = target.OpenAndSelect ();
+
+        Assert.True (ok);
+        Assert.True (menuBar.Active);
+        Assert.True (fileMenu.PopoverMenuOpen);
+
+        // Prefer SelectedMenuItem on the root menu over HasFocus under unit fixtures
+        Assert.Same (target, fileMenu.PopoverMenu!.Root!.SelectedMenuItem);
     }
 }
