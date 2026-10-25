@@ -71,7 +71,6 @@ public class MenuItemOpenAndSelectTests
         Assert.NotNull (fileMenu.SubMenu);
         Assert.True (fileMenu.SubMenu!.Visible);
         Assert.Same (target, fileMenu.SubMenu.SelectedMenuItem);
-        // Do not assert HasFocus here unless you pump the run loop / driver
     }
 
     [Fact]
@@ -151,7 +150,7 @@ public class MenuItemOpenAndSelectTests
         top.LayoutSubViews ();
 
         // MenuBar.EndInit should Register; if not, force it for the test
-        if (fileMenu.PopoverMenu is { } pop && app.Popovers is { } popovers && !popovers.IsRegistered (pop)) // use whatever API exists: Contains / IsRegistered
+        if (fileMenu.PopoverMenu is { } pop && app.Popovers is { } popovers && !popovers.IsRegistered (pop)) // Register if MenuBar.EndInit did not.
         {
             popovers.Register (pop);
         }
