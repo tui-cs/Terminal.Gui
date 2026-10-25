@@ -275,6 +275,18 @@ Provides a scrollable list of data where each item can be activated to perform a
 Provides a scrollable list of data where each item can be activated to perform an action, with a strongly-typed <xref:Terminal.Gui.Views.ListView%601.Value> property that returns the selected object of type <code class="typeparamref">T</code> from the underlying <xref:System.Collections.ObjectModel.ObservableCollection%601>.
 
 
+### Clearing a ListView
+
+| Intent | API | Result |
+|--------|-----|--------|
+| Detach any data source | `listView.Source = null` | `Source` is `null` |
+| Clear items via `SetSource` | `listView.SetSource<T>(null)` | Empty default collection data source **or** `Source == null` if the current source was not that default (see API remarks) |
+| Clear items via `SetSourceAsync` | `listView.SetSourceAsync<T>(null)` | Empty default collection data source **or** `Source == null` if the current source was not that default (see API remarks) |
+| Custom rendering / data | `listView.Source = myDataSource` | `Source` is your `IListDataSource` |
+
+Do not treat these as synonyms.
+
+
 ![ListView-1](../images/views/ListView.gif)
 
 
