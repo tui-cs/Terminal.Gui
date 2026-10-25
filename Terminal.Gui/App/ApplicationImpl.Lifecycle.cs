@@ -87,17 +87,17 @@ internal partial class ApplicationImpl
             _inlineOriginEstablished = false;
             _screen = null;
             Volatile.Write (ref _dispatchStopping, false);
+
+            // Created here; installed as the thread's ambient context only while Run is executing
+            // (see Run). Begin and End leave the caller's context alone: a Begin-only session has no loop
+            // to drain continuations, so installing it there strands them (#5680). Installing at Init time
+            // would also strand an await between Init and Run (#5636).
+            SynchronizationContext = new MainLoopSyncContext (this);
             Initialized = true;
         }
 
         RaiseInitializedChanged (this, new EventArgs<bool> (true));
         SubscribeDriverEvents ();
-
-        // Created here; installed as the thread's ambient context only while a session is running
-        // (see Begin/Run). Installing it at Init time would make an await between Init and Run
-        // capture a context whose continuations only execute once the main loop is pumping —
-        // stranding the continuation that was going to start the loop (#5636).
-        SynchronizationContext = new MainLoopSyncContext (this);
 
         _result = null;
 
@@ -327,18 +327,7 @@ internal partial class ApplicationImpl
         MainThreadId = null;
         ResetHasEndedSession ();
 
-        // === 9. Reset synchronization context ===
-        // If this app's context is still the thread's ambient context (a session is still running, or the final End
-        // ran on another thread), restore the caller's context so later async/await does not capture a context that
-        // no longer processes callbacks (#1084, #5636). A foreign ambient context is left untouched.
-        if (SynchronizationContext is { } ownContext && System.Threading.SynchronizationContext.Current == ownContext)
-        {
-            System.Threading.SynchronizationContext.SetSynchronizationContext (_callerSynchronizationContext);
-        }
-
-        _callerSynchronizationContext = null;
-
-        // === 10. Unsubscribe from Application static property change events ===
+        // === 9. Unsubscribe from Application static property change events ===
         UnsubscribeApplicationEvents ();
     }
 

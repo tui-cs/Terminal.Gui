@@ -47,6 +47,8 @@ catch (NotInitializedException)
 
 Calls accepted before shutdown return tasks that are canceled if still pending. After the final session ends or disposal begins, an `await` continuation that has not yet run on the UI loop, including one queued just before, resumes on a thread-pool thread because the loop is no longer pumping. Check cancellation before accessing views after such an await. Calls after shutdown begins throw `NotInitializedException`. Dispatches made between two completed sessions are canceled; to queue work for the next session, start that session first. Dispatches queued after `Init` but before the first session wait for that first session.
 
+`Run` installs the application's synchronization context for the duration of the loop, so an `await` started on the UI thread resumes on the UI thread, and restores the caller's context when `Run` returns. `Begin` alone neither starts a loop nor installs a context: continuations resume through whatever context was already current (usually the thread pool), so use `Invoke` before touching views after an `await`. Work queued with `Invoke` or `InvokeAsync` from other threads runs only when the UI thread iterates, so a Begin-only session that never iterates will not run it.
+
 ### Using async/await (Recommended)
 
 The preferred way to handle background work is using C#'s async/await pattern:

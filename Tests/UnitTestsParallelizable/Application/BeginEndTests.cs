@@ -869,4 +869,148 @@ public class ApplicationImplBeginEndTests (ITestOutputHelper output)
             app.Dispose ();
         }
     }
+
+    [Fact]
+    public async Task Await_After_Begin_Always_ResumesWithoutAppContext ()
+    {
+        IApplication app = Application.Create ();
+        app.Init (DriverRegistry.Names.ANSI);
+        app.Screen = new Rectangle (0, 0, 80, 24);
+
+        var view = new Window ();
+        SessionToken? sessionToken = app.Begin (view); // SynchronizationContext.Current unchanged
+        app.LayoutAndDraw ();
+
+        Assert.NotNull (sessionToken);
+        Assert.Equal (app.MainThreadId, Thread.CurrentThread.ManagedThreadId);
+        Assert.Equal ("MainLoopSyncContext", ((ApplicationImpl)app).SynchronizationContext?.GetType ().Name);
+        Assert.Null (SynchronizationContext.Current);
+
+        await Task.Run (() =>
+                        {
+                            DateTime now = DateTime.Now;
+                            Thread.Sleep (50);
+                            TimeSpan elapsed = DateTime.Now - now;
+                            Assert.True (elapsed.TotalMilliseconds >= 50, $"Elapsed time was {elapsed.TotalMilliseconds} ms, expected at least 50 ms.");
+                        }, TestContext.Current.CancellationToken); // continuation posts to the thread pool
+
+        // Reached: the continuation still sits in the thread pool
+        app.End (sessionToken);
+
+        // After End, the toolkit has been torn down, so SynchronizationContext.Current is unchanged.
+        Assert.Null (SynchronizationContext.Current);
+
+        app.Dispose ();
+    }
+
+    // Claude - Sonnet 5.5
+    [Fact]
+    public void Begin_WithoutRun_WorkerPosts_AreQueued_AndRunOnUiThreadWhenDrained ()
+    {
+        SynchronizationContext? before = SynchronizationContext.Current;
+        IApplication app = Application.Create ().Init (DriverRegistry.Names.ANSI);
+        ApplicationImpl impl = (ApplicationImpl)app;
+        Runnable view = new ();
+        SessionToken token = app.Begin (view)!;
+        SynchronizationContext context = impl.SynchronizationContext!;
+        List<(int Order, int ThreadId)> runs = [];
+
+        try
+        {
+            Thread worker = new (() =>
+                                 {
+                                     context.Post (_ => { lock (runs) { runs.Add ((1, Environment.CurrentManagedThreadId)); } }, null);
+                                     context.Post (_ => { lock (runs) { runs.Add ((2, Environment.CurrentManagedThreadId)); } }, null);
+                                 })
+                { IsBackground = true };
+            worker.Start ();
+            Assert.True (worker.Join (TimeSpan.FromSeconds (5)));
+
+            // Begin installs no context and starts no loop, so nothing drains the queue on its own.
+            Assert.Empty (runs);
+            Assert.Equal (2, impl.QueuedPostCount);
+
+            impl.DrainDispatches (); // on the UI thread, like PumpUiDispatches (app) in the dispatch tests
+
+            Assert.Equal ([1, 2], runs.Select (r => r.Order));
+            Assert.All (runs, r => Assert.Equal (app.MainThreadId, r.ThreadId));
+            Assert.Equal (0, impl.QueuedPostCount);
+
+            // Begin and End leave the caller's context alone.
+            Assert.Same (before, SynchronizationContext.Current);
+            app.End (token);
+            Assert.Same (before, SynchronizationContext.Current);
+        }
+        finally
+        {
+            view.Dispose ();
+            app.Dispose ();
+        }
+    }
+
+    [Fact]
+    public void Begin_WithoutRun_LeavesCallerContextUnchanged ()
+    {
+        SynchronizationContext? before = SynchronizationContext.Current;
+        IApplication app = Application.Create ().Init (DriverRegistry.Names.ANSI);
+        Runnable runnable = new ();
+        SessionToken token = app.Begin (runnable)!;
+
+        try
+        {
+            Assert.Same (before, SynchronizationContext.Current);
+        }
+        finally
+        {
+            app.End (token);
+            Assert.Same (before, SynchronizationContext.Current);
+            runnable.Dispose ();
+            app.Dispose ();
+        }
+    }
+
+    [Fact]
+    public async Task Await_After_Begin_WithoutRun_Completes ()
+    {
+        IApplication app = Application.Create ().Init (DriverRegistry.Names.ANSI);
+        Runnable runnable = new ();
+        SessionToken token = app.Begin (runnable)!;
+
+        try
+        {
+            // Would hang before the fix: the continuation was posted to a context nothing drained.
+            await Task.Run (() => Thread.Sleep (50), TestContext.Current.CancellationToken)
+                      .WaitAsync (TimeSpan.FromSeconds (5), TestContext.Current.CancellationToken);
+        }
+        finally
+        {
+            app.End (token);
+            runnable.Dispose ();
+            app.Dispose ();
+        }
+    }
+
+    [Fact]
+    public void Run_InstallsContext_AndRestoresCallerContext ()
+    {
+        SynchronizationContext? before = SynchronizationContext.Current;
+        using IApplication app = Application.Create ().Init (DriverRegistry.Names.ANSI);
+        using Runnable runnable = new ();
+        SynchronizationContext? during = null;
+
+        app.Iteration += OnIteration;
+        app.Run (runnable);
+        app.Iteration -= OnIteration;
+
+        Assert.Same (((ApplicationImpl)app).SynchronizationContext, during);
+        Assert.Same (before, SynchronizationContext.Current);
+
+        return;
+
+        void OnIteration (object? _, EventArgs<IApplication?> __)
+        {
+            during = SynchronizationContext.Current;
+            app.RequestStop (runnable);
+        }
+    }
 }

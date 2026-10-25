@@ -63,10 +63,15 @@ public class MarkdownTableSerializationTests
             Position = new Point (59, table.Frame.Y + table.RenderedHeight - 1),
             Flags = MouseFlags.LeftButtonPressed | MouseFlags.PositionReport
         });
-        TableData copied = Assert.IsType<TableData> (TableData.TryParse (Assert.IsType<string> (view.SelectedText).Split ('\n')));
-        List<InlineRun> runs = MarkdownInlineParser.ParseInlines (copied.Rows [0] [0], MarkdownStyleRole.Normal);
+        string copied = Assert.IsType<string> (view.SelectedText);
+        Assert.StartsWith ("+-----+", copied);
+        using TgMarkdown roundTrip = new () { Text = copied, Width = 60, Height = 20 };
+        roundTrip.Layout ();
+        MarkdownTable reparsed = Assert.Single (roundTrip.SubViews.OfType<MarkdownTable> ());
+        MarkdownTableCellContent body = Assert.Single (reparsed.Content.Cells, cell => cell.Row == 1);
+        string display = string.Join ('\n', body.Blocks.Select (block => string.Concat (block.Runs.Select (run => run.Text))));
 
-        Assert.Equal (hardBreak ? "foo\nbar" : "foo bar", string.Concat (runs.Select (run => run.Text)));
+        Assert.Equal (separateParagraphs ? "foo\n\nbar" : hardBreak ? "foo\nbar" : "foo bar", display);
     }
 
     [Theory]
@@ -82,11 +87,13 @@ public class MarkdownTableSerializationTests
         };
         view.Layout ();
         MarkdownTable table = Assert.Single (view.SubViews.OfType<MarkdownTable> ());
-        TableData copied = Assert.IsType<TableData> (TableData.TryParse (table.Text.Split ('\n')));
-        List<InlineRun> runs = MarkdownInlineParser.ParseInlines (Assert.Single (copied.Rows [0]), MarkdownStyleRole.Normal);
+        Assert.StartsWith ("+-----+", table.Text);
+        using TgMarkdown roundTrip = new () { Text = table.Text, Width = 60, Height = 20 };
+        roundTrip.Layout ();
+        MarkdownTable copied = Assert.Single (roundTrip.SubViews.OfType<MarkdownTable> ());
 
-        Assert.Equal (1, copied.ColumnCount);
-        Assert.Equal ("a|b", string.Concat (runs.Select (run => run.Text)));
+        Assert.Equal (1, copied.TableData.ColumnCount);
+        Assert.Equal ("a|b", string.Concat (copied.Content.Rows [0] [0].Select (segment => segment.Text)));
     }
 
     [Theory]

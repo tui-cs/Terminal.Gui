@@ -1,6 +1,7 @@
 using System.Drawing;
 using System.Text.RegularExpressions;
 using Markdig;
+using Markdig.Extensions.Tables;
 using Markdown = Terminal.Gui.Views.Markdown;
 
 namespace NativeAotSmoke;
@@ -41,6 +42,7 @@ internal static class MarkdownSmokeTests
         }
 
         ExerciseTableLinks ();
+        ExerciseRichTables ();
 
         view.MarkdownPipeline = new MarkdownPipelineBuilder ().UseAlertBlocks (allowNestedAlerts: true).Build ();
         AssertRendered (view, "> outer\n>\n> > [!WARNING]\n> > nested", "> outer\n> > WARNING\n> > nested");
@@ -51,6 +53,66 @@ internal static class MarkdownSmokeTests
         if (!table.Contains ("Name", StringComparison.Ordinal) || !table.Contains ("❌", StringComparison.Ordinal))
         {
             throw new InvalidOperationException ("AOT Markdown table rendering failed.");
+        }
+    }
+
+    private static void ExerciseRichTables ()
+    {
+        using Markdown view = new ()
+        {
+            MarkdownPipeline = new MarkdownPipelineBuilder ().UsePipeTables (new PipeTableOptions { InferColumnWidthsFromSeparator = true })
+                                                           .UseAdvancedExtensions ().Build ()
+        };
+        string proportional = Normalize (view.RenderToAnsi ("| A | B |\n| ----- | -------------------- |\n| x | y |", 47));
+
+        if (proportional.Split ('\n') [1] [11] != '│')
+        {
+            throw new InvalidOperationException ("AOT proportional table geometry failed.");
+        }
+
+        const string grid = "+-------+-------+\n| A     | B     |\n+-------+-------+\n| C spanning    |\n+-------+-------+";
+        view.Text = grid;
+        view.Width = 24;
+        view.Height = 12;
+        view.Layout ();
+        MarkdownTable parsed = view.SubViews.OfType<MarkdownTable> ().Single ();
+
+        if (parsed.TableData.Headers.Length != 0 || parsed.TableData.TableRows [1].Cells [0].ColumnSpan != 2)
+        {
+            throw new InvalidOperationException ("AOT headerless or spanning grid metadata was lost.");
+        }
+
+        string rendered = Normalize (view.RenderToAnsi (width: 24));
+
+        if (!rendered.Contains ("C spanning", StringComparison.Ordinal))
+        {
+            throw new InvalidOperationException ("AOT spanning grid content was lost.");
+        }
+
+        using MarkdownTable standalone = new ()
+        {
+            Width = 24,
+            TableData = TableData.CreateGrid ([new (), new ()],
+                                             [new (false, [new (0, "[A link that wraps inside a spanning cell](https://example.com/grid)", columnSpan: 2)])])
+        };
+        standalone.Layout ();
+
+        if (standalone.GetContentHeight () <= 3)
+        {
+            throw new InvalidOperationException ("AOT spanning-cell link did not wrap.");
+        }
+
+        bool activated = false;
+        standalone.LinkClicked += (_, e) =>
+                                  {
+                                      activated = e.Url == "https://example.com/grid";
+                                      e.Handled = true;
+                                  };
+        standalone.NewMouseEvent (new Mouse { Position = new Point (2, 1), Flags = MouseFlags.LeftButtonClicked });
+
+        if (!activated)
+        {
+            throw new InvalidOperationException ("AOT spanning-cell link activation failed.");
         }
     }
 

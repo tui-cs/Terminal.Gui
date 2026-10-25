@@ -319,6 +319,29 @@ public class Menu : Bar, IValue<MenuItem?>
         Visible = true;
     }
 
+    /// <summary>
+    ///     Ensures this menu is visible and focuses <paramref name="item"/> if it belongs
+    ///     to this menu or a nested submenu. Delegates hierarchy opening to
+    ///     <see cref="MenuItem.OpenAndSelect"/>.
+    /// </summary>
+    internal void EnsureOpenAndSelect (MenuItem item)
+    {
+        ArgumentNullException.ThrowIfNull (item);
+
+        if (!Visible)
+        {
+            ShowMenu ();
+        }
+
+        // Direct child of this menu, or anywhere under nested SubMenus
+        bool inTree = SubViews.Contains (item) || GetMenuItemsOfAllSubMenus (mi => mi == item).Any ();
+
+        if (inTree)
+        {
+            item.OpenAndSelect ();
+        }
+    }
+
     private bool _isHiding;
 
     /// <summary>

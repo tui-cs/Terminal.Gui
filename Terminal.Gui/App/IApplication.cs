@@ -204,6 +204,11 @@ public interface IApplication : IDisposable
     ///         <see cref="SessionStack"/>, lays out the SubViews, focuses the first element, and draws the
     ///         runnable on the screen. This is usually followed by starting the main loop, and then the
     ///         <see cref="End(SessionToken)"/> method upon termination which will undo these changes.
+    ///         It does not start the continuous main loop; use <see cref="Run(IRunnable, Func{Exception, bool})"/>
+    ///         for ongoing input and UI processing.
+    ///         It also does not change <see cref="System.Threading.SynchronizationContext.Current"/>. Without
+    ///         <see cref="Run(IRunnable, Func{Exception, bool})"/>, nothing drains work posted from other threads,
+    ///         so use <see cref="Invoke(Action)"/> to reach the UI thread.
     ///     </para>
     ///     <para>
     ///         Raises the <see cref="IRunnable.IsRunningChanging"/>, <see cref="IRunnable.IsRunningChanged"/>,
@@ -231,6 +236,11 @@ public interface IApplication : IDisposable
     ///         Calling <see cref="Run(IRunnable, Func{Exception, bool})"/> is equivalent to calling
     ///         <see cref="Begin(IRunnable)"/>, followed by starting the main loop, and then calling
     ///         <see cref="End(SessionToken)"/>.
+    ///     </para>
+    ///     <para>
+    ///         Without <see cref="Run(IRunnable, Func{Exception, bool})"/>, nothing drains work posted from other threads.
+    ///         <see cref="Invoke(Action)"/> queues work for the UI thread, but that work still runs only when the UI thread
+    ///         iterates — an idle Begin-only session does not process it.
     ///     </para>
     ///     <para>
     ///         In RELEASE builds: When <paramref name="errorHandler"/> is <see langword="null"/> any exceptions will be

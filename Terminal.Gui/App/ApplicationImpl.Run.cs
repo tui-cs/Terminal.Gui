@@ -1,5 +1,4 @@
 using System.Collections.Concurrent;
-using System.Diagnostics.CodeAnalysis;
 using System.Runtime.ExceptionServices;
 using Terminal.Gui.Tracing;
 
@@ -115,9 +114,6 @@ internal partial class ApplicationImpl
 
     #region Session Lifecycle - Begin
 
-    // The ambient context from before the first running session installed this app's context.
-    private SynchronizationContext? _callerSynchronizationContext;
-
     /// <inheritdoc/>
     public SessionToken? Begin (IRunnable runnable)
     {
@@ -145,15 +141,6 @@ internal partial class ApplicationImpl
 
         // Set the application reference in the runnable
         runnable.SetApp (this);
-
-        // Make this app's MainLoopSyncContext ambient while sessions run. The first running session saves the
-        // caller's context so the last session to end can restore it (#5636).
-        if (!HasRunningSession && System.Threading.SynchronizationContext.Current != SynchronizationContext)
-        {
-            _callerSynchronizationContext = System.Threading.SynchronizationContext.Current;
-        }
-
-        SynchronizationContext.SetSynchronizationContext (SynchronizationContext);
 
         // Ensure the mouse is ungrabbed
         Mouse.UngrabMouse ();
@@ -218,7 +205,7 @@ internal partial class ApplicationImpl
     #region Session Lifecycle - Run
 
     /// <inheritdoc/>
-    public IApplication Run<TRunnable> (Func<Exception, bool>? errorHandler = null, string? driverName = null) where TRunnable : IRunnable, new()
+    public IApplication Run<TRunnable> (Func<Exception, bool>? errorHandler = null, string? driverName = null) where TRunnable : IRunnable, new ()
     {
         if (!Initialized)
         {
@@ -253,13 +240,18 @@ internal partial class ApplicationImpl
             throw new NotInitializedException (@"Init must be called before Run.");
         }
 
-        // Begin installs this app's MainLoopSyncContext as the thread's ambient context for the
-        // duration of the session; restore the caller's context on exit so an await after Run
-        // does not capture a context that is no longer pumping (#5636).
+        // Run owns the ambient context: it is installed before Begin (so SessionBegun handlers and the initial
+        // LayoutAndDraw see it) and restored on exit so an await after Run cannot capture a context that is no
+        // longer pumping (#5636). Begin without Run never installs it (#5680).
         SynchronizationContext? previousContext = System.Threading.SynchronizationContext.Current;
+
+        // Compare against the local captured at entry, not the property, which may be reset during the run.
+        SynchronizationContext? toolkitContext = SynchronizationContext;
 
         try
         {
+            System.Threading.SynchronizationContext.SetSynchronizationContext (toolkitContext);
+
             // Begin the session (adds to stack, raises IsRunningChanging/IsRunningChanged)
 
             SessionToken? token =
@@ -304,8 +296,10 @@ internal partial class ApplicationImpl
         }
         finally
         {
-            // Once the last session has ended, End has restored the caller's context; do not reinstall this app's.
-            if (HasRunningSession || previousContext != SynchronizationContext)
+            // Restore the caller's context only if ours is still current, so a context installed on purpose
+            // during the run (for example by a handler) is not overwritten. For a nested Run, previousContext
+            // is already ours, so restoring it changes nothing; the outermost Run restores the caller's context.
+            if (ReferenceEquals (System.Threading.SynchronizationContext.Current, toolkitContext))
             {
                 System.Threading.SynchronizationContext.SetSynchronizationContext (previousContext);
             }
@@ -349,7 +343,7 @@ internal partial class ApplicationImpl
     }
 
     /// <inheritdoc/>
-    public Task<IApplication> RunAsync<TRunnable> (CancellationToken cancellationToken, Func<Exception, bool>? errorHandler = null, string? driverName = null) where TRunnable : IRunnable, new()
+    public Task<IApplication> RunAsync<TRunnable> (CancellationToken cancellationToken, Func<Exception, bool>? errorHandler = null, string? driverName = null) where TRunnable : IRunnable, new ()
     {
         if (cancellationToken.IsCancellationRequested)
         {
@@ -575,14 +569,6 @@ internal partial class ApplicationImpl
 
         // Keep Runnable available to the state-change handlers, then clear it before SessionEnded.
         token.Runnable = null;
-
-        // Keep this app's context ambient while any session still runs, including one that began first or one a
-        // handler above began. After the last running session, restore the caller's context so a later await cannot
-        // capture a context that is no longer pumping (#5636).
-        if (!HasRunningSession && System.Threading.SynchronizationContext.Current == SynchronizationContext)
-        {
-            System.Threading.SynchronizationContext.SetSynchronizationContext (_callerSynchronizationContext);
-        }
 
         Notify (() => SessionEnded?.Invoke (this, new SessionTokenEventArgs (token)));
 

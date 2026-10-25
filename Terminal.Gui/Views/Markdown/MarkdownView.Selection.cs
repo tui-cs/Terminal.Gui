@@ -147,12 +147,6 @@ public partial class Markdown
         var selectionHasNonCodeContent = false;
         var codeOpenFenceEmitted = false;
 
-        // Track the last table instance that was output.  All placeholder rows for the
-        // same table share the same TableData reference, so we use ReferenceEquals to
-        // emit the reconstructed table markdown exactly once even when the selection
-        // covers multiple placeholder rows belonging to the same table.
-        TableData? lastOutputtedTable = null;
-
         for (int lineIdx = start.Y; lineIdx <= Math.Min (end.Y, _renderedLines.Count - 1); lineIdx++)
         {
             RenderedLine line = _renderedLines [lineIdx];
@@ -209,20 +203,24 @@ public partial class Markdown
                 selectionHasNonCodeContent = true;
             }
 
-            if (line is { IsTable: true, TableData: { } tableData })
+            if (line.TableView is { } table)
             {
-                // Each table occupies several zero-width placeholder rows that all share the
-                // same TableData instance.  Only reconstruct the table markdown the first time
-                // we encounter each distinct instance; skip subsequent placeholder rows.
-                if (!ReferenceEquals (tableData, lastOutputtedTable))
-                {
-                    foreach (string tableLine in RenderTableAsMarkdown (tableData))
-                    {
-                        outputLines.Add (tableLine);
-                    }
+                int first = lineIdx - line.TableRow;
+                int last = first + table.TableLayout.Height - 1;
+                bool complete = (start.Y < first || (start.Y == first && start.X <= 1))
+                                && (end.Y > last || (end.Y == last && end.X >= table.TableLayout.Width - 1));
 
-                    lastOutputtedTable = tableData;
+                if (complete)
+                {
+                    outputLines.Add (MarkdownTableSerializer.Serialize (table.Content));
+                    lineIdx = last;
+
+                    continue;
                 }
+
+                int firstColumn = lineIdx == start.Y ? start.X : 0;
+                int lastColumn = lineIdx == end.Y ? end.X : table.TableLayout.Width;
+                outputLines.Add (table.TableLayout.SelectLine (line.TableRow, firstColumn, lastColumn));
 
                 continue;
             }
@@ -272,35 +270,9 @@ public partial class Markdown
 
         int lastLine = _renderedLines.Count - 1;
 
-        // For a document ending with a zero-width placeholder (table rows, thematic breaks),
-        // GetLineDisplayWidth(lastLine) returns 0, so end.X >= 0 is always satisfied.
-        // This is intentional: any position on a zero-width row is equivalent to the end of
-        // that row (there is no content there), so reaching the last row from (0,0) means the
-        // entire document is selected.
+        // Table rows carry their layout width; reaching their first column is not SelectAll.
+        // A thematic break has no text width, so any position on its row reaches its end.
         return end.Y >= lastLine && end.X >= GetLineDisplayWidth (lastLine);
-    }
-
-    /// <summary>Reconstructs GFM pipe-table markdown lines from a <see cref="TableData"/> instance.</summary>
-    private static IEnumerable<string> RenderTableAsMarkdown (TableData tableData)
-    {
-        // Header row
-        yield return "| " + string.Join (" | ", tableData.Headers) + " |";
-
-        // Separator row — encode column alignment
-        IEnumerable<string> separators = tableData.ColumnAlignments.Select (alignment => alignment switch
-                                                                                         {
-                                                                                             Alignment.Center => ":---:",
-                                                                                             Alignment.End => "---:",
-                                                                                             _ => "---"
-                                                                                         });
-
-        yield return "| " + string.Join (" | ", separators) + " |";
-
-        // Body rows
-        foreach (string [] row in tableData.Rows)
-        {
-            yield return "| " + string.Join (" | ", row) + " |";
-        }
     }
 
     private static void AppendLineText (StringBuilder sb, RenderedLine line, int startX, int endX)
