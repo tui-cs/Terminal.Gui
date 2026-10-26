@@ -86,14 +86,57 @@ public class MenuItemTests (ITestOutputHelper output)
 
     // Claude - Opus 4.6
     [Fact]
-    public void MenuItem_SubMenu_Sets_RightArrow_On_KeyView ()
+    public void MenuItem_SubMenu_NotNull_Sets_RightArrow_On_KeyView ()
     {
         MenuItem menuItem = new () { Title = "Parent" };
         Menu subMenu = new ();
 
         menuItem.SubMenu = subMenu;
 
-        Assert.Contains (Glyphs.RightArrow.ToString (), menuItem.KeyView.Text);
+        Assert.Equal (Glyphs.RightArrow.ToString (), menuItem.KeyView.Text);
+
+        menuItem.Dispose ();
+    }
+
+    [Fact]
+    public void MenuItem_SubMenu_Null_Restores_Key_Text ()
+    {
+        MenuItem menuItem = new () { Title = "Parent", Key = Key.F5 };
+        Menu subMenu = new ();
+
+        menuItem.SubMenu = subMenu;
+
+        Assert.Equal (Glyphs.RightArrow.ToString (), menuItem.KeyView.Text);
+
+        menuItem.SubMenu = null;
+
+        Assert.Equal ($"{Key.F5}", menuItem.KeyView.Text);
+
+        menuItem.Dispose ();
+    }
+
+    [Fact]
+    public void MenuItem_SubMenu_KeyView_SuperView_Behavior ()
+    {
+        MenuItem menuItem = new () { Title = "Parent", Key = Key.F5.WithCtrl };
+        Menu subMenu = new ();
+
+        Assert.Equal ($"{Key.F5.WithCtrl}", menuItem.KeyView.Text);
+        Assert.Same (menuItem, menuItem.KeyView.SuperView);
+
+        menuItem.SubMenu = subMenu;
+
+        Assert.Equal (Glyphs.RightArrow.ToString (), menuItem.KeyView.Text);
+        Assert.Same (menuItem, menuItem.KeyView.SuperView);
+
+        menuItem.SubMenu = null;
+
+        Assert.Equal ($"{Key.F5.WithCtrl}", menuItem.KeyView.Text);
+        Assert.Same (menuItem, menuItem.KeyView.SuperView);
+
+        menuItem.Key = Key.Empty;
+        Assert.Equal (string.Empty, menuItem.KeyView.Text);
+        Assert.Null (menuItem.KeyView.SuperView);
 
         menuItem.Dispose ();
     }

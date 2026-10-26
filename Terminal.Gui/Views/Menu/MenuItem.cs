@@ -123,6 +123,8 @@ public class MenuItem : Shortcut, IValue
 
             if (field is null)
             {
+                KeyView.Text = Key == Key.Empty ? string.Empty : $"{Key}";
+
                 return;
             }
 
