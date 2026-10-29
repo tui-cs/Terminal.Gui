@@ -21,7 +21,7 @@ A <xref:Terminal.Gui.Views.Shortcut> is a single, clickable row in a menu, toolb
 **What the user expects:**
 
 1. **Clicking anywhere on the Shortcut** activates it: toggles a checkbox, invokes the action, etc.
-2. **Pressing the keyboard shortcut** (shown in KeyView, e.g., Ctrl+O) does the same thing, regardless of focus.
+2. **Pressing the keyboard shortcut** (shown in KeyView, e.g., Ctrl+O) does the same thing. To make that key work regardless of focus — and even when the Shortcut is not visible (for example a <xref:Terminal.Gui.Views.MenuItem> under a closed <xref:Terminal.Gui.Views.PopoverMenu>) — set <xref:Terminal.Gui.Views.Shortcut.BindKeyToApplication> to `true`.
 3. **Pressing the HotKey** (the underlined letter in CommandView, e.g., `O` in `_Open`) does the same thing.
 4. **Pressing Space** while the Shortcut has focus activates it.
 5. **Pressing Enter** while the Shortcut has focus accepts it (confirms/executes).
@@ -52,7 +52,25 @@ From the user's perspective, a <xref:Terminal.Gui.Views.Shortcut> is **one contr
 |---------|---------|-------------|
 | **<xref:Terminal.Gui.Input.Command.Activate>** | Space, click, `Shortcut.Key` press | Changes state (e.g., toggles <xref:Terminal.Gui.Views.CheckBox>) and invokes `Action` |
 | **<xref:Terminal.Gui.Input.Command.Accept>** | Enter, double-click | Confirms/executes without state change; invokes `Action` |
-| **<xref:Terminal.Gui.Input.Command.HotKey>** | HotKey letter, `Shortcut.Key` | Sets focus, then invokes <xref:Terminal.Gui.Input.Command.Activate> |
+| **<xref:Terminal.Gui.Input.Command.HotKey>** | HotKey letter, `Shortcut.Key` | Sets focus (if visible), then invokes <xref:Terminal.Gui.Input.Command.Activate> |
+
+### BindKeyToApplication
+
+By default, <xref:Terminal.Gui.Views.Shortcut.Key> is registered on <xref:Terminal.Gui.ViewBase.View.HotKeyBindings> and only participates while the Shortcut (or its menu) can receive hotkeys.
+
+To register `Key` on <xref:Terminal.Gui.App.IKeyboard.KeyBindings> instead:
+
+```csharp
+Shortcut shortcut = new ()
+{
+    Title = "_Save",
+    BindKeyToApplication = true,
+    Key = Key.S.WithCtrl,
+    Action = () => SaveFile ()
+};
+```
+
+Application-scoped bindings still invoke <xref:Terminal.Gui.ViewBase.View.DefaultHotKeyHandler*> even when the Shortcut is not visible. `DefaultHotKeyHandler` skips `SetFocus` in that case. If `Key` is assigned before <xref:Terminal.Gui.ViewBase.View.App> is available (common when building <xref:Terminal.Gui.Views.MenuItem>s into a <xref:Terminal.Gui.Views.PopoverMenu>), the binding is registered when the SuperView / <xref:Terminal.Gui.Views.MenuBarItem> init path provides an app.
 
 ### CommandsToBubbleUp
 
@@ -208,12 +226,15 @@ User clicks on Shortcut (not CommandView)
 
 ### Flow 3: Shortcut.Key Press (e.g., Ctrl+O)
 
+With <xref:Terminal.Gui.Views.Shortcut.BindKeyToApplication> = `false` (default), the key comes from `HotKeyBindings`. With `true`, it comes from application `KeyBindings` (`KeyBinding.Target` = Shortcut) and still runs when the Shortcut is not visible.
+
 ```
 User presses Shortcut.Key
-  → Shortcut.InvokeCommand(HotKey) [from HotKeyBinding, Binding.Source=Shortcut]
+  → Shortcut.InvokeCommand(HotKey) [from HotKeyBinding or App KeyBinding; Target set when BindKeyToApplication]
   → Shortcut.DefaultHotKeyHandler(ctx)
+    → (view-local only) require CanBeVisible; app-scoped skips visibility gate
     → RaiseHandlingHotKey(ctx) → HandlingHotKey event
-    → SetFocus() (if CanFocus)
+    → SetFocus() (if CanFocus and CanBeVisible)
     → RaiseHotKeyCommand(ctx) → HotKeyCommand event
     → InvokeCommand(Activate, ctx.Binding) [passes original binding through]
       → Shortcut.RaiseActivating()

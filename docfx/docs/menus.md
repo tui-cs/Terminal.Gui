@@ -86,6 +86,7 @@ Shortcut shortcut = new ()
 {
     Title = "_Save",           // CommandView text with hotkey
     HelpText = "Save the file",
+    BindKeyToApplication = true, // App-wide Key (works when not focused / not visible)
     Key = Key.S.WithCtrl,
     Action = () => SaveFile ()
 };
@@ -95,7 +96,7 @@ Shortcut shortcut = new ()
 
 Key features:
 - Supports `Action` for direct invocation
-- `BindKeyToApplication` enables application-wide key bindings
+- To make `Key` application-wide (including while a menu popover is closed), set `BindKeyToApplication = true`
 - `AlignmentModes` controls element ordering (start-to-end or end-to-start)
 - `CommandView` can be replaced with custom views (e.g., <xref:Terminal.Gui.Views.CheckBox>)
 - Uses relay dispatch (`ConsumeDispatch=false`): commands dispatched to `CommandView` complete normally, then <xref:Terminal.Gui.Views.Shortcut> is notified via a deferred callback
@@ -131,6 +132,7 @@ MenuItem menuItem = new ()
 {
     Title = "_Open...",
     HelpText = "Open a file",
+    BindKeyToApplication = true, // Required for Ctrl+O while the PopoverMenu is closed
     Key = Key.O.WithCtrl,
     Action = () => OpenFile ()
 };
@@ -144,6 +146,7 @@ Key features:
 - `TargetView` and `Command` enable command binding to other views
 - Automatically gets focus on mouse enter
 - Displays right-arrow glyph when it has a submenu
+- To fire `Key` while the owning <xref:Terminal.Gui.Views.MenuBarItem>'s <xref:Terminal.Gui.Views.PopoverMenu> is closed, set `BindKeyToApplication = true` (without it, `Key` uses view-local HotKeyBindings and typically only works while that menu is open)
 - When `SubMenu` is set, a `CommandBridge` connects the SubMenu back to this MenuItem (bridging <xref:Terminal.Gui.Input.Command.Activate> and <xref:Terminal.Gui.Input.Command.Accept> commands across the non-containment boundary)
 - `OpenAndSelect(bool ensureVisible = true)` opens every ancestor menu (and the
   owning `MenuBar` / `PopoverMenu` when present) and focuses this item. Returns
@@ -157,13 +160,16 @@ Key features:
 
 ```csharp
 Menu fileMenu = new ([
-    new MenuItem ("_New", Key.N.WithCtrl, () => NewFile ()),
-    new MenuItem ("_Open...", Key.O.WithCtrl, () => OpenFile ()),
+    new MenuItem ("_New", Key.N.WithCtrl, () => NewFile ()) { BindKeyToApplication = true },
+    new MenuItem ("_Open...", Key.O.WithCtrl, () => OpenFile ()) { BindKeyToApplication = true },
     new Line (),  // Separator
-    new MenuItem ("_Save", Key.S.WithCtrl, () => SaveFile ()),
+    new MenuItem ("_Save", Key.S.WithCtrl, () => SaveFile ()) { BindKeyToApplication = true },
     new MenuItem ("Save _As...", () => SaveAs ())
 ]);
 ```
+
+> [!NOTE]
+> The `MenuItem(string, Key, Action)` helper sets `Key` but leaves `BindKeyToApplication` as `false`. To make those keys work while the menu is closed, set `BindKeyToApplication = true` as above.
 
 Key features:
 - Vertical orientation by default

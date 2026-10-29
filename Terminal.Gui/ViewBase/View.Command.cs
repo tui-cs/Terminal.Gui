@@ -999,13 +999,29 @@ public partial class View // Command APIs
     /// <summary>
     ///     Called when the user has pressed the View's <see cref="HotKey"/> and <see cref="Command.HotKey"/> has been invoked.
     /// </summary>
+    /// <remarks>
+    ///     <para>
+    ///         View-local HotKeys require the View to be visible in the SuperView chain
+    ///         (<c>CanBeVisible</c>). Application-scoped bindings — those whose
+    ///         <see cref="KeyBinding.Target"/> is this View (e.g. <see cref="Shortcut.Key"/> with
+    ///         <see cref="Shortcut.BindKeyToApplication"/>) — are honored even when this View is not
+    ///         visible, so a <see cref="MenuItem"/> shortcut can fire while its <see cref="PopoverMenu"/> is closed.
+    ///     </para>
+    ///     <para>
+    ///         To avoid focusing a hidden View, <see cref="SetFocus"/> runs only when the View can be visible.
+    ///     </para>
+    /// </remarks>
     /// <param name="ctx">The command context.</param>
     /// <returns><see langword="true"/> if the command was handled; otherwise, <see langword="false"/>.</returns>
     public bool? DefaultHotKeyHandler (ICommandContext? ctx)
     {
         Trace.Command (this, ctx, "Entry");
 
-        if (!CanBeVisible (this) || RaiseHandlingHotKey (ctx) is true)
+        // Application-scoped bindings (KeyBinding.Target == this) must work even when this View
+        // is not visible — e.g. MenuItem.Key with BindKeyToApplication inside a closed PopoverMenu.
+        bool isApplicationScoped = ctx?.Binding is KeyBinding { Target: { } target } && ReferenceEquals (target, this);
+
+        if ((!CanBeVisible (this) && !isApplicationScoped) || RaiseHandlingHotKey (ctx) is true)
         {
             // The hotkey was cancelled by OnHandlingHotKey or HandlingHotKey event.
             // Return false so the key is not consumed and can be processed as normal input
@@ -1013,9 +1029,10 @@ public partial class View // Command APIs
             return false;
         }
 
-        if (CanFocus)
+        if (CanFocus && CanBeVisible (this))
         {
             // Set focus if not handled yet. Setting focus does NOT mean the event is handled, so we return.
+            // Skip when not visible (application-scoped shortcut on a hidden MenuItem/Shortcut).
             SetFocus ();
         }
 

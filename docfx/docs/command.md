@@ -330,10 +330,11 @@ Bound to `Key.Enter`.
 
 Bound to <xref:Terminal.Gui.ViewBase.View.HotKey>.
 
-1. Calls <xref:Terminal.Gui.ViewBase.View.RaiseHandlingHotKey*>
-2. If handled, returns `false` (allows key through as text input — e.g., <xref:Terminal.Gui.Views.TextField> with HotKey `_E`)
-3. Calls `SetFocus()`, <xref:Terminal.Gui.ViewBase.View.RaiseHotKeyCommand*>, then `InvokeCommand(Command.Activate, ctx?.Binding)`
-4. Returns `true`
+1. For view-local HotKeys, requires the View to be visible in the SuperView chain (`CanBeVisible`). Application-scoped bindings — those whose <xref:Terminal.Gui.Input.KeyBinding.Target> is this View (e.g. <xref:Terminal.Gui.Views.Shortcut.Key> with <xref:Terminal.Gui.Views.Shortcut.BindKeyToApplication>) — skip that visibility gate so a <xref:Terminal.Gui.Views.MenuItem> shortcut can fire while its <xref:Terminal.Gui.Views.PopoverMenu> is closed.
+2. Calls <xref:Terminal.Gui.ViewBase.View.RaiseHandlingHotKey*>
+3. If handled, returns `false` (allows key through as text input — e.g., <xref:Terminal.Gui.Views.TextField> with HotKey `_E`)
+4. Calls `SetFocus()` only when the View can be visible and `CanFocus` is true, then <xref:Terminal.Gui.ViewBase.View.RaiseHotKeyCommand*>, then `InvokeCommand(Command.Activate, ctx?.Binding)`
+5. Returns `true`
 
 ### `DefaultCommandNotBoundHandler` (<xref:Terminal.Gui.Input.Command.NotBound>)
 

@@ -86,13 +86,13 @@ By default, the `Text` of a <xref:Terminal.Gui.ViewBase.View> is used to determi
 
 ### **Shortcut**
 
-A **Shortcut** is an opinionated (visually & API) <xref:Terminal.Gui.ViewBase.View> for displaying a command, help text, key key press that invokes a [Command](~/api/Terminal.Gui.Input.Command.yml).
+A **Shortcut** is an opinionated (visually & API) <xref:Terminal.Gui.ViewBase.View> for displaying a command, help text, and a key press that invokes a [Command](~/api/Terminal.Gui.Input.Command.yml).
 
-The <xref:Terminal.Gui.Input.Command> can be invoked even if the <xref:Terminal.Gui.ViewBase.View> that defines them is not focused or visible (but the <xref:Terminal.Gui.ViewBase.View> must be enabled). <xref:Terminal.Gui.Views.Shortcut>s can be any key press; `Key.A`, `Key.A.WithCtrl`, `Key.A.WithCtrl.WithAlt`, `Key.Del`, and `Key.F1`, are all valid.
+To invoke the Shortcut's <xref:Terminal.Gui.Views.Shortcut.Key> when the view is not focused or not visible (for example a <xref:Terminal.Gui.Views.MenuItem> under a closed [PopoverMenu](~/api/Terminal.Gui.Views.PopoverMenu.yml)), set <xref:Terminal.Gui.Views.Shortcut.BindKeyToApplication> to `true`. The view must still be enabled. Without `BindKeyToApplication`, `Key` uses view-local `HotKeyBindings`. Valid keys include `Key.A`, `Key.A.WithCtrl`, `Key.A.WithCtrl.WithAlt`, `Key.Del`, and `Key.F1`.
 
 <xref:Terminal.Gui.Views.Shortcut>s are used to define application-wide actions or actions that are not visible (e.g. `Copy`).
 
-[MenuBar](~/api/Terminal.Gui.Views.MenuBar.yml), [PopoverMenu](~/api/Terminal.Gui.Views.PopoverMenu.yml), and [StatusBar](~/api/Terminal.Gui.Views.StatusBar.yml) support <xref:Terminal.Gui.Views.Shortcut>s.
+[MenuBar](~/api/Terminal.Gui.Views.MenuBar.yml), [PopoverMenu](~/api/Terminal.Gui.Views.PopoverMenu.yml), and [StatusBar](~/api/Terminal.Gui.Views.StatusBar.yml) support <xref:Terminal.Gui.Views.Shortcut>s. See [Shortcut Deep Dive](shortcut.md) for command routing and `BindKeyToApplication` details.
 
 ### **Key Events**
 

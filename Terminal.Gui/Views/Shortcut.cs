@@ -60,9 +60,12 @@ namespace Terminal.Gui.Views;
 ///         <see cref="Shortcut"/> automatically adapts its activation behavior to the <see cref="CommandView"/>.
 ///     </para>
 ///     <para>
-///         <b>Application-Wide Key:</b> If <see cref="BindKeyToApplication"/> is <see langword="true"/>,
-///         <see cref="Key"/> will invoke <see cref="Command.HotKey"/> (and thus <see cref="Command.Activate"/>)
-///         regardless of what <see cref="View"/> has focus, enabling an application-wide keyboard shortcut.
+///         <b>Application-Wide Key:</b> To make <see cref="Key"/> work regardless of focus and even when this
+///         <see cref="Shortcut"/> is not visible (for example a <see cref="MenuItem"/> inside a closed
+///         <see cref="PopoverMenu"/>), set <see cref="BindKeyToApplication"/> to <see langword="true"/>.
+///         The key is registered on <see cref="IKeyboard.KeyBindings"/> and invokes
+///         <see cref="Command.HotKey"/> (and thus <see cref="Command.Activate"/>). Without it, <see cref="Key"/>
+///         uses <see cref="View.HotKeyBindings"/> and only fires while this view can receive hotkeys.
 ///     </para>
 ///     <para>
 ///         <b>Layout:</b> By default, a <see cref="Shortcut"/> displays the command text on the left,
@@ -711,8 +714,15 @@ public class Shortcut : View, IOrientation, IDesignable
     #region Key
 
     /// <summary>
-    ///     Gets or sets the <see cref="Key"/> that will be bound to the <see cref="Command.Activate"/> command.
+    ///     Gets or sets the <see cref="Key"/> bound to <see cref="Command.HotKey"/> (which then invokes
+    ///     <see cref="Command.Activate"/>).
     /// </summary>
+    /// <remarks>
+    ///     By default the key is registered on <see cref="View.HotKeyBindings"/>. To register it on
+    ///     <see cref="IKeyboard.KeyBindings"/> instead (application-wide, including when this
+    ///     <see cref="Shortcut"/> is not visible), set <see cref="BindKeyToApplication"/> to
+    ///     <see langword="true"/> before or when assigning this property.
+    /// </remarks>
     public Key Key
     {
         get => field ?? Key.Empty;
@@ -729,9 +739,23 @@ public class Shortcut : View, IOrientation, IDesignable
     }
 
     /// <summary>
-    ///     Gets or sets whether <see cref="Key"/> is bound to <see cref="Command"/> via <see cref="View.HotKeyBindings"/> or
-    ///     <see cref="KeyBindings"/>.
+    ///     Gets or sets whether <see cref="Key"/> is bound via <see cref="View.HotKeyBindings"/>
+    ///     (<see langword="false"/>, default) or <see cref="IKeyboard.KeyBindings"/>
+    ///     (<see langword="true"/>).
     /// </summary>
+    /// <remarks>
+    ///     <para>
+    ///         To fire the shortcut while the view is unfocused or not visible (typical for
+    ///         <see cref="MenuItem"/> entries under a closed <see cref="PopoverMenu"/>), set this to
+    ///         <see langword="true"/>.
+    ///     </para>
+    ///     <para>
+    ///         Registration uses <see cref="View.App"/>. If <see cref="Key"/> is assigned before
+    ///         <see cref="View.App"/> is available, the binding is registered when the SuperView chain
+    ///         provides an app (see <see cref="OnSuperViewChanged"/>) or when a <see cref="MenuBarItem"/>
+    ///         finishes init and re-registers application-scoped shortcuts under its menu.
+    ///     </para>
+    /// </remarks>
     public bool BindKeyToApplication
     {
         get;
@@ -831,6 +855,68 @@ public class Shortcut : View, IOrientation, IDesignable
             {
                 HotKeyBindings.Add (Key, Command.HotKey);
             }
+        }
+    }
+
+    /// <inheritdoc/>
+    protected override void OnSuperViewChanged (ValueChangedEventArgs<View?> args)
+    {
+        base.OnSuperViewChanged (args);
+
+        // Key / BindKeyToApplication may have been set before this Shortcut was in a hierarchy with App
+        // (typical for MenuItems built into a PopoverMenu before MenuBarItem.EndInit assigns App).
+        // Re-register so application-scoped shortcuts are actually bound.
+        EnsureApplicationKeyBinding ();
+    }
+
+    /// <summary>
+    ///     Re-registers <see cref="Key"/> with <see cref="IKeyboard.KeyBindings"/> when
+    ///     <see cref="BindKeyToApplication"/> is set and <see cref="View.App"/> is now available.
+    /// </summary>
+    internal void EnsureApplicationKeyBinding ()
+    {
+        if (!BindKeyToApplication || Key == Key.Empty || App is null)
+        {
+            return;
+        }
+
+        UpdateKeyBindings (Key.Empty);
+    }
+
+    /// <summary>
+    ///     Walks <paramref name="root"/> and its SubViews, re-registering any
+    ///     <see cref="BindKeyToApplication"/> shortcuts whose <see cref="View.App"/> is now available.
+    ///     Also walks <see cref="MenuItem.SubMenu"/> (non-containment).
+    /// </summary>
+    /// <param name="root">The root of the view tree to walk.</param>
+    /// <param name="app">
+    ///     Optional <see cref="IApplication"/> to assign when a Shortcut's <see cref="View.App"/> is still
+    ///     unresolved (e.g. MenuItems under a PopoverMenu before the SuperView App chain is complete).
+    /// </param>
+    internal static void EnsureApplicationKeyBindings (View? root, IApplication? app = null)
+    {
+        if (root is null)
+        {
+            return;
+        }
+
+        IApplication? effectiveApp = root.App ?? app;
+
+        if (root is Shortcut shortcut && effectiveApp is { })
+        {
+            shortcut.App ??= effectiveApp;
+            shortcut.EnsureApplicationKeyBinding ();
+        }
+
+        foreach (View subView in root.SubViews)
+        {
+            EnsureApplicationKeyBindings (subView, effectiveApp);
+        }
+
+        // SubMenu is not a SubView of MenuItem (CommandBridge across non-containment).
+        if (root is MenuItem { SubMenu: { } subMenu })
+        {
+            EnsureApplicationKeyBindings (subMenu, effectiveApp);
         }
     }
 
