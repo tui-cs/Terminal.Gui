@@ -109,6 +109,8 @@ public partial class View // SuperView/SubView hierarchy management (SuperView, 
     /// <returns><see langword="true"/> if the SuperView was changed; otherwise, <see langword="false"/>.</returns>
     private bool SetSuperView (View? value)
     {
+        VerifyAssociationAccess (value?.App, nameof (SuperView));
+
         if (_superView == value)
         {
             return true;
@@ -119,7 +121,13 @@ public partial class View // SuperView/SubView hierarchy management (SuperView, 
                                                  value,
                                                  OnSuperViewChanging,
                                                  SuperViewChanging,
-                                                 newValue => _superView = newValue,
+                                                 newValue =>
+                                                 {
+                                                     _superView?.AdjustExplicitApplicationCount (-ExplicitApplicationCount);
+                                                     _superView = newValue;
+                                                     _superView?.AdjustExplicitApplicationCount (ExplicitApplicationCount);
+                                                     RefreshThreadAccessApplication ();
+                                                 },
                                                  OnSuperViewChanged,
                                                  SuperViewChanged,
                                                  out View? _);
@@ -194,6 +202,9 @@ public partial class View // SuperView/SubView hierarchy management (SuperView, 
     /// <seealso cref="SuperViewChanged"/>
     public View? AddAt (int index, View? view)
     {
+        VerifyAccessIfEnabled ();
+        view?.VerifyAssociationAccess (App, nameof (AddAt));
+
         if (view is null)
         {
             return null;
@@ -417,6 +428,9 @@ public partial class View // SuperView/SubView hierarchy management (SuperView, 
     /// <seealso cref="SuperViewChanged"/>
     public View? Remove (View? view)
     {
+        VerifyAccessIfEnabled ();
+        view?.VerifyAssociationAccess (App, nameof (Remove));
+
         if (view is null)
         {
             return null;
@@ -550,6 +564,8 @@ public partial class View // SuperView/SubView hierarchy management (SuperView, 
     /// <seealso cref="SuperViewChanged"/>
     public virtual IReadOnlyCollection<View> RemoveAll ()
     {
+        VerifyAccessIfEnabled ();
+
         List<View> removedList = new ();
 
         while (InternalSubViews.Count > 0)
@@ -581,6 +597,8 @@ public partial class View // SuperView/SubView hierarchy management (SuperView, 
     /// </returns>
     public IReadOnlyCollection<TView> RemoveAll<TView> () where TView : View
     {
+        VerifyAccessIfEnabled ();
+
         List<TView> removedList = new ();
 
         foreach (TView view in InternalSubViews.OfType<TView> ().ToList ())
@@ -783,6 +801,9 @@ public partial class View // SuperView/SubView hierarchy management (SuperView, 
     /// <param name="action"></param>
     private void PerformActionForSubView (View subview, Action<View> action)
     {
+        VerifyAccessIfEnabled ();
+        subview.VerifyAccessIfEnabled ();
+
         if (InternalSubViews.Contains (subview))
         {
             action (subview);

@@ -56,10 +56,13 @@ namespace Terminal.Gui.ViewBase;
 public partial class View : IDisposable, ISupportInitializeNotification
 {
     private bool _disposedValue;
+    internal bool IsDisposed => _disposedValue;
 
     /// <summary>Performs application-defined tasks associated with freeing, releasing, or resetting unmanaged resource.</summary>
     public void Dispose ()
     {
+        VerifyAccessIfEnabled ();
+
         // Do not change this code. Put cleanup code in 'Dispose(bool disposing)' method
         Disposing?.Invoke (this, EventArgs.Empty);
 
@@ -115,9 +118,9 @@ public partial class View : IDisposable, ISupportInitializeNotification
         DisposeAdornments ();
         DisposeScrollBars ();
 
-        if (App is { } && App.Mouse.IsGrabbed (this))
+        if (App is { Initialized: true } app && app.Mouse.IsGrabbed (this))
         {
-            App.Mouse.UngrabMouse ();
+            app.Mouse.UngrabMouse ();
         }
 
         for (int i = InternalSubViews.Count - 1; i >= 0; i--)
@@ -162,8 +165,19 @@ public partial class View : IDisposable, ISupportInitializeNotification
     ///         If not explicitly set on an instance, this property will retrieve the value from the view at the top
     ///         of the View hierarchy (the top-most SuperView).
     ///     </para>
+    ///     <para>
+    ///         An association with an initialized application establishes UI-thread affinity, including before or after
+    ///         a runnable session. To diagnose wrong-thread mutations, call
+    ///         <see cref="ApplicationThreadAccessExtensions.EnableThreadAccessChecks"/> on the application.
+    ///         Assigning or clearing this property checks both the previous application and the destination when
+    ///         diagnostics are enabled. A removed view with an explicit application remains associated.
+    ///     </para>
     /// </remarks>
-    public IApplication? App { get => GetApp (); set => _app = value; }
+    public IApplication? App
+    {
+        get => GetApp ();
+        set => SetApplication (value);
+    }
 
     /// <summary>
     ///     Gets the <see cref="IApplication"/> instance this view is running in. Used internally to allow overrides by
@@ -261,6 +275,8 @@ public partial class View : IDisposable, ISupportInitializeNotification
     /// </remarks>
     public virtual void BeginInit ()
     {
+        VerifyAccessIfEnabled ();
+
         if (IsInitialized)
         {
             throw new InvalidOperationException ("The view is already initialized.");
@@ -295,6 +311,8 @@ public partial class View : IDisposable, ISupportInitializeNotification
     /// </remarks>
     public virtual void EndInit ()
     {
+        VerifyAccessIfEnabled ();
+
         if (IsInitialized)
         {
             throw new InvalidOperationException ("The view is already initialized.");
@@ -338,6 +356,8 @@ public partial class View : IDisposable, ISupportInitializeNotification
         get;
         set
         {
+            VerifyAccessIfEnabled ();
+
             if (field == value)
             {
                 return;
@@ -384,6 +404,8 @@ public partial class View : IDisposable, ISupportInitializeNotification
         get;
         set
         {
+            VerifyAccessIfEnabled ();
+
             if (field == value)
             {
                 return;
@@ -529,6 +551,8 @@ public partial class View : IDisposable, ISupportInitializeNotification
         get { return _title; }
         set
         {
+            VerifyAccessIfEnabled ();
+
 #if DEBUG_IDISPOSABLE
             if (EnableDebugIDisposableAsserts && WasDisposed)
             {

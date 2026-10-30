@@ -528,6 +528,22 @@ internal class ApplicationMouse : IMouse, IDisposable
 
     private WeakReference<View>? _mouseGrabViewRef;
 
+    // A delayed End must release only the grab that existed when it ended, including when the same view re-grabs.
+    internal Action CaptureUngrabMouse ()
+    {
+        WeakReference<View>? grab = _mouseGrabViewRef;
+
+        return () =>
+               {
+                   if (!ReferenceEquals (_mouseGrabViewRef, grab))
+                   {
+                       return;
+                   }
+
+                   UngrabMouse ();
+               };
+    }
+
     /// <inheritdoc/>
     public bool IsGrabbed (View? view)
     {

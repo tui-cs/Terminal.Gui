@@ -6,7 +6,13 @@ namespace Terminal.Gui.App;
 /// </summary>
 public class SessionToken
 {
+    private static long _nextId;
+
     internal SessionToken (IRunnable runnable) => Runnable = runnable;
+
+    /// <summary>Gets a process-unique identity for this session, including after it ends.</summary>
+    /// <remarks>Thread-affinity diagnostics include this identity so callers can correlate it with their session tokens.</remarks>
+    public long Id { get; } = Interlocked.Increment (ref _nextId);
 
     /// <summary>
     ///     Gets or sets the runnable associated with this session.

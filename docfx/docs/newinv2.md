@@ -672,6 +672,18 @@ See [Migrating ConfigurationManager to TuiConfigurationBuilder](migrate-cm-to-me
 
 See the [Logging Deep Dive](logging.md) for complete details.
 
+### UI-thread Access Diagnostics
+
+To detect wrong-thread view mutations at the call site, enable `app.EnableThreadAccessChecks ()`. This opt-in feature
+works in Debug and Release builds and reports the view, operation, thread IDs, and owning `SessionToken.Id`.
+It covers the documented base view mutation paths, including `View.Dispose ()`. A wrong-thread disposal fails before
+cleanup; retry on the UI thread, or dispose the application before its views after a stopped-loop continuation resumes
+on a worker. Custom `GetApp` owners must refresh their initial and subsequent associations.
+
+Application disposal releases sessions and driver resources before rethrowing a notification failure. A canceled stop
+cannot keep a disposed application running; reset still publishes the session's final state notifications.
+See [thread-access diagnostics](multitasking.md#diagnose-wrong-thread-view-mutations) for the association and cleanup contracts.
+
 ### Logging System
 
 [Logging](~/api/Terminal.Gui.App.Logging.yml) integrates with Microsoft.Extensions.Logging:

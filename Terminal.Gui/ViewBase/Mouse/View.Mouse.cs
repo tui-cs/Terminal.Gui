@@ -1113,9 +1113,9 @@ public partial class View // Mouse APIs
             MouseHoldRepeater.Dispose ();
         }
 
-        if (App is { } && App.Mouse.IsGrabbed (this))
+        if (App is { Initialized: true } app && app.Mouse.IsGrabbed (this))
         {
-            App.Mouse.UngrabMouse ();
+            app.Mouse.UngrabMouse ();
         }
     }
 }

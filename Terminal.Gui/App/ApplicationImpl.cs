@@ -4,7 +4,7 @@ namespace Terminal.Gui.App;
 ///     Implementation of core <see cref="Application"/> methods using the modern
 ///     main loop architecture with component factories for different platforms.
 /// </summary>
-internal partial class ApplicationImpl : IApplication, IApplicationAsyncDispatcher, IApplicationInlineOutput
+internal partial class ApplicationImpl : IApplication, IApplicationAsyncDispatcher, IApplicationInlineOutput, IApplicationThreadAccess
 {
     private readonly ITimeProvider _timeProvider;
     private IInputInjector? _inputInjector;

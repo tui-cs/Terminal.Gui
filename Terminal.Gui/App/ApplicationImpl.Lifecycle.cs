@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Runtime.ExceptionServices;
 using Terminal.Gui.Configuration;
 using Wcwidth;
 using Trace = Terminal.Gui.Tracing.Trace;
@@ -144,25 +145,20 @@ internal partial class ApplicationImpl
             return;
         }
 
-        if (disposing)
+        try
         {
-            // Dispose managed resources
+            if (!disposing)
+            {
+                return;
+            }
+
             DisposeCore ();
         }
-
-        // For the singleton instance (legacy Application.Init/Shutdown pattern),
-        // we need to allow re-initialization after disposal. This enables:
-        // Application.Init() -> Application.Shutdown() -> Application.Init()
-        // For modern instance-based usage, this doesn't matter as new instances are created.
-        if (this == _instance)
+        finally
         {
-            // Reset disposed flag to allow re-initialization
-            _disposed = false;
-        }
-        else
-        {
-            // For instance-based usage, mark as disposed
-            _disposed = true;
+            // The legacy singleton supports Init/Dispose/Init. Modern instances stay disposed even when a
+            // notification failed: DisposeCore has already completed teardown before rethrowing that failure.
+            _disposed = this != _instance;
         }
     }
 
@@ -171,50 +167,49 @@ internal partial class ApplicationImpl
     /// </summary>
     private void DisposeCore ()
     {
-        // Publish shutdown and cancel pending dispatches before stopping the loop. Canceled awaiters
-        // can then resume without posting their continuations to a loop that will no longer pump.
-        StopDispatching ();
-
-        // Stop the coordinator if running
-        Coordinator?.Stop ();
-
-        // Capture state before cleanup
+        ExceptionDispatchInfo? failure = null;
         bool wasInitialized = Initialized;
 
-        // Raise static event for modern instance-based model BEFORE assertions
-        // This allows test code to unsubscribe from instance events before we check
-        Application.RaiseInstanceDisposed (this);
+        // Publish shutdown before waiting for the render gate so nested modal loops can unwind.
+        Cleanup (StopDispatching);
+        Cleanup (() => Coordinator?.Stop ());
+        Cleanup (() => Application.RaiseInstanceDisposed (this));
 
 #if DEBUG
-
-        // Check that all Application events have no remaining subscribers BEFORE clearing them
-        // Only check if we were actually initialized
         if (wasInitialized)
         {
-            AssertNoEventSubscribers (nameof (Iteration), Iteration);
-            AssertNoEventSubscribers (nameof (SessionBegun), SessionBegun);
-            AssertNoEventSubscribers (nameof (SessionEnded), SessionEnded);
-            AssertNoEventSubscribers (nameof (ScreenChanged), ScreenChanged);
-
-            //AssertNoEventSubscribers (nameof (InitializedChanged), InitializedChanged);
+            Cleanup (() => AssertNoEventSubscribers (nameof (Iteration), Iteration));
+            Cleanup (() => AssertNoEventSubscribers (nameof (SessionBegun), SessionBegun));
+            Cleanup (() => AssertNoEventSubscribers (nameof (SessionEnded), SessionEnded));
+            Cleanup (() => AssertNoEventSubscribers (nameof (ScreenChanged), ScreenChanged));
         }
 #endif
 
-        // Clean up all application state (including sync context)
-        // ResetState handles the case where Initialized is false
-        ResetState ();
+        Cleanup (() => ResetState ());
+        Cleanup (TuiJsonErrors.Print);
 
-        TuiJsonErrors.Print ();
-
-        // Raise the initialized changed event to notify shutdown
         if (wasInitialized)
         {
-            bool init = Initialized; // Will be false after ResetState
-            RaiseInitializedChanged (this, new EventArgs<bool> (in init));
+            bool init = Initialized;
+            Cleanup (() => RaiseInitializedChanged (this, new EventArgs<bool> (in init)));
         }
 
-        // Clear the event to prevent memory leaks
         InitializedChanged = null;
+        failure?.Throw ();
+
+        return;
+
+        void Cleanup (Action action)
+        {
+            try
+            {
+                action ();
+            }
+            catch (Exception error)
+            {
+                CaptureCleanupFailure (ref failure, error);
+            }
+        }
     }
 
     #endregion IDisposable Implementation
@@ -238,97 +233,147 @@ internal partial class ApplicationImpl
     /// <inheritdoc/>
     public void ResetState (bool ignoreDisposed = false)
     {
-        // Shutdown is the bookend for Init. As such it needs to clean up all resources
-        // Init created. Apps that do any threading will need to code defensively for this.
-        // e.g. see Issue #537
-
         Trace.Lifecycle (MainThreadId?.ToString (), "Shutdown");
+        ExceptionDispatchInfo? failure = null;
+        Cleanup (StopDispatching);
+        Cleanup (TimedEvents.StopAll);
 
-        StopDispatching ();
-
-        // === 0. Stop all timers ===
-        TimedEvents.StopAll ();
-
-        // === 1. Stop all running runnables ===
+        // Raise every session's notifications with affinity checks still active. A failed notification must not
+        // leave another session running or prevent restoration of terminal modes by the driver.
         foreach (SessionToken token in SessionStack!.Reverse ())
         {
-            if (token.Runnable is { })
+            if (token.Runnable is null)
             {
-                End (token);
+                continue;
             }
+
+            Cleanup (() => End (token));
+
+            // Disposal cannot honor a stop veto or leave a session active after a pre-notification throws.
+            if (token.Runnable is not { } runnable)
+            {
+                continue;
+            }
+
+            // An End already in progress (including Dispose called by its pre-notification) owns the final
+            // notifications. Force only an unclaimed session after a veto or failed pre-notification.
+            if (!token.TryClaimEnd ())
+            {
+                // Reset still releases its cached top reference; the in-flight End owns runnable state and events.
+                Interlocked.CompareExchange (ref _topRunnable, null, runnable);
+
+                continue;
+            }
+
+            bool wasModal = runnable.IsModal;
+
+            lock (_sessionStackLock)
+            {
+                token.IsDispatchClosed = true;
+                Cleanup (() => runnable.SetIsRunning (false));
+                Cleanup (() => runnable.SetIsModal (false));
+                if (ReferenceEquals (TopRunnable, runnable))
+                {
+                    TopRunnable = null;
+                }
+            }
+
+            if (wasModal)
+            {
+                Cleanup (() => runnable.RaiseIsModalChangedEvent (false));
+            }
+
+            Cleanup (() => runnable.RaiseIsRunningChangedEvent (false));
+            Cleanup (() => token.Result = runnable.Result);
+            token.Runnable = null;
+            Cleanup (() => SessionEnded?.Invoke (this, new SessionTokenEventArgs (token)));
         }
 
-        // === 2. Close and dispose popover ===
-        // Any popovers added to Popover have their lifetime controlled by Popover
-        Popovers?.Dispose ();
+        // No loop remains to marshal resource cleanup after worker disposal. Publish the end of association
+        // under the enqueue lock, then drain; user session notifications above receive no exemption.
+        lock (_dispatchLock)
+        {
+            Initialized = false;
+            MainThreadId = null;
+        }
+        Cleanup (DrainLifecycleUiWork);
+
+        Cleanup (() => Popovers?.Dispose ());
         Popovers = null;
-
-        // === 3. Close and dispose tooltips ===
-        // Any tooltips added to ToolTips have their lifetime controlled by ToolTips
-        ToolTips?.Dispose ();
+        Cleanup (() => ToolTips?.Dispose ());
         ToolTips = null;
-
-        // === 4. Clean up runnables ===
         SessionStack?.Clear ();
 
 #if DEBUG_IDISPOSABLE
-
-        // Don't dispose the TopRunnable. It's up to caller dispose it
-        if (View.EnableDebugIDisposableAsserts && !ignoreDisposed && TopRunnableView is { })
+        if (View.EnableDebugIDisposableAsserts && !ignoreDisposed && TopRunnableView is { } topRunnableView)
         {
-            Debug.Assert (TopRunnableView.WasDisposed, TopRunnableView.ToDebugString ());
+            Cleanup (() => Debug.Assert (topRunnableView.WasDisposed, topRunnableView.ToDebugString ()));
         }
 #endif
 
-        // === 4. Clean up driver ===
-        // Capture-and-null to avoid race when Dispose is called concurrently from
-        // multiple threads (e.g. AppTestHelper background thread + test thread).
-        // Null Driver first so concurrent callers see null and skip cleanup.
+        TopRunnable = null;
+
+        // Capture-and-null before cleanup so a competing Dispose does not dispose the same driver twice.
         IDriver? driver = Driver;
         Driver = null;
 
         if (driver is { })
         {
-            // Unsubscribe using the captured local since Driver property is now null
             driver.SizeChanged -= Driver_SizeChanged;
             driver.KeyDown -= Driver_KeyDown;
             driver.KeyUp -= Driver_KeyUp;
             driver.MouseEvent -= Driver_MouseEvent;
-            driver.Dispose ();
+            Cleanup (driver.Dispose);
         }
 
-        // === 5. Clear run state ===
         Iteration = null;
         SessionBegun = null;
         SessionEnded = null;
         StopAfterFirstIteration = false;
         ClearScreenNextIteration = false;
 
-        // === 6. Reset input systems ===
-        // Dispose keyboard and mouse to unsubscribe from events
-        // Mouse and Keyboard will be lazy-initialized on next access
         if (_keyboard is IDisposable keyboardDisposable)
         {
-            keyboardDisposable.Dispose ();
+            Cleanup (keyboardDisposable.Dispose);
         }
         _keyboard = null;
 
         if (_mouse is IDisposable mouseDisposable)
         {
-            mouseDisposable.Dispose ();
+            Cleanup (mouseDisposable.Dispose);
         }
         _mouse = null;
 
-        // === 7. Clear navigation and screen state ===
         ScreenChanged = null;
-
-        // === 8. Reset initialization state ===
-        Initialized = false;
-        MainThreadId = null;
         ResetHasEndedSession ();
+        Cleanup (UnsubscribeApplicationEvents);
+        failure?.Throw ();
 
-        // === 9. Unsubscribe from Application static property change events ===
-        UnsubscribeApplicationEvents ();
+        return;
+
+        void Cleanup (Action action)
+        {
+            try
+            {
+                action ();
+            }
+            catch (Exception error)
+            {
+                CaptureCleanupFailure (ref failure, error);
+            }
+        }
+    }
+
+    private static void CaptureCleanupFailure (ref ExceptionDispatchInfo? failure, Exception error)
+    {
+        if (failure is null)
+        {
+            failure = ExceptionDispatchInfo.Capture (error);
+
+            return;
+        }
+
+        Logging.Error ($"Additional failure during application cleanup: {error}");
     }
 
     /// <summary>

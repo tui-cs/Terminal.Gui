@@ -286,19 +286,25 @@ public class ApplicationInlineOutputTests
 
     // CoPilot - GPT-6
     [Theory]
-    [InlineData (AppModel.Inline, false)]
-    [InlineData (AppModel.Inline, true)]
-    [InlineData (AppModel.FullScreen, false)]
-    [InlineData (AppModel.FullScreen, true)]
-    public void WorkerDisposalStopsModalOpenedFromDrawCompletion (AppModel model, bool throughIteration) =>
-        VerifyWorkerDisposalFromRenderingNotification (model, throughIteration, insertion: false);
+    [InlineData (AppModel.Inline, false, false)]
+    [InlineData (AppModel.Inline, true, false)]
+    [InlineData (AppModel.FullScreen, false, false)]
+    [InlineData (AppModel.FullScreen, true, false)]
+    [InlineData (AppModel.Inline, false, true)]
+    [InlineData (AppModel.Inline, true, true)]
+    [InlineData (AppModel.FullScreen, false, true)]
+    [InlineData (AppModel.FullScreen, true, true)]
+    public void WorkerDisposalStopsModalOpenedFromDrawCompletion (AppModel model, bool throughIteration, bool threadAccessChecks) =>
+        VerifyWorkerDisposalFromRenderingNotification (model, throughIteration, insertion: false, threadAccessChecks);
 
     // CoPilot - GPT-6
     [Theory]
-    [InlineData (false)]
-    [InlineData (true)]
-    public void WorkerDisposalStopsModalOpenedFromInsertionScreenChanged (bool throughIteration) =>
-        VerifyWorkerDisposalFromRenderingNotification (AppModel.Inline, throughIteration, insertion: true);
+    [InlineData (false, false)]
+    [InlineData (true, false)]
+    [InlineData (false, true)]
+    [InlineData (true, true)]
+    public void WorkerDisposalStopsModalOpenedFromInsertionScreenChanged (bool throughIteration, bool threadAccessChecks) =>
+        VerifyWorkerDisposalFromRenderingNotification (AppModel.Inline, throughIteration, insertion: true, threadAccessChecks);
 
     [Fact]
     public void FullscreenAndDegradedOutputRejectPrinting ()
@@ -575,8 +581,10 @@ public class ApplicationInlineOutputTests
         app.End (owner);
     }
 
-    [Fact]
-    public async Task DisposeWaitsForClaimedInsertionWithoutInterleavingCleanup ()
+    [Theory]
+    [InlineData (false)]
+    [InlineData (true)]
+    public async Task DisposeWaitsForClaimedInsertionWithoutInterleavingCleanup (bool threadAccessChecks)
     {
         CancellationToken testToken = TestContext.Current.CancellationToken;
         using ManualResetEventSlim entered = new ();
@@ -595,6 +603,7 @@ public class ApplicationInlineOutputTests
         using ApplicationImpl app = new (new AnsiComponentFactory (output: output));
         app.AppModel = AppModel.Inline;
         app.ForceInlinePosition = Point.Empty;
+        app.EnableThreadAccessChecks (threadAccessChecks);
         app.Init (DriverRegistry.Names.ANSI);
         using Runnable view = new () { Height = 2 };
         app.Begin (view);
@@ -772,10 +781,11 @@ public class ApplicationInlineOutputTests
         }
     }
 
-    private static void VerifyWorkerDisposalFromRenderingNotification (AppModel model, bool throughIteration, bool insertion)
+    private static void VerifyWorkerDisposalFromRenderingNotification (AppModel model, bool throughIteration, bool insertion, bool threadAccessChecks)
     {
         StringBuilder bytes = new ();
         using ApplicationImpl app = Create (bytes, out _, model: model);
+        app.EnableThreadAccessChecks (threadAccessChecks);
         using Runnable view = new () { Width = Dim.Fill (), Height = 2 };
         using Runnable modal = new () { Width = Dim.Fill (), Height = 2 };
         modal.Add (new Label { Text = "MODAL", Width = 5 });
