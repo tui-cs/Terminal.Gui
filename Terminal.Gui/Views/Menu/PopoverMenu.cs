@@ -138,7 +138,7 @@ public class PopoverMenu : Popover<Menu, MenuItem>
 
         bool? MoveRight (ICommandContext? ctx)
         {
-            if (MostFocused is not MenuItem { SubMenu.Visible: true } focused)
+            if (MostFocused is not MenuItem { SubMenu: { } } focused)
             {
                 if (!TryGetTarget (out View? targetView))
                 {
@@ -147,6 +147,12 @@ public class PopoverMenu : Popover<Menu, MenuItem>
 
                 // HACK: If our owner is a MenuBarItem, we want to allow right key to propagate to the MenuBar so it can move focus to the next MenuBarItem.
                 return targetView is not MenuBarItem;
+            }
+            // A keyboard wrap can select the owner without opening its submenu. An explicit
+            // Right must open it before entering, rather than switch top-level menu entries.
+            if (!focused.SubMenu.Visible)
+            {
+                ShowMenuItemSubMenu (focused);
             }
             focused.SubMenu.SetFocus ();
 
