@@ -207,6 +207,61 @@ public class AutoHotKeyAssignmentTests
         Assert.Empty (superView.UsedHotKeys);
     }
 
+    [Fact]
+    public void UsedHotKeys_ClearedWhenTitleChangesAndIsInitialized ()
+    {
+        View superView = new () { AssignHotKeys = true };
+
+        View button = new () { Title = "Save" };
+        superView.Add (button);
+        superView.BeginInit ();
+        superView.EndInit ();
+
+        button.Title = "Open";
+
+        // HotKey should be reassigned after title changes
+        Assert.NotEqual (Key.S, button.HotKey);
+        Assert.DoesNotContain (Key.S, superView.UsedHotKeys);
+        Assert.Equal (Key.O, button.HotKey); // 'o' from "Open"
+        Assert.Contains (button.HotKey, superView.UsedHotKeys);
+    }
+
+    // CoPilot - ChatGPT
+    [Fact]
+    public void UsedHotKeys_UpdatedWhenInitializedTitleChangesToExplicitHotKey ()
+    {
+        View superView = new () { AssignHotKeys = true };
+
+        View button = new () { Title = "Save" };
+        superView.Add (button);
+        superView.BeginInit ();
+        superView.EndInit ();
+
+        button.Title = "O_pen";
+
+        Assert.Equal (Key.P, button.HotKey);
+        Assert.DoesNotContain (Key.S, superView.UsedHotKeys);
+        Assert.Contains (Key.P, superView.UsedHotKeys);
+    }
+
+    // CoPilot - ChatGPT
+    [Fact]
+    public void UsedHotKeys_ClearedWhenInitializedTitleChangesAfterProgrammaticHotKey ()
+    {
+        View superView = new () { AssignHotKeys = true };
+
+        View button = new () { Title = "Option", HotKey = Key.X };
+        superView.Add (button);
+        superView.BeginInit ();
+        superView.EndInit ();
+
+        button.Title = "Open";
+
+        Assert.Equal (Key.O, button.HotKey);
+        Assert.DoesNotContain (Key.X, superView.UsedHotKeys);
+        Assert.Contains (Key.O, superView.UsedHotKeys);
+    }
+
     #endregion
 
     #region AssignHotKeysToSubViews Tests

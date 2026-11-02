@@ -220,6 +220,37 @@ public partial class View // Keyboard APIs
         }
     }
 
+    private void ReleasePreviousHotKey ()
+    {
+        if (HotKeySpecifier == new Rune ('\xFFFF'))
+        {
+            return;
+        }
+
+        Key previousHotKey = Key.Empty;
+
+        if (TextFormatter.FindHotKey (_title, HotKeySpecifier, out _, out Key titleHotKey))
+        {
+            previousHotKey = titleHotKey;
+        }
+        else if ((SuperView?.AssignHotKeys ?? false) && IsInitialized)
+        {
+            previousHotKey = HotKey;
+        }
+
+        if (previousHotKey == Key.Empty || !(SuperView?.UsedHotKeys.Contains (previousHotKey) ?? false))
+        {
+            return;
+        }
+
+        SuperView?.UsedHotKeys.Remove (previousHotKey);
+
+        if (HotKey == previousHotKey)
+        {
+            HotKey = Key.Empty;
+        }
+    }
+
     private void SetHotKeyFromTitle ()
     {
         if (HotKeySpecifier == new Rune ('\xFFFF'))
@@ -227,6 +258,13 @@ public partial class View // Keyboard APIs
             HotKey = Key.Empty;
 
             return; // throw new InvalidOperationException ("Can't set HotKey unless a TextFormatter has been created");
+        }
+
+        if ((SuperView?.AssignHotKeys ?? false) && IsInitialized)
+        {
+            SuperView?.AssignHotKeyToView (this);
+
+            return;
         }
 
         if (TextFormatter.FindHotKey (_title, HotKeySpecifier, out _, out Key hk))
@@ -276,6 +314,11 @@ public partial class View // Keyboard APIs
     ///                 characters, when determining whether a hotkey is usable or when assigning a new one
     ///             </item>
     ///         </list>
+    ///     </para>
+    ///     <para>
+    ///         If enabled on the superview, changing an initialized subview's <see cref="Title"/> releases the previous
+    ///         hotkey reservation from <see cref="UsedHotKeys"/> and reassigns from the new title. A hotkey specifier
+    ///         in the new title is preferred when available; otherwise the first available character is used.
     ///     </para>
     ///     <para>
     ///         Call <see cref="AssignHotKeysToSubViews"/> to manually trigger hotkey assignment for all subviews.

@@ -552,6 +552,8 @@ public partial class View : IDisposable, ISupportInitializeNotification
                 return;
             }
 
+            ReleasePreviousHotKey ();
+
             _title = value;
             TitleTextFormatter.Text = _title;
 
