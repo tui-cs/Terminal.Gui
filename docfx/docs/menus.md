@@ -442,6 +442,15 @@ The `_isSwitchingItem` guard prevents premature deactivation during the brief in
 4. `Menu.SelectedMenuItemChanged` event fires
 5. When inside a <xref:Terminal.Gui.Views.PopoverMenu>, the subscriber adjusts SubMenu positioning for screen boundaries
 
+### Hotkey on a MenuItem with a SubMenu
+
+Pressing the hotkey (e.g., `Alt+E`) of a <xref:Terminal.Gui.Views.MenuItem> that has a `SubMenu`:
+
+1. Opens the `SubMenu` and moves focus to its first visible, enabled, focusable <xref:Terminal.Gui.Views.MenuItem>
+2. Keeps the owning <xref:Terminal.Gui.Views.PopoverMenu> open, so the next hotkey is resolved against the `SubMenu`. Only leaf <xref:Terminal.Gui.Views.MenuItem>s close the popover.
+
+Hotkeys are resolved per <xref:Terminal.Gui.Views.Menu>, so a <xref:Terminal.Gui.Views.MenuItem> and an item in its `SubMenu` can share the same hotkey. The first press activates the outer item; the second activates the one in the `SubMenu`.
+
 ### MenuItem Acceptance Flow
 
 When a user presses Enter or clicks a <xref:Terminal.Gui.Views.MenuItem>:
