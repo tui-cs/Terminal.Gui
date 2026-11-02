@@ -498,6 +498,7 @@ public partial class View : IDisposable, ISupportInitializeNotification
     ///     for the view by prefixing character with <see cref="HotKeySpecifier"/> (e.g. <c>"T_itle"</c>).
     /// </summary>
     /// <remarks>
+    ///     <para>A null value is treated as an empty title.</para>
     ///     <para>
     ///         Set the <see cref="HotKeySpecifier"/> to enable hotkey support. To disable Title-based hotkey support set
     ///         <see cref="HotKeySpecifier"/> to <c>(Rune)0xffff</c>.
@@ -544,6 +545,9 @@ public partial class View : IDisposable, ISupportInitializeNotification
             {
                 return;
             }
+
+            value = string.IsNullOrEmpty (value) ? string.Empty : value;
+
             CancelEventArgs<string> args = new (ref _title, ref value);
             TitleChanging?.Invoke (this, args);
 
@@ -552,12 +556,13 @@ public partial class View : IDisposable, ISupportInitializeNotification
                 return;
             }
 
-            ReleasePreviousHotKey ();
+            value = string.IsNullOrEmpty (value) ? string.Empty : value;
 
             _title = value;
             TitleTextFormatter.Text = _title;
 
             SetTitleTextFormatterSize ();
+            ReleasePreviousHotKey ();
             SetHotKeyFromTitle ();
             SetNeedsDraw ();
 

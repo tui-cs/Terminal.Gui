@@ -208,7 +208,7 @@ public class AutoHotKeyAssignmentTests
     }
 
     [Fact]
-    public void UsedHotKeys_ClearedWhenTitleChangesAndIsInitialized ()
+    public void UsedHotKeys_ReassignedWhenInitializedTitleChanges ()
     {
         View superView = new () { AssignHotKeys = true };
 
@@ -217,16 +217,18 @@ public class AutoHotKeyAssignmentTests
         superView.BeginInit ();
         superView.EndInit ();
 
+        bool hotKeyChangedBeforeTitle = false;
+        button.HotKeyChanged += (_, _) => hotKeyChangedBeforeTitle |= button.Title == "_Save";
         button.Title = "Open";
 
         // HotKey should be reassigned after title changes
+        Assert.False (hotKeyChangedBeforeTitle);
         Assert.NotEqual (Key.S, button.HotKey);
         Assert.DoesNotContain (Key.S, superView.UsedHotKeys);
         Assert.Equal (Key.O, button.HotKey); // 'o' from "Open"
         Assert.Contains (button.HotKey, superView.UsedHotKeys);
     }
 
-    // CoPilot - ChatGPT
     [Fact]
     public void UsedHotKeys_UpdatedWhenInitializedTitleChangesToExplicitHotKey ()
     {
@@ -244,9 +246,8 @@ public class AutoHotKeyAssignmentTests
         Assert.Contains (Key.P, superView.UsedHotKeys);
     }
 
-    // CoPilot - ChatGPT
     [Fact]
-    public void UsedHotKeys_ClearedWhenInitializedTitleChangesAfterProgrammaticHotKey ()
+    public void UsedHotKeys_ProgrammaticHotKeyReassignedWhenInitializedTitleChanges ()
     {
         View superView = new () { AssignHotKeys = true };
 
@@ -260,6 +261,148 @@ public class AutoHotKeyAssignmentTests
         Assert.Equal (Key.O, button.HotKey);
         Assert.DoesNotContain (Key.X, superView.UsedHotKeys);
         Assert.Contains (Key.O, superView.UsedHotKeys);
+    }
+
+    [Fact]
+    public void UsedHotKeys_TitleChangeDoesNotReleaseAnotherSubViewsReservation ()
+    {
+        View superView = new () { AssignHotKeys = true };
+        View firstButton = new () { Title = "_Save" };
+        View secondButton = new () { Title = "_Save" };
+        superView.Add (firstButton, secondButton);
+        superView.BeginInit ();
+        superView.EndInit ();
+
+        Key firstHotKey = firstButton.HotKey;
+        Key secondHotKey = secondButton.HotKey;
+        secondButton.Title = "Open";
+
+        Assert.Equal (Key.S, firstHotKey);
+        Assert.NotEqual (firstHotKey, secondHotKey);
+        Assert.Contains (firstHotKey, superView.UsedHotKeys);
+        Assert.DoesNotContain (secondHotKey, superView.UsedHotKeys);
+        Assert.Equal (Key.O, secondButton.HotKey);
+    }
+
+    [Fact]
+    public void UsedHotKeys_TitleChangeUsesFallbackWhenPreferredKeyIsReserved ()
+    {
+        View superView = new () { AssignHotKeys = true };
+        View firstButton = new () { Title = "_Open" };
+        View secondButton = new () { Title = "Save" };
+        superView.Add (firstButton, secondButton);
+        superView.BeginInit ();
+        superView.EndInit ();
+
+        Key previousHotKey = secondButton.HotKey;
+        secondButton.Title = "_Open";
+
+        Assert.Equal (Key.O, firstButton.HotKey);
+        Assert.NotEqual (firstButton.HotKey, secondButton.HotKey);
+        Assert.DoesNotContain (previousHotKey, superView.UsedHotKeys);
+        Assert.Contains (secondButton.HotKey, superView.UsedHotKeys);
+    }
+
+    [Theory]
+    [InlineData ("")]
+    [InlineData (null)]
+    public void UsedHotKeys_TitleChangeToEmptyTitleReleasesReservation (string? title)
+    {
+        View superView = new () { AssignHotKeys = true };
+        View button = new () { Title = "Save" };
+        superView.Add (button);
+        superView.BeginInit ();
+        superView.EndInit ();
+
+        Key previousHotKey = button.HotKey;
+        button.Title = title!;
+
+        Assert.Equal (Key.Empty, button.HotKey);
+        Assert.DoesNotContain (previousHotKey, superView.UsedHotKeys);
+    }
+
+    [Fact]
+    public void UsedHotKeys_TitleChangePreservesUnreservedProgrammaticHotKey ()
+    {
+        View superView = new () { AssignHotKeys = true };
+        View button = new () { Title = "Save" };
+        superView.Add (button);
+        superView.BeginInit ();
+        superView.EndInit ();
+
+        button.HotKey = Key.X;
+        button.Title = "Open";
+
+        Assert.Equal (Key.X, button.HotKey);
+        Assert.Contains (Key.X, superView.UsedHotKeys);
+    }
+
+    [Fact]
+    public void UsedHotKeys_TitleChangeDoesNotAutoAssignWhenDisabled ()
+    {
+        View superView = new () { AssignHotKeys = false };
+        View button = new () { Title = "_Save" };
+        superView.Add (button);
+        superView.BeginInit ();
+        superView.EndInit ();
+
+        superView.UsedHotKeys.Add (Key.X);
+        button.Title = "_Open";
+
+        Assert.Equal (Key.O, button.HotKey);
+        Assert.Single (superView.UsedHotKeys);
+        Assert.Contains (Key.X, superView.UsedHotKeys);
+    }
+
+    [Fact]
+    public void UsedHotKeys_CancelledTitleChangeKeepsReservation ()
+    {
+        View superView = new () { AssignHotKeys = true };
+        View button = new () { Title = "Save" };
+        superView.Add (button);
+        superView.BeginInit ();
+        superView.EndInit ();
+
+        Key hotKey = button.HotKey;
+        HashSet<Key> usedHotKeys = [.. superView.UsedHotKeys];
+        button.TitleChanging += (_, args) => args.Cancel = true;
+        button.Title = "Open";
+
+        Assert.Equal ("_Save", button.Title);
+        Assert.Equal (hotKey, button.HotKey);
+        Assert.Equal (usedHotKeys, superView.UsedHotKeys);
+    }
+
+    [Fact]
+    public void UsedHotKeys_TitleChangeBeforeInitializationUsesExistingTitlePath ()
+    {
+        View superView = new () { AssignHotKeys = true };
+        View button = new () { Title = "Save" };
+        superView.Add (button);
+
+        Key previousHotKey = button.HotKey;
+        button.Title = "_Open";
+
+        Assert.Equal (Key.O, button.HotKey);
+        Assert.Contains (previousHotKey, superView.UsedHotKeys);
+        Assert.DoesNotContain (button.HotKey, superView.UsedHotKeys);
+    }
+
+    [Fact]
+    public void UsedHotKeys_TitleChangeAfterRemovalDoesNotUseSuperView ()
+    {
+        View superView = new () { AssignHotKeys = true };
+        View button = new () { Title = "Save" };
+        superView.Add (button);
+        superView.BeginInit ();
+        superView.EndInit ();
+        superView.Remove (button);
+
+        button.Title = "_Open";
+
+        Assert.Null (button.SuperView);
+        Assert.Equal (Key.O, button.HotKey);
+        Assert.Empty (superView.UsedHotKeys);
     }
 
     #endregion
