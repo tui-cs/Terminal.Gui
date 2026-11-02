@@ -171,7 +171,10 @@ public class PopoverMenu : Popover<Menu, MenuItem>
         }
 
         // For non-HotKey activations, hide the popover (the menu item was selected)
-        if (args.Context?.Command != Command.HotKey)
+        // A MenuItem with a SubMenu only opens its SubMenu (see OnActivated); the popover must stay open.
+        bool sourceHasSubMenu = args.Context?.Source?.TryGetTarget (out View? source) == true && source is MenuItem { SubMenu: { } };
+
+        if (args.Context?.Command != Command.HotKey && !sourceHasSubMenu)
         {
             Trace.Command (this, args.Context, "HideOnNonHotKey", "Setting Visible=false");
             Visible = false;
@@ -219,6 +222,9 @@ public class PopoverMenu : Popover<Menu, MenuItem>
         {
             // MenuItem with SubMenu — show the submenu
             ShowMenuItemSubMenu (menuItemWithSubMenu);
+
+            // Move focus into the SubMenu so the next hotkey/arrow key applies to it
+            menuItemWithSubMenu.SubMenu!.SubViews.OfType<MenuItem> ().FirstOrDefault (mi => mi is { Visible: true, Enabled: true, CanFocus: true })?.SetFocus ();
         }
     }
 
