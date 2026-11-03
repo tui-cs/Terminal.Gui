@@ -149,7 +149,9 @@ public partial class View // Keyboard APIs
                 return;
             }
 
-            if (!_settingHotKeyInternally)
+            bool settingHotKeyInternally = _settingHotKeyInternally;
+
+            if (!settingHotKeyInternally)
             {
                 _programmaticHotKey = value == Key.Empty ? null : value;
             }
@@ -157,9 +159,18 @@ public partial class View // Keyboard APIs
             // This will cause TextFormatter_HotKeyChanged to be called, firing HotKeyChanged
             // BUGBUG: _hotkey should be set BEFORE setting TextFormatter.HotKey
             _hotKey = value;
-            TitleTextFormatter.HotKey = value;
+            _settingHotKeyInternally = false;
 
-            if (_settingHotKeyInternally)
+            try
+            {
+                TitleTextFormatter.HotKey = value;
+            }
+            finally
+            {
+                _settingHotKeyInternally = settingHotKeyInternally;
+            }
+
+            if (settingHotKeyInternally)
             {
                 return;
             }

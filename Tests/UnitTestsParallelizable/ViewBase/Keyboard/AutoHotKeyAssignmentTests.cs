@@ -403,6 +403,32 @@ public class AutoHotKeyAssignmentTests
     }
 
     [Fact]
+    public void HotKeyChanged_ReentrantProgrammaticAssignmentReconcilesReservation ()
+    {
+        View superView = new () { AssignHotKeys = true };
+        View button = new () { Title = "Save" };
+        button.HotKeyChanged += (_, _) =>
+                                {
+                                    if (button.HotKey == Key.S)
+                                    {
+                                        button.HotKey = Key.X;
+                                    }
+                                };
+
+        superView.Add (button);
+
+        Assert.Equal (Key.X, button.HotKey);
+        Assert.DoesNotContain (Key.S, superView.UsedHotKeys);
+        Assert.Contains (Key.X, superView.UsedHotKeys);
+
+        View otherButton = new () { Title = "Xylophone" };
+        superView.Add (otherButton);
+
+        Assert.NotEqual (Key.X, otherButton.HotKey);
+        Assert.Contains (otherButton.HotKey, superView.UsedHotKeys);
+    }
+
+    [Fact]
     public void HotKey_SetProgrammaticallyRemovesMismatchedAutoInsertedTitleSpecifier ()
     {
         View superView = new () { AssignHotKeys = true };
