@@ -684,6 +684,18 @@ public partial class View // Keyboard APIs
                     return false;
                 }
 
+                if (view._programmaticHotKey != programmaticHotKey)
+                {
+                    return AssignHotKeyToView (view);
+                }
+
+                if (_autoAssignedHotKeys is null
+                    || !_autoAssignedHotKeys.TryGetValue (view, out Key? reservedHotKey)
+                    || reservedHotKey != programmaticHotKey)
+                {
+                    return AssignHotKeyToView (view);
+                }
+
                 view.SetHotKeyInternally (programmaticHotKey);
 
                 return true;
