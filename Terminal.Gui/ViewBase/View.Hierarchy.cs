@@ -506,7 +506,6 @@ public partial class View // SuperView/SubView hierarchy management (SuperView, 
     internal void RaiseSubViewRemoved (View view)
     {
         ReleaseAutoAssignedHotKey (view);
-        view._autoInsertedHotKeySpecifier = null;
 
         OnSubViewRemoved (view);
         SubViewRemoved?.Invoke (this, new SuperViewChangedEventArgs (this, view));

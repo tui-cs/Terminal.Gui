@@ -446,6 +446,26 @@ public class AutoHotKeyAssignmentTests
 
     [Fact]
     // Copilot
+    public void HotKey_AutoInsertedSpecifierProvenanceSurvivesRemovalAndReaddition ()
+    {
+        View superView = new () { AssignHotKeys = true };
+        View button = new () { Title = "Save" };
+        superView.Add (button);
+        superView.Remove (button);
+
+        Assert.Equal ("_Save", button.Title);
+
+        superView.Add (button);
+        button.HotKey = Key.X;
+
+        Assert.Equal ("Save", button.Title);
+        Assert.Equal (Key.X, button.HotKey);
+        Assert.Contains (Key.X, superView.UsedHotKeys);
+        Assert.DoesNotContain (Key.S, superView.UsedHotKeys);
+    }
+
+    [Fact]
+    // Copilot
     public void HotKeyChangedDuringAutoInsertedSpecifierRemovalPreservesReentrantAssignment ()
     {
         View superView = new () { AssignHotKeys = true };
