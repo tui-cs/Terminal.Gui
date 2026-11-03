@@ -621,6 +621,38 @@ public class AutoHotKeyAssignmentTests
     }
 
     [Fact]
+    // Copilot
+    public void HotKey_ConflictingProgrammaticMarkdownHotKeyUsesContentHotKey ()
+    {
+        View superView = new () { AssignHotKeys = true };
+        View firstView = new () { Title = "First", HotKey = Key.X };
+        Markdown markdown = new () { Title = "Options", Text = "_Save", HotKey = Key.X };
+        superView.Add (firstView, markdown);
+
+        Assert.Equal (Key.S, markdown.HotKey);
+        Assert.Equal ("Options", markdown.Title);
+        Assert.Contains (Key.X, superView.UsedHotKeys);
+        Assert.Contains (Key.S, superView.UsedHotKeys);
+        Assert.DoesNotContain (Key.O, superView.UsedHotKeys);
+    }
+
+    [Fact]
+    // Copilot
+    public void HotKey_ConflictingProgrammaticMarkdownHotKeyDoesNotFallBackToTitle ()
+    {
+        View superView = new () { AssignHotKeys = true };
+        View firstView = new () { Title = "First", HotKey = Key.X };
+        Markdown markdown = new () { Title = "Options", Text = "Plain text", HotKey = Key.X };
+        superView.Add (firstView, markdown);
+
+        Assert.Equal (Key.Empty, markdown.HotKey);
+        Assert.Equal ("Options", markdown.Title);
+        Assert.Single (superView.UsedHotKeys);
+        Assert.Contains (Key.X, superView.UsedHotKeys);
+        Assert.DoesNotContain (Key.O, superView.UsedHotKeys);
+    }
+
+    [Fact]
     public void HotKey_EmptyAfterInitializationClearsUntilNextAutomaticAssignment ()
     {
         View superView = new () { AssignHotKeys = true };

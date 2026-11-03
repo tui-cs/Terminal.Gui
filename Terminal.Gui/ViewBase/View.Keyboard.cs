@@ -708,6 +708,27 @@ public partial class View // Keyboard APIs
                 return true;
             }
 
+            Key? preferredViewHotKey = view.GetPreferredAutoAssignedHotKey ();
+
+            if (preferredViewHotKey is { })
+            {
+                if (preferredViewHotKey == Key.Empty)
+                {
+                    view.SetHotKeyInternally (Key.Empty);
+
+                    return false;
+                }
+
+                if (TryReserveHotKey (view, preferredViewHotKey))
+                {
+                    RemoveMismatchedHotKeySpecifier (view, preferredViewHotKey);
+                }
+
+                view.SetHotKeyInternally (preferredViewHotKey);
+
+                return true;
+            }
+
             if (TryAssignTitleHotKey (view))
             {
                 return true;
