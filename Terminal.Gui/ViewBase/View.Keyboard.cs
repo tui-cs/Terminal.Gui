@@ -836,6 +836,7 @@ public partial class View // Keyboard APIs
             if (!TextFormatter.FindHotKey (view.Title, view.HotKeySpecifier, out _, out Key titleHotKey))
             {
                 ReleaseAutoAssignedHotKey (view);
+                view.SetHotKeyInternally (Key.Empty);
 
                 return false;
             }

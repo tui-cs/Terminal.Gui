@@ -894,6 +894,29 @@ public class AutoHotKeyAssignmentTests
     }
 
     [Fact]
+    // Copilot
+    public void AssignHotKeys_TitleChangingRewriteClearsConflictingExistingHotKey ()
+    {
+        View superView = new () { AssignHotKeys = true };
+        View firstButton = new () { Title = "_Save" };
+        View secondButton = new () { Title = "_Save" };
+        secondButton.TitleChanging += (_, args) =>
+                                     {
+                                         if (args.NewValue.Contains ('_'))
+                                         {
+                                             args.NewValue = "Rewritten";
+                                         }
+                                     };
+        superView.Add (firstButton, secondButton);
+
+        Assert.Equal ("Rewritten", secondButton.Title);
+        Assert.Equal (Key.Empty, secondButton.HotKey);
+        Assert.Equal (Key.S, firstButton.HotKey);
+        Assert.Single (superView.UsedHotKeys);
+        Assert.Contains (Key.S, superView.UsedHotKeys);
+    }
+
+    [Fact]
     public void AssignHotKeys_TitleChangingCancellationDoesNotReserveAnUnshownHotKey ()
     {
         View superView = new () { AssignHotKeys = true };
