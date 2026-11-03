@@ -536,6 +536,8 @@ public partial class View : IDisposable, ISupportInitializeNotification
                 throw new ObjectDisposedException (ToDebugString ());
             }
 #endif
+            value = NormalizeTitle (value);
+
             if (value == _title)
             {
                 return;
@@ -546,7 +548,7 @@ public partial class View : IDisposable, ISupportInitializeNotification
                 return;
             }
 
-            value = string.IsNullOrEmpty (value) ? string.Empty : value;
+            value = NormalizeTitle (value);
 
             CancelEventArgs<string> args = new (ref _title, ref value);
             TitleChanging?.Invoke (this, args);
@@ -556,13 +558,18 @@ public partial class View : IDisposable, ISupportInitializeNotification
                 return;
             }
 
-            value = string.IsNullOrEmpty (value) ? string.Empty : value;
+            value = NormalizeTitle (args.NewValue);
 
             _title = value;
             TitleTextFormatter.Text = _title;
 
             SetTitleTextFormatterSize ();
-            ReleasePreviousHotKey ();
+
+            if (!_assigningHotKeyFromTitle)
+            {
+                ReleasePreviousHotKey ();
+            }
+
             SetHotKeyFromTitle ();
             SetNeedsDraw ();
 
@@ -570,6 +577,8 @@ public partial class View : IDisposable, ISupportInitializeNotification
             TitleChanged?.Invoke (this, new EventArgs<string> (in _title));
         }
     }
+
+    private static string NormalizeTitle (string? value) => value ?? string.Empty;
 
     private void SetTitleTextFormatterSize () =>
         TitleTextFormatter.ConstrainToSize = new Size (TextFormatter.GetWidestLineLength (TitleTextFormatter.Text)
@@ -588,7 +597,7 @@ public partial class View : IDisposable, ISupportInitializeNotification
 
     /// <summary>
     ///     Raised when the <see cref="View.Title"/> is changing. Set <see cref="CancelEventArgs.Cancel"/> to `true`
-    ///     to cancel the Title change.
+    ///     to cancel the Title change, or set <see cref="CancelEventArgs{T}.NewValue"/> to change the proposed title.
     /// </summary>
     public event EventHandler<CancelEventArgs<string>>? TitleChanging;
 
