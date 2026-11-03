@@ -19,6 +19,11 @@ namespace Terminal.Gui.Views;
 ///         Hyperlinks raise the <see cref="LinkClicked"/> event. Anchor links (URLs beginning with
 ///         <c>#</c>) are handled automatically by scrolling to the matching heading.
 ///     </para>
+///     <para>
+///         <see cref="View.HotKey"/> is derived from the first hotkey specifier in <see cref="Text"/>. When automatic
+///         hotkey assignment is enabled on the superview, Markdown content takes precedence over <see cref="View.Title"/>;
+///         a title does not provide a fallback hotkey when the content has no hotkey specifier.
+///     </para>
 ///     <para>Default key bindings:</para>
 ///     <list type="table">
 ///         <listheader>
