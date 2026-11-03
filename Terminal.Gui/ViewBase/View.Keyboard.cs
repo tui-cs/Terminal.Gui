@@ -40,6 +40,7 @@ public partial class View // Keyboard APIs
 
     // Prevent Title updates made during assignment from recursively assigning a hotkey.
     private bool _assigningHotKeyFromTitle;
+    private Rune? _autoInsertedHotKeySpecifier;
     private void TitleTextFormatter_HotKeyChanged (object? sender, KeyChangedEventArgs e) => HotKeyChanged?.Invoke (this, e);
 
     /// <summary>
@@ -83,10 +84,13 @@ public partial class View // Keyboard APIs
     ///         overriding <see cref="AddKeyBindingsForHotKey"/>.
     ///     </para>
     ///     <para>If the hot key is changed, the <see cref="HotKeyChanged"/> event is fired.</para>
-    ///     <para>Set to <see cref="Key.Empty"/> to disable the hot key.</para>
+    ///     <para>Set to <see cref="Key.Empty"/> to clear the current hot key.</para>
     ///     <para>
     ///         When the superview has <see cref="AssignHotKeys"/> enabled, a programmatically set hot key takes precedence
-    ///         over a title specifier when available. Setting <see cref="Key.Empty"/> opts out of automatic assignment.
+    ///         over a title specifier. If that key is already reserved, the hot key remains set but is not reserved by
+    ///         the superview; callers are responsible for avoiding duplicate explicit hot keys. Clearing the hot key
+    ///         releases its reservation but does not prevent a later title change or assignment pass from assigning one
+    ///         automatically. Set <see cref="HotKeySpecifier"/> to <c>(Rune)0xffff</c> to disable title-based assignment.
     ///     </para>
     /// </remarks>
     public Key HotKey
@@ -105,6 +109,15 @@ public partial class View // Keyboard APIs
                 {
                     return;
                 }
+
+                if (value == Key.Empty)
+                {
+                    _programmaticHotKey = null;
+                    ReleasePreviousHotKey ();
+
+                    return;
+                }
+
                 _programmaticHotKey = value;
 
                 if (SuperView is { AssignHotKeys: true } assigningSuperView)
@@ -122,7 +135,7 @@ public partial class View // Keyboard APIs
 
             if (!_settingHotKeyInternally)
             {
-                _programmaticHotKey = value;
+                _programmaticHotKey = value == Key.Empty ? null : value;
             }
 
             // This will cause TextFormatter_HotKeyChanged to be called, firing HotKeyChanged
@@ -130,14 +143,21 @@ public partial class View // Keyboard APIs
             _hotKey = value;
             TitleTextFormatter.HotKey = value;
 
-            if (_settingHotKeyInternally || SuperView is not { AssignHotKeys: true } autoAssignSuperView)
+            if (_settingHotKeyInternally)
             {
                 return;
             }
 
-            if (!autoAssignSuperView.AssignHotKeyToView (this) && value != Key.Empty)
+            if (value == Key.Empty)
             {
-                SetHotKeyInternally (Key.Empty);
+                ReleasePreviousHotKey ();
+
+                return;
+            }
+
+            if (SuperView is { AssignHotKeys: true } autoAssignSuperView)
+            {
+                autoAssignSuperView.AssignHotKeyToView (this);
             }
         }
     }
@@ -261,12 +281,19 @@ public partial class View // Keyboard APIs
 
             if (previousSpecifier == value)
             {
+                SetHotKeyFromTitle ();
+
                 return;
             }
 
+            bool removeAutoInsertedSpecifier = _autoInsertedHotKeySpecifier == previousSpecifier
+                                               && SuperView is { AssignHotKeys: true } autoAssignSuperView
+                                               && autoAssignSuperView._autoAssignedHotKeys?.ContainsKey (this) == true;
+
             ReleasePreviousHotKey ();
 
-            if (TextFormatter.FindHotKey (_title, previousSpecifier, out int hotKeyPos, out _))
+            if (removeAutoInsertedSpecifier
+                && TextFormatter.FindHotKey (_title, previousSpecifier, out int hotKeyPos, out _))
             {
                 bool wasAssigningHotKeyFromTitle = _assigningHotKeyFromTitle;
                 _assigningHotKeyFromTitle = true;
@@ -279,6 +306,8 @@ public partial class View // Keyboard APIs
                 {
                     _assigningHotKeyFromTitle = wasAssigningHotKeyFromTitle;
                 }
+
+                _autoInsertedHotKeySpecifier = null;
             }
 
             TitleTextFormatter.HotKeySpecifier = TextFormatter.HotKeySpecifier = value;
@@ -360,11 +389,7 @@ public partial class View // Keyboard APIs
         }
     }
 
-    /// <summary>
-    ///     Sets the hot key without marking it as an explicit assignment by the caller.
-    /// </summary>
-    /// <param name="hotKey">The hot key derived by the view.</param>
-    protected void SetHotKeyInternally (Key hotKey)
+    internal void SetHotKeyInternally (Key hotKey)
     {
         bool wasSettingHotKeyInternally = _settingHotKeyInternally;
         _settingHotKeyInternally = true;
@@ -379,13 +404,44 @@ public partial class View // Keyboard APIs
         }
     }
 
+    internal virtual Key? GetPreferredAutoAssignedHotKey () => null;
+
+    private static void RemoveAutoInsertedHotKeySpecifier (View view, Key hotKey)
+    {
+        if (view._autoInsertedHotKeySpecifier is not { } specifier
+            || !TextFormatter.FindHotKey (view.Title, specifier, out int hotKeyPosition, out Key titleHotKey)
+            || titleHotKey == hotKey)
+        {
+            return;
+        }
+
+        string previousTitle = view.Title;
+        string titleWithoutSpecifier = TextFormatter.RemoveHotKeySpecifier (previousTitle, hotKeyPosition, specifier);
+        bool wasAssigningHotKeyFromTitle = view._assigningHotKeyFromTitle;
+        view._assigningHotKeyFromTitle = true;
+
+        try
+        {
+            view.Title = titleWithoutSpecifier;
+        }
+        finally
+        {
+            view._assigningHotKeyFromTitle = wasAssigningHotKeyFromTitle;
+        }
+
+        if (view.Title == titleWithoutSpecifier || view.Title != previousTitle)
+        {
+            view._autoInsertedHotKeySpecifier = null;
+        }
+    }
+
     #endregion HotKey Support
 
     #region AutoHotKey Assignment
 
     /// <summary>
-    ///     If <see langword="true"/>, unique hotkeys will automatically be assigned to subviews with a
-    ///     <see cref="Title"/>, preferring an available programmatically set <see cref="HotKey"/>.
+    ///     If <see langword="true"/>, unique hotkeys will automatically be assigned to subviews, preferring an
+    ///     available programmatically set or view-derived <see cref="HotKey"/> before title-based hotkeys.
     ///     <para>
     ///         <see cref="UsedHotKeys"/> will be used to ensure unique keys are assigned. Set <see cref="UsedHotKeys"/>
     ///         before adding subviews with any hotkeys that may conflict with other Views.
@@ -398,15 +454,19 @@ public partial class View // Keyboard APIs
     ///         <list type="number">
     ///             <item>
     ///                 Checks if the subview already has a programmatically set <see cref="HotKey"/>; if so and the key is not
-    ///                 already used, preserves that hotkey
+    ///                     already used, reserves and preserves that hotkey; if already used, preserves it without reserving it
     ///             </item>
     ///             <item>
-    ///                 If no usable programmatic <see cref="HotKey"/> is found, checks if the subview's <see cref="Title"/>
-    ///                 contains a hotkey specifier (e.g., Strings.menuFile) and preserves it if the key is not already used
+    ///                 If there is no programmatic hotkey, checks for a view-specific derived hotkey and reserves it
+    ///                 before considering the title
     ///             </item>
     ///             <item>
-    ///                 If neither a usable programmatic hotkey nor a usable title specifier is found, assigns a new hotkey
-    ///                 from the first available character in the title
+    ///                 If there is no explicit or derived hotkey, checks if the subview's <see cref="Title"/> contains a
+    ///                 hotkey specifier (e.g., Strings.menuFile) and preserves it if the key is not already used
+    ///             </item>
+    ///             <item>
+    ///                 If neither a derived hotkey nor a usable title specifier is found, assigns a new hotkey from the
+    ///                 first available character in the title
     ///             </item>
     ///             <item>
     ///                 Skips characters that are already in <see cref="UsedHotKeys"/>, as well as spaces and control
@@ -460,6 +520,7 @@ public partial class View // Keyboard APIs
     ///         Replacing the set reconciles tracked automatic reservations with the new set. Directly mutating this
     ///         set changes which keys are available; automatic reservations are reconciled on the next assignment.
     ///     </para>
+    ///     <para>Set this property to a non-null set.</para>
     /// </summary>
     public HashSet<Key> UsedHotKeys
     {
@@ -485,7 +546,7 @@ public partial class View // Keyboard APIs
     }
 
     /// <summary>
-    ///     Assigns unique hotkeys to all subviews that have a non-empty <see cref="Title"/>.
+    ///     Assigns unique hotkeys to subviews using explicit, derived, or title-based hotkeys.
     ///     Called automatically when <see cref="AssignHotKeys"/> is enabled and subviews are added.
     /// </summary>
     /// <remarks>
@@ -511,57 +572,76 @@ public partial class View // Keyboard APIs
     }
 
     /// <summary>
-    ///     Assigns a unique hotkey to a single view based on its <see cref="Title"/>.
+    ///     Assigns or reserves a hotkey for a single view using its explicit, derived, or title-based hotkey.
     /// </summary>
     /// <param name="view">The view to assign a hotkey to.</param>
-    /// <returns><see langword="true"/> if a hotkey was assigned; otherwise, <see langword="false"/>.</returns>
+    /// <returns>
+    ///     <see langword="true"/> if a hotkey is set for the view; otherwise, <see langword="false"/>. An explicit hotkey
+    ///     remains set even when it conflicts with another reservation, but is not added to <see cref="UsedHotKeys"/>.
+    /// </returns>
     /// <remarks>
     ///     <para>
-    ///         This method preserves an available programmatic <see cref="HotKey"/> first, then an available hotkey
-    ///         specifier in the title, and otherwise assigns the first available character.
+    ///         This method preserves a programmatic <see cref="HotKey"/> first, then a view-specific derived hotkey,
+    ///         then an available hotkey specifier in the title, and otherwise assigns the first available character.
+    ///     </para>
+    ///     <para>
+    ///         When a programmatic hotkey differs from a specifier automatically inserted by this method, it removes
+    ///         that specifier to avoid displaying a hotkey that no longer activates the view.
     ///     </para>
     /// </remarks>
     protected bool AssignHotKeyToView (View view)
     {
+        if (_autoAssignedHotKeys is not null && _autoAssignedHotKeys.TryGetValue (view, out Key? previousHotKey))
+        {
+            Key? preferredHotKey = view._programmaticHotKey ?? view.GetPreferredAutoAssignedHotKey ();
+            bool preferredHotKeyBecameAvailable = preferredHotKey is not null
+                                                  && preferredHotKey != previousHotKey
+                                                  && !UsedHotKeys.Contains (preferredHotKey);
+
+            if (!preferredHotKeyBecameAvailable
+                && view.HotKey == previousHotKey
+                && UsedHotKeys.Contains (previousHotKey)
+                && (preferredHotKey is null || preferredHotKey == previousHotKey))
+            {
+                return true;
+            }
+
+            ReleaseAutoAssignedHotKey (view);
+        }
+
+        if (view._programmaticHotKey is { } programmaticHotKey)
+        {
+            TryReserveHotKey (view, programmaticHotKey);
+            RemoveAutoInsertedHotKeySpecifier (view, programmaticHotKey);
+            view.SetHotKeyInternally (programmaticHotKey);
+
+            return true;
+        }
+
+        if (view.GetPreferredAutoAssignedHotKey () is { } preferredAutoAssignedHotKey)
+        {
+            if (preferredAutoAssignedHotKey == Key.Empty)
+            {
+                view.SetHotKeyInternally (Key.Empty);
+
+                return false;
+            }
+
+            TryReserveHotKey (view, preferredAutoAssignedHotKey);
+            RemoveAutoInsertedHotKeySpecifier (view, preferredAutoAssignedHotKey);
+            view.SetHotKeyInternally (preferredAutoAssignedHotKey);
+
+            return true;
+        }
+
         if (string.IsNullOrEmpty (view.Title) || view.HotKeySpecifier == (Rune)'\xffff')
         {
-            ReleaseAutoAssignedHotKey (view);
+            view.SetHotKeyInternally (Key.Empty);
 
             return false;
         }
 
-        if (_autoAssignedHotKeys is not null && _autoAssignedHotKeys.TryGetValue (view, out Key? previousHotKey))
-        {
-            bool explicitHotKeyBecameAvailable = view._programmaticHotKey is not null
-                                                 && view._programmaticHotKey != previousHotKey
-                                                 && !UsedHotKeys.Contains (view._programmaticHotKey);
-
-            if (!explicitHotKeyBecameAvailable && view.HotKey == previousHotKey && UsedHotKeys.Contains (previousHotKey))
-            {
-                return true;
-            }
-
-            ReleaseAutoAssignedHotKey (view);
-        }
-
         string label = view.Title;
-
-        if (view._programmaticHotKey is { } programmaticHotKey)
-        {
-            if (programmaticHotKey == Key.Empty)
-            {
-                view.SetHotKeyInternally (Key.Empty);
-
-                return true;
-            }
-
-            if (TryReserveHotKey (view, programmaticHotKey))
-            {
-                view.SetHotKeyInternally (programmaticHotKey);
-
-                return true;
-            }
-        }
 
         // Check if there's already a hotkey defined in the title
         if (TextFormatter.FindHotKey (label, view.HotKeySpecifier, out int hotKeyPos, out Key existingHotKey))
@@ -605,7 +685,9 @@ public partial class View // Keyboard APIs
 
             try
             {
-                view.Title = label.Insert (i, view.HotKeySpecifier.ToString ());
+                string proposedTitle = label.Insert (i, view.HotKeySpecifier.ToString ());
+                view.Title = proposedTitle;
+                view._autoInsertedHotKeySpecifier = view.Title == proposedTitle ? view.HotKeySpecifier : null;
             }
             finally
             {
@@ -671,6 +753,16 @@ public partial class View // Keyboard APIs
         _autoAssignedHotKeys [view] = hotKey;
 
         return true;
+    }
+
+    internal void ReconcileAutoAssignedHotKey (View view)
+    {
+        if (!AssignHotKeys)
+        {
+            return;
+        }
+
+        AssignHotKeyToView (view);
     }
 
     #endregion AutoHotKey Assignment

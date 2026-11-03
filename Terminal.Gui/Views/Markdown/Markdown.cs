@@ -153,7 +153,7 @@ public partial class Markdown : View, IDesignable
         get => base.HotKeySpecifier;
         set
         {
-            TitleTextFormatter.HotKeySpecifier = TextFormatter.HotKeySpecifier = value;
+            base.HotKeySpecifier = value;
             UpdateHotKeyFromMarkdown ();
         }
     }
@@ -343,6 +343,13 @@ public partial class Markdown : View, IDesignable
 
     private void UpdateHotKeyFromMarkdown ()
     {
+        if (SuperView is { AssignHotKeys: true } superView)
+        {
+            superView.ReconcileAutoAssignedHotKey (this);
+
+            return;
+        }
+
         if (HotKeySpecifier == new Rune ('\xFFFF'))
         {
             SetHotKeyInternally (Key.Empty);
@@ -361,6 +368,17 @@ public partial class Markdown : View, IDesignable
         }
 
         SetHotKeyInternally (Key.Empty);
+    }
+
+    internal override Key? GetPreferredAutoAssignedHotKey ()
+    {
+        if (HotKeySpecifier == new Rune ('\xFFFF')
+            || !TextFormatter.FindHotKey (_markdown, HotKeySpecifier, out _, out Key hotKey))
+        {
+            return Key.Empty;
+        }
+
+        return hotKey;
     }
 
     private void InvalidateParsedAndLayout ()

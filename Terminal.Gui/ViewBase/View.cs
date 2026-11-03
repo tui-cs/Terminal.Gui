@@ -561,6 +561,11 @@ public partial class View : IDisposable, ISupportInitializeNotification
 
             value = NormalizeTitle (args.NewValue);
 
+            if (!_assigningHotKeyFromTitle)
+            {
+                _autoInsertedHotKeySpecifier = null;
+            }
+
             _title = value;
             TitleTextFormatter.Text = _title;
 
