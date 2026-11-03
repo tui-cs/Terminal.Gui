@@ -446,6 +446,44 @@ public class AutoHotKeyAssignmentTests
 
     [Fact]
     // Copilot
+    public void TitleChange_RemovesMismatchedUserWrittenSpecifierForProgrammaticHotKey ()
+    {
+        View superView = new () { AssignHotKeys = true };
+        View button = new () { Title = "Save", HotKey = Key.X };
+        superView.Add (button);
+
+        button.Title = "_Open";
+
+        Assert.Equal ("Open", button.Title);
+        Assert.Equal (Key.X, button.HotKey);
+        Assert.Contains (Key.X, superView.UsedHotKeys);
+    }
+
+    [Fact]
+    // Copilot
+    public void TitleChange_CancelledMismatchedSpecifierRemovalKeepsTitleHotKey ()
+    {
+        View superView = new () { AssignHotKeys = true };
+        View button = new () { Title = "Save", HotKey = Key.X };
+        superView.Add (button);
+        button.TitleChanging += (_, args) =>
+                                {
+                                    if (args.NewValue == "Open")
+                                    {
+                                        args.Cancel = true;
+                                    }
+                                };
+
+        button.Title = "_Open";
+
+        Assert.Equal ("_Open", button.Title);
+        Assert.Equal (Key.O, button.HotKey);
+        Assert.DoesNotContain (Key.X, superView.UsedHotKeys);
+        Assert.Contains (Key.O, superView.UsedHotKeys);
+    }
+
+    [Fact]
+    // Copilot
     public void HotKey_AutoInsertedSpecifierProvenanceSurvivesRemovalAndReaddition ()
     {
         View superView = new () { AssignHotKeys = true };

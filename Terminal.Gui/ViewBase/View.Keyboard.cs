@@ -122,7 +122,7 @@ public partial class View // Keyboard APIs
                 {
                     _programmaticHotKey = null;
 
-                    if (!RemoveAutoInsertedHotKeySpecifier (this, Key.Empty))
+                    if (!RemoveMismatchedHotKeySpecifier (this, Key.Empty))
                     {
                         SetHotKeyFromTitle ();
 
@@ -177,7 +177,7 @@ public partial class View // Keyboard APIs
 
             if (value == Key.Empty)
             {
-                if (!RemoveAutoInsertedHotKeySpecifier (this, Key.Empty))
+                if (!RemoveMismatchedHotKeySpecifier (this, Key.Empty))
                 {
                     _programmaticHotKey = null;
                     SetHotKeyFromTitle ();
@@ -440,17 +440,24 @@ public partial class View // Keyboard APIs
 
     internal virtual Key? GetPreferredAutoAssignedHotKey () => null;
 
-    private static bool RemoveAutoInsertedHotKeySpecifier (View view, Key hotKey)
+    private static bool RemoveMismatchedHotKeySpecifier (View view, Key hotKey, bool removeUserWrittenSpecifier = false)
     {
-        if (view._autoInsertedHotKeySpecifier is not { } specifier
-            || !TextFormatter.FindHotKey (view.Title, specifier, out int hotKeyPosition, out Key titleHotKey)
+        Rune? specifier = view._autoInsertedHotKeySpecifier;
+
+        if (removeUserWrittenSpecifier)
+        {
+            specifier ??= view.HotKeySpecifier;
+        }
+
+        if (specifier is not { } hotKeySpecifier
+            || !TextFormatter.FindHotKey (view.Title, hotKeySpecifier, out int hotKeyPosition, out Key titleHotKey)
             || titleHotKey == hotKey)
         {
             return true;
         }
 
         string previousTitle = view.Title;
-        string titleWithoutSpecifier = TextFormatter.RemoveHotKeySpecifier (previousTitle, hotKeyPosition, specifier);
+        string titleWithoutSpecifier = TextFormatter.RemoveHotKeySpecifier (previousTitle, hotKeyPosition, hotKeySpecifier);
         bool wasAssigningHotKeyFromTitle = view._assigningHotKeyFromTitle;
         view._assigningHotKeyFromTitle = true;
 
@@ -669,7 +676,7 @@ public partial class View // Keyboard APIs
         {
             if (TryReserveHotKey (view, programmaticHotKey))
             {
-                if (!RemoveAutoInsertedHotKeySpecifier (view, programmaticHotKey))
+                if (!RemoveMismatchedHotKeySpecifier (view, programmaticHotKey, removeUserWrittenSpecifier: true))
                 {
                     ReleaseAutoAssignedHotKey (view);
                     view._programmaticHotKey = null;
@@ -706,7 +713,7 @@ public partial class View // Keyboard APIs
                 return true;
             }
 
-            RemoveAutoInsertedHotKeySpecifier (view, programmaticHotKey);
+            RemoveMismatchedHotKeySpecifier (view, programmaticHotKey);
             view.SetHotKeyInternally (programmaticHotKey);
 
             return true;
@@ -731,7 +738,7 @@ public partial class View // Keyboard APIs
             return true;
         }
 
-        RemoveAutoInsertedHotKeySpecifier (view, preferredAutoAssignedHotKey);
+        RemoveMismatchedHotKeySpecifier (view, preferredAutoAssignedHotKey);
         view.SetHotKeyInternally (preferredAutoAssignedHotKey);
 
         return true;
