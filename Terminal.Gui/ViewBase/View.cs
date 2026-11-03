@@ -548,6 +548,7 @@ public partial class View : IDisposable, ISupportInitializeNotification
                 return;
             }
 
+            // OnTitleChanging can replace the proposed title by reference.
             value = NormalizeTitle (value);
 
             CancelEventArgs<string> args = new (ref _title, ref value);

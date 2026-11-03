@@ -345,7 +345,7 @@ public partial class Markdown : View, IDesignable
     {
         if (HotKeySpecifier == new Rune ('\xFFFF'))
         {
-            HotKey = Key.Empty;
+            SetHotKeyInternally (Key.Empty);
 
             return;
         }
@@ -354,13 +354,13 @@ public partial class Markdown : View, IDesignable
         {
             if (HotKey != hotKey)
             {
-                HotKey = hotKey;
+                SetHotKeyInternally (hotKey);
             }
 
             return;
         }
 
-        HotKey = Key.Empty;
+        SetHotKeyInternally (Key.Empty);
     }
 
     private void InvalidateParsedAndLayout ()
