@@ -49,6 +49,12 @@ internal sealed class Arranger : IDisposable
             return false;
         }
 
+        // Already arranging (e.g. the Arrange key was pressed again): toggle off instead of re-registering bindings
+        if (IsArranging)
+        {
+            return ExitArrangeMode () is true;
+        }
+
         if (_border.App is { })
         {
             _border.App.Mouse.MouseEvent += ApplicationOnMouseEvent;
@@ -249,7 +255,7 @@ internal sealed class Arranger : IDisposable
 
     private void BorderOnCommandNotBound (object? sender, CommandEventArgs e)
     {
-        if (e.Context?.TryGetSource (out View? source) is not true)
+        if (e.Context?.TryGetSource (out _) is not true)
         {
             return;
         }
