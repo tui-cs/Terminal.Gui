@@ -505,11 +505,7 @@ public partial class View // SuperView/SubView hierarchy management (SuperView, 
 
     internal void RaiseSubViewRemoved (View view)
     {
-        // If auto-hotkey assignment is enabled, remove the subview's hotkey from UsedHotKeys
-        if (AssignHotKeys && view.HotKey != Key.Empty)
-        {
-            UsedHotKeys.Remove (view.HotKey);
-        }
+        ReleaseAutoAssignedHotKey (view);
 
         OnSubViewRemoved (view);
         SubViewRemoved?.Invoke (this, new SuperViewChangedEventArgs (this, view));

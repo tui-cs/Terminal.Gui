@@ -498,6 +498,7 @@ public partial class View : IDisposable, ISupportInitializeNotification
     ///     for the view by prefixing character with <see cref="HotKeySpecifier"/> (e.g. <c>"T_itle"</c>).
     /// </summary>
     /// <remarks>
+    ///     <para>A null value is treated as an empty title.</para>
     ///     <para>
     ///         Set the <see cref="HotKeySpecifier"/> to enable hotkey support. To disable Title-based hotkey support set
     ///         <see cref="HotKeySpecifier"/> to <c>(Rune)0xffff</c>.
@@ -535,6 +536,8 @@ public partial class View : IDisposable, ISupportInitializeNotification
                 throw new ObjectDisposedException (ToDebugString ());
             }
 #endif
+            value = NormalizeTitle (value);
+
             if (value == _title)
             {
                 return;
@@ -544,6 +547,10 @@ public partial class View : IDisposable, ISupportInitializeNotification
             {
                 return;
             }
+
+            // OnTitleChanging can replace the proposed title by reference.
+            value = NormalizeTitle (value);
+
             CancelEventArgs<string> args = new (ref _title, ref value);
             TitleChanging?.Invoke (this, args);
 
@@ -552,10 +559,23 @@ public partial class View : IDisposable, ISupportInitializeNotification
                 return;
             }
 
+            value = NormalizeTitle (args.NewValue);
+
+            if (!_assigningHotKeyFromTitle)
+            {
+                _autoInsertedHotKeySpecifier = null;
+            }
+
             _title = value;
             TitleTextFormatter.Text = _title;
 
             SetTitleTextFormatterSize ();
+
+            if (!_assigningHotKeyFromTitle)
+            {
+                ReleasePreviousHotKey ();
+            }
+
             SetHotKeyFromTitle ();
             SetNeedsDraw ();
 
@@ -563,6 +583,8 @@ public partial class View : IDisposable, ISupportInitializeNotification
             TitleChanged?.Invoke (this, new EventArgs<string> (in _title));
         }
     }
+
+    private static string NormalizeTitle (string? value) => value ?? string.Empty;
 
     private void SetTitleTextFormatterSize () =>
         TitleTextFormatter.ConstrainToSize = new Size (TextFormatter.GetWidestLineLength (TitleTextFormatter.Text)
@@ -581,7 +603,7 @@ public partial class View : IDisposable, ISupportInitializeNotification
 
     /// <summary>
     ///     Raised when the <see cref="View.Title"/> is changing. Set <see cref="CancelEventArgs.Cancel"/> to `true`
-    ///     to cancel the Title change.
+    ///     to cancel the Title change, or set <see cref="CancelEventArgs{T}.NewValue"/> to change the proposed title.
     /// </summary>
     public event EventHandler<CancelEventArgs<string>>? TitleChanging;
 

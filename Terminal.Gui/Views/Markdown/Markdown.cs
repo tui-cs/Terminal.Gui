@@ -19,6 +19,11 @@ namespace Terminal.Gui.Views;
 ///         Hyperlinks raise the <see cref="LinkClicked"/> event. Anchor links (URLs beginning with
 ///         <c>#</c>) are handled automatically by scrolling to the matching heading.
 ///     </para>
+///     <para>
+///         <see cref="View.HotKey"/> is derived from the first hotkey specifier in <see cref="Text"/>. When automatic
+///         hotkey assignment is enabled on the superview, Markdown content takes precedence over <see cref="View.Title"/>;
+///         a title does not provide a fallback hotkey when the content has no hotkey specifier.
+///     </para>
 ///     <para>Default key bindings:</para>
 ///     <list type="table">
 ///         <listheader>
@@ -153,7 +158,7 @@ public partial class Markdown : View, IDesignable
         get => base.HotKeySpecifier;
         set
         {
-            TitleTextFormatter.HotKeySpecifier = TextFormatter.HotKeySpecifier = value;
+            base.HotKeySpecifier = value;
             UpdateHotKeyFromMarkdown ();
         }
     }
@@ -343,9 +348,16 @@ public partial class Markdown : View, IDesignable
 
     private void UpdateHotKeyFromMarkdown ()
     {
+        if (SuperView is { AssignHotKeys: true } superView)
+        {
+            superView.ReconcileAutoAssignedHotKey (this);
+
+            return;
+        }
+
         if (HotKeySpecifier == new Rune ('\xFFFF'))
         {
-            HotKey = Key.Empty;
+            SetHotKeyInternally (Key.Empty);
 
             return;
         }
@@ -354,13 +366,24 @@ public partial class Markdown : View, IDesignable
         {
             if (HotKey != hotKey)
             {
-                HotKey = hotKey;
+                SetHotKeyInternally (hotKey);
             }
 
             return;
         }
 
-        HotKey = Key.Empty;
+        SetHotKeyInternally (Key.Empty);
+    }
+
+    internal override Key? GetPreferredAutoAssignedHotKey ()
+    {
+        if (HotKeySpecifier == new Rune ('\xFFFF')
+            || !TextFormatter.FindHotKey (_markdown, HotKeySpecifier, out _, out Key hotKey))
+        {
+            return Key.Empty;
+        }
+
+        return hotKey;
     }
 
     private void InvalidateParsedAndLayout ()
