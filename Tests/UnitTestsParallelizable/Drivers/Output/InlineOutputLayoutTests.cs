@@ -1,5 +1,3 @@
-using System.Text;
-
 namespace DriverTests.Output;
 
 public class InlineOutputLayoutTests
@@ -99,9 +97,16 @@ public class InlineOutputLayoutTests
         string text = new (character, InlineOutputLayout.MaximumUnits - 1);
         InlineOutputLayout layout = new ([new InlineOutputLine ([new InlineOutputSpan (text)])]);
         const int width = 80;
-        int columns = checked(text.Length * (character == '\t' ? 8 : 1));
+        int columns = checked (text.Length * (character == '\t' ? 8 : 1));
         int expected = (columns + width - 1) / width;
         Assert.Equal (expected, layout.CountRows (width)); // Warm width and Unicode caches before measuring.
+
+        // Aggressive cache warm-up: Force garbage collection to stabilize allocations
+        // on all platforms. Windows CI exhibits larger StringInfo initialization overhead
+        // on first-call; this ensures stable memory state before measurement.
+        GC.Collect ();
+        GC.WaitForPendingFinalizers ();
+        GC.Collect ();
 
         long before = GC.GetAllocatedBytesForCurrentThread ();
         int actual = layout.CountRows (width);
