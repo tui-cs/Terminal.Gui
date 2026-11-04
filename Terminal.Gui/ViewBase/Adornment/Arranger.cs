@@ -281,6 +281,11 @@ internal sealed class Arranger : IDisposable
                 e.Handled = HandleArrangeModeRight ();
 
                 break;
+
+            case Command.Quit:
+                e.Handled = ExitArrangeMode () is true;
+
+                break;
         }
     }
 
