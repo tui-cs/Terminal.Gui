@@ -130,6 +130,23 @@ public class ArrangerTests
 
     // Copilot
     [Fact]
+    public void EnterArrangeMode_WhenAlreadyArranging_ExitsWithoutThrowing ()
+    {
+        // Arrange
+        BorderView border = CreateBorderWithArrangement (ViewArrangement.Movable);
+        Arranger arranger = new (border);
+        arranger.EnterArrangeMode (ViewArrangement.Fixed);
+
+        // Act - simulates pressing the Arrange key (Ctrl+F5) a second time
+        bool result = arranger.EnterArrangeMode (ViewArrangement.Fixed);
+
+        // Assert
+        Assert.True (result);
+        Assert.False (arranger.IsArranging);
+    }
+
+    // Copilot
+    [Fact]
     public void Esc_WhenArranging_ExitsArrangeMode ()
     {
         // Arrange
@@ -573,9 +590,9 @@ public class ArrangerTests
         View view = new () { BorderStyle = LineStyle.Single };
         view.BeginInit ();
         view.EndInit ();
-        Border? border = view.Border;
-        Arranger arranger = new ((BorderView)border!.View!);
-        border!.Parent = null;
+        Border border = view.Border;
+        Arranger arranger = new ((BorderView)border.View!);
+        border.Parent = null;
 
         // Act & Assert - Should not throw
         arranger.HandleDragOperation (new Point (100, 100));
