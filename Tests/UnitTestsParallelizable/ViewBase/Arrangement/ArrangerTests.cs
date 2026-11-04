@@ -128,6 +128,23 @@ public class ArrangerTests
         Assert.True (arranger.IsArranging);
     }
 
+    // Copilot
+    [Fact]
+    public void Esc_WhenArranging_ExitsArrangeMode ()
+    {
+        // Arrange
+        BorderView border = CreateBorderWithArrangement (ViewArrangement.Movable);
+        Arranger arranger = border.Arranger;
+        arranger.EnterArrangeMode (ViewArrangement.Fixed);
+        Assert.True (arranger.IsArranging);
+
+        // Act
+        border.NewKeyDownEvent (Key.Esc);
+
+        // Assert
+        Assert.False (arranger.IsArranging);
+    }
+
     [Fact]
     public void EnterArrangeMode_SetsArrangingProperty ()
     {
