@@ -310,6 +310,48 @@ public class CursorTests (ITestOutputHelper output)
     }
 
     [Fact]
+    public void UpdateCursor_Skips_Writes_When_Cursor_Unchanged ()
+    {
+        IApplication app = Application.Create ();
+        app.Init (DriverRegistry.Names.ANSI);
+
+        TestView view = new () { CanFocus = true, Width = 10, Height = 5 };
+        Runnable runnable = new ();
+        runnable.Add (view);
+        SessionToken? token = app.Begin (runnable);
+        view.SetFocus ();
+
+        // Initial state and focus change both require an update; UpdateCursor consumes it
+        Assert.True (app.Driver!.GetCursorNeedsUpdate ());
+        app.Navigation!.UpdateCursor ();
+        Assert.False (app.Driver.GetCursorNeedsUpdate ());
+
+        // Idle iterations do not request another update
+        app.Navigation.UpdateCursor ();
+        Assert.False (app.Driver.GetCursorNeedsUpdate ());
+
+        // A cursor change, a redraw (Refresh moves the terminal cursor) and a resize each invalidate
+        view.TestLocation = new Point (2, 1);
+        Assert.True (app.Driver.GetCursorNeedsUpdate ());
+        app.Navigation.UpdateCursor ();
+        Assert.False (app.Driver.GetCursorNeedsUpdate ());
+
+        app.Driver.Refresh ();
+        Assert.True (app.Driver.GetCursorNeedsUpdate ());
+        app.Navigation.UpdateCursor ();
+
+        app.Driver.SetScreenSize (40, 12);
+        Assert.True (app.Driver.GetCursorNeedsUpdate ());
+
+        if (token is { })
+        {
+            app.End (token);
+        }
+        app.Dispose ();
+        runnable.Dispose ();
+    }
+
+    [Fact]
     public void SetCursorNeedsUpdate_Signals_Cursor_Update ()
     {
         IApplication app = Application.Create ();
