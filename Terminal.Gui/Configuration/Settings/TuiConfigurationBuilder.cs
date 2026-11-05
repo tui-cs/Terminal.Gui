@@ -264,6 +264,8 @@ public class TuiConfigurationBuilder
     ///     cached; if the active theme has an overlay for <paramref name="sectionName"/>, it is applied on top
     ///     of a copy of the root values.
     /// </summary>
+    [UnconditionalSuppressMessage ("Trimming", "IL2026", Justification = "Theme settings are simple public types; Bind only walks declared properties.")]
+    [UnconditionalSuppressMessage ("AOT", "IL3050", Justification = "Theme settings are simple types; all closed generic calls use library-defined types.")]
     private T BindThemeScope<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicProperties)] T> (IConfiguration config, string sectionName, IConfigurationSection? themeObject) where T : new ()
     {
         T rootSettings;
