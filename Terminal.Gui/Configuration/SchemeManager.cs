@@ -1,6 +1,7 @@
 // Grok - grok-4.6
 using System.Collections.Immutable;
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.CompilerServices;
 using System.Text.Json.Nodes;
 
 namespace Terminal.Gui.Configuration;
@@ -13,6 +14,9 @@ public sealed class SchemeManager : ISchemeManager
 {
     private static readonly Lock _schemesLock = new ();
     private static Dictionary<string, Scheme?> _schemes = HardCodedDictionary ();
+
+    // Cache: (mergedJsonRef, canonicalThemeName) -> resulting schemes dictionary
+    private static readonly ConditionalWeakTable<JsonObject, Dictionary<string, Dictionary<string, Scheme?>>> _schemeCache = [];
 
     /// <summary>INTERNAL: Hard-coded schemes used before configuration is applied and as the overlay base.</summary>
     internal static ImmutableSortedDictionary<string, Scheme?> GetHardCodedSchemes ()
@@ -188,6 +192,31 @@ public sealed class SchemeManager : ISchemeManager
     /// </summary>
     internal static void ApplyFromConfiguration (JsonObject mergedJson, string? canonicalThemeName)
     {
+        // Try to get cached result for this JSON and theme combination
+        if (_schemeCache.TryGetValue (mergedJson, out var themeCache))
+        {
+            string cacheKey = canonicalThemeName ?? string.Empty;
+
+            if (themeCache.TryGetValue (cacheKey, out var cachedSchemes))
+            {
+                // Apply cached schemes
+                lock (_schemesLock)
+                {
+                    Dictionary<string, Scheme?> nextSchemes = new (cachedSchemes, StringComparer.InvariantCultureIgnoreCase);
+
+                    foreach (KeyValuePair<string, Scheme?> pair in _runtimeSchemes)
+                    {
+                        nextSchemes [pair.Key] = pair.Value;
+                    }
+
+                    ReplaceSchemes (nextSchemes);
+                }
+
+                return;
+            }
+        }
+
+        // Cache miss: compute schemes from scratch
         Dictionary<string, Scheme?> next = HardCodedDictionary ();
 
         JsonObject combined = [];
@@ -220,6 +249,13 @@ public sealed class SchemeManager : ISchemeManager
 
             next [pair.Key] = parsed;
         }
+
+        // Store in cache before applying runtime schemes
+        Dictionary<string, Dictionary<string, Scheme?>> cacheEntry =
+            _schemeCache.GetValue (mergedJson, _ => new Dictionary<string, Dictionary<string, Scheme?>> (StringComparer.InvariantCultureIgnoreCase));
+
+        string themeCacheKey = canonicalThemeName ?? string.Empty;
+        cacheEntry [themeCacheKey] = new Dictionary<string, Scheme?> (next, StringComparer.InvariantCultureIgnoreCase);
 
         lock (_schemesLock)
         {

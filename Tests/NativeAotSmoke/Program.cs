@@ -50,6 +50,7 @@ public static class Program
         if (smokeTest)
         {
             ExerciseDictionaryDeepCloning ();
+            ExerciseThemeSwitches ();
 
             using CancellationTokenSource cts = new (TimeSpan.FromSeconds (5));
             await app.RunAsync<AotAllViewsWindow> (cts.Token);
@@ -59,6 +60,21 @@ public static class Program
         }
 
         app.Run<AotAllViewsWindow> ();
+    }
+
+    private static void ExerciseThemeSwitches ()
+    {
+        foreach (string themeName in ThemeManager.GetThemeNames ())
+        {
+            ThemeManager.Theme = themeName;
+
+            if (!string.Equals (ThemeManager.Theme, themeName, StringComparison.Ordinal))
+            {
+                throw new InvalidOperationException ($"AOT theme switch failed: expected '{themeName}', got '{ThemeManager.Theme}'.");
+            }
+        }
+
+        ThemeManager.Theme = ThemeManager.DEFAULT_THEME_NAME;
     }
 
     private static void ExerciseDictionaryDeepCloning ()
