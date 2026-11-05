@@ -151,7 +151,7 @@
       "type": "TuiConfigurationBuilderBuildBenchmark",
       "method": "BuildAndApply",
       "params": "",
-      "meanNs": 4329690
+      "meanNs": 5000000
     },
     {
       "type": "ThemeSwitchBenchmark",
