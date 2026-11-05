@@ -122,6 +122,10 @@ internal class DriverImpl : IDriver
             RecordOutputFailure ("refreshing terminal output", ex);
         }
 
+        // Writing moves the terminal cursor, so it must be re-applied (shown, hidden or repositioned)
+        // by the next ApplicationNavigation.UpdateCursor, even if it was hidden before the write.
+        SetCursorNeedsUpdate (true);
+
         // Cursor visibility restored by ApplicationMainLoop to reduce flicker.
     }
 
@@ -312,6 +316,9 @@ internal class DriverImpl : IDriver
 
         // Always update the output's knowledge of terminal size
         _output.SetSize (width, height);
+
+        // The terminal may have moved or reset its cursor; re-apply it on the next iteration
+        SetCursorNeedsUpdate (true);
 
         // In inline mode, the output buffer is sized to App.Screen (the inline region),
         // not the full terminal. Only resize the buffer in fullscreen mode.
@@ -590,7 +597,9 @@ internal class DriverImpl : IDriver
     public Cursor GetCursor () => _output.GetCursor ();
 
     // Cursor caching fields
-    private bool _cursorNeedsUpdate;
+    // Starts true so the first main loop iteration applies the cursor once. ApplicationNavigation.UpdateCursor
+    // clears it; focus, cursor changes and Refresh set it again.
+    private bool _cursorNeedsUpdate = true;
 
     /// <inheritdoc/>
     public bool GetCursorNeedsUpdate () => _cursorNeedsUpdate;

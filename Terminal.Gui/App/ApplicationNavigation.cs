@@ -137,6 +137,10 @@ public class ApplicationNavigation
             return;
         }
 
+        // Applied below; until something signals SetCursorNeedsUpdate again, skip the terminal writes
+        // (cursor-home + hide on every idle iteration otherwise).
+        App?.Driver?.SetCursorNeedsUpdate (false);
+
         View? mostFocused = App?.TopRunnableView?.MostFocused;
 
         if (mostFocused is null || !mostFocused.Cursor.IsVisible)
