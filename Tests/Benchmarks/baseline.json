@@ -148,12 +148,6 @@
       "meanNs": 53001245
     },
     {
-      "type": "ConfigurationManagerLoadBenchmark",
-      "method": "LoadAndApply",
-      "params": "",
-      "meanNs": 4329690
-    },
-    {
       "type": "ThemeSwitchBenchmark",
       "method": "SwitchTheme",
       "params": "ThemeName=8-Bit",
