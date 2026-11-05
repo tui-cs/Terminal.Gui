@@ -58,6 +58,13 @@ public class TuiConfigurationBuilder
     private IConfiguration? _configuration;
     private JsonObject? _mergedSourceJson;
 
+    // Root (theme-independent) settings bound from _rootSettingsConfig, keyed by settings type
+    private readonly Dictionary<Type, object> _rootSettingsCache = [];
+    private IConfiguration? _rootSettingsConfig;
+
+    // Fully merged (root + theme overlay) settings, keyed by theme path, section name and settings type
+    private readonly Dictionary<(string ThemePath, string Section, Type SettingsType), object> _overlaySettingsCache = [];
+
     /// <summary>Initializes a new instance of <see cref="TuiConfigurationBuilder"/>.</summary>
     /// <param name="appName">The application name for app-specific config file discovery. If null, uses entry assembly name.</param>
     /// <param name="currentDirectory">
@@ -170,7 +177,12 @@ public class TuiConfigurationBuilder
     ///     Invalidates the cached configuration so the next access to <see cref="Configuration"/> rebuilds
     ///     from all sources. Use after a configuration file changes on disk.
     /// </summary>
-    public void Reload () => _configuration = null;
+    public void Reload ()
+    {
+        _configuration = null;
+        _rootSettingsCache.Clear ();
+        _overlaySettingsCache.Clear ();
+    }
 
     /// <summary>
     ///     Gets the MEC-backed theme manager instance for this builder.
@@ -214,46 +226,100 @@ public class TuiConfigurationBuilder
         IConfiguration config = Configuration;
         string activeTheme = ThemeSettings.Defaults.Theme ?? global::Terminal.Gui.Configuration.ThemeManager.DEFAULT_THEME_NAME;
 
-        ButtonSettings button = BindThemeScope<ButtonSettings> (config, "Button", activeTheme);
-        CheckBoxSettings checkBox = BindThemeScope<CheckBoxSettings> (config, "CheckBox", activeTheme);
-        CharMapSettings charMap = BindThemeScope<CharMapSettings> (config, "CharMap", activeTheme);
-        DialogSettings dialog = BindThemeScope<DialogSettings> (config, "Dialog", activeTheme);
-        FrameViewSettings frameView = BindThemeScope<FrameViewSettings> (config, "FrameView", activeTheme);
-        HexViewSettings hexView = BindThemeScope<HexViewSettings> (config, "HexView", activeTheme);
-        LinearRangeSettings linearRange = BindThemeScope<LinearRangeSettings> (config, "LinearRange", activeTheme);
-        MenuBarSettings menuBar = BindThemeScope<MenuBarSettings> (config, "MenuBar", activeTheme);
-        MenuSettings menu = BindThemeScope<MenuSettings> (config, "Menu", activeTheme);
-        MessageBoxSettings messageBox = BindThemeScope<MessageBoxSettings> (config, "MessageBox", activeTheme);
-        NerdFontsSettings nerdFonts = BindThemeScope<NerdFontsSettings> (config, "NerdFonts", activeTheme);
-        PopoverMenuSettings popoverMenu = BindThemeScope<PopoverMenuSettings> (config, "PopoverMenu", activeTheme);
-        SelectorBaseSettings selectorBase = BindThemeScope<SelectorBaseSettings> (config, "SelectorBase", activeTheme);
-        StatusBarSettings statusBar = BindThemeScope<StatusBarSettings> (config, "StatusBar", activeTheme);
-        TextFieldSettings textField = BindThemeScope<TextFieldSettings> (config, "TextField", activeTheme);
-        TextViewSettings textView = BindThemeScope<TextViewSettings> (config, "TextView", activeTheme);
-        WindowSettings window = BindThemeScope<WindowSettings> (config, "Window", activeTheme);
-        GlyphSettings glyphs = BindThemeScope<GlyphSettings> (config, "Glyphs", activeTheme);
+        // Resolve the theme section once to avoid repeated lookups
+        IConfigurationSection? themeObject = ThemeCatalog.Find (config, activeTheme);
 
-        ButtonSettings.Current = button;
-        CheckBoxSettings.Current = checkBox;
-        CharMapSettings.Current = charMap;
-        DialogSettings.Current = dialog;
-        FrameViewSettings.Current = frameView;
-        HexViewSettings.Current = hexView;
-        LinearRangeSettings.Current = linearRange;
-        MenuBarSettings.Current = menuBar;
-        MenuSettings.Current = menu;
-        MessageBoxSettings.Current = messageBox;
-        NerdFontsSettings.Current = nerdFonts;
-        PopoverMenuSettings.Current = popoverMenu;
-        SelectorBaseSettings.Current = selectorBase;
-        StatusBarSettings.Current = statusBar;
-        TextFieldSettings.Current = textField;
-        TextViewSettings.Current = textView;
-        WindowSettings.Current = window;
-        GlyphSettings.Current = glyphs;
+        if (!ReferenceEquals (_rootSettingsConfig, config))
+        {
+            _rootSettingsCache.Clear ();
+            _overlaySettingsCache.Clear ();
+            _rootSettingsConfig = config;
+        }
+
+        ButtonSettings.Current = BindThemeScope<ButtonSettings> (config, "Button", themeObject);
+        CheckBoxSettings.Current = BindThemeScope<CheckBoxSettings> (config, "CheckBox", themeObject);
+        CharMapSettings.Current = BindThemeScope<CharMapSettings> (config, "CharMap", themeObject);
+        DialogSettings.Current = BindThemeScope<DialogSettings> (config, "Dialog", themeObject);
+        FrameViewSettings.Current = BindThemeScope<FrameViewSettings> (config, "FrameView", themeObject);
+        HexViewSettings.Current = BindThemeScope<HexViewSettings> (config, "HexView", themeObject);
+        LinearRangeSettings.Current = BindThemeScope<LinearRangeSettings> (config, "LinearRange", themeObject);
+        MenuBarSettings.Current = BindThemeScope<MenuBarSettings> (config, "MenuBar", themeObject);
+        MenuSettings.Current = BindThemeScope<MenuSettings> (config, "Menu", themeObject);
+        MessageBoxSettings.Current = BindThemeScope<MessageBoxSettings> (config, "MessageBox", themeObject);
+        NerdFontsSettings.Current = BindThemeScope<NerdFontsSettings> (config, "NerdFonts", themeObject);
+        PopoverMenuSettings.Current = BindThemeScope<PopoverMenuSettings> (config, "PopoverMenu", themeObject);
+        SelectorBaseSettings.Current = BindThemeScope<SelectorBaseSettings> (config, "SelectorBase", themeObject);
+        StatusBarSettings.Current = BindThemeScope<StatusBarSettings> (config, "StatusBar", themeObject);
+        TextFieldSettings.Current = BindThemeScope<TextFieldSettings> (config, "TextField", themeObject);
+        TextViewSettings.Current = BindThemeScope<TextViewSettings> (config, "TextView", themeObject);
+        WindowSettings.Current = BindThemeScope<WindowSettings> (config, "Window", themeObject);
+        GlyphSettings.Current = BindThemeScope<GlyphSettings> (config, "Glyphs", themeObject);
 
         string? canonicalTheme = ThemeCatalog.CanonicalName (config, activeTheme);
         global::Terminal.Gui.Configuration.SchemeManager.ApplyFromConfiguration (MergedSourceJson, canonicalTheme);
+    }
+
+    /// <summary>
+    ///     Two-pass overlay bind for ThemeScope POCOs. The root section is bound once per configuration and
+    ///     cached; if the active theme has an overlay for <paramref name="sectionName"/>, it is applied on top
+    ///     of a copy of the root values.
+    /// </summary>
+    private T BindThemeScope<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicProperties)] T> (IConfiguration config, string sectionName, IConfigurationSection? themeObject) where T : new ()
+    {
+        T rootSettings;
+
+        if (_rootSettingsCache.TryGetValue (typeof (T), out object? cached))
+        {
+            rootSettings = (T)cached;
+        }
+        else
+        {
+            rootSettings = BindSection<T> (config, sectionName);
+            _rootSettingsCache [typeof (T)] = rootSettings!;
+        }
+
+        IConfigurationSection? overlay = themeObject?.GetSection (sectionName);
+
+        if (overlay is null || !overlay.Exists ())
+        {
+            return rootSettings;
+        }
+
+        (string, string, Type) key = (themeObject!.Path, sectionName, typeof (T));
+
+        if (_overlaySettingsCache.TryGetValue (key, out object? merged))
+        {
+            return (T)merged;
+        }
+
+        T result = new ();
+        CopySettingsProperties (rootSettings, result);
+        overlay.Bind (result);
+        BindDirectProperties (overlay, result);
+        _overlaySettingsCache [key] = result!;
+
+        return result;
+    }
+
+    /// <summary>Copy all public properties from source to target.</summary>
+    private static void CopySettingsProperties<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicProperties)] T> (T source, T target)
+    {
+        foreach (var prop in typeof (T).GetProperties (System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance))
+        {
+            if (prop is not { CanRead: true, CanWrite: true })
+            {
+                continue;
+            }
+
+            try
+            {
+                prop.SetValue (target, prop.GetValue (source));
+            }
+            catch
+            {
+                // Ignore copy errors
+            }
+        }
     }
 
     /// <summary>
@@ -315,35 +381,6 @@ public class TuiConfigurationBuilder
 
         section.Bind (settings);
         BindDirectProperties (section, settings);
-
-        return settings;
-    }
-
-    /// <summary>
-    ///     Two-pass overlay bind for ThemeScope POCOs. Binds the nested root section, then overlays
-    ///     <c>Themes:<paramref name="activeTheme"/>:<paramref name="sectionName"/></c>.
-    /// </summary>
-    [UnconditionalSuppressMessage ("Trimming", "IL2026", Justification = "Settings POCOs are simple public types; Bind only walks declared properties.")]
-    [UnconditionalSuppressMessage ("AOT", "IL3050", Justification = "Settings POCOs are simple types; no generic instantiation needed at runtime.")]
-    private static T BindThemeScope<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicProperties)] T> (IConfiguration config, string sectionName, string activeTheme) where T : new ()
-    {
-        T settings = BindSection<T> (config, sectionName);
-        IConfigurationSection? themeObject = ThemeCatalog.Find (config, activeTheme);
-
-        if (themeObject is null)
-        {
-            return settings;
-        }
-
-        IConfigurationSection overlay = themeObject.GetSection (sectionName);
-
-        if (!overlay.Exists ())
-        {
-            return settings;
-        }
-
-        overlay.Bind (settings);
-        BindDirectProperties (overlay, settings);
 
         return settings;
     }
