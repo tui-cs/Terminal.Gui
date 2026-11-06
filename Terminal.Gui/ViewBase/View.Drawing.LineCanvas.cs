@@ -173,10 +173,13 @@ public partial class View
                         AddStr (p.Value.Value.Grapheme);
 
                         renderedCells [p.Key] = p.Value.Value;
-                        lineRegion.Union (new Rectangle (p.Key.X, p.Key.Y, 1, 1));
+                        cellMap [p.Key] = p.Value;
                     }
                 }
             }
+
+            // Build horizontal spans once instead of normalizing the region for every cell.
+            lineRegion = LineCanvas.GetRegion (cellMap);
 
             _pendingOverlappedCellMaps = null;
         }
