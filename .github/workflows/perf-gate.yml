@@ -65,8 +65,8 @@ jobs:
   perf-benchmarks:
     name: Benchmarks (Linux, ShortRun)
     runs-on: ubuntu-latest
-    # Only run on pushes to develop/main, not on every PR (slow and not blocking).
-    if: github.event_name == 'push'
+    # Uncomment to run only on pushes to develop/main instead of on every PR.
+    # if: github.event_name == 'push'
     timeout-minutes: 30
     env:
       DisableRealDriverIO: "1"
