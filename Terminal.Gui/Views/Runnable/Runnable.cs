@@ -167,8 +167,55 @@ public class Runnable : View, IRunnable
     /// <inheritdoc/>
     public void RaiseIsModalChangedEvent (bool newIsModal)
     {
-        if (newIsModal)
+        IApplication? app = App;
+        bool deferred = app is ApplicationImpl { ThreadAccessChecksEnabled: true, Initialized: true } && !app.CheckAccess ();
+        ApplicationPopover? popovers = app is { Initialized: true } ? app.Popovers : null;
+        IPopoverView? popoverToHide = newIsModal ? null : popovers?.GetActivePopover ();
+        ApplicationImpl.RunLifecycleUiWork (app, UpdateModalUi);
+
+        // CWP Phase 3: Post-notification (work already done by Application)
+        OnIsModalChanged (newIsModal);
+
+        EventArgs<bool> args = new (newIsModal);
+        IsModalChanged?.Invoke (this, args);
+
+        ApplicationImpl.RunLifecycleUiWork (App,
+                                            () =>
+                                            {
+                                                if (IsDisposed)
+                                                {
+                                                    return;
+                                                }
+
+                                                SetNeedsLayout ();
+                                                SetNeedsDraw ();
+                                            });
+
+        return;
+
+        void UpdateModalUi ()
         {
+            if (IsDisposed)
+            {
+                return;
+            }
+
+            // Another End may have superseded a queued focus restoration before the UI thread drains it.
+            if (deferred && (IsModal != newIsModal || (newIsModal && !IsRunning)))
+            {
+                return;
+            }
+
+            if (!newIsModal)
+            {
+                if (popoverToHide is not null && popoverToHide is not View { IsDisposed: true })
+                {
+                    popovers?.Hide (popoverToHide);
+                }
+
+                return;
+            }
+
             if (App?.AppModel == AppModel.Inline && Height.Has (out DimFill _))
             {
                 // If starting inline and height is Dim.Fill, change to Dim.Auto to avoid full screen
@@ -179,20 +226,6 @@ public class Runnable : View, IRunnable
             SetFocus ();
             App?.Navigation?.SetFocused (MostFocused);
         }
-        else
-        {
-            App?.Popovers?.Hide ();
-        }
-
-        // CWP Phase 3: Post-notification (work already done by Application)
-        OnIsModalChanged (newIsModal);
-
-        EventArgs<bool> args = new (newIsModal);
-        IsModalChanged?.Invoke (this, args);
-
-        // Layout may need to change when modal state changes
-        SetNeedsLayout ();
-        SetNeedsDraw ();
     }
 
     /// <inheritdoc/>

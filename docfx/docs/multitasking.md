@@ -11,6 +11,82 @@ Terminal.Gui follows the standard UI toolkit pattern where **all UI operations m
 ### The Golden Rule
 > Always use `App?.Invoke ()` (from within a View), `app.Invoke ()`, or `app.InvokeAsync ()` to update the UI from background threads.
 
+### Diagnose wrong-thread view mutations
+
+To detect invalid view mutations at the call site, enable thread-access checks for an application:
+
+```csharp
+using IApplication app = Application.Create ().EnableThreadAccessChecks ().Init ();
+app.Run<MyWindow> ();
+```
+
+Checks are off by default, work in Debug and Release packages, and affect only that application.
+The UI thread is the thread that called `Init`; run the UI loop on that same thread. The diagnostics setting survives
+`ResetState` and persists when the legacy singleton is shut down and initialized again.
+To turn automatic checks off, call `app.EnableThreadAccessChecks (false)`.
+Custom application implementations can support this switch through the optional `IApplicationThreadAccess` interface;
+the switch throws `NotSupportedException` for implementations without that capability.
+
+An instrumented mutation throws `InvalidOperationException` **before** changing state or raising events. The message
+identifies the operation, view type and Id, expected and current managed thread IDs, and the runnable/session when
+available. To fix an update from background work, capture its owning `SessionToken` on the UI thread and use
+`await app.InvokeAsync (owner, () => statusLabel.Text = result, cancellationToken)`. Observe cancellation and shutdown
+as shown below. This API completes after the update runs and cancels pending work whose session has ended.
+
+Affinity follows the view's effective `App`: its explicit application, the application inherited from its SuperView,
+or its adornment owner's application. An association with an initialized application requires its UI thread even
+before a session starts, in a Begin-only session, for hidden/disabled views, and for non-top runnables.
+`End` does not clear `View.App`, so affinity continues between sessions. Removal permits detached configuration only
+if the view no longer resolves an application; a removed view with an explicit `App` remains associated.
+Application and hierarchy changes check the old association and destination before changing them.
+
+An unassociated view tree can be prepared on a worker and then added on the UI thread. This permits sequential transfer;
+it does not permit concurrent access to a detached tree. Before application initialization and after reset/disposal,
+view affinity checks have no established application thread to enforce. They do not verify that a retained view is
+undisposed or that a request/tab/session still owns its state. A stale callback on the correct UI thread passes an
+affinity check; use session-owned dispatch and request cancellation for lifetime ownership.
+
+The initial automatic coverage includes base `View.Text`, `Title`, `Visible`, `Enabled`, `X`, `Y`, `Width`, `Height`,
+`Frame`, viewport/content size and settings, Add/Remove and SubView ordering, adornment ownership/thickness/lazy views,
+initialization/disposal, application Begin, focus/navigation entry points, layout entry points, and layout/draw invalidation.
+Derived controls may expose other mutation paths or hide base
+properties. Those paths require their own entry check; a later invalidation check cannot undo earlier side effects.
+To protect a custom method, call `VerifyAccess ()` before its first change or notification:
+
+```csharp
+public void ApplyResult (string result)
+{
+    VerifyAccess ();
+    Text = result;
+}
+```
+
+Explicit `view.VerifyAccess ()` checks an initialized association even with automatic diagnostics disabled.
+`app.CheckAccess ()` reports false without an initialized UI thread; explicit `app.VerifyAccess ()` throws
+`NotInitializedException` for that case and `InvalidOperationException` for a thread mismatch.
+No check depends on `SynchronizationContext.Current`, visibility, or the current top runnable.
+The session identity in a failure message is the owning `SessionToken.Id`, which remains available after the session ends.
+
+Automatic checks cache association to keep disabled checks independent of hierarchy depth. Standard App, SuperView,
+and adornment ownership changes refresh the cache automatically. To override `GetApp` with another ownership
+relationship, call `RefreshApplicationAssociation ()` after setting the initial owner in the constructor. To change
+that owner later, verify access before changing it and call `RefreshApplicationAssociation ()` afterwards.
+
+`View.Dispose ()` is also a guarded mutation: a wrong-thread call throws before notifications or resource cleanup,
+and the view remains available for disposal on the UI thread. To dispose views after a stopped loop has released a
+continuation to the thread pool, dispose the application first to end its association, then dispose its views.
+
+Worker `End` still performs synchronized session bookkeeping and lifecycle notifications. With diagnostics enabled,
+core focus/popover/redraw cleanup and mouse ungrabbing wait for UI-thread iteration, the next UI-thread Begin/End,
+or Run exit. Deferred actions validate their targets so old cleanup cannot release a replacement mouse grab or
+restore focus to an ended session. User lifecycle
+notifications receive no exemption: a handler running on a worker must marshal its own UI changes. Application reset
+ends thread association before final resource cleanup, which also permits disposal after the loop has stopped.
+Disposal finishes releasing sessions and driver resources before rethrowing a lifecycle notification failure.
+Additional failures are logged. Errors from deferred UI cleanup are logged when that work runs; they do not prevent
+a later Begin/End or Run teardown from completing. Application disposal cannot be vetoed: after a failed or canceled
+stop pre-notification, reset still closes the session and raises its final state notifications.
+
 ## Background Operations
 
 ### Await a UI update owned by a session

@@ -28,6 +28,8 @@ public partial class View // Focus and cross-view navigation management (TabStop
     /// </returns>
     public bool AdvanceFocus (NavigationDirection direction, TabBehavior? behavior)
     {
+        VerifyAccessIfEnabled ();
+
         //Logging.Trace ($"{Id} - {direction} {behavior}");
         if (!CanBeVisible (this)) // TODO: is this check needed?
         {
@@ -277,6 +279,8 @@ public partial class View // Focus and cross-view navigation management (TabStop
         get => _canFocus;
         set
         {
+            VerifyAccessIfEnabled ();
+
             if (_canFocus == value)
             {
                 return;
@@ -321,6 +325,8 @@ public partial class View // Focus and cross-view navigation management (TabStop
     /// <returns><see langword="true"/> if a subview other than this was focused.</returns>
     public bool FocusDeepest (NavigationDirection direction, TabBehavior? behavior)
     {
+        VerifyAccessIfEnabled ();
+
         View? deepest = FindDeepestFocusableView (direction, behavior);
 
         if (deepest is { })
@@ -453,7 +459,11 @@ public partial class View // Focus and cross-view navigation management (TabStop
     /// <summary>
     ///     Clears any focus state (e.g. the previously focused subview) from this view.
     /// </summary>
-    public void ClearFocus () => PreviouslyFocused = null;
+    public void ClearFocus ()
+    {
+        VerifyAccessIfEnabled ();
+        PreviouslyFocused = null;
+    }
 
     private View? FindDeepestFocusableView (NavigationDirection direction, TabBehavior? behavior)
     {
@@ -509,6 +519,8 @@ public partial class View // Focus and cross-view navigation management (TabStop
     {
         set
         {
+            VerifyAccessIfEnabled ();
+
             if (HasFocus == value)
             {
                 return;
@@ -554,6 +566,8 @@ public partial class View // Focus and cross-view navigation management (TabStop
     /// <returns><see langword="true"/> if the focus changed; <see langword="true"/> false otherwise.</returns>
     public bool SetFocus ()
     {
+        VerifyAccessIfEnabled ();
+
         (bool focusSet, bool _) = SetHasFocusTrue (App?.Navigation?.GetFocused ());
 
         return focusSet;
@@ -1065,6 +1079,8 @@ public partial class View // Focus and cross-view navigation management (TabStop
         get;
         set
         {
+            VerifyAccessIfEnabled ();
+
             if (field is { } && field == value)
             {
                 return;
