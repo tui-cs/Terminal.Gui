@@ -1,4 +1,5 @@
 using Terminal.Gui.Tracing;
+using Terminal.Gui.ViewBase;
 
 namespace Terminal.Gui.Views;
 
@@ -78,8 +79,32 @@ public class Menu : Bar, IValue<MenuItem?>
         KeyBindings.Clear ();
         MouseBindings.Clear ();
 
+        // Wrap-around navigation within this menu (CursorDown on last item wraps to first,
+        // CursorUp on first wraps to last), like VS/Windows. Issue #5201.
+        KeyBindings.Add (Key.CursorDown, Command.Down);
+        KeyBindings.Add (Key.CursorUp, Command.Up);
+        AddCommand (Command.Down, _ => MoveFocus (NavigationDirection.Forward));
+        AddCommand (Command.Up, _ => MoveFocus (NavigationDirection.Backward));
+        KeyBindings.Add (Key.CursorLeft, Command.Left);
+        AddCommand (Command.Left, _ =>
+        {
+            // Submenu ownership is a menu contract, not a selector's internal arrow contract.
+            // Root and horizontal menus retain their existing Left routing.
+            if (Orientation != Orientation.Vertical || SuperMenuItem is not { SuperView: Menu { Orientation: Orientation.Vertical } } owner)
+            {
+                return false;
+            }
+            owner.SetFocus ();
+
+            return true;
+        });
+
         ThemeChanges.ThemeChanged += OnThemeChanged;
     }
+
+    // True while a wrap-around navigation is moving focus, so the SubMenu of the item the wrap
+    // lands on is not opened (see OnSelectedMenuItemChanged). Issue #5201.
+    private bool _isWrapNavigation;
 
     private void OnThemeChanged (object? sender, App.EventArgs<string> e)
     {
@@ -170,6 +195,107 @@ public class Menu : Bar, IValue<MenuItem?>
         }
     }
 
+    /// <summary>
+    ///     Moves focus to the next (or previous) focusable item in this menu, wrapping around
+    ///     at the boundaries. Skips non-focusable items (separators, disabled).
+    /// </summary>
+    private bool? MoveFocus (NavigationDirection direction)
+    {
+        // Horizontal menus (e.g. MenuBar) use Left/Right for item navigation; Up/Down must
+        // fall through to the application-level AdvanceFocus instead of being consumed here.
+        if (Orientation != Orientation.Vertical)
+        {
+            return false;
+        }
+
+        // When focus is inside an embedded (focusable) control hosted by the focused MenuItem's
+        // CommandView (e.g. an OptionSelector), the control gets the arrow key first: advance its
+        // internal focus by one step if it can, keeping focus inside the control. Only when the
+        // control is at its internal boundary does the key fall through to this menu's own
+        // wrap-around computation below, so navigation continues with the next (or previous) menu
+        // item instead of escaping the menu through the application-level navigation fallback.
+        // Issue #5201.
+        if (Focused is Shortcut focusedShortcut
+            && focusedShortcut.CommandView is { CanFocus: true } commandView
+            && focusedShortcut.Focused is not null)
+        {
+            View? focusedBefore = commandView.MostFocused;
+
+            if (commandView.AdvanceFocus (direction, TabBehavior.TabStop) && commandView.HasFocus)
+            {
+                // The control consumed the key; focus stayed inside it.
+                return true;
+            }
+
+            // The probe must never leave focus outside the CommandView; restore it if it did.
+            if (!commandView.HasFocus && focusedBefore is { })
+            {
+                focusedBefore.SetFocus ();
+            }
+        }
+
+        List<View> items = [.. SubViews.Where (v => v is { CanFocus: true, Visible: true, Enabled: true })];
+
+        if (items.Count == 0)
+        {
+            return false;
+        }
+
+        View? focused = Focused;
+        int index = focused is null ? -1 : items.IndexOf (focused);
+
+        int next;
+
+        if (direction == NavigationDirection.Forward)
+        {
+            next = index < 0 ? 0 : (index + 1) % items.Count;
+        }
+        else
+        {
+            next = index <= 0 ? items.Count - 1 : index - 1;
+        }
+
+        // If there is only one focusable item (or navigation lands on the already-focused item),
+        // keep focus here and report success so focus does not escape to a parent view.
+        if (items [next] == focused)
+        {
+            // A submenu containing only a selector has no peer menu item to move to.
+            // At the selector's boundary, cycle its focusable options without changing Value.
+            if (focused is Shortcut { CommandView: SelectorBase selector })
+            {
+                List<View> options = [.. selector.SubViews.Where (v => v is { CanFocus: true, Visible: true, Enabled: true })];
+                if (options.Count > 0)
+                {
+                    (direction == NavigationDirection.Forward ? options [0] : options [^1]).SetFocus ();
+                }
+            }
+
+            return true;
+        }
+
+        // A wrap crosses a menu boundary (the last item wraps to the first, or the first wraps to
+        // the last). A wrap must not open the SubMenu of the item it lands on, so suppress the
+        // show side effect while focus moves; SubMenus left open on peer items still get closed
+        // by OnSelectedMenuItemChanged. Issue #5201.
+        bool isWrap = direction == NavigationDirection.Forward ? index == items.Count - 1 : index == 0;
+
+        // Report the key as handled even if SetFocus fails: an unhandled key would fall through to
+        // the application-level navigation fallback (CursorDown/Up -> AdvanceFocus), which can move
+        // focus out of this menu. Keeping focus where it was matches the don't-escape intent.
+        _isWrapNavigation = isWrap;
+
+        try
+        {
+            items [next].SetFocus ();
+        }
+        finally
+        {
+            _isWrapNavigation = false;
+        }
+
+        return true;
+    }
+
     /// <inheritdoc/>
     protected override void OnFocusedChanged (View? previousFocused, View? focused)
     {
@@ -199,10 +325,18 @@ public class Menu : Bar, IValue<MenuItem?>
     /// <param name="selected">The newly selected <see cref="MenuItem"/>, or <see langword="null"/> if none.</param>
     protected virtual void OnSelectedMenuItemChanged (MenuItem? selected)
     {
-        // Hide any visible peer SubMenus
+        // Hide any visible peer SubMenus. This must run even for wrap-around navigation so a
+        // submenu left open on a peer item gets closed (Issue #5201).
         foreach (MenuItem mi in SubViews.OfType<MenuItem> ().Where (mi => mi != selected && mi.SubMenu is { Visible: true }))
         {
             mi.SubMenu!.HideMenu ();
+        }
+
+        // A wrap must not open the SubMenu of the item it lands on (Issue #5201): skip the show
+        // side effect when the selection changed due to a wrap.
+        if (_isWrapNavigation)
+        {
+            return;
         }
 
         if (selected?.SubMenu is not { Visible: false })
