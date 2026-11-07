@@ -163,6 +163,9 @@ public partial class View // Drawing APIs
 
             // ------------------------------------
             // Draw the SubViews first (order matters: SubViews, Text, Content)
+            // redrawTabBorder is a snapshot taken BEFORE DoDrawAdornments, which calls Border.View.SetNeedsDraw ()
+            // and thereby sets SubViewNeedsDraw on this view. The snapshot (not SubViewNeedsDraw) is what
+            // keeps clean Tabs pages from drawing their SubViews.
             if (SubViewNeedsDraw && !redrawTabBorder)
             {
                 Trace.Draw (this.ToIdentifyingString (), "SubViews");
