@@ -201,8 +201,11 @@ public partial class View // Drawing APIs
             DoRenderLineCanvas (context);
 
             // ------------------------------------
-            // Advance the diagnostics draw indicator
-            (Border.View as BorderView)?.AdvanceDrawIndicator ();
+            // Border-only passes must not indicate that clean tab-page content was redrawn.
+            if (!redrawTabBorder)
+            {
+                (Border.View as BorderView)?.AdvanceDrawIndicator ();
+            }
 
             ClearNeedsDraw ();
         }
