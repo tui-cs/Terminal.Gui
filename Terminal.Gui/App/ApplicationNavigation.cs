@@ -137,10 +137,16 @@ public class ApplicationNavigation
             return;
         }
 
-        // Applied below; until something signals SetCursorNeedsUpdate again, skip the terminal writes
-        // (cursor-home + hide on every idle iteration otherwise).
-        App?.Driver?.SetCursorNeedsUpdate (false);
+        ApplyCursor ();
 
+        // Cleared only after the cursor is applied, so a concurrent reader never sees the flag cleared
+        // before the driver holds the new cursor. Until something signals SetCursorNeedsUpdate again,
+        // the terminal writes are skipped (cursor-home + hide on every idle iteration otherwise).
+        App?.Driver?.SetCursorNeedsUpdate (false);
+    }
+
+    private void ApplyCursor ()
+    {
         View? mostFocused = App?.TopRunnableView?.MostFocused;
 
         if (mostFocused is null || !mostFocused.Cursor.IsVisible)
