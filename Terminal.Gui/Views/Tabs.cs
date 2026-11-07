@@ -409,6 +409,9 @@ public class Tabs : View, IValue<View?>, IDesignable
         return false;
     }
 
+    /// <inheritdoc/>
+    internal override bool RedrawsCleanSubViewBorders => true;
+
     /// <summary>
     ///     Configures a subview when it is added to the tab view, applying tab-specific layout, border, and focus settings.
     /// </summary>

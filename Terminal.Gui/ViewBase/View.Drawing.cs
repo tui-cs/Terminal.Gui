@@ -92,6 +92,14 @@ public partial class View // Drawing APIs
     }
 
     /// <summary>
+    ///     Gets whether clean SubViews that share their line canvases must regenerate their borders during drawing.
+    /// </summary>
+    /// <remarks>
+    ///     Adornments and line canvases are drawn without redrawing clean content or traversing clean SubViews.
+    /// </remarks>
+    internal virtual bool RedrawsCleanSubViewBorders => false;
+
+    /// <summary>
     ///     Draws the view if it needs to be drawn.
     /// </summary>
     /// <remarks>
@@ -99,6 +107,8 @@ public partial class View // Drawing APIs
     ///         The view will only be drawn if it is visible, and has any of <see cref="NeedsDraw"/>,
     ///         <see cref="SubViewNeedsDraw"/>,
     ///         or <see cref="NeedsLayout"/> set.
+    ///         A SuperView may also require clean views that share their line canvases to regenerate their borders
+    ///         without redrawing content, so partial redraws can compose complete borders.
     ///     </para>
     ///     <para>
     ///         See the View Drawing Deep Dive for more information:
@@ -122,7 +132,11 @@ public partial class View // Drawing APIs
         // ClearViewport/DrawText/DrawContent so child-only invalidations stay narrow.
         bool needsDrawSelf = NeedsDraw;
 
-        if (NeedsDraw || SubViewNeedsDraw)
+        // A SuperView can require complete border contributions even from clean SubViews.
+        // Rebuild those contributions without invalidating or visiting clean content.
+        bool redrawCleanBorder = SuperViewRendersLineCanvas && SuperView is { RedrawsCleanSubViewBorders: true } && !NeedsDraw && !SubViewNeedsDraw;
+
+        if (NeedsDraw || SubViewNeedsDraw || redrawCleanBorder)
         {
             // ------------------------------------
             // Draw the Border and Padding Adornments.
@@ -157,7 +171,10 @@ public partial class View // Drawing APIs
 
             // ------------------------------------
             // Draw the SubViews first (order matters: SubViews, Text, Content)
-            if (SubViewNeedsDraw)
+            // redrawCleanBorder is a snapshot taken BEFORE DoDrawAdornments, which calls Border.View.SetNeedsDraw ()
+            // and thereby sets SubViewNeedsDraw on this view. The snapshot (not SubViewNeedsDraw) is what
+            // keeps clean views from drawing their SubViews.
+            if (SubViewNeedsDraw && !redrawCleanBorder)
             {
                 Trace.Draw (this.ToIdentifyingString (), "SubViews");
                 DoDrawSubViews (context);
@@ -192,8 +209,11 @@ public partial class View // Drawing APIs
             DoRenderLineCanvas (context);
 
             // ------------------------------------
-            // Advance the diagnostics draw indicator
-            (Border.View as BorderView)?.AdvanceDrawIndicator ();
+            // Border-only passes must not indicate that clean content was redrawn.
+            if (!redrawCleanBorder)
+            {
+                (Border.View as BorderView)?.AdvanceDrawIndicator ();
+            }
 
             ClearNeedsDraw ();
         }
