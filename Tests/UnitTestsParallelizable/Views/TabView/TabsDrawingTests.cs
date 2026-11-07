@@ -155,6 +155,8 @@ public class TabsDrawingTests : TestDriverBase
             case "AddTab":
                 tabs.Add (new View { Title = "Four" });
                 break;
+            default:
+                throw new ArgumentException ($"Unknown border change: {change}", nameof (change));
         }
 
         superView.Layout ();
