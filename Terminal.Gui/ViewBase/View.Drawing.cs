@@ -99,6 +99,8 @@ public partial class View // Drawing APIs
     ///         The view will only be drawn if it is visible, and has any of <see cref="NeedsDraw"/>,
     ///         <see cref="SubViewNeedsDraw"/>,
     ///         or <see cref="NeedsLayout"/> set.
+    ///         Clean pages in <see cref="Tabs"/> also regenerate their shared borders so partial redraws
+    ///         can compose a complete tab strip without redrawing page content.
     ///     </para>
     ///     <para>
     ///         See the View Drawing Deep Dive for more information:
@@ -122,7 +124,11 @@ public partial class View // Drawing APIs
         // ClearViewport/DrawText/DrawContent so child-only invalidations stay narrow.
         bool needsDrawSelf = NeedsDraw;
 
-        if (NeedsDraw || SubViewNeedsDraw)
+        // Tabs composites every page border, including clean pages, on each partial redraw.
+        // Rebuild those contributions without invalidating or visiting clean page content.
+        bool redrawTabBorder = SuperViewRendersLineCanvas && SuperView is Tabs && !NeedsDraw && !SubViewNeedsDraw;
+
+        if (NeedsDraw || SubViewNeedsDraw || redrawTabBorder)
         {
             // ------------------------------------
             // Draw the Border and Padding Adornments.
@@ -157,7 +163,10 @@ public partial class View // Drawing APIs
 
             // ------------------------------------
             // Draw the SubViews first (order matters: SubViews, Text, Content)
-            if (SubViewNeedsDraw)
+            // redrawTabBorder is a snapshot taken BEFORE DoDrawAdornments, which calls Border.View.SetNeedsDraw ()
+            // and thereby sets SubViewNeedsDraw on this view. The snapshot (not SubViewNeedsDraw) is what
+            // keeps clean Tabs pages from drawing their SubViews.
+            if (SubViewNeedsDraw && !redrawTabBorder)
             {
                 Trace.Draw (this.ToIdentifyingString (), "SubViews");
                 DoDrawSubViews (context);
@@ -192,8 +201,11 @@ public partial class View // Drawing APIs
             DoRenderLineCanvas (context);
 
             // ------------------------------------
-            // Advance the diagnostics draw indicator
-            (Border.View as BorderView)?.AdvanceDrawIndicator ();
+            // Border-only passes must not indicate that clean tab-page content was redrawn.
+            if (!redrawTabBorder)
+            {
+                (Border.View as BorderView)?.AdvanceDrawIndicator ();
+            }
 
             ClearNeedsDraw ();
         }
