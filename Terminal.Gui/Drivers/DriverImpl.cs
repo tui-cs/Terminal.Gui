@@ -29,7 +29,7 @@ namespace Terminal.Gui.Drivers;
 ///         Applications interact with drivers through the <see cref="Application"/> class.
 ///     </para>
 /// </remarks>
-internal class DriverImpl : IDriver
+internal class DriverImpl : IDriver, ICursorApplyReporter
 {
     /// <summary>
     ///     Initializes a new instance of the <see cref="DriverImpl"/> class.
@@ -595,6 +595,9 @@ internal class DriverImpl : IDriver
 
     /// <inheritdoc/>
     public Cursor GetCursor () => _output.GetCursor ();
+
+    /// <inheritdoc/>
+    public bool LastSetCursorApplied => _output is not OutputBase output || output.CursorApplied;
 
     // Cursor caching fields
     // Starts true so the first main loop iteration applies the cursor once. ApplicationNavigation.UpdateCursor

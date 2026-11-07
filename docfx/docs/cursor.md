@@ -197,6 +197,7 @@ The `ApplicationNavigation` class manages cursor positioning at the application 
 3. **Validates visibility** - Hides cursor if no focused view or cursor not visible
 4. **Validates position** - Walks ancestor chain to ensure cursor position is within all viewport bounds
 5. **Delegates to driver** - Calls `Driver.SetCursor()` with the final cursor state
+6. **Clears the update flag** - Only when the output actually wrote the cursor. An output can skip the write (inline placement unknown, resize pending) or swallow an I/O error; the flag then stays set and the next iteration retries. Focus changes, `Cursor` changes, `Refresh` and screen resizes set it again.
 
 This ensures only the deepest focused view's cursor is displayed, and only when visible within the view hierarchy.
 

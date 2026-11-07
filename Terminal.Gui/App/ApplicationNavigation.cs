@@ -137,24 +137,27 @@ public class ApplicationNavigation
             return;
         }
 
-        Cursor requested = ApplyCursor ();
+        ApplyCursor ();
 
-        // Clear the flag only once the driver holds the requested cursor. An output can return from SetCursor
-        // without writing (inline placement unknown, resize pending) or swallow an IOException; the flag then
-        // stays set and the next iteration retries.
-        if (App?.Driver?.GetCursor () == requested)
+        // Clear the flag only when this SetCursor call reached the terminal. An output can return without writing
+        // (inline placement unknown, resize pending) or swallow an IOException; the flag then stays set and the
+        // next iteration retries. Comparing the cached cursor is not enough: after Refresh it often already equals
+        // the cursor requested here.
+        if (App?.Driver is not ICursorApplyReporter { LastSetCursorApplied: false })
         {
-            App.Driver.SetCursorNeedsUpdate (false);
+            App?.Driver?.SetCursorNeedsUpdate (false);
         }
     }
 
-    private Cursor ApplyCursor ()
+    private void ApplyCursor ()
     {
         View? mostFocused = App?.TopRunnableView?.MostFocused;
 
         if (mostFocused is null || !mostFocused.Cursor.IsVisible)
         {
-            return SetDriverCursor (new Cursor ()); // Hide cursor
+            App?.Driver?.SetCursor (new Cursor ()); // Hide cursor
+
+            return;
         }
 
         // Get cursor in content area coordinates
@@ -180,16 +183,18 @@ public class ApplicationNavigation
                 current = current.SuperView;
             }
 
-            return SetDriverCursor (withinViewports ? mostFocusedCursor : new Cursor ()); // else hide cursor
+            if (withinViewports)
+            {
+                App?.Driver?.SetCursor (mostFocusedCursor);
+            }
+            else
+            {
+                App?.Driver?.SetCursor (new Cursor ()); // Hide cursor
+            }
         }
-
-        return SetDriverCursor (new Cursor ()); // Hide cursor
-    }
-
-    private Cursor SetDriverCursor (Cursor cursor)
-    {
-        App?.Driver?.SetCursor (cursor);
-
-        return cursor;
+        else
+        {
+            App?.Driver?.SetCursor (new Cursor ()); // Hide cursor
+        }
     }
 }

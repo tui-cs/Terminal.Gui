@@ -315,6 +315,7 @@ public class CursorTests (ITestOutputHelper output)
     private sealed class CursorDriverDouble
     {
         public Mock<IDriver> Mock { get; } = new ();
+        private bool _lastApplied = true;
         public bool NeedsUpdate { get; set; } = true;
         public bool AppliesCursor { get; set; } = true;
         public int SetCursorCalls { get; private set; }
@@ -325,11 +326,13 @@ public class CursorTests (ITestOutputHelper output)
             Mock.Setup (d => d.GetCursorNeedsUpdate ()).Returns (() => NeedsUpdate);
             Mock.Setup (d => d.SetCursorNeedsUpdate (It.IsAny<bool> ())).Callback<bool> (value => NeedsUpdate = value);
             Mock.Setup (d => d.GetCursor ()).Returns (() => Current);
+            Mock.As<ICursorApplyReporter> ().Setup (r => r.LastSetCursorApplied).Returns (() => _lastApplied);
 
             Mock.Setup (d => d.SetCursor (It.IsAny<Cursor> ()))
                 .Callback<Cursor> (cursor =>
                                    {
                                        SetCursorCalls++;
+                                       _lastApplied = AppliesCursor;
 
                                        if (AppliesCursor)
                                        {
@@ -422,6 +425,45 @@ public class CursorTests (ITestOutputHelper output)
         app.Navigation.UpdateCursor ();
         Assert.Equal (3, driver.SetCursorCalls);
         Assert.Equal (new Point (2, 1), driver.Current.Position);
+        Assert.False (driver.NeedsUpdate);
+
+        app.Navigation.UpdateCursor ();
+        Assert.Equal (3, driver.SetCursorCalls);
+
+        if (token is { })
+        {
+            app.End (token);
+        }
+        app.Dispose ();
+        runnable.Dispose ();
+    }
+
+    [Fact]
+    public void UpdateCursor_Retries_When_A_Skipped_Write_Matches_The_Cached_Cursor ()
+    {
+        IApplication app = Application.Create ();
+        app.Init (DriverRegistry.Names.ANSI);
+
+        // The focused view has no cursor, so UpdateCursor requests the hidden default. After Refresh the driver cache
+        // usually holds exactly that cursor, so a SetCursor that returns without writing still matches the cache.
+        TestView view = new () { CanFocus = true, Width = 10, Height = 5 };
+        Runnable runnable = new ();
+        runnable.Add (view);
+        SessionToken? token = app.Begin (runnable);
+        view.SetFocus ();
+
+        CursorDriverDouble driver = new () { AppliesCursor = false };
+        Assert.Equal (new Cursor (), driver.Current);
+        app.Driver = driver.Mock.Object;
+
+        app.Navigation!.UpdateCursor ();
+        app.Navigation.UpdateCursor ();
+        Assert.Equal (2, driver.SetCursorCalls);
+        Assert.True (driver.NeedsUpdate);
+
+        driver.AppliesCursor = true;
+        app.Navigation.UpdateCursor ();
+        Assert.Equal (3, driver.SetCursorCalls);
         Assert.False (driver.NeedsUpdate);
 
         app.Navigation.UpdateCursor ();
