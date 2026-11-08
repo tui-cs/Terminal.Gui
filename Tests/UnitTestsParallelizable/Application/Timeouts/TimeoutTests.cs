@@ -11,22 +11,27 @@ namespace ApplicationTests.Timeout;
 [Collection ("Application Timer Tests")]
 public class TimeoutTests
 {
+    // Grok - 4.7
     [Fact]
     public void AddTimeout_Callback_Can_Add_New_Timeout ()
     {
         using IApplication app = Application.Create ();
         app.Init (DriverRegistry.Names.ANSI);
 
-        var firstFired = false;
-        var secondFired = false;
+        bool firstFired = false;
+        bool secondFired = false;
 
-        app.AddTimeout (TimeSpan.FromMilliseconds (50),
+        // TimeSpan.Zero is already due. A timeout added from this callback waits for the next
+        // RunTimers pass (TimedEvents.RunTimersImpl; RunTimers_Defers_Repeating_Zero_Timeout_Until_Next_Pass).
+        // Millisecond delays lose to the iteration guard when the loop is effectively unthrottled:
+        // ApplicationMainLoop.Iteration sleeps for 1000 / MaximumIterationsPerSecond ms, and
+        // AppTestHelper sets that static to ushort.MaxValue, so 1000 / 65535 is 0.
+        app.AddTimeout (TimeSpan.Zero,
                         () =>
                         {
                             firstFired = true;
 
-                            // Add another timeout from within callback
-                            app.AddTimeout (TimeSpan.FromMilliseconds (50),
+                            app.AddTimeout (TimeSpan.Zero,
                                             () =>
                                             {
                                                 secondFired = true;
@@ -38,8 +43,7 @@ public class TimeoutTests
                             return false;
                         });
 
-        // Defensive: use iteration counter instead of time-based safety timeout
-        var iterations = 0;
+        int iterations = 0;
         app.Iteration += IterationHandler;
 
         try
@@ -60,8 +64,8 @@ public class TimeoutTests
         {
             iterations++;
 
-            // Stop if test objectives met or safety limit reached
-            if ((firstFired && secondFired) || iterations > 1000)
+            // Hang guard only. The second timeout stops the run. Tripping this fails the assertions.
+            if (iterations > 100)
             {
                 app.RequestStop ();
             }
