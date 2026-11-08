@@ -435,28 +435,46 @@ public class TimeoutTests
         bool parentFiredDuringNestedRun = false;
         bool childTimeoutFired = false;
         bool nestedRunCompleted = false;
+        Runnable? nestedRunnable = null;
 
-        // TimeSpan.Zero is already due, but a timeout added during RunTimers waits for the next
-        // pass. That next pass is the nested run. Millisecond delays lose to the iteration safety
-        // stop when the loop is unthrottled: parallel tests set MaximumIterationsPerSecond to
-        // ushort.MaxValue, so thousands of iterations can finish before a 50ms timeout is due.
+        // Registered before the nested run and repeated until that runnable is top.
+        // TimeSpan.Zero stays deterministic when the loop is unthrottled.
+        // ApplicationMainLoop.Iteration sleeps only while Application.MaximumIterationsPerSecond
+        // is non-zero, and AppTestHelper sets that static to ushort.MaxValue.
+        // A repeating zero timeout is deferred to the next RunTimers pass
+        // (TimedEvents.RunTimersImpl; RunTimers_Defers_Repeating_Zero_Timeout_Until_Next_Pass).
+        // Delayed timeouts across a nested run stay in NestedRunTimeoutTests
+        // (Timeout_Scheduled_Before_Nested_Run_Fires_During_Nested_Run).
+        app.AddTimeout (TimeSpan.Zero,
+                        () =>
+                        {
+                            if (nestedRunnable is null || !ReferenceEquals (app.TopRunnableView, nestedRunnable))
+                            {
+                                return true;
+                            }
+
+                            parentTimeoutFired = true;
+                            parentFiredDuringNestedRun = true;
+
+                            return false;
+                        });
+
         app.AddTimeout (TimeSpan.Zero,
                         () =>
                         {
                             Runnable childRunnable = new ();
+                            nestedRunnable = childRunnable;
 
+                            // Wait until the parent timeout has observed this run, then stop it.
+                            // A miss repeats on the next pass, so callback order in one pass does not matter.
                             app.AddTimeout (TimeSpan.Zero,
                                             () =>
                                             {
-                                                parentTimeoutFired = true;
-                                                parentFiredDuringNestedRun = ReferenceEquals (app.TopRunnableView, childRunnable);
+                                                if (!parentFiredDuringNestedRun)
+                                                {
+                                                    return true;
+                                                }
 
-                                                return false;
-                                            });
-
-                            app.AddTimeout (TimeSpan.Zero,
-                                            () =>
-                                            {
                                                 childTimeoutFired = true;
                                                 app.RequestStop (childRunnable);
 
@@ -466,6 +484,8 @@ public class TimeoutTests
                             app.Run (childRunnable);
                             nestedRunCompleted = true;
                             childRunnable.Dispose ();
+
+                            // Run returns after End pops this session, so this stops the outer runnable.
                             app.RequestStop ();
 
                             return false;
@@ -494,6 +514,9 @@ public class TimeoutTests
         {
             iterations++;
 
+            // Nested iterations count too. RequestStop () stops only TopRunnableView, so a trip
+            // during the nested run stops the child. The callback above then stops the outer run.
+            // The assertions fail instead of the test hanging.
             if (iterations > 100)
             {
                 app.RequestStop ();
