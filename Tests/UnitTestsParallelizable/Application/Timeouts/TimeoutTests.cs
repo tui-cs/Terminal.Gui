@@ -431,16 +431,15 @@ public class TimeoutTests
         using IApplication app = Application.Create ();
         app.Init (DriverRegistry.Names.ANSI);
 
-        bool parentTimeoutFired = false;
         bool parentFiredDuringNestedRun = false;
         bool childTimeoutFired = false;
         bool nestedRunCompleted = false;
         Runnable? nestedRunnable = null;
 
         // Registered before the nested run and repeated until that runnable is top.
-        // TimeSpan.Zero stays deterministic when the loop is unthrottled.
-        // ApplicationMainLoop.Iteration sleeps only while Application.MaximumIterationsPerSecond
-        // is non-zero, and AppTestHelper sets that static to ushort.MaxValue.
+        // TimeSpan.Zero stays deterministic when the loop is effectively unthrottled.
+        // ApplicationMainLoop.Iteration sleeps for 1000 / MaximumIterationsPerSecond ms.
+        // AppTestHelper sets that static to ushort.MaxValue, and 1000 / 65535 is 0, so the sleep is skipped.
         // A repeating zero timeout is deferred to the next RunTimers pass
         // (TimedEvents.RunTimersImpl; RunTimers_Defers_Repeating_Zero_Timeout_Until_Next_Pass).
         // Delayed timeouts across a nested run stay in NestedRunTimeoutTests
@@ -453,7 +452,6 @@ public class TimeoutTests
                                 return true;
                             }
 
-                            parentTimeoutFired = true;
                             parentFiredDuringNestedRun = true;
 
                             return false;
@@ -499,8 +497,7 @@ public class TimeoutTests
             app.Run<Runnable> ();
 
             Assert.True (childTimeoutFired, "Child timeout should fire during nested Run");
-            Assert.True (parentTimeoutFired, "Parent timeout should continue firing during nested Run");
-            Assert.True (parentFiredDuringNestedRun, "Parent timeout should fire while the nested run is active");
+            Assert.True (parentFiredDuringNestedRun, "Parent timeout registered before the nested run should fire while that run is active");
             Assert.True (nestedRunCompleted, "Nested run should have completed");
         }
         finally
