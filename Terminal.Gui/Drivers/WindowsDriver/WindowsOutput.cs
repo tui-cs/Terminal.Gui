@@ -202,6 +202,8 @@ internal partial class WindowsOutput : OutputBase, IOutput
     // <inheritdoc />
     public void SetCursor (Cursor cursor)
     {
+        CursorApplied = false;
+
         try
         {
             if (IsLegacyConsole)
@@ -249,6 +251,7 @@ internal partial class WindowsOutput : OutputBase, IOutput
             }
             SetCursorPositionImpl (cursor.Position?.X ?? 0, cursor.Position?.Y ?? 0);
             _currentCursor = cursor;
+            CursorApplied = true;
         }
         catch
         {

@@ -8,6 +8,13 @@ namespace Terminal.Gui.Drivers;
 public abstract class OutputBase
 {
     /// <summary>
+    ///     Whether the last <c>SetCursor</c> call reached the terminal. Subclasses reset it when a call starts and set it
+    ///     only after the cursor write succeeded; <c>SetCursor</c> can return without writing (inline placement unknown,
+    ///     resize pending) or swallow an I/O error.
+    /// </summary>
+    internal bool CursorApplied { get; set; } = true;
+
+    /// <summary>
     ///     Initializes a new instance of the <see cref="OutputBase"/> class and detects whether the output is attached to a real terminal device.
     /// </summary>
     protected OutputBase ()

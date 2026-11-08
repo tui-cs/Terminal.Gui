@@ -167,6 +167,8 @@ public class NetOutput : OutputBase, IOutput
     /// <inheritdoc/>
     public void SetCursor (Cursor cursor)
     {
+        CursorApplied = false;
+
         try
         {
             if (!cursor.IsVisible)
@@ -185,6 +187,7 @@ public class NetOutput : OutputBase, IOutput
 
             SetCursorPositionImpl (cursor.Position?.X ?? 0, cursor.Position?.Y ?? 0);
             _currentCursor = cursor;
+            CursorApplied = true;
         }
         catch (IOException ex)
         {

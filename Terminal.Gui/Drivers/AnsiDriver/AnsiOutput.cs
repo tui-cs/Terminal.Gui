@@ -515,6 +515,8 @@ public partial class AnsiOutput : OutputBase, IOutput, IInlineOutput
     /// <inheritdoc/>
     public void SetCursor (Cursor cursor)
     {
+        CursorApplied = false;
+
         if (!IsInlinePlacementKnown || IsInlineResizePending || HasPendingInlineSizeChange ())
         {
             return;
@@ -537,6 +539,7 @@ public partial class AnsiOutput : OutputBase, IOutput, IInlineOutput
             }
             SetCursorPositionImpl (cursor.Position?.X ?? 0, cursor.Position?.Y ?? 0);
             _currentCursor = cursor;
+            CursorApplied = true;
         }
         catch (Exception ex) when (ex is IOException or System.ComponentModel.Win32Exception)
         {
