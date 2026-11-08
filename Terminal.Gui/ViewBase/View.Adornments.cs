@@ -78,12 +78,15 @@ public partial class View // Adornments
     private void DisposeAdornments ()
     {
         Margin.View?.Dispose ();
+        AdjustExplicitApplicationCount (-(Margin.View?.ExplicitApplicationCount ?? 0));
         Margin.View = null;
         Margin.Parent = null;
         Border.View?.Dispose ();
+        AdjustExplicitApplicationCount (-(Border.View?.ExplicitApplicationCount ?? 0));
         Border.View = null;
         Border.Parent = null;
         Padding.View?.Dispose ();
+        AdjustExplicitApplicationCount (-(Padding.View?.ExplicitApplicationCount ?? 0));
         Padding.View = null;
         Padding.Parent = null;
     }
