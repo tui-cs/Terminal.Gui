@@ -12,6 +12,7 @@ on:
 
 permissions:
   contents: read
+  id-token: write
 
 jobs:
   publish:
@@ -81,11 +82,45 @@ jobs:
     #     echo "Code coverage percentage: ${{steps.create_coverage_badge.outputs.percentage}}%"
     #     echo "Badge data: ${{steps.create_coverage_badge.outputs.badge}}"
         
+    # Configure vars.NUGET_TRUSTED_PUBLISHING_USER with the NuGet.org profile name
+    # and create a matching Trusted Publishing policy to enable OIDC. The API key
+    # remains available as a fallback until the NuGet policy is configured.
+    - name: NuGet login (Trusted Publishing)
+      id: nuget-login
+      if: vars.NUGET_TRUSTED_PUBLISHING_USER != ''
+      continue-on-error: true
+      uses: NuGet/login@v1
+      with:
+        user: ${{ vars.NUGET_TRUSTED_PUBLISHING_USER }}
+
+    - name: Select NuGet publishing credential
+      id: nuget-credential
+      env:
+        TRUSTED_PUBLISHING_API_KEY: ${{ steps.nuget-login.outputs.NUGET_API_KEY }}
+        NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
+      run: |
+        if [ -n "$TRUSTED_PUBLISHING_API_KEY" ]; then
+          echo "::add-mask::$TRUSTED_PUBLISHING_API_KEY"
+          echo "api-key=$TRUSTED_PUBLISHING_API_KEY" >> "$GITHUB_OUTPUT"
+          echo "Using NuGet Trusted Publishing."
+        elif [ -n "$NUGET_API_KEY" ]; then
+          echo "::add-mask::$NUGET_API_KEY"
+          echo "api-key=$NUGET_API_KEY" >> "$GITHUB_OUTPUT"
+          echo "::warning::Trusted Publishing unavailable; using the NUGET_API_KEY secret."
+        else
+          echo "::error::NuGet publishing credentials are unavailable. Configure vars.NUGET_TRUSTED_PUBLISHING_USER and its NuGet Trusted Publishing policy, or set the NUGET_API_KEY secret."
+          exit 1
+        fi
+
     - name: Publish Terminal.Gui.${{ steps.gitversion.outputs.SemVer }} to NuGet.org
-      run: dotnet nuget push Terminal.Gui/bin/Release/Terminal.Gui.${{ steps.gitversion.outputs.SemVer }}.nupkg --skip-duplicate --api-key ${{ secrets.NUGET_API_KEY }}
+      env:
+        NUGET_API_KEY: ${{ steps.nuget-credential.outputs.api-key }}
+      run: dotnet nuget push Terminal.Gui/bin/Release/Terminal.Gui.${{ steps.gitversion.outputs.SemVer }}.nupkg --skip-duplicate --api-key "$NUGET_API_KEY" --source https://api.nuget.org/v3/index.json
 
     - name: Publish Terminal.Gui.Interop.Spectre.${{ steps.gitversion.outputs.SemVer }} to NuGet.org
-      run: dotnet nuget push Terminal.Gui.Interop.Spectre/bin/Release/Terminal.Gui.Interop.Spectre.${{ steps.gitversion.outputs.SemVer }}.nupkg --skip-duplicate --api-key ${{ secrets.NUGET_API_KEY }}
+      env:
+        NUGET_API_KEY: ${{ steps.nuget-credential.outputs.api-key }}
+      run: dotnet nuget push Terminal.Gui.Interop.Spectre/bin/Release/Terminal.Gui.Interop.Spectre.${{ steps.gitversion.outputs.SemVer }}.nupkg --skip-duplicate --api-key "$NUGET_API_KEY" --source https://api.nuget.org/v3/index.json
 
     # Deterministic version handoff to notify-clet.yml. Avoids the NuGet
     # search-API indexing lag that caused tui-cs/clet to skip TG develop.37
