@@ -1,0 +1,319 @@
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version_override:
+        description: 'Optional stable version override (for example, 2.6.0)'
+        required: false
+        type: string
+  pull_request:
+    types: [ closed, opened, reopened, synchronize, ready_for_review ]
+    branches: [ main, develop ]
+  merge_group:
+    types: [ checks_requested ]
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  prepare-release:
+    name: Prepare stable release
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+    concurrency:
+      group: prepare-terminal-gui-release
+      cancel-in-progress: false
+    steps:
+      - name: Require dispatch from develop
+        if: github.ref != 'refs/heads/develop'
+        run: |
+          echo "::error::Run this workflow from the develop branch."
+          exit 1
+
+      - name: Check out develop
+        uses: actions/checkout@v7
+        with:
+          ref: develop
+          fetch-depth: 0
+          token: ${{ secrets.RELEASE_PAT }}
+
+      - name: Check for an active release
+        env:
+          GH_TOKEN: ${{ secrets.RELEASE_PAT }}
+        run: bash Scripts/check-release-lock.sh
+
+      - name: Install GitVersion
+        uses: gittools/actions/gitversion/setup@v4.7.0
+        with:
+          versionSpec: '6.x'
+
+      - name: Calculate release version
+        id: gitversion
+        uses: gittools/actions/gitversion/execute@v4.7.0
+        with:
+          useConfigFile: true
+
+      - name: Validate release version
+        id: version
+        env:
+          VERSION_OVERRIDE: ${{ inputs.version_override }}
+          CALCULATED_VERSION: ${{ steps.gitversion.outputs.MajorMinorPatch }}
+        run: |
+          VERSION="$CALCULATED_VERSION"
+
+          if [ -n "$VERSION_OVERRIDE" ]; then
+            VERSION="$VERSION_OVERRIDE"
+          fi
+
+          if [[ ! "$VERSION" =~ ^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ ]]; then
+            echo "::error::Release version must be a stable MAJOR.MINOR.PATCH version without a prerelease suffix."
+            exit 1
+          fi
+
+          TAG="v${VERSION}"
+
+          if git rev-parse --verify --quiet "refs/tags/${TAG}" >/dev/null; then
+            echo "::error::Tag ${TAG} already exists."
+            exit 1
+          fi
+
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+          echo "source-sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+
+      - name: Create develop-to-main PR and enable squash auto-merge
+        env:
+          GH_TOKEN: ${{ secrets.RELEASE_PAT }}
+          RELEASE_VERSION: ${{ steps.version.outputs.version }}
+          SOURCE_SHA: ${{ steps.version.outputs.source-sha }}
+        run: |
+          BODY="$(printf '%s\n\n%s\n' \
+            "Promotes the current develop snapshot as stable release v${RELEASE_VERSION}." \
+            "<!-- terminal-gui-release: version=${RELEASE_VERSION}; source-sha=${SOURCE_SHA} -->")"
+
+          PR_URL="$(gh pr create \
+            --base main \
+            --head develop \
+            --title "Release v${RELEASE_VERSION}" \
+            --body "$BODY")"
+
+          gh pr merge "$PR_URL" --auto --squash
+
+  finalize-release:
+    name: Finalize stable release
+    if: >-
+      github.event_name == 'pull_request' &&
+      github.event.action == 'closed' &&
+      github.event.pull_request.merged == true &&
+      github.event.pull_request.base.ref == 'main' &&
+      github.event.pull_request.head.ref == 'develop' &&
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      contains(github.event.pull_request.body, '<!-- terminal-gui-release:')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - name: Check out the merged release commit
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.pull_request.merge_commit_sha }}
+          fetch-depth: 0
+          token: ${{ secrets.RELEASE_PAT }}
+
+      - name: Validate release metadata and source snapshot
+        id: release
+        env:
+          PR_BODY: ${{ github.event.pull_request.body }}
+          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          MERGE_COMMIT_SHA: ${{ github.event.pull_request.merge_commit_sha }}
+        run: |
+          MARKER="$(printf '%s\n' "$PR_BODY" | grep -Eo '<!-- terminal-gui-release: version=[0-9]+\.[0-9]+\.[0-9]+; source-sha=[0-9a-fA-F]{40} -->' | head -n 1 || true)"
+
+          if [ -z "$MARKER" ]; then
+            echo "::error::The merged PR is missing valid release metadata."
+            exit 1
+          fi
+
+          VERSION="$(printf '%s\n' "$MARKER" | sed -E 's/.*version=([0-9]+\.[0-9]+\.[0-9]+);.*/\1/')"
+          SOURCE_SHA="$(printf '%s\n' "$MARKER" | sed -E 's/.*source-sha=([0-9a-fA-F]{40}).*/\1/')"
+
+          if [ -z "$MERGE_COMMIT_SHA" ] || ! git cat-file -e "${MERGE_COMMIT_SHA}^{commit}"; then
+            echo "::error::The merged release commit is unavailable in the full-history checkout."
+            exit 1
+          fi
+
+          SOURCE_MATCHES=true
+
+          if [ "$PR_HEAD_SHA" != "$SOURCE_SHA" ]; then
+            SOURCE_MATCHES=false
+            echo "::warning::The develop head changed after release preparation. Expected ${SOURCE_SHA}, merged ${PR_HEAD_SHA}. The back-merge PR will be created, but the release will not be tagged."
+          fi
+
+          TAG="v${VERSION}"
+          TAG_MATCHES=true
+
+          if git show-ref --verify --quiet "refs/tags/${TAG}"; then
+            EXISTING_SHA="$(git rev-list -n 1 "$TAG")"
+
+            if [ "$EXISTING_SHA" != "$MERGE_COMMIT_SHA" ]; then
+              TAG_MATCHES=false
+              echo "::warning::Tag ${TAG} already points to ${EXISTING_SHA}, not ${MERGE_COMMIT_SHA}. The back-merge PR will be created, but the tag will not be overwritten."
+            fi
+          fi
+
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+          echo "tag=${TAG}" >> "$GITHUB_OUTPUT"
+          echo "merge-sha=${MERGE_COMMIT_SHA}" >> "$GITHUB_OUTPUT"
+          echo "source-matches=${SOURCE_MATCHES}" >> "$GITHUB_OUTPUT"
+          echo "tag-matches=${TAG_MATCHES}" >> "$GITHUB_OUTPUT"
+
+      - name: Create back-merge PR
+        id: backmerge
+        env:
+          GH_TOKEN: ${{ secrets.RELEASE_PAT }}
+          RELEASE_TAG: ${{ steps.release.outputs.tag }}
+          MERGE_COMMIT_SHA: ${{ steps.release.outputs.merge-sha }}
+        run: |
+          BACKMERGE_BRANCH="backmerge/${RELEASE_TAG}-${MERGE_COMMIT_SHA:0:8}"
+          EXISTING_PR="$(gh pr list \
+            --state all \
+            --base develop \
+            --head "${GITHUB_REPOSITORY_OWNER}:${BACKMERGE_BRANCH}" \
+            --json url,state \
+            --jq '.[0] // empty')"
+
+          if [ -n "$EXISTING_PR" ]; then
+            BACKMERGE_STATE="$(jq -r '.state' <<< "$EXISTING_PR")"
+            BACKMERGE_URL="$(jq -r '.url' <<< "$EXISTING_PR")"
+
+            if [ "$BACKMERGE_STATE" = "CLOSED" ]; then
+              echo "::error::The existing back-merge PR was closed without merging. Reopen or resolve it manually."
+              exit 1
+            fi
+
+            echo "url=${BACKMERGE_URL}" >> "$GITHUB_OUTPUT"
+            echo "already-merged=$([ "$BACKMERGE_STATE" = "MERGED" ] && echo true || echo false)" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          if git ls-remote --exit-code --heads origin "$BACKMERGE_BRANCH" >/dev/null 2>&1; then
+            echo "::error::Back-merge branch ${BACKMERGE_BRANCH} already exists without an open PR."
+            exit 1
+          fi
+
+          git checkout -b "$BACKMERGE_BRANCH" "$MERGE_COMMIT_SHA"
+          git push origin "$BACKMERGE_BRANCH"
+
+          PR_URL="$(gh pr create \
+            --base develop \
+            --head "$BACKMERGE_BRANCH" \
+            --title "Back-merge ${RELEASE_TAG} into develop" \
+            --body "Back-merges stable release ${RELEASE_TAG} into develop. Resolve any conflicts manually, then merge using the repository's standard Squash and merge process.")"
+
+          echo "url=${PR_URL}" >> "$GITHUB_OUTPUT"
+          echo "already-merged=false" >> "$GITHUB_OUTPUT"
+
+      - name: Report back-merge conflicts
+        env:
+          GH_TOKEN: ${{ secrets.RELEASE_PAT }}
+          BACKMERGE_PR: ${{ steps.backmerge.outputs.url }}
+          BACKMERGE_ALREADY_MERGED: ${{ steps.backmerge.outputs.already-merged }}
+        run: |
+          if [ "$BACKMERGE_ALREADY_MERGED" = "true" ]; then
+            exit 0
+          fi
+
+          for attempt in {1..12}; do
+            MERGE_STATE="$(gh pr view "$BACKMERGE_PR" --json mergeStateStatus --jq '.mergeStateStatus')"
+
+            if [ "$MERGE_STATE" != "UNKNOWN" ]; then
+              break
+            fi
+
+            sleep 5
+          done
+
+          if [ "$MERGE_STATE" = "DIRTY" ]; then
+            echo "::error::${BACKMERGE_PR} has merge conflicts. It remains open for manual resolution; no force-push or automatic conflict resolution was attempted."
+            exit 1
+          fi
+
+          if [ "$MERGE_STATE" = "UNKNOWN" ]; then
+            echo "::error::GitHub could not determine the back-merge state. Review ${BACKMERGE_PR} manually."
+            exit 1
+          fi
+
+      - name: Validate release snapshot and existing tag
+        env:
+          SOURCE_MATCHES: ${{ steps.release.outputs.source-matches }}
+          TAG_MATCHES: ${{ steps.release.outputs.tag-matches }}
+          BACKMERGE_PR: ${{ steps.backmerge.outputs.url }}
+        run: |
+          if [ "$SOURCE_MATCHES" != "true" ]; then
+            echo "::error::The release PR merged a different develop snapshot than the one used to calculate its version. Review ${BACKMERGE_PR}; no release tag was created."
+            exit 1
+          fi
+
+          if [ "$TAG_MATCHES" != "true" ]; then
+            echo "::error::The stable tag already points to a different commit. Review ${BACKMERGE_PR}; no existing tag was overwritten."
+            exit 1
+          fi
+
+      - name: Create stable release tag
+        env:
+          RELEASE_TAG: ${{ steps.release.outputs.tag }}
+          MERGE_COMMIT_SHA: ${{ steps.release.outputs.merge-sha }}
+        run: |
+          if ! git show-ref --verify --quiet "refs/tags/${RELEASE_TAG}"; then
+            git tag -a "$RELEASE_TAG" "$MERGE_COMMIT_SHA" -m "Release ${RELEASE_TAG}"
+            git push origin "$RELEASE_TAG"
+          fi
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.RELEASE_PAT }}
+          RELEASE_TAG: ${{ steps.release.outputs.tag }}
+        run: |
+          if ! gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
+            gh release create "$RELEASE_TAG" --title "$RELEASE_TAG" --generate-notes
+          fi
+
+  release-lock-gate:
+    name: release-lock-gate
+    if: >-
+      (github.event_name == 'pull_request' && github.event.pull_request.base.ref == 'develop') ||
+      (github.event_name == 'merge_group' && github.event.merge_group.base_ref == 'refs/heads/develop')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+
+      - name: Check release lock
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_HEAD_REF: ${{ github.event.pull_request.head.ref }}
+          MERGE_GROUP_HEAD_REF: ${{ github.event.merge_group.head_ref }}
+        run: |
+          BACKMERGE_REF=""
+
+          if [[ "$PR_HEAD_REF" =~ ^backmerge/v[0-9]+\.[0-9]+\.[0-9]+-[0-9a-fA-F]{8}$ ]]; then
+            BACKMERGE_REF="$PR_HEAD_REF"
+          elif [[ "$MERGE_GROUP_HEAD_REF" =~ /pr-([0-9]+)- ]]; then
+            PR_NUMBER="${BASH_REMATCH[1]}"
+            HEAD_REF="$(gh pr view "$PR_NUMBER" --repo "$GITHUB_REPOSITORY" --json headRefName --jq '.headRefName')"
+
+            if [[ "$HEAD_REF" =~ ^backmerge/v[0-9]+\.[0-9]+\.[0-9]+-[0-9a-fA-F]{8}$ ]]; then
+              BACKMERGE_REF="$HEAD_REF"
+            fi
+          fi
+
+          if [ -n "$BACKMERGE_REF" ]; then
+            bash Scripts/check-release-lock.sh "$BACKMERGE_REF"
+          else
+            bash Scripts/check-release-lock.sh
+          fi

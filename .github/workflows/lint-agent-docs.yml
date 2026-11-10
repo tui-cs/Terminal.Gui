@@ -37,6 +37,8 @@ on:
       - 'global.json'
       - 'Scripts/lint-agent-docs.ps1'
       - '.github/workflows/lint-agent-docs.yml'
+  merge_group:
+    types: [ checks_requested ]
 
 jobs:
   lint-agent-docs:

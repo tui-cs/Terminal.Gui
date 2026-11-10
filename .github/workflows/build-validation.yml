@@ -9,6 +9,8 @@ on:
     branches: [ main, develop ]
     paths-ignore:
       - '**.md'
+  merge_group:
+    types: [ checks_requested ]
 
 permissions:
   contents: read
