@@ -48,15 +48,25 @@ The repository uses multiple GitHub Actions workflows. What runs and when:
 3. Runs IntegrationTests with diagnostic output
 4. Uploads logs per-OS
 
-### 4) Publish to NuGet (`.github/workflows/publish.yml`)
+### 4) Release and Release Lock Gate
+
+- [Release](.github/workflows/release.yml) is triggered by manual dispatch to prepare a release and closed pull requests targeting `main` to finalize a merged release PR.
+- [Release Lock Gate](.github/workflows/release-lock-gate.yml) handles `pull_request` and `merge_group` events targeting `develop` so routine PRs do not show skipped release orchestration jobs.
+- Calculates a stable `MAJOR.MINOR.PATCH` version from `develop` with GitVersion and full history, honoring `+semver:` commit-message directives; an optional version override is available.
+- Opens a direct `develop` → `main` PR and enables squash auto-merge. The `develop` branch merge queue runs required checks on its merge-group candidate.
+- After that PR is merged, validates the recorded develop commit and opens a `backmerge/vX.Y.Z-<short-merge-sha>` PR to `develop`. It creates the stable `vX.Y.Z` tag and GitHub Release only after the source/version checks pass and the back-merge has no conflicts.
+- Back-merge PRs are not auto-merged. Conflicts halt finalization before tagging and leave the PR open for manual resolution; rerun the failed release job after resolving the PR.
+- Require the `release-lock-gate` status check for both `develop` pull requests and merge-group runs; configure all other required checks to run on merge groups as well. Set the develop merge queue's maximum group size to one so the back-merge exception cannot include unrelated PRs. After the back-merge completes, re-run blocked develop PR checks.
+
+### 5) Publish to NuGet (`.github/workflows/publish.yml`)
 
 - **Triggers**: push to `develop` and tags `v*` (ignores `**.md`)
-- Uses GitVersion to compute SemVer, builds Release, packs Terminal.Gui and Terminal.Gui.Interop.Spectre with symbols, and pushes both to NuGet.org using `NUGET_API_KEY`
-- **Automatically triggered** when a `v*` tag is pushed — typically by the **Finalize Release** workflow after a release PR (from **Prepare Release**) is merged into `main`
+- Uses GitVersion to compute SemVer, builds Release, packs Terminal.Gui and Terminal.Gui.Interop.Spectre with symbols, and pushes both to NuGet.org. It prefers Trusted Publishing when `vars.NUGET_TRUSTED_PUBLISHING_USER` and a matching NuGet.org policy are configured; otherwise it falls back to the `NUGET_API_KEY` secret.
+- **Automatically triggered** when a stable `v*` tag is pushed by the **Release** workflow after the `develop` → `main` promotion PR is merged
 - **Additional actions on tag push** (`v*`):
   - Triggers Terminal.Gui.templates repository update via repository_dispatch (requires `TEMPLATE_REPO_TOKEN` secret)
 
-### 5) Build and publish API docs (`.github/workflows/api-docs.yml`)
+### 6) Build and publish API docs (`.github/workflows/api-docs.yml`)
 
 - **Triggers**: push to `develop`, and `workflow_dispatch`
 - Builds DocFX site on Windows and deploys to GitHub Pages
