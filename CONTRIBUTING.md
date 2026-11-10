@@ -336,7 +336,7 @@ foreach (Rune rune in text.EnumerateRunes ())
 
 ### Automated Release Workflow
 
-Releases use a single workflow, [Release](.github/workflows/release.yml). A maintainer starts the workflow manually; it calculates a stable version from the full `develop` history with GitVersion, creates a direct `develop` → `main` PR, and enables squash auto-merge. The `develop` branch uses a merge queue so its required checks, including the release lock, validate the queued commit candidate.
+Releases use [Release](.github/workflows/release.yml) and [Release Lock Gate](.github/workflows/release-lock-gate.yml). A maintainer starts the release workflow manually; it calculates a stable version from the full `develop` history with GitVersion, creates a direct `develop` → `main` PR, and enables squash auto-merge. The separate lock-gate workflow checks pull requests and merge-group candidates targeting `develop`.
 
 1. **Navigate to Actions tab** in the GitHub repository
 2. **Select "Release" workflow** from the left sidebar

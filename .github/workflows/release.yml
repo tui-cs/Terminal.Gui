@@ -8,10 +8,8 @@ on:
         required: false
         type: string
   pull_request:
-    types: [ closed, opened, reopened, synchronize, ready_for_review ]
-    branches: [ main, develop ]
-  merge_group:
-    types: [ checks_requested ]
+    types: [ closed ]
+    branches: [ main ]
 
 permissions:
   contents: read
@@ -281,39 +279,4 @@ jobs:
         run: |
           if ! gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
             gh release create "$RELEASE_TAG" --title "$RELEASE_TAG" --generate-notes
-          fi
-
-  release-lock-gate:
-    name: release-lock-gate
-    if: >-
-      (github.event_name == 'pull_request' && github.event.pull_request.base.ref == 'develop') ||
-      (github.event_name == 'merge_group' && github.event.merge_group.base_ref == 'refs/heads/develop')
-    runs-on: ubuntu-latest
-    steps:
-      - name: Check out repository
-        uses: actions/checkout@v7
-
-      - name: Check release lock
-        env:
-          GH_TOKEN: ${{ github.token }}
-          PR_HEAD_REF: ${{ github.event.pull_request.head.ref }}
-          MERGE_GROUP_HEAD_REF: ${{ github.event.merge_group.head_ref }}
-        run: |
-          BACKMERGE_REF=""
-
-          if [[ "$PR_HEAD_REF" =~ ^backmerge/v[0-9]+\.[0-9]+\.[0-9]+-[0-9a-fA-F]{8}$ ]]; then
-            BACKMERGE_REF="$PR_HEAD_REF"
-          elif [[ "$MERGE_GROUP_HEAD_REF" =~ /pr-([0-9]+)- ]]; then
-            PR_NUMBER="${BASH_REMATCH[1]}"
-            HEAD_REF="$(gh pr view "$PR_NUMBER" --repo "$GITHUB_REPOSITORY" --json headRefName --jq '.headRefName')"
-
-            if [[ "$HEAD_REF" =~ ^backmerge/v[0-9]+\.[0-9]+\.[0-9]+-[0-9a-fA-F]{8}$ ]]; then
-              BACKMERGE_REF="$HEAD_REF"
-            fi
-          fi
-
-          if [ -n "$BACKMERGE_REF" ]; then
-            bash Scripts/check-release-lock.sh "$BACKMERGE_REF"
-          else
-            bash Scripts/check-release-lock.sh
           fi

@@ -48,7 +48,7 @@ Releases follow [Semantic Versioning](https://semver.org/): **MAJOR** for breaki
 
 ### Automated Release Workflow (Preferred)
 
-The release lifecycle uses one release workflow; publishing starts automatically after it creates a stable tag. PRs use Squash and merge; the `develop` merge queue validates the queued commit before merging:
+The release lifecycle uses a release workflow and a separate lock-gate workflow; publishing starts automatically after the release workflow creates a stable tag. PRs use Squash and merge, and the `develop` merge queue validates the queued commit before merging:
 
 **Step 1 — [Release](../.github/workflows/release.yml)** (manual trigger):
 1. Go to **Actions → Release → Run workflow** on the `develop` branch.
@@ -73,7 +73,8 @@ All workflows are in [`.github/workflows/`](../.github/workflows/):
 
 | Workflow | Trigger | Purpose |
 |----------|---------|---------|
-| **[release.yml](../.github/workflows/release.yml)** | Manual dispatch and merged release PR | Promotes `develop` to `main`, creates a stable release, and opens a back-merge PR |
+| **[release.yml](../.github/workflows/release.yml)** | Manual dispatch and closed PRs targeting `main` | Promotes `develop` to `main`, creates a stable release, and opens a back-merge PR |
+| **[release-lock-gate.yml](../.github/workflows/release-lock-gate.yml)** | PR and merge-group events targeting `develop` | Blocks unrelated `develop` merges while a release is in progress |
 | **[publish.yml](../.github/workflows/publish.yml)** | Push to `develop`, or `v*` tags | Builds Release config, packs, and publishes to NuGet.org |
 | **[build-validation.yml](../.github/workflows/build-validation.yml)** | Push/PR to `main` or `develop` | Builds all configurations to validate compilation |
 | **[unit-tests.yml](../.github/workflows/unit-tests.yml)** | Push/PR to `main` or `develop` | Runs all unit tests |

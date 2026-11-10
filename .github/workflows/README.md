@@ -48,9 +48,10 @@ The repository uses multiple GitHub Actions workflows. What runs and when:
 3. Runs IntegrationTests with diagnostic output
 4. Uploads logs per-OS
 
-### 4) Release (`.github/workflows/release.yml`)
+### 4) Release and Release Lock Gate
 
-- **Triggers**: manual dispatch to prepare a release; merged `develop` → `main` PR to finalize it; `pull_request` and `merge_group` events to enforce the develop release lock.
+- [Release](.github/workflows/release.yml) is triggered by manual dispatch to prepare a release and closed pull requests targeting `main` to finalize a merged release PR.
+- [Release Lock Gate](.github/workflows/release-lock-gate.yml) handles `pull_request` and `merge_group` events targeting `develop` so routine PRs do not show skipped release orchestration jobs.
 - Calculates a stable `MAJOR.MINOR.PATCH` version from `develop` with GitVersion and full history, honoring `+semver:` commit-message directives; an optional version override is available.
 - Opens a direct `develop` → `main` PR and enables squash auto-merge. The `develop` branch merge queue runs required checks on its merge-group candidate.
 - After that PR is merged, validates the recorded develop commit and opens a `backmerge/vX.Y.Z-<short-merge-sha>` PR to `develop`. It creates the stable `vX.Y.Z` tag and GitHub Release only after the source/version checks pass and the back-merge has no conflicts.
