@@ -100,6 +100,11 @@ public partial class View // Keyboard APIs
     ///         automatically. Set
     ///         <see cref="HotKeySpecifier"/> to <c>(Rune)0xffff</c> to disable title-based assignment.
     ///     </para>
+    ///     <para>
+    ///         A subview with <see cref="AssignHotKeys"/> set to <see langword="false"/> is excluded from that automatic
+    ///         assignment. A programmatically set hot key and a specifier already present in <see cref="Title"/> are kept,
+    ///         and no specifier is inserted.
+    ///     </para>
     /// </remarks>
     public Key HotKey
     {
@@ -490,17 +495,31 @@ public partial class View // Keyboard APIs
     #region AutoHotKey Assignment
 
     /// <summary>
-    ///     If <see langword="true"/>, hotkeys will automatically be assigned to subviews, preferring an available
-    ///     programmatically set or view-derived <see cref="HotKey"/> before title-based hotkeys.
-    ///     <para>
-    ///         <see cref="UsedHotKeys"/> will be used to ensure unique keys are assigned. Set <see cref="UsedHotKeys"/>
-    ///         before adding subviews with any hotkeys that may conflict with other Views.
-    ///     </para>
+    ///     Gets or sets whether this view assigns hotkeys to its subviews, and whether it accepts an automatically
+    ///     assigned hotkey from its superview.
     /// </summary>
     /// <remarks>
     ///     <para>
-    ///         When enabled, hotkeys are assigned to subviews when they are added via <see cref="Add(View?)"/>.
-    ///         The assignment algorithm:
+    ///         The default is <see langword="null"/>. <see langword="null"/> does not assign hotkeys to subviews. A
+    ///         superview with this property set to <see langword="true"/> may still assign a hotkey to this view.
+    ///         Leave the property <see langword="null"/> on a subview that should receive an automatic hotkey.
+    ///     </para>
+    ///     <para>
+    ///         Set the property to <see langword="true"/> to assign hotkeys to subviews, preferring an available
+    ///         programmatically set or view-derived <see cref="HotKey"/> before title-based hotkeys.
+    ///         <see cref="UsedHotKeys"/> keeps those keys unique. Set <see cref="UsedHotKeys"/> before adding subviews
+    ///         when other views already use keys that must not be chosen.
+    ///     </para>
+    ///     <para>
+    ///         Set the property to <see langword="false"/> to decline automatic assignment. A superview does not insert
+    ///         a <see cref="HotKeySpecifier"/> into <see cref="Title"/> and does not choose a character for this view.
+    ///         A programmatically set <see cref="HotKey"/> and a specifier already written in the title are kept.
+    ///         <see langword="false"/> also does not assign hotkeys to this view's subviews. Hotkeys already assigned
+    ///         to those subviews are left in place.
+    ///     </para>
+    ///     <para>
+    ///         When <see langword="true"/>, hotkeys are assigned to subviews when they are added via <see cref="Add(View?)"/>.
+    ///         A subview whose <see cref="AssignHotKeys"/> is <see langword="false"/> is skipped. The assignment algorithm:
     ///         <list type="number">
     ///             <item>
     ///                 Checks if the subview already has a programmatically set <see cref="HotKey"/>; if so and the key is not
@@ -529,6 +548,8 @@ public partial class View // Keyboard APIs
     ///     <para>
     ///         If enabled on the superview, changing a subview's <see cref="Title"/> releases the previous
     ///         hotkey reservation owned by that subview from <see cref="UsedHotKeys"/> and reassigns from the new title.
+    ///         A subview with <see cref="AssignHotKeys"/> set to <see langword="false"/> keeps its programmatic hotkey
+    ///         or its existing title specifier instead of receiving a new one.
     ///         A programmatically set <see cref="HotKey"/> takes precedence over a title specifier when its key is
     ///         available. If another view has already reserved it, the first reservation is kept and this view uses
     ///         an available title character instead. If no alternate character is available, the explicit hotkey
@@ -550,7 +571,7 @@ public partial class View // Keyboard APIs
     ///         Call <see cref="AssignHotKeysToSubViews"/> to manually trigger hotkey assignment for all subviews.
     ///     </para>
     /// </remarks>
-    public bool AssignHotKeys
+    public bool? AssignHotKeys
     {
         get;
         set
@@ -562,10 +583,17 @@ public partial class View // Keyboard APIs
 
             field = value;
 
-            if (field)
+            if (field == true)
             {
                 AssignHotKeysToSubViews ();
             }
+
+            if (SuperView is not { AssignHotKeys: true } superView)
+            {
+                return;
+            }
+
+            superView.AssignHotKeyToView (this);
         }
     }
 
@@ -623,7 +651,7 @@ public partial class View // Keyboard APIs
     /// </remarks>
     public void AssignHotKeysToSubViews ()
     {
-        if (!AssignHotKeys)
+        if (AssignHotKeys != true)
         {
             return;
         }
@@ -644,8 +672,14 @@ public partial class View // Keyboard APIs
     /// </returns>
     /// <remarks>
     ///     <para>
-    ///         This method preserves a programmatic <see cref="HotKey"/> first, then a view-specific derived hotkey,
-    ///         then an available hotkey specifier in the title, and otherwise assigns the first available character.
+    ///         A view with <see cref="AssignHotKeys"/> set to <see langword="false"/> keeps a programmatic
+    ///         <see cref="HotKey"/> and a specifier already written in its title. No specifier is inserted and no
+    ///         alternate character is chosen.
+    ///     </para>
+    ///     <para>
+    ///         Otherwise this method preserves a programmatic <see cref="HotKey"/> first, then a view-specific derived
+    ///         hotkey, then an available hotkey specifier in the title, and otherwise assigns the first available
+    ///         character.
     ///     </para>
     ///     <para>
     ///         When a programmatic hotkey differs from a specifier automatically inserted by this method, it removes
@@ -654,6 +688,11 @@ public partial class View // Keyboard APIs
     /// </remarks>
     protected bool AssignHotKeyToView (View view)
     {
+        if (view.AssignHotKeys == false)
+        {
+            return RetainDeclinedHotKey (view);
+        }
+
         if (_autoAssignedHotKeys is not null && _autoAssignedHotKeys.TryGetValue (view, out Key? previousHotKey))
         {
             Key? preferredHotKey = view._programmaticHotKey ?? view.GetPreferredAutoAssignedHotKey ();
@@ -764,6 +803,39 @@ public partial class View // Keyboard APIs
 
         return true;
 
+    }
+
+    /// <summary>
+    ///     Keeps an explicit hotkey on a view that has declined automatic assignment.
+    /// </summary>
+    /// <param name="view">The view whose <see cref="AssignHotKeys"/> is <see langword="false"/>.</param>
+    /// <returns><see langword="true"/> when the view still has a hotkey.</returns>
+    private bool RetainDeclinedHotKey (View view)
+    {
+        ReleaseAutoAssignedHotKey (view);
+        RemoveMismatchedHotKeySpecifier (view, Key.Empty);
+
+        if (view._programmaticHotKey is { } programmaticHotKey)
+        {
+            TryReserveHotKey (view, programmaticHotKey);
+            view.SetHotKeyInternally (programmaticHotKey);
+
+            return true;
+        }
+
+        if (view.HotKeySpecifier == (Rune)'\xffff'
+            || string.IsNullOrEmpty (view.Title)
+            || !TextFormatter.FindHotKey (view.Title, view.HotKeySpecifier, out _, out Key titleHotKey))
+        {
+            view.SetHotKeyInternally (Key.Empty);
+
+            return false;
+        }
+
+        TryReserveHotKey (view, titleHotKey);
+        view.SetHotKeyInternally (titleHotKey);
+
+        return true;
     }
 
     private bool TryAssignTitleHotKey (View view)
@@ -916,7 +988,7 @@ public partial class View // Keyboard APIs
 
     internal void ReconcileAutoAssignedHotKey (View view)
     {
-        if (!AssignHotKeys)
+        if (AssignHotKeys != true)
         {
             return;
         }
