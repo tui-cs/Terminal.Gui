@@ -84,6 +84,18 @@ A **HotKey** is a key press that selects a visible UI item. For selecting items 
 
 By default, the `Text` of a <xref:Terminal.Gui.ViewBase.View> is used to determine the <xref:Terminal.Gui.ViewBase.View.HotKey> by looking for the first occurrence of the `HotKeySpecifier` (which is underscore (`_`) by default). The character following the underscore is the <xref:Terminal.Gui.ViewBase.View.HotKey>. If the `HotKeySpecifier` is not found in `Text`, the first character of `Text` is used as the <xref:Terminal.Gui.ViewBase.View.HotKey>. The `Text` of a <xref:Terminal.Gui.ViewBase.View> can be changed at runtime, and the <xref:Terminal.Gui.ViewBase.View.HotKey> will be updated accordingly. @"Terminal.Gui.View.HotKey" is `virtual` enabling this behavior to be customized.
 
+### AssignHotKeys
+
+<xref:Terminal.Gui.ViewBase.View.AssignHotKeys> is `bool?` and defaults to `null`.
+
+`null` does not assign hotkeys to the view's subviews. A superview that assigns hotkeys can still assign one to this view. Leave the property `null` on a subview that should receive an automatic hotkey.
+
+`true` assigns a hotkey to each subview as it is added. A programmatically set hotkey is used first, then a hotkey derived by the view, then a <xref:Terminal.Gui.ViewBase.View.HotKeySpecifier> already written in the title, and otherwise the first available character. The chosen character is written into the title with the specifier. Assigned keys are recorded in <xref:Terminal.Gui.ViewBase.View.UsedHotKeys> so later subviews receive a different key.
+
+`false` declines that automatic assignment and does not assign hotkeys to the view's own subviews. To keep a subview out of automatic assignment, set that subview's `AssignHotKeys` to `false`. The superview does not insert a specifier and does not choose a character for that subview. A programmatically set <xref:Terminal.Gui.ViewBase.View.HotKey> still applies, including a hotkey with no specifier in the title. A specifier already written in the title is kept and is not moved to a different character. Hotkeys already assigned to that view's subviews stay as they are.
+
+To assign hotkeys as subviews are added, set `AssignHotKeys` to `true` before calling `Add`.
+
 ### **Shortcut**
 
 A **Shortcut** is an opinionated (visually & API) <xref:Terminal.Gui.ViewBase.View> for displaying a command, help text, and a key press that invokes a [Command](~/api/Terminal.Gui.Input.Command.yml).
