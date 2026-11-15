@@ -365,7 +365,7 @@ public partial class View // SuperView/SubView hierarchy management (SuperView, 
     {
         // If auto-hotkey assignment is enabled, assign a hotkey to the new subview
         // This must happen BEFORE the CWP events so observers see the assigned hotkey
-        if (AssignHotKeys)
+        if (AssignHotKeys == true)
         {
             AssignHotKeyToView (view);
         }

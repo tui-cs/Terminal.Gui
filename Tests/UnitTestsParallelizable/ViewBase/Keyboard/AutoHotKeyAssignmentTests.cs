@@ -14,10 +14,10 @@ public class AutoHotKeyAssignmentTests
     #region Default Values
 
     [Fact]
-    public void AssignHotKeys_Defaults_To_False ()
+    public void AssignHotKeys_Defaults_To_Null ()
     {
         View view = new ();
-        Assert.False (view.AssignHotKeys);
+        Assert.Null (view.AssignHotKeys);
     }
 
     [Fact]
@@ -87,6 +87,161 @@ public class AutoHotKeyAssignmentTests
 
         Assert.Equal (Key.Empty, button1.HotKey);
         Assert.Equal (Key.Empty, button2.HotKey);
+    }
+
+    // Grok - 4.7
+    [Fact]
+    public void AssignHotKeys_FalseOnSubview_DoesNotAutoAssignHotKey ()
+    {
+        View superView = new () { AssignHotKeys = true };
+        View declined = new () { Title = "Save", AssignHotKeys = false };
+        View accepted = new () { Title = "Save" };
+
+        superView.Add (declined, accepted);
+
+        Assert.Equal ("Save", declined.Title);
+        Assert.Equal (Key.Empty, declined.HotKey);
+        Assert.Equal ("_Save", accepted.Title);
+        Assert.Equal (Key.S, accepted.HotKey);
+        Assert.Contains (Key.S, superView.UsedHotKeys);
+        Assert.Single (superView.UsedHotKeys);
+    }
+
+    // Grok - 4.7
+    [Fact]
+    public void AssignHotKeys_FalseOnSubview_PreservesTitleSpecifier ()
+    {
+        View superView = new () { AssignHotKeys = true };
+        View declined = new () { Title = "_Send", AssignHotKeys = false };
+        View accepted = new () { Title = "Save" };
+
+        superView.Add (declined, accepted);
+
+        Assert.Equal ("_Send", declined.Title);
+        Assert.Equal (Key.S, declined.HotKey);
+        Assert.NotEqual (Key.S, accepted.HotKey);
+        Assert.Contains (Key.S, superView.UsedHotKeys);
+        Assert.Contains (accepted.HotKey, superView.UsedHotKeys);
+    }
+
+    // Grok - 4.7
+    [Fact]
+    public void AssignHotKeys_FalseOnSubview_DoesNotRewriteConflictingTitleSpecifier ()
+    {
+        View superView = new () { AssignHotKeys = true };
+        View accepted = new () { Title = "Save" };
+        View declined = new () { Title = "_Send", AssignHotKeys = false };
+
+        superView.Add (accepted, declined);
+
+        Assert.Equal ("_Save", accepted.Title);
+        Assert.Equal (Key.S, accepted.HotKey);
+        Assert.Equal ("_Send", declined.Title);
+        Assert.Equal (Key.S, declined.HotKey);
+    }
+
+    // Grok - 4.7
+    [Fact]
+    public void AssignHotKeys_FalseOnSubview_PreservesProgrammaticHotKeyWithoutSpecifier ()
+    {
+        View superView = new () { AssignHotKeys = true };
+        View declined = new () { Title = "Save", HotKey = Key.X, AssignHotKeys = false };
+
+        superView.Add (declined);
+
+        Assert.Equal ("Save", declined.Title);
+        Assert.Equal (Key.X, declined.HotKey);
+        Assert.Contains (Key.X, superView.UsedHotKeys);
+        Assert.Single (superView.UsedHotKeys);
+    }
+
+    // Grok - 4.7
+    [Fact]
+    public void AssignHotKeys_FalseOnSubview_ReleasesPreviousAutoAssignment ()
+    {
+        View superView = new () { AssignHotKeys = true };
+        View button = new () { Title = "Save" };
+        superView.Add (button);
+
+        Assert.Equal ("_Save", button.Title);
+        Assert.Equal (Key.S, button.HotKey);
+
+        button.AssignHotKeys = false;
+
+        Assert.Equal ("Save", button.Title);
+        Assert.Equal (Key.Empty, button.HotKey);
+        Assert.DoesNotContain (Key.S, superView.UsedHotKeys);
+    }
+
+    // Grok - 4.7
+    [Fact]
+    public void AssignHotKeys_ClearingFalse_AllowsSuperviewAssignment ()
+    {
+        View superView = new () { AssignHotKeys = true };
+        View button = new () { Title = "Save", AssignHotKeys = false };
+        superView.Add (button);
+
+        Assert.Equal ("Save", button.Title);
+        Assert.Equal (Key.Empty, button.HotKey);
+
+        button.AssignHotKeys = null;
+
+        Assert.Equal ("_Save", button.Title);
+        Assert.Equal (Key.S, button.HotKey);
+        Assert.Contains (Key.S, superView.UsedHotKeys);
+    }
+
+    // Grok - 4.7
+    [Fact]
+    public void AssignHotKeys_FalseOnSubview_KeepsHotKeysAlreadyAssignedToItsSubViews ()
+    {
+        View outer = new () { AssignHotKeys = true };
+        View inner = new () { Title = "Inner", AssignHotKeys = true };
+        View child = new () { Title = "Save" };
+        inner.Add (child);
+        outer.Add (inner);
+
+        Key childHotKey = child.HotKey;
+        Assert.Equal ("_Inner", inner.Title);
+        Assert.NotEqual (Key.Empty, childHotKey);
+
+        inner.AssignHotKeys = false;
+
+        Assert.Equal ("Inner", inner.Title);
+        Assert.Equal (Key.Empty, inner.HotKey);
+        Assert.Equal (childHotKey, child.HotKey);
+        Assert.Contains (childHotKey, inner.UsedHotKeys);
+    }
+
+    // Grok - 4.7
+    [Fact]
+    public void AssignHotKeys_FalseOnSubview_SkipsDerivedHotKey ()
+    {
+        View superView = new () { AssignHotKeys = true };
+        DerivedHotKeyView declined = new () { Title = "Save", AssignHotKeys = false };
+        superView.Add (declined);
+
+        Assert.Equal ("Save", declined.Title);
+        Assert.Equal (Key.Empty, declined.HotKey);
+        Assert.Empty (superView.UsedHotKeys);
+    }
+
+    // Grok - 4.7
+    [Fact]
+    public void Menu_AssignHotKeys_SkipsItemThatDeclinesAssignment ()
+    {
+        Menu menu = new () { AssignHotKeys = true };
+        MenuItem open = new () { Title = "Open" };
+        MenuItem save = new () { Title = "Save", AssignHotKeys = false };
+
+        menu.Add (open, save);
+
+        Assert.Equal ("_Open", open.Title);
+        Assert.Equal (Key.O, open.HotKey);
+        Assert.Equal ("Save", save.Title);
+        Assert.Equal (Key.Empty, save.HotKey);
+        Assert.Contains (Key.O, menu.UsedHotKeys);
+        Assert.DoesNotContain (Key.S, menu.UsedHotKeys);
     }
 
     [Fact]
@@ -1297,4 +1452,12 @@ public class AutoHotKeyAssignmentTests
     }
 
     #endregion
+
+    /// <summary>
+    ///     Reports a fixed derived hotkey so assignment tests can show that an opted-out view does not use it.
+    /// </summary>
+    private sealed class DerivedHotKeyView : View
+    {
+        internal override Key? GetPreferredAutoAssignedHotKey () => Key.Q;
+    }
 }
