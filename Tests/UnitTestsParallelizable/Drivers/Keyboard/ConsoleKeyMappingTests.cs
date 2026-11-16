@@ -1,8 +1,34 @@
+using System.Globalization;
+
 namespace DriverTests.Keyboard;
 
 [Collection ("Driver Tests")]
 public class ConsoleKeyMappingTests
 {
+    // Claude Code - Claude Opus 5.5
+    [Theory]
+    [InlineData ("tr-TR")]
+    [InlineData ("az-Latn-AZ")]
+    public void GetConsoleKeyInfoFromKeyCode_ShiftedI_Is_Latin_Capital_I_In_Any_Culture (string cultureName)
+    {
+        // Arrange
+        CultureInfo previousCulture = CultureInfo.CurrentCulture;
+        CultureInfo.CurrentCulture = new (cultureName);
+
+        try
+        {
+            // Act
+            ConsoleKeyInfo result = ConsoleKeyMapping.GetConsoleKeyInfoFromKeyCode (KeyCode.I | KeyCode.ShiftMask);
+
+            // Assert: in these cultures char.ToUpper ('i') is 'İ' (U+0130)
+            Assert.Equal ('I', result.KeyChar);
+        }
+        finally
+        {
+            CultureInfo.CurrentCulture = previousCulture;
+        }
+    }
+
     [Theory]
     [InlineData ('a', ConsoleKey.A, false, false, false, (KeyCode)'a')]
     [InlineData ('A', ConsoleKey.A, true, false, false, KeyCode.A | KeyCode.ShiftMask)]
