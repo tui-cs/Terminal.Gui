@@ -37,10 +37,19 @@ public abstract class AnsiKeyboardParserPattern
     ///     Returns the <see cref="Key"/> described by the escape sequence.
     /// </summary>
     /// <param name="input"></param>
-    /// <returns></returns>
+    /// <returns>
+    ///     The <see cref="Key"/>, or <see langword="null"/> if the sequence matches the pattern but does not describe
+    ///     a known key.
+    /// </returns>
     public Key? GetKey (string? input)
     {
         Key? key = GetKeyImpl (input);
+
+        // A sequence can match a pattern without describing a known key (e.g. an unmapped ESC[<n>~ code).
+        if (key is null)
+        {
+            return null;
+        }
 
         // See https://github.com/tui-cs/Terminal.Gui/issues/5067
         Debug.Assert (key is { Handled: false });
