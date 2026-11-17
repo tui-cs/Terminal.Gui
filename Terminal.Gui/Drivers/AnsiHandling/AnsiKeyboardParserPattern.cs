@@ -38,8 +38,8 @@ public abstract class AnsiKeyboardParserPattern
     /// </summary>
     /// <param name="input"></param>
     /// <returns>
-    ///     The <see cref="Key"/>, or <see langword="null"/> if the sequence matches the pattern but does not describe
-    ///     a known key.
+    ///     The <see cref="Key"/>, or <see langword="null"/> if no key can be determined: the input does not match the
+    ///     pattern, or it matches but does not describe a known key.
     /// </returns>
     public Key? GetKey (string? input)
     {
