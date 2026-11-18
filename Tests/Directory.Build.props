@@ -1,0 +1,10 @@
+<Project>
+  <Import Project="$([MSBuild]::GetPathOfFileAbove('Directory.Build.props', '$(MSBuildThisFileDirectory)../'))" />
+
+  <!-- test.runsettings only works with VSTest; MTP (Microsoft Testing Platform) ignores it. -->
+  <!-- Instead, we compile TestEnvironmentSetup.cs into every test project so its [ModuleInitializer] -->
+  <!-- sets DisableRealDriverIO=1 before any test code runs. -->
+  <ItemGroup Condition="'$(IsTestProject)' == 'true'">
+    <Compile Include="$(MSBuildThisFileDirectory)TestEnvironmentSetup.cs" Link="TestEnvironmentSetup.cs" />
+  </ItemGroup>
+</Project>

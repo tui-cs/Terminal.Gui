@@ -1,0 +1,16 @@
+{{!Licensed to the .NET Foundation under one or more agreements. The .NET Foundation licenses this file to you under the MIT license.}}
+
+<h1 id="{{id}}" data-uid="{{uid}}" class="text-break">{{>partials/title}}</h1>
+<div class="markdown level0 summary">{{{summary}}}</div>
+<div class="markdown level0 conceptual">{{{conceptual}}}</div>
+<div class="markdown level0 remarks">{{{remarks}}}</div>
+
+{{#children}}
+  <h3 id="{{id}}">{{>partials/namespaceSubtitle}}</h3>
+  {{#children}}
+  <dl class="jumplist">
+    <dt><xref uid="{{uid}}" altProperty="fullName" displayProperty="name"/></dt>
+    <dd>{{{summary}}}</dd>
+  </dl>
+  {{/children}}
+{{/children}}

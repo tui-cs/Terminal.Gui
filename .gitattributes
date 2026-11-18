@@ -1,13 +1,18 @@
-# Set the default behavior for all files.
+# Set default behavior to automatically normalize line endings.
 * text=auto
 
-# Normalized and converts to 
-# native line endings on checkout.
-*.cs text
-
-# Convert to LF line endings on checkout.
+# Explicitly declare text files you want to always be normalized and converted to native line endings on checkout.
+*.cs text eol=lf
+*.txt text eol=lf
+*.md text eol=lf
 *.sh text eol=lf
+*.ps1 text eol=lf
 
-# Binary files.
+# ANSI snapshot goldens: raw escape-sequence streams with LF row breaks.
+# Must NOT be EOL-normalized or the byte-exact compare + `cat` fidelity breaks.
+*.ans binary
+
+# Denote all files that are truly binary and should not be modified.
 *.png binary
 *.jpg binary
+*.gif binary

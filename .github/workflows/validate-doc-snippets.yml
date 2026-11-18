@@ -1,0 +1,69 @@
+name: Validate Doc Snippets
+
+# Compiles every C# code block in the AI agent docs against the built Terminal.Gui
+# assembly (see Scripts/DocSnippetValidator/README.md). Runs when the docs change
+# AND when the library changes, so API changes that break documented examples fail
+# here instead of silently rotting the docs.
+
+on:
+  push:
+    branches: [develop]
+    paths:
+      - 'ai-v2-primer.md'
+      - '.claude/tasks/build-app.md'
+      - '.claude/cookbook/common-patterns.md'
+      - 'llms.txt'
+      - 'Terminal.Gui/**'
+      - 'Scripts/DocSnippetValidator/**'
+      - '.github/workflows/validate-doc-snippets.yml'
+  pull_request:
+    paths:
+      - 'ai-v2-primer.md'
+      - '.claude/tasks/build-app.md'
+      - '.claude/cookbook/common-patterns.md'
+      - 'llms.txt'
+      - 'Terminal.Gui/**'
+      - 'Scripts/DocSnippetValidator/**'
+      - '.github/workflows/validate-doc-snippets.yml'
+
+jobs:
+  validate-doc-snippets:
+    name: Validate Doc Snippets
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0 # GitVersion.MsBuild needs full history
+
+      - name: Setup .NET Core
+        uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: 10.x
+          dotnet-quality: 'ga'
+
+      - name: Build Terminal.Gui
+        run: dotnet build Terminal.Gui/Terminal.Gui.csproj --configuration Debug
+
+      - name: Validate snippets
+        run: |
+          dotnet run --project Scripts/DocSnippetValidator --configuration Debug -- \
+            Terminal.Gui/bin/Debug/net10.0/Terminal.Gui.dll \
+            ai-v2-primer.md \
+            .claude/tasks/build-app.md \
+            .claude/cookbook/common-patterns.md \
+            llms.txt
+
+      # Negative test: the validator must REJECT a snippet using obsolete v1 APIs
+      # (CS0618/CS0612), so the v1 rot this workflow prevents cannot slip back in
+      # as "compiled". Expect a non-zero exit on the fixture.
+      - name: Validate rejects obsolete APIs (negative test)
+        run: |
+          if dotnet run --project Scripts/DocSnippetValidator --configuration Debug -- \
+            Terminal.Gui/bin/Debug/net10.0/Terminal.Gui.dll \
+            Scripts/DocSnippetValidator/testdata/obsolete-api.md; then
+            echo "::error::validator accepted an obsolete-API snippet; CS0618/CS0612 must fail"
+            exit 1
+          fi
+          echo "negative test passed: validator rejected the obsolete-API fixture"

@@ -1,0 +1,43 @@
+name: Quick Build for Tests
+
+on:
+  workflow_call:
+    outputs:
+      artifact-name:
+        description: "Name of the build artifacts"
+        value: ${{ jobs.quick-build.outputs.artifact-name }}
+      
+jobs:
+  quick-build:
+    name: Build Debug Only
+    runs-on: ubuntu-latest
+    outputs:
+      artifact-name: test-build-artifacts
+    
+    timeout-minutes: 5
+    steps:
+
+    - name: Checkout code
+      uses: actions/checkout@v7
+
+    - name: Setup .NET Core
+      uses: actions/setup-dotnet@v6
+      with:
+        dotnet-version: 10.x
+        dotnet-quality: 'ga'
+
+    - name: Restore dependencies
+      run: dotnet restore
+
+    # Suppress CS0618 (member is obsolete) and CS0612 (member is obsolete without message)
+    - name: Build Debug
+      run: dotnet build --configuration Debug --no-restore -property:NoWarn=0618%3B0612
+
+    - name: Upload build artifacts
+      uses: actions/upload-artifact@v7
+      with:
+        name: test-build-artifacts
+        path: |
+          **/bin/Debug/**
+          **/obj/Debug/**
+        retention-days: 1

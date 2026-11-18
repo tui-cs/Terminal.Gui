@@ -1,0 +1,97 @@
+{
+  "profiles": {
+    "UICatalog": {
+      "commandName": "Project",
+      "commandLineArgs": "--debug-log-level Trace"
+    },
+    "UICatalog --driver windows": {
+      "commandName": "Project",
+      "commandLineArgs": "--driver windows -dl Trace"
+    },
+    "UICatalog --driver dotnet": {
+      "commandName": "Project",
+      "commandLineArgs": "--driver dotnet -dl Trace"
+    },
+    "UICatalog --driver ansi": {
+      "commandName": "Project",
+      "commandLineArgs": "--driver ansi -dl Trace"
+    },
+    "WSL: UICatalog": {
+      "commandName": "Executable",
+      "executablePath": "wsl",
+      "commandLineArgs": "dotnet UICatalog.dll",
+      "distributionName": ""
+    },
+    "WSL: UICatalog --driver dotnet": {
+      "commandName": "Executable",
+      "executablePath": "wsl",
+      "commandLineArgs": "dotnet UICatalog.dll --driver dotnet",
+      "distributionName": ""
+    },
+    "WSL: UICatalog --driver ansi": {
+      "commandName": "Executable",
+      "executablePath": "wsl",
+      "commandLineArgs": "dotnet UICatalog.dll --driver ansi",
+      "distributionName": ""
+    },
+    "WSL-Gnome: UICatalog": {
+      "commandName": "Executable",
+      "executablePath": "wsl",
+      "commandLineArgs": "bash -c 'while [ ! -e \"$XDG_RUNTIME_DIR/bus\" ]; do sleep 0.1; done; gnome-terminal --wait -- bash -l -c \"dotnet UICatalog.dll; exec bash\"'",
+      "distributionName": ""
+    },
+    "WSL-Gnome: UICatalog --driver dotnet": {
+      "commandName": "Executable",
+      "executablePath": "wsl",
+      "commandLineArgs": "bash -c 'while [ ! -e \"$XDG_RUNTIME_DIR/bus\" ]; do sleep 0.1; done; gnome-terminal --wait -- bash -l -c \"dotnet UICatalog.dll --driver dotnet; exec bash\"'",
+      "distributionName": ""
+    },
+    "Benchmark All": {
+      "commandName": "Project",
+      "commandLineArgs": "--benchmark"
+    },
+    "Benchmark All --driver dotnet": {
+      "commandName": "Project",
+      "commandLineArgs": "--driver dotnet --benchmark"
+    },
+    "Benchmark All --driver windows": {
+      "commandName": "Project",
+      "commandLineArgs": "--driver windows --benchmark"
+    },
+    "Benchmark All --driver ansi": {
+      "commandName": "Project",
+      "commandLineArgs": "--driver ansi --benchmark"
+    },
+    "WSL: Benchmark All": {
+      "commandName": "Executable",
+      "executablePath": "wsl",
+      "commandLineArgs": "dotnet UICatalog.dll --benchmark",
+      "distributionName": ""
+    },
+    "WSL: Benchmark All --driver dotnet": {
+      "commandName": "Executable",
+      "executablePath": "wsl",
+      "commandLineArgs": "dotnet UICatalog.dll --driver dotnet --benchmark",
+      "distributionName": ""
+    },
+    "Docker": {
+      "commandName": "Docker"
+    },
+    "All Views Tester": {
+      "commandName": "Project",
+      "commandLineArgs": "\"All Views Tester\" -b -t 5000"
+    },
+    "UICatalog --disable-cm": {
+      "commandName": "Project",
+      "commandLineArgs": "--disable-cm\r\n"
+    },
+    "UICatalog --disable-cm --driver windows": {
+      "commandName": "Project",
+      "commandLineArgs": "--disable-cm --driver windows"
+    },
+    "Themes": {
+      "commandName": "Project",
+      "commandLineArgs": "Themes"
+    }
+  }
+}

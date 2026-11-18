@@ -1,0 +1,339 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <!-- 
+    Microsoft ResX Schema 
+    
+    Version 2.0
+    
+    The primary goals of this format is to allow a simple XML format 
+    that is mostly human readable. The generation and parsing of the 
+    various data types are done through the TypeConverter classes 
+    associated with the data types.
+    
+    Example:
+    
+    ... ado.net/XML headers & schema ...
+    <resheader name="resmimetype">text/microsoft-resx</resheader>
+    <resheader name="version">2.0</resheader>
+    <resheader name="reader">System.Resources.ResXResourceReader, System.Windows.Forms, ...</resheader>
+    <resheader name="writer">System.Resources.ResXResourceWriter, System.Windows.Forms, ...</resheader>
+    <data name="Name1"><value>this is my long string</value><comment>this is a comment</comment></data>
+    <data name="Color1" type="System.Drawing.Color, System.Drawing">Blue</data>
+    <data name="Bitmap1" mimetype="application/x-microsoft.net.object.binary.base64">
+        <value>[base64 mime encoded serialized .NET Framework object]</value>
+    </data>
+    <data name="Icon1" type="System.Drawing.Icon, System.Drawing" mimetype="application/x-microsoft.net.object.bytearray.base64">
+        <value>[base64 mime encoded string representing a byte array form of the .NET Framework object]</value>
+        <comment>This is a comment</comment>
+    </data>
+                
+    There are any number of "resheader" rows that contain simple 
+    name/value pairs.
+    
+    Each data row contains a name, and value. The row also contains a 
+    type or mimetype. Type corresponds to a .NET class that support 
+    text/value conversion through the TypeConverter architecture. 
+    Classes that don't support this are serialized and stored with the 
+    mimetype set.
+    
+    The mimetype is used for serialized objects, and tells the 
+    ResXResourceReader how to depersist the object. This is currently not 
+    extensible. For a given mimetype the value must be set accordingly:
+    
+    Note - application/x-microsoft.net.object.binary.base64 is the format 
+    that the ResXResourceWriter will generate, however the reader can 
+    read any of the formats listed below.
+    
+    mimetype: application/x-microsoft.net.object.binary.base64
+    value   : The object must be serialized with 
+            : System.Runtime.Serialization.Formatters.Binary.BinaryFormatter
+            : and then encoded with base64 encoding.
+    
+    mimetype: application/x-microsoft.net.object.soap.base64
+    value   : The object must be serialized with 
+            : System.Runtime.Serialization.Formatters.Soap.SoapFormatter
+            : and then encoded with base64 encoding.
+
+    mimetype: application/x-microsoft.net.object.bytearray.base64
+    value   : The object must be serialized into a byte array 
+            : using a System.ComponentModel.TypeConverter
+            : and then encoded with base64 encoding.
+    -->
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="fdDirectory" xml:space="preserve">
+    <value>目录</value>
+  </data>
+  <data name="fdFile" xml:space="preserve">
+    <value>文件</value>
+  </data>
+  <data name="fdSave" xml:space="preserve">
+    <value>保存</value>
+  </data>
+  <data name="fdSaveAs" xml:space="preserve">
+    <value>另存为</value>
+  </data>
+  <data name="fdOpen" xml:space="preserve">
+    <value>打开</value>
+  </data>
+  <data name="fdSelectFolder" xml:space="preserve">
+    <value>选择文件夹 (_S)</value>
+  </data>
+  <data name="fdSelectMixed" xml:space="preserve">
+    <value>混合选择 (_S)</value>
+  </data>
+  <data name="wzBack" xml:space="preserve">
+    <value>返回 (_B)</value>
+  </data>
+  <data name="wzFinish" xml:space="preserve">
+    <value>结束 (_N)</value>
+  </data>
+  <data name="wzNext" xml:space="preserve">
+    <value>下一步 (_N)...</value>
+  </data>
+  <data name="fdDirectoryAlreadyExistsFeedback" xml:space="preserve">
+    <value>已存在相同名称的目录</value>
+  </data>
+  <data name="fdDirectoryMustExistFeedback" xml:space="preserve">
+    <value>必须选择已有的目录</value>
+  </data>
+  <data name="fdFileAlreadyExistsFeedback" xml:space="preserve">
+    <value>已存在相同名称的文件</value>
+  </data>
+  <data name="fdFileMustExistFeedback" xml:space="preserve">
+    <value>必须选择已有的文件</value>
+  </data>
+  <data name="fdFilename" xml:space="preserve">
+    <value>文件名</value>
+  </data>
+  <data name="fdFileOrDirectoryMustExistFeedback" xml:space="preserve">
+    <value>必须选择已有的文件或目录</value>
+  </data>
+  <data name="fdModified" xml:space="preserve">
+    <value>修改时间</value>
+  </data>
+  <data name="fdPathCaption" xml:space="preserve">
+    <value>请输入路径</value>
+  </data>
+  <data name="fdSize" xml:space="preserve">
+    <value>大小</value>
+  </data>
+  <data name="fdType" xml:space="preserve">
+    <value>类型</value>
+  </data>
+  <data name="fdWrongFileTypeFeedback" xml:space="preserve">
+    <value>文件类型有误</value>
+  </data>
+  <data name="fdAnyFiles" xml:space="preserve">
+    <value>任意文件</value>
+  </data>
+  <data name="fdDeleteBody" xml:space="preserve">
+    <value>您是否要删除“{0}”？此操作不可撤销</value>
+  </data>
+  <data name="fdDeleteFailedTitle" xml:space="preserve">
+    <value>删除失败</value>
+  </data>
+  <data name="fdDeleteTitle" xml:space="preserve">
+    <value>删除 {0}</value>
+  </data>
+  <data name="fdNewFailed" xml:space="preserve">
+    <value>新建失败</value>
+  </data>
+  <data name="fdNewTitle" xml:space="preserve">
+    <value>新建文件夹</value>
+  </data>
+  <data name="btnNo" xml:space="preserve">
+    <value>否 (_N)</value>
+  </data>
+  <data name="fdRenameFailedTitle" xml:space="preserve">
+    <value>重命名失败</value>
+  </data>
+  <data name="fdRenamePrompt" xml:space="preserve">
+    <value>名称：</value>
+  </data>
+  <data name="fdRenameTitle" xml:space="preserve">
+    <value>重命名</value>
+  </data>
+  <data name="btnYes" xml:space="preserve">
+    <value>是 (_Y)</value>
+  </data>
+  <data name="fdExisting" xml:space="preserve">
+    <value>已有</value>
+  </data>
+  <data name="btnOpen" xml:space="preserve">
+    <value>打开 (_O)</value>
+  </data>
+  <data name="btnSave" xml:space="preserve">
+    <value>保存 (_S)</value>
+  </data>
+  <data name="btnSaveAs" xml:space="preserve">
+    <value>另存为 (_S)</value>
+  </data>
+  <data name="btnOk" xml:space="preserve">
+    <value>确定 (_O)</value>
+  </data>
+  <data name="btnCancel" xml:space="preserve">
+    <value>取消 (_C)</value>
+  </data>
+  <data name="fdCtxDelete" xml:space="preserve">
+    <value>删除 (_D)</value>
+  </data>
+  <data name="fdCtxHide" xml:space="preserve">
+    <value>隐藏{0} (_H)</value>
+  </data>
+  <data name="fdCtxNew" xml:space="preserve">
+    <value>新建 (_N)</value>
+  </data>
+  <data name="fdCtxRename" xml:space="preserve">
+    <value>重命名 (_R)</value>
+  </data>
+  <data name="fdCtxSortAsc" xml:space="preserve">
+    <value>{0}顺序排序 (_S)</value>
+  </data>
+  <data name="fdCtxSortDesc" xml:space="preserve">
+    <value>{0}逆序排序 (_S)</value>
+  </data>
+  <data name="dpTitle" xml:space="preserve">
+    <value>日期选择器</value>
+  </data>
+  <data name="cmdOpen" xml:space="preserve">
+    <value>打开 (_O)</value>
+  </data>
+  <data name="cmdSave" xml:space="preserve">
+    <value>保存 (_S)</value>
+  </data>
+  <data name="cmdSaveAs" xml:space="preserve">
+    <value>另存为 (_A)</value>
+  </data>
+  <data name="cmdCut" xml:space="preserve">
+    <value>剪切 (_T)</value>
+  </data>
+  <data name="cmdCopy" xml:space="preserve">
+    <value>复制 (_C)</value>
+  </data>
+  <data name="cmdPaste" xml:space="preserve">
+    <value>粘贴 (_P)</value>
+  </data>
+  <data name="cmdSelectAll" xml:space="preserve">
+    <value>全选 (_S)</value>
+  </data>
+  <data name="cmdNew" xml:space="preserve">
+    <value>新建 (_N)</value>
+  </data>
+  <data name="cmdOpen_Help" xml:space="preserve">
+    <value>打开文件</value>
+  </data>
+  <data name="cmdQuit_Help" xml:space="preserve">
+    <value>退出应用程序</value>
+  </data>
+  <data name="cmdSaveAs_Help" xml:space="preserve">
+    <value>另存为</value>
+  </data>
+  <data name="cmdCut_Help" xml:space="preserve">
+    <value>剪切到剪贴板</value>
+  </data>
+  <data name="cmdCopy_Help" xml:space="preserve">
+    <value>复制到剪贴板</value>
+  </data>
+  <data name="cmdSelectAll_Help" xml:space="preserve">
+    <value>全选</value>
+  </data>
+  <data name="cmdNew_Help" xml:space="preserve">
+    <value>新建</value>
+  </data>
+  <data name="fdSearchCaption" xml:space="preserve">
+    <value>输入以搜索</value>
+  </data>
+  <data name="cmdPaste_Help" xml:space="preserve">
+    <value>从剪贴板粘贴</value>
+  </data>
+  <data name="cmdQuit" xml:space="preserve">
+    <value>退出 (_X)</value>
+  </data>
+  <data name="cmdUndo" xml:space="preserve">
+    <value>撤销 (_U)</value>
+  </data>
+  <data name="cmdUndo_Help" xml:space="preserve">
+    <value>撤销上一步操作</value>
+  </data>
+  <data name="cmdRedo" xml:space="preserve">
+    <value>重做 (_R)</value>
+  </data>
+  <data name="cmdRedo_Help" xml:space="preserve">
+    <value>重做上一步操作</value>
+  </data>
+  <data name="cmdDeleteAll" xml:space="preserve">
+    <value>清空 (_D)</value>
+  </data>
+  <data name="cmdDeleteAll_Help" xml:space="preserve">
+    <value>全部删除</value>
+  </data>
+  <data name="cmdEdit" xml:space="preserve">
+    <value>编辑 (_E)</value>
+  </data>
+  <data name="cmdEdit_Help" xml:space="preserve">
+    <value>编辑</value>
+  </data>
+  <data name="cmdClose_Help" xml:space="preserve">
+    <value>关闭</value>
+  </data>
+  <data name="cmdSave_Help" xml:space="preserve">
+    <value>保存文件</value>
+  </data>
+</root>

@@ -1,80 +1,142 @@
-name: Publish Terminal.Gui v2
+name: Publish Terminal.Gui to Nuget
+
 on:
   push:
+    # Main releases are triggered only by pushing a v* tag (e.g., v2.0.0).
+    # Develop pushes publish pre-release packages (e.g., 2.1.0-develop.1).
+    branches: [ develop ]
     tags:
-      - v2.0.0-alpha.*
+      - v*
+    paths-ignore:
+      - '**.md'
+
+permissions:
+  contents: read
 
 jobs:
   publish:
-    name: Build and Publish v2 to Nuget.org
+    name: Build and Publish to Nuget.org
     runs-on: ubuntu-latest
+    env:
+      # The `secrets` context is not available in step `if` conditions;
+      # mirrored into env so the Editor-notify step can be skipped when unset.
+      EDITOR_DISPATCH_TOKEN: ${{ secrets.EDITOR_DISPATCH_TOKEN }}
 
     steps:
-    - uses: actions/checkout@v3
+    - name: Checkout ${{ github.ref_name }}
+      uses: actions/checkout@v7
       with:
-        fetch-depth: 0 #fetch-depth is needed for GitVersion
+        fetch-depth: 0 # fetch-depth is needed for GitVersion https://github.com/GitTools/actions/blob/main/docs/cloning.md
 
-    - name: Install and calculate the new version with GitVersion 
-      uses: gittools/actions/gitversion/setup@v0
+    # GitVersion.MsBuild (in Terminal.Gui.csproj) automatically computes the version
+    # from git history + GitVersion.yml during build. We still run the CLI here to
+    # capture the SemVer for use in subsequent steps (push, template dispatch).
+    - name: Install GitVersion
+      uses: gittools/actions/gitversion/setup@v4.7.0
       with:
-          versionSpec: '6.x'
-          includePrerelease: true
+        versionSpec: '6.x'
 
     - name: Determine Version
-      uses: gittools/actions/gitversion/execute@v0
+      uses: gittools/actions/gitversion/execute@v4.7.0
       with:
-        useConfigFile: true      
+        useConfigFile: true
       id: gitversion # step id used as reference for output values
 
-    - name: Display GitVersion outputs
-      run: |
-        echo "Version: ${{ steps.gitversion.outputs.SemVer }}"
-        echo "CommitsSinceVersionSource: ${{ steps.gitversion.outputs.CommitsSinceVersionSource }}"
-
     - name: Setup dotnet
-      uses: actions/setup-dotnet@v3
+      uses: actions/setup-dotnet@v6
       with:
-        dotnet-version: 7.0
+        dotnet-version: 10.x
         dotnet-quality: 'ga'
 
-    - name: Install dependencies
-      run: dotnet restore
-
-    - name: Build Release
+    - name: Build Release Terminal.Gui packages
       run: |
-        dotnet-gitversion /updateprojectfiles
-        dotnet build --no-restore -c Release
+        dotnet build Terminal.Gui/Terminal.Gui.csproj --no-incremental --nologo --force --configuration Release
+        dotnet build Terminal.Gui.Interop.Spectre/Terminal.Gui.Interop.Spectre.csproj --no-incremental --nologo --force --configuration Release
 
-    - name: Pack
-      run: dotnet pack -c Release --include-symbols -p:Version='${{ steps.gitversion.outputs.SemVer }}' 
+    - name: Pack Release Terminal.Gui ${{ steps.gitversion.outputs.SemVer }} for Nuget
+      run: dotnet pack Terminal.Gui/Terminal.Gui.csproj -c Release --include-symbols --no-build
 
-    #- name: Test to generate Code Coverage Report
-    #  run: |
-    #    dotnet test --verbosity normal --collect:"XPlat Code Coverage" --settings UnitTests/coverlet.runsettings
-    #    mv -v UnitTests/TestResults/*/*.* UnitTests/TestResults/
+    - name: Pack Release Terminal.Gui.Interop.Spectre ${{ steps.gitversion.outputs.SemVer }} for Nuget
+      run: dotnet pack Terminal.Gui.Interop.Spectre/Terminal.Gui.Interop.Spectre.csproj -c Release --include-symbols --no-build
 
-    #- name: Create Test Coverage Badge
-    #  uses: simon-k/dotnet-code-coverage-badge@v1.0.0
-    #  id: create_coverage_badge
-    #  with:
-    #    label: Unit Test Coverage
-    #    color: brightgreen
-    #    path: UnitTests/TestResults/coverage.opencover.xml
-    #    gist-filename: code-coverage.json
-    #    # https://gist.github.com/migueldeicaza/90ef67a684cb71db1817921a970f8d27
-    #    gist-id: 90ef67a684cb71db1817921a970f8d27
-    #    gist-auth-token: ${{ secrets.GIST_AUTH_TOKEN }}   
+    # - name: Test to generate Code Coverage Report
+    #   run: |
+    #     sed -i 's/"stopOnFail": false/"stopOnFail": true/g' UnitTests/xunit.runner.json
+    #     dotnet test --verbosity normal --collect:"XPlat Code Coverage" --settings UnitTests/coverlet.runsettings
+    #     mv -v UnitTests/TestResults/*/*.* UnitTests/TestResults/
 
-    #- name: Print Code Coverage
-    #  run: |
-    #    echo "Code coverage percentage: ${{steps.create_coverage_badge.outputs.percentage}}%"
-    #    echo "Badge data: ${{steps.create_coverage_badge.outputs.badge}}"
+    # - name: Create Test Coverage Badge
+    #   uses: simon-k/dotnet-code-coverage-badge@v1.0.0
+    #   id: create_coverage_badge
+    #   with:
+    #     label: Unit Test Coverage
+    #     color: brightgreen
+    #     path: UnitTests/TestResults/coverage.opencover.xml
+    #     gist-filename: code-coverage.json
+    #     gist-id: 90ef67a684cb71db1817921a970f8d27
+    #     gist-auth-token: ${{ secrets.GIST_AUTH_TOKEN }}   
 
-    - name: Publish to NuGet.org
-      run: dotnet nuget push Terminal.Gui/bin/Release/*.nupkg --api-key ${{ secrets.NUGET_API_KEY }} -s https://api.nuget.org/v3/index.json
+    # - name: Print Code Coverage
+    #   run: |
+    #     echo "Code coverage percentage: ${{steps.create_coverage_badge.outputs.percentage}}%"
+    #     echo "Badge data: ${{steps.create_coverage_badge.outputs.badge}}"
+        
+    - name: Publish Terminal.Gui.${{ steps.gitversion.outputs.SemVer }} to NuGet.org
+      run: dotnet nuget push Terminal.Gui/bin/Release/Terminal.Gui.${{ steps.gitversion.outputs.SemVer }}.nupkg --skip-duplicate --api-key ${{ secrets.NUGET_API_KEY }}
 
-    - name: Unlist from NuGet.org if it's an alpha
-      run: dotnet nuget delete  --non-interactive Terminal.Gui ${{ steps.gitversion.outputs.SemVer }} --api-key ${{ secrets.NUGET_API_KEY }} -s https://api.nuget.org/v3/index.json
-      if: contains(steps.gitversion.outputs.SemVer, 'alpha')
+    - name: Publish Terminal.Gui.Interop.Spectre.${{ steps.gitversion.outputs.SemVer }} to NuGet.org
+      run: dotnet nuget push Terminal.Gui.Interop.Spectre/bin/Release/Terminal.Gui.Interop.Spectre.${{ steps.gitversion.outputs.SemVer }}.nupkg --skip-duplicate --api-key ${{ secrets.NUGET_API_KEY }}
 
+    # Deterministic version handoff to notify-clet.yml. Avoids the NuGet
+    # search-API indexing lag that caused tui-cs/clet to skip TG develop.37
+    # (see clet workflow run 25406348354). notify-clet.yml downloads this
+    # artifact via workflow_run + actions/download-artifact and then polls
+    # NuGet flat-container until the version is restorable.
+    - name: Record published version for notify-clet
+      run: echo "${{ steps.gitversion.outputs.SemVer }}" > version.txt
 
+    - name: Upload published-version artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: published-version
+        path: version.txt
+        retention-days: 7
+    
+    # - name: Delist old NuGet packages
+    #   if: startsWith(github.ref, 'refs/tags/v')
+    #   shell: pwsh
+    #   run: |
+    #     $version = "${{ steps.gitversion.outputs.SemVer }}"
+    #     Write-Host "Running delist script for just-published version: $version"
+    #     ./Scripts/delist-nuget.ps1 -ApiKey "${{ secrets.NUGET_API_KEY }}" -JustPublishedVersion "$version"
+    
+    - name: Prepare payload for template dispatch
+      if: startsWith(github.ref, 'refs/tags/v')
+      id: payload
+      run: |
+        echo "json={\"version\":\"${{ steps.gitversion.outputs.SemVer }}\"}" >> $GITHUB_OUTPUT
+    
+    - name: Trigger Terminal.Gui.templates update
+      if: startsWith(github.ref, 'refs/tags/v')
+      uses: peter-evans/repository-dispatch@v4
+      with:
+        token: ${{ secrets.TEMPLATE_REPO_TOKEN }}
+        repository: tui-cs/Terminal.Gui.templates
+        event-type: terminal-gui-v2-released
+        client-payload: ${{ steps.payload.outputs.json }}
+
+    # Notify tui-cs/Editor so its bump-terminal-gui.yml workflow can pin the
+    # just-published version, validate, and republish Editor against it
+    # (Editor is the continuous canary for TG API churn — see Editor's
+    # specs/decisions.md DEC-010). Editor also polls NuGet on a schedule, so a
+    # missing token degrades gracefully.
+    # Requires EDITOR_DISPATCH_TOKEN: a PAT with `repo` scope on tui-cs/Editor.
+    - name: Notify tui-cs/Editor of publish
+      if: env.EDITOR_DISPATCH_TOKEN != ''
+      continue-on-error: true
+      uses: peter-evans/repository-dispatch@v4
+      with:
+        token: ${{ secrets.EDITOR_DISPATCH_TOKEN }}
+        repository: tui-cs/Editor
+        event-type: terminal-gui-published
+        client-payload: '{"version":"${{ steps.gitversion.outputs.SemVer }}"}'

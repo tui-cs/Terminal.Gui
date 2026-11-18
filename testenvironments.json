@@ -11,9 +11,15 @@
 			"wslDistribution": "Ubuntu"
 		},
 		{
+			"name": "WSL-Ubuntu-20.04",
+			"type": "wsl",
+			"wslDistribution": "Ubuntu-20.04"
+		},
+		{
 			"name": "WSL-Debian",
 			"type": "wsl",
 			"wslDistribution": "Debian"
 		}
 	]
 }
+ 

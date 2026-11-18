@@ -1,0 +1,212 @@
+name: Performance Gate
+
+on:
+  push:
+    branches: [ main, develop ]
+    paths-ignore:
+      - '**.md'
+  pull_request:
+    branches: [ main, develop ]
+    paths-ignore:
+      - '**.md'
+
+# Only run on Linux to keep results comparable across runs.
+# Windows/macOS times vary too much to use as a performance baseline.
+permissions:
+  contents: read
+
+jobs:
+  perf-smoke-tests:
+    name: Performance Smoke Tests (Linux)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      DisableRealDriverIO: "1"
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0   # GitVersion needs full history
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: 10.x
+          dotnet-quality: 'ga'
+
+      - name: Restore dependencies
+        run: dotnet restore
+
+      - name: Build (Release)
+        run: dotnet build --configuration Release --no-restore -property:NoWarn=0618%3B0612
+
+      - name: Build Tests (Debug — smoke tests run in Debug to match CI unit tests)
+        run: dotnet build Tests/PerformanceTests --no-restore -property:NoWarn=0618%3B0612
+
+      - name: Run performance smoke tests (Layer 1 gate)
+        id: smoke_tests
+        run: |
+          dotnet test \
+            --project Tests/PerformanceTests \
+            --no-build \
+            --verbosity normal
+
+      - name: Upload smoke test logs
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: perf-smoke-test-logs
+          path: |
+            TestResults/
+          if-no-files-found: ignore
+          retention-days: 7
+
+  perf-benchmarks:
+    name: Benchmarks (Linux, ShortRun)
+    runs-on: ubuntu-latest
+    # Uncomment to run only on pushes to develop/main instead of on every PR.
+    # if: github.event_name == 'push'
+    timeout-minutes: 30
+    env:
+      DisableRealDriverIO: "1"
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: 10.x
+          dotnet-quality: 'ga'
+
+      - name: Restore dependencies
+        run: dotnet restore
+
+      - name: Build Release
+        run: dotnet build --configuration Release --no-restore -property:NoWarn=0618%3B0612
+
+      - name: Run benchmarks (ShortRun ≈ 30–60 s)
+        id: run_benchmarks
+        run: |
+          dotnet run \
+            --project Tests/Benchmarks \
+            --configuration Release \
+            --no-build \
+            -- \
+            --filter '*Scroll*' '*Config*' '*Scheme*' '*Theme*' '*OutputWriteBenchmark*' '*UnixRawOutputBenchmark*' \
+            --job short \
+            --exporters json \
+            --artifacts ./BenchmarkResults
+        continue-on-error: true   # Don't block the workflow; comparison step decides outcome
+
+      - name: Compare results to baseline
+        id: compare
+        run: |
+          python3 - << 'PYEOF'
+          import json, os, sys, glob
+
+          REGRESSION_FACTOR = 3.0   # Fail if any benchmark is >3× baseline
+          IMPROVEMENT_FACTOR = 0.8  # Celebrate 🎉 if any benchmark drops below 0.8× baseline
+
+          baseline_path = "Tests/Benchmarks/baseline.json"
+          results_dir = "BenchmarkResults"
+
+          # --- Load baseline ---
+          try:
+              with open(baseline_path) as f:
+                  baseline_data = json.load(f)
+              baseline = {
+                  f"{b['type']}/{b['method']}/{b['params']}": b["meanNs"]
+                  for b in baseline_data["benchmarks"]
+              }
+          except FileNotFoundError:
+              print("::warning::baseline.json not found — skipping comparison")
+              sys.exit(0)
+
+          # --- Find BenchmarkDotNet JSON results ---
+          result_files = glob.glob(f"{results_dir}/**/*.json", recursive=True)
+          result_files = [f for f in result_files if "results" in f.lower() or "report" in f.lower()]
+          if not result_files:
+              print("::warning::No BenchmarkDotNet result files found — skipping comparison")
+              sys.exit(0)
+
+          # --- Parse results ---
+          results = {}
+          for fpath in result_files:
+              try:
+                  with open(fpath) as f:
+                      data = json.load(f)
+                  for bm in data.get("Benchmarks", []):
+                      key = f"{bm['Type']}/{bm['Method']}/{bm.get('Parameters', '')}"
+                      results[key] = bm.get("Statistics", {}).get("Mean", None)
+              except Exception as e:
+                  print(f"::warning::Could not parse {fpath}: {e}")
+
+          # --- Build comparison table ---
+          rows = []
+          regressions = []
+          improvements = []
+
+          for key, base_ns in baseline.items():
+              if base_ns <= 0:
+                  continue
+              cur_ns = results.get(key)
+              if cur_ns is None:
+                  rows.append(f"| {key} | {base_ns/1000:.1f} µs | — (not measured) | — |")
+                  continue
+
+              ratio = cur_ns / base_ns
+              emoji = "✅"
+              if ratio >= REGRESSION_FACTOR:
+                  emoji = "❌"
+                  regressions.append((key, base_ns, cur_ns, ratio))
+              elif ratio <= IMPROVEMENT_FACTOR:
+                  emoji = "🎉"
+                  improvements.append((key, base_ns, cur_ns, ratio))
+              rows.append(
+                  f"| {key} | {base_ns/1000:.1f} µs | {cur_ns/1000:.1f} µs | {ratio:.2f}× {emoji} |"
+              )
+
+          # --- Write step summary ---
+          summary = "## 📊 Benchmark Comparison\n\n"
+          summary += "| Benchmark | Baseline | Current | Ratio |\n"
+          summary += "|-----------|----------|---------|-------|\n"
+          summary += "\n".join(rows) + "\n\n"
+
+          if improvements:
+              summary += "### 🎉 Performance Improvements\n"
+              for k, b, c, r in improvements:
+                  summary += f"- **{k}**: {b/1000:.1f} µs → {c/1000:.1f} µs ({r:.2f}×)\n"
+              summary += "\n"
+
+          if regressions:
+              summary += "### ❌ Regressions Detected\n"
+              for k, b, c, r in regressions:
+                  summary += f"- **{k}**: {b/1000:.1f} µs → {c/1000:.1f} µs ({r:.2f}×) — exceeds {REGRESSION_FACTOR}× threshold\n"
+              summary += "\n"
+
+          with open(os.environ.get("GITHUB_STEP_SUMMARY", "/dev/null"), "a") as f:
+              f.write(summary)
+
+          print(summary)
+
+          if regressions:
+              print(f"::error::Performance regressions detected: {len(regressions)} benchmark(s) exceeded {REGRESSION_FACTOR}× baseline")
+              sys.exit(1)
+
+          if improvements:
+              print(f"Performance improvements detected: {len(improvements)} benchmark(s) improved!")
+          PYEOF
+
+      - name: Upload benchmark results
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: benchmark-results-${{ github.sha }}
+          path: BenchmarkResults/
+          if-no-files-found: ignore
+          retention-days: 30

@@ -1,54 +1,145 @@
-name: Build and publish API docs
+name: Build and publish v2 API docs
 
 on:
   push:
-    branches: [main]
+    branches: [develop]
+  workflow_dispatch:
+    inputs:
+      regenerate-views:
+        description: Regenerate views.md and view GIF assets
+        type: boolean
+        default: true
+
+permissions:
+  contents: write
+  id-token: write 
+  pages: write
 
 jobs:
-  generate-docs:
+  build:
+    name: Build v2 API docs ${{ github.ref_name }}
     runs-on: windows-latest
-
     steps:
     - name: Checkout
-      uses: actions/checkout@v3
+      uses: actions/checkout@v7
+      with:
+        fetch-depth: 0
 
     - name: Setup .NET Core
-      uses: actions/setup-dotnet@v3.0.3
+      uses: actions/setup-dotnet@v6
       with:
-        dotnet-version: 6.0.100
-    
-    - name: Setup DocFX
-      uses: crazy-max/ghaction-chocolatey@v2
-      with:
-        args: install docfx    
+        dotnet-version: 10.x
+        dotnet-quality: 'ga'
 
-    - name: Install dependencies
-      run: dotnet restore        
+    - name: Detect view docs changes
+      id: view-docs
+      shell: pwsh
+      run: |
+        $shouldGenerate = $false
+
+        if ("${{ github.event_name }}" -eq "workflow_dispatch") {
+          $shouldGenerate = "${{ inputs.regenerate-views }}" -eq "true"
+        } else {
+          $before = "${{ github.event.before }}"
+
+          if ($before -match "^0+$") {
+            $before = "HEAD~1"
+          }
+
+          $changedFiles = git diff --name-only $before "${{ github.sha }}"
+          $shouldGenerate = [bool]($changedFiles | Where-Object {
+            $_ -match "^Terminal\.Gui/Views/" -or
+            $_ -match "^docfx/scripts/OutputView/" -or
+            $_ -match "^docfx/scripts/generate-views-doc\.ps1$"
+          } | Select-Object -First 1)
+        }
+
+        "should_generate=$($shouldGenerate.ToString().ToLowerInvariant())" >> $env:GITHUB_OUTPUT
+
+    - name: Restore dependencies
+      run: dotnet restore
+
+    - name: Build Terminal.Gui Release
+      run: dotnet build Terminal.Gui/Terminal.Gui.csproj --configuration Release --no-restore
+
+    - name: Build EditorRef (for Terminal.Gui.Editor docs)
+      run: dotnet build docfx/EditorRef/EditorRef.csproj --configuration Release
+
+    - name: Install DocFX
+      run: |
+        dotnet tool install -g docfx
+
+    - name: Setup Go
+      if: steps.view-docs.outputs.should_generate == 'true'
+      uses: actions/setup-go@v7
+      with:
+        go-version: stable
+
+    - name: Install views docs tools
+      if: steps.view-docs.outputs.should_generate == 'true'
+      run: |
+        # Pin to @main: tuirec's released tags (≤ v0.9.0) still declare the old
+        # module path github.com/gui-cs/tuirec, so go install ...@latest would
+        # fail the import-path check. main already declares github.com/tui-cs/tuirec.
+        go install github.com/tui-cs/tuirec/cmd/tuirec@main
+        Add-Content $env:GITHUB_PATH "$(go env GOPATH)\bin"
+        Install-Module powershell-yaml -Scope CurrentUser -Force
+
+    - name: Generate API metadata
+      working-directory: docfx
+      run: |
+        $env:DOCFX_SOURCE_BRANCH_NAME="${{ github.ref_name }}"
+        docfx metadata
+
+    - name: Generate views docs
+      if: steps.view-docs.outputs.should_generate == 'true'
+      working-directory: docfx
+      run: |
+        ./scripts/generate-views-doc.ps1
 
     - name: DocFX Build
       working-directory: docfx
-      # https://stackoverflow.com/questions/56726429/how-to-run-multiple-commands-in-one-github-actions-docker
       run: |
-        rm ../docs -Recurse -Force -ErrorAction SilentlyContinue
-        docfx docfx.json
-      continue-on-error: false      
+        docfx build
+      continue-on-error: false
 
-    - name: Publish
-      if: github.event_name == 'push'
-      uses: peaceiris/actions-gh-pages@v3
+    - name: Commit regenerated views assets
+      if: github.event_name == 'workflow_dispatch' && steps.view-docs.outputs.should_generate == 'true'
+      shell: pwsh
+      run: |
+        git config user.name "github-actions[bot]"
+        git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+        git add docfx/docs/views.md docfx/images/views
+
+        if (git diff --cached --quiet) {
+          Write-Host "No regenerated view assets to commit."
+          exit 0
+        }
+
+        git commit -m "Regenerate docfx view GIF assets via CI"
+        git push
+
+    - name: Setup Pages
+      if: github.event_name == 'push' && github.ref_name == 'develop'
+      uses: actions/configure-pages@v6
+       
+    - name: Upload artifact
+      if: github.event_name == 'push' && github.ref_name == 'develop'
+      uses: actions/upload-pages-artifact@v5
       with:
-        github_token: ${{ secrets.GITHUB_TOKEN }}
-        publish_dir: docs
-        force_orphan: true
+        path: docfx/_site
 
-    # - name: Use docfx to build API Docs
-    #   uses: nikeee/docfx-action@v1.0.0
-    #   with:
-    #     args: docfx/docfx.json
-
-    # # Publish generated site using GitHub Pages
-    # - uses: maxheld83/ghpages@master
-    #   name: Publish API Documentation on GitHub Pages
-    #   env:
-    #     BUILD_DIR: docs # docfx's default output directory is _site
-    #     GH_PAT: ${{ secrets.GH_PAT }} # See https://github.com/maxheld83/ghpages
+  deploy:
+    name: Deploy v2 API docs to github-pages ${{ github.ref_name }}
+    if: github.event_name == 'push' && github.ref_name == 'develop'
+    needs: build
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: windows-latest
+    steps:
+    - name: Deploy to GitHub Pages
+      id: deployment
+      uses: actions/deploy-pages@v5
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}

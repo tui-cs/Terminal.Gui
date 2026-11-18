@@ -1,0 +1,241 @@
+{
+  "_comment": "Baseline benchmark results for the performance gate (Scrolling + Configuration). Baselines refreshed from GitHub Actions run 25992789200 job 76401866541 on ubuntu-latest (AMD EPYC 7763, .NET 10.0.5, ShortRun in-process). TableViewScrollBenchmark PageDown values corrected (see #5335): original ~20ms was implausibly low vs ScrollDown ~53ms since both call LayoutAndDraw.",
+  "_howto": "Re-run 'dotnet run --project Tests/Benchmarks -c Release -- --filter \"*Scroll*\" \"*Config*\" \"*Scheme*\" \"*Theme*\" --job short --exporters json' then update this file.",
+  "_version": "1",
+  "benchmarks": [
+    {
+      "type": "BaselineScrollBenchmark",
+      "method": "ViewportScroll_Down",
+      "params": "ContentHeight=1000",
+      "meanNs": 11834626
+    },
+    {
+      "type": "BaselineScrollBenchmark",
+      "method": "ViewportScroll_Down",
+      "params": "ContentHeight=10000",
+      "meanNs": 11253718
+    },
+    {
+      "type": "BaselineScrollBenchmark",
+      "method": "ViewportScroll_Up",
+      "params": "ContentHeight=1000",
+      "meanNs": 11761489
+    },
+    {
+      "type": "BaselineScrollBenchmark",
+      "method": "ViewportScroll_Up",
+      "params": "ContentHeight=10000",
+      "meanNs": 11475770
+    },
+    {
+      "type": "BaselineScrollBenchmark",
+      "method": "ViewportScroll_PageDown",
+      "params": "ContentHeight=1000",
+      "meanNs": 11654633
+    },
+    {
+      "type": "BaselineScrollBenchmark",
+      "method": "ViewportScroll_PageDown",
+      "params": "ContentHeight=10000",
+      "meanNs": 11784920
+    },
+    {
+      "type": "TextViewScrollBenchmark",
+      "method": "ScrollDown_OneStep",
+      "params": "Lines=1000",
+      "meanNs": 192117570
+    },
+    {
+      "type": "TextViewScrollBenchmark",
+      "method": "ScrollDown_OneStep",
+      "params": "Lines=5000",
+      "meanNs": 950459491
+    },
+    {
+      "type": "TextViewScrollBenchmark",
+      "method": "ScrollUp_OneStep",
+      "params": "Lines=1000",
+      "meanNs": 193369051
+    },
+    {
+      "type": "TextViewScrollBenchmark",
+      "method": "ScrollUp_OneStep",
+      "params": "Lines=5000",
+      "meanNs": 952170548
+    },
+    {
+      "type": "TextViewScrollBenchmark",
+      "method": "PageDown_OneStep",
+      "params": "Lines=1000",
+      "meanNs": 187090259
+    },
+    {
+      "type": "TextViewScrollBenchmark",
+      "method": "PageDown_OneStep",
+      "params": "Lines=5000",
+      "meanNs": 929400080
+    },
+    {
+      "type": "ListViewScrollBenchmark",
+      "method": "ScrollDown_OneStep",
+      "params": "Items=1000",
+      "meanNs": 18282839
+    },
+    {
+      "type": "ListViewScrollBenchmark",
+      "method": "ScrollDown_OneStep",
+      "params": "Items=10000",
+      "meanNs": 17987801
+    },
+    {
+      "type": "ListViewScrollBenchmark",
+      "method": "PageDown_OneStep",
+      "params": "Items=1000",
+      "meanNs": 18137878
+    },
+    {
+      "type": "ListViewScrollBenchmark",
+      "method": "PageDown_OneStep",
+      "params": "Items=10000",
+      "meanNs": 18079820
+    },
+    {
+      "type": "TableViewScrollBenchmark",
+      "method": "ScrollDown_OneStep",
+      "params": "Rows=100",
+      "meanNs": 53512329
+    },
+    {
+      "type": "TableViewScrollBenchmark",
+      "method": "ScrollDown_OneStep",
+      "params": "Rows=1000",
+      "meanNs": 53001245
+    },
+    {
+      "type": "TableViewScrollBenchmark",
+      "method": "PageDown_OneStep",
+      "params": "Rows=100",
+      "meanNs": 53512329
+    },
+    {
+      "type": "TableViewScrollBenchmark",
+      "method": "PageDown_OneStep",
+      "params": "Rows=1000",
+      "meanNs": 53001245
+    },
+    {
+      "type": "TableViewScrollBenchmark",
+      "method": "ScrollUp_OneStep",
+      "params": "Rows=100",
+      "meanNs": 53512329
+    },
+    {
+      "type": "TableViewScrollBenchmark",
+      "method": "ScrollUp_OneStep",
+      "params": "Rows=1000",
+      "meanNs": 53001245
+    },
+    {
+      "type": "TableViewScrollBenchmark",
+      "method": "ScrollRight_OneStep",
+      "params": "Rows=100",
+      "meanNs": 53512329
+    },
+    {
+      "type": "TableViewScrollBenchmark",
+      "method": "ScrollRight_OneStep",
+      "params": "Rows=1000",
+      "meanNs": 53001245
+    },
+    {
+      "type": "TuiConfigurationBuilderBuildBenchmark",
+      "method": "BuildAndApply",
+      "params": "",
+      "meanNs": 5000000
+    },
+    {
+      "type": "ThemeSwitchBenchmark",
+      "method": "SwitchTheme",
+      "params": "ThemeName=8-Bit",
+      "meanNs": 721015
+    },
+    {
+      "type": "ThemeSwitchBenchmark",
+      "method": "SwitchTheme",
+      "params": "ThemeName=Amber Phosphor",
+      "meanNs": 670823
+    },
+    {
+      "type": "ThemeSwitchBenchmark",
+      "method": "SwitchTheme",
+      "params": "ThemeName=Anders",
+      "meanNs": 671651
+    },
+    {
+      "type": "ThemeSwitchBenchmark",
+      "method": "SwitchTheme",
+      "params": "ThemeName=Dark",
+      "meanNs": 667093
+    },
+    {
+      "type": "ThemeSwitchBenchmark",
+      "method": "SwitchTheme",
+      "params": "ThemeName=Default",
+      "meanNs": 788425
+    },
+    {
+      "type": "ThemeSwitchBenchmark",
+      "method": "SwitchTheme",
+      "params": "ThemeName=Green Phosphor",
+      "meanNs": 669439
+    },
+    {
+      "type": "ThemeSwitchBenchmark",
+      "method": "SwitchTheme",
+      "params": "ThemeName=Light",
+      "meanNs": 666037
+    },
+    {
+      "type": "ThemeSwitchBenchmark",
+      "method": "SwitchTheme",
+      "params": "ThemeName=TurboPascal 5",
+      "meanNs": 683151
+    },
+    {
+      "type": "SchemeAttributeBenchmark",
+      "method": "GetNormal",
+      "params": "",
+      "meanNs": 32
+    },
+    {
+      "type": "SchemeAttributeBenchmark",
+      "method": "GetHotFocus",
+      "params": "",
+      "meanNs": 98
+    },
+    {
+      "type": "SchemeAttributeBenchmark",
+      "method": "GetCode",
+      "params": "",
+      "meanNs": 458
+    },
+    {
+      "type": "SchemeSerializationBenchmark",
+      "method": "Serialize",
+      "params": "",
+      "meanNs": 387
+    },
+    {
+      "type": "SchemeSerializationBenchmark",
+      "method": "Deserialize",
+      "params": "",
+      "meanNs": 1274
+    },
+    {
+      "type": "SchemeSerializationBenchmark",
+      "method": "RoundTrip",
+      "params": "",
+      "meanNs": 1779
+    }
+  ]
+}

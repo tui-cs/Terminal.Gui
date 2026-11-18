@@ -1,173 +1,162 @@
-# Terminal.Gui Project
+# Terminal.Gui Library — Maintainer Guide
 
-All files required to build the **Terminal.Gui** library (and NuGet package).
+This directory contains the core **Terminal.Gui** library source code. This README documents how to maintain and release the library. For contribution guidelines, see [CONTRIBUTING.md](../CONTRIBUTING.md). For building apps with Terminal.Gui, see [the documentation](https://tui-cs.github.io/Terminal.Gui).
 
-## Project Folder Structure
+## Versioning
 
-- `\` - The root folder contains the source code for the library.
-	- `Terminal.Gui.sln` - The Visual Studio solution
-	- `Application.cs` - A `static` class that provides the base 'application driver'. Given it defines a **Terminal.Gui** application it is both logically and literally (because `static`) a singleton. It has direct dependencies on `MainLoop`, `Events.cs` `NetDriver`, `CursesDriver`, `WindowsDriver`, `Responder`, `View`, and `TopLevel` (and nothing else).
-	- `MainLoop.cs` - Defines `IMainLoopDriver` and implements the `MainLoop` class.
-	- A few supporting class files
+Versions are computed automatically by [GitVersion 6.x](https://gitversion.net) using the [GitFlow](https://gitversion.net/docs/learn/branching-strategies/gitflow/) branching strategy. Configuration is in [`GitVersion.yml`](../GitVersion.yml).
 
-- `ConsoleDrivers\`
-	- `ConsoleDriver.cs` - Definition for the Console Driver API.
-	- Source files for the three `ConsoleDriver`-based drivers: .NET: `NetDriver`, Unix & Mac: `UnixDriver`, and Windows: `WindowsDriver`.
+The [GitVersion.MsBuild](https://www.nuget.org/packages/GitVersion.MsBuild) NuGet package is included in `Terminal.Gui.csproj` and automatically sets `Version`, `AssemblyVersion`, `FileVersion`, and `InformationalVersion` from git history at build time. No manual version management is needed.
 
-- `Configuration\` - Classes related the `ConfigurationManager`.
+### How Versions Are Computed
 
-- `Clipboard\` - Classes related to clipboard access.
+| Branch | Example Version | Increment | Notes |
+|--------|----------------|-----------|-------|
+| `main` (stable) | `2.0.0` | Patch | Label set in `GitVersion.yml` (`label: ''`) |
+| `main` (pre-release) | `2.0.1-rc.1` | Patch | Label set in `GitVersion.yml` (e.g., `label: rc`) |
+| `develop` | `2.5.0-develop.55` | Patch | Always carries `-develop` pre-release label |
+| `feature/*`, `fix/*`, etc. | `2.5.0-my-feature.1` | Inherit | Inherits from `develop`; branch name becomes label |
+| `pull-request/*` | `2.0.0-pr.123.1` | Inherit | PR number in label |
 
-- `Input\` - Classes relating to keyboard and mouse input. Includes `Responder`, which is the base class for `View`
-	- `Events.cs` - Defines keyboard and mouse-related structs & classes. 
-	- `Responder` - Base class for the windowing class hierarchy. Implements support for keyboard & mouse input.
-	- etc...
+`develop` increments **Patch** (`GitVersion.yml` `increment: Patch`). To bump Minor, include `+semver: minor` in a commit message. Do not pin `next-version`.
 
-- `Text\` - Classes related to text processing
-
-- `Drawing\` - Classes related to drawing 
-
-- `View\` - The `View` class heirarchy, not including any sub-classes
-	- `View.cs` - Derived from `Responder`, the base class for non-modal visual elements such as controls.
-	- `Layout\`	
-		- `PosDim.cs` - Implements *Computed Layout* system. These classes have deep dependencies on `View`.
-
-- `Views\` - Sub-classes of `View` 
-	- `Toplevel` - Derived from `View`, the base class for modal visual elements such as top-level windows and dialogs. Supports the concept of `MenuBar` and `StatusBar`.
-	- `Window` - Derived from `TopLevel`; implements Toplevel views with a visible frame and Title.
-	- `Dialog` -
-	- etc...
-
-- `Types/` - A folder (not namespace) containing implementations of `Point`, `Rect`, and `Size` which are ancient versions of the modern `System.Drawing.Point`, `System.Drawing.Size`, and `System.Drawning.Rectangle`.
-
-## Version numbers
-
-Version info for Terminal.Gui is managed by [gitversion](https://gitversion.net).
-
-Install `gitversion`:
+### Checking Versions Locally
 
 ```powershell
+# Install the CLI tool (one-time)
 dotnet tool install --global GitVersion.Tool
+
+# Show what version would be computed for the current branch
 dotnet-gitversion
 ```
 
-The project version (the nuget package and in `Terminal.Gui.dll`) is determined from the latest `git tag`. 
+The version is also embedded in every build. For example, `UICatalog --version` displays the terse SemVer (build metadata after `+` is stripped).
 
-The format of version numbers is `vmajor.minor.patch.build.height` and follows the [Semantic Versioning](https://semver.org/) rules.
+### Pre-Release Label Progression on `main`
 
-To define a new version (e.g. with a higher `major`, `minor`, `patch`, or `build` value) tag a commit using `git tag`:
+To change the pre-release stage, edit the `label` field under `main` in `GitVersion.yml`:
 
+| Stage | `label` value | Example Output |
+|-------|--------------|----------------|
+| Beta | `beta` | `2.0.0-beta.1` |
+| Release Candidate | `rc` | `2.0.0-rc.1` |
+| Stable Release | `''` (empty) | `2.0.0` |
+
+## Publishing a Release
+
+Releases follow [Semantic Versioning](https://semver.org/): **MAJOR** for breaking changes, **MINOR** for new features, **PATCH** for bug fixes.
+
+### Automated Release Workflow (Preferred)
+
+Two workflows handle the release lifecycle:
+
+**Step 1 — [Prepare Release](../.github/workflows/prepare-release.yml)** (manual trigger):
+1. Go to **Actions → Prepare Release → Run workflow**.
+2. Pick the release type (`beta`, `rc`, `stable`) and optionally override the version.
+3. The workflow creates a `release/<tag>` branch from `develop` — where `<tag>` is the full version tag, e.g. `release/v2.0.0` or `release/v2.0.0-beta.1` — updates the `GitVersion.yml` label, and opens a PR into `main`.
+4. Review the PR — CI runs, branch protections apply.
+
+**Step 2 — [Finalize Release](../.github/workflows/finalize-release.yml)** (automatic on PR merge):
+When the release PR is merged into `main`:
+1. Creates an annotated tag (`vX.Y.Z` or `vX.Y.Z-beta`)
+2. Creates a GitHub Release with auto-generated notes
+3. [Publish](../.github/workflows/publish.yml) fires automatically → NuGet package published
+4. Opens a back-merge PR (`main` → `develop`) to keep branches in sync
+
+### Manual Release Steps
+
+If you need to release manually:
+
+1. **Ensure `develop` is ready**: all changes committed, CI passing.
+
+2. **Merge `develop` into `main`**:
+   ```powershell
+   git checkout main
+   git pull upstream main
+   git checkout develop
+   git pull upstream develop
+   git checkout main
+   git merge develop
+   # Fix any merge conflicts
+   ```
+
+3. **Update the pre-release label** in `GitVersion.yml` if changing stages (e.g., `beta` → `rc` → `''`).
+
+4. **Tag the release on `main`**:
+   ```powershell
+   git tag vX.Y.Z -a -m "Release vX.Y.Z"
+   ```
+
+5. **Push atomically**:
+   ```powershell
+   git push --atomic upstream main vX.Y.Z
+   ```
+
+6. **Monitor CI**: the [Publish workflow](https://github.com/tui-cs/Terminal.Gui/actions) builds and pushes to [NuGet](https://www.nuget.org/packages/Terminal.Gui). It also triggers an update to [Terminal.Gui.templates](https://github.com/tui-cs/Terminal.Gui.templates) for stable releases.
+
+7. **Create a GitHub Release** at [Releases](https://github.com/tui-cs/Terminal.Gui/releases) with auto-generated release notes.
+
+8. **Merge `main` back into `develop`**:
+   ```powershell
+   git checkout develop
+   git pull upstream develop
+   git merge main
+   git push upstream develop
+   ```
+
+## CI/CD Workflows
+
+All workflows are in [`.github/workflows/`](../.github/workflows/):
+
+| Workflow | Trigger | Purpose |
+|----------|---------|---------|
+| **[prepare-release.yml](../.github/workflows/prepare-release.yml)** | Manual dispatch | Creates a release PR from `develop` → `main` with label updates |
+| **[finalize-release.yml](../.github/workflows/finalize-release.yml)** | Release PR merged to `main` | Creates tag, GitHub Release, back-merge PR to `develop` |
+| **[publish.yml](../.github/workflows/publish.yml)** | Push to `develop`, or `v*` tags | Builds Release config, packs, and publishes to NuGet.org |
+| **[build-validation.yml](../.github/workflows/build-validation.yml)** | Push/PR to `main` or `develop` | Builds all configurations to validate compilation |
+| **[unit-tests.yml](../.github/workflows/unit-tests.yml)** | Push/PR to `main` or `develop` | Runs all unit tests |
+| **[api-docs.yml](../.github/workflows/api-docs.yml)** | Push to `develop` | Builds and deploys API docs to GitHub Pages |
+| **[codeql-analysis.yml](../.github/workflows/codeql-analysis.yml)** | Push/PR to `main` or `develop` | CodeQL security analysis |
+| **[integration-tests.yml](../.github/workflows/integration-tests.yml)** | Push/PR to `main` or `develop` | Integration tests |
+| **[stress-tests.yml](../.github/workflows/stress-tests.yml)** | Push/PR to `main` or `develop` | Stress tests |
+
+## V1 Legacy Branches
+
+Terminal.Gui V1 (latest: `v1.19.0`) is maintained on separate branches:
+
+| Branch | Purpose |
+|--------|---------|
+| `v1_release` | V1 stable releases (equivalent of `main` for V1) |
+| `v1_develop` | V1 development (equivalent of `develop` for V1) |
+
+V1 follows the same GitFlow model as V2 but is in maintenance-only mode. The V1 NuGet package is `Terminal.Gui` 1.x. V1 API docs are published from `v1_release` to a separate GitHub Pages path.
+
+These branches are **not** configured in `GitVersion.yml` (the config was removed to avoid interference with V2 versioning). V1 releases are tagged manually (e.g., `v1.19.0`).
+
+## NuGet Package
+
+- **Package**: [nuget.org/packages/Terminal.Gui](https://www.nuget.org/packages/Terminal.Gui)
+- **Auto-published** on every push to `develop` (pre-release versions) and on `v*` tag pushes (stable/pre-release versions tagged on `main`)
+- Pre-release versions (e.g., `2.5.0-develop.55`) are marked as pre-release on NuGet
+
+### Local Package Development
+
+When building in `Release` configuration, the `.csproj` automatically:
+1. Copies `.nupkg` and `.snupkg` to `../local_packages/`
+2. Pushes the package to the local NuGet cache
+
+Use the `local_packages` folder as a local NuGet source to test packages before publishing:
 ```powershell
-git tag v1.3.4-beta.5 -a -m "Release v1.3.4 Beta 5"
-dotnet-gitversion /updateprojectfiles
-dotnet build -c Release
+dotnet build Terminal.Gui/Terminal.Gui.csproj -c Release
+# Package is now in local_packages/ and your global NuGet cache
 ```
 
-**DO NOT COMMIT AFTER USING `/updateprojectfiles`!**
+## Documentation
 
-Doing so will update the `.csproj` files in your branch with version info, which we do not want.
-
-## Publishing a Release of Terminal.Gui
-
-First, use the [Semantic Versioning](https://semver.org/) rules.to determine the new verison number. 
-
-Given a version number MAJOR.MINOR.PATCH, increment the:
-
-* MAJOR version when you make incompatible API changes
-* MINOR version when you add functionality in a backwards compatible manner
-* PATCH version when you make backwards compatible bug fixes
-
-Additional labels for pre-release and build metadata are available as extensions to the MAJOR.MINOR.PATCH format.
-
-To release a new version (e.g. with a higher `major`, `minor`, or `patch` value) tag a commit using `git tag` and then push that tag directly to the `main` branch on `github.com/gui-cs/Terminal.Gui` (`upstream`).
-
-The `tag` must be of the form `v<major>.<minor>.<patch>`, e.g. `v2.3.4`.
-
-`patch` can indicate pre-release or not (e.g. `pre`, `beta`, `rc`, etc...). 
-
-### 1) Verify the `develop` branch is ready for release
-
-* Ensure everything is committed and pushed to the `develop` branch
-* Ensure your local `develop` branch is up-to-date with `upstream/develop`
-
-### 2) Create a pull request for the release in the `develop` branch
-
-The PR title should be of the form "Release v2.3.4"
-
-```powershell
-git checkout develop
-git pull upstream develop
-git checkout -b v2_3_4
-git add .
-git commit -m "Release v2.3.4"
-git push
-```
-
-Go to the link printed by `git push` and fill out the Pull Request.
-
-### 3) On github.com, verify the build action worked on your fork, then merge the PR
-
-### 4) Pull the merged `develop` from `upstream`
-
-```powershell
-git checkout develop
-git pull upstream develop
-```
-
-### 5) Merge `develop` into `main`
-
-```powershell
-git checkout main
-git pull upstream main
-git merge develop
-```
-
-Fix any merge errors.
-
-### 6) Create a new annotated tag for the release on `main`
-
-```powershell
-git tag v2.3.4 -a -m "Release v2.3.4"
-```       
-
-### 7) Push the new tag to `main` on `upstream`
-
-```powershell
-git push --atomic upstream main v2.3.4
-```       
-
-*See https://stackoverflow.com/a/3745250/297526*
-
-### 8) Monitor Github Actions to ensure the Nuget publishing worked.
-
-https://github.com/gui-cs/Terminal.Gui/actions
-
-### 9) Check Nuget to see the new package version (wait a few minutes) 
-https://www.nuget.org/packages/Terminal.Gui
-
-### 10) Add a new Release in Github: https://github.com/gui-cs/Terminal.Gui/releases
-
-Generate release notes with the list of PRs since the last release.
-
-### 11) Update the `develop` branch with the new version
-
-```powershell
-git checkout develop
-git pull upstream develop
-git merge main
-git push upstream develop
-```
-
-## Nuget
-
-https://www.nuget.org/packages/Terminal.Gui
-
-When a new version tag is defined and merged into `main`, a Nuget package will be generated by a Github Action.
-
-If the version is pre-release (includes a hyphen, e.g. `1.3.4-beta.5`) the Nuget package will be tagged as pre-release.
-
-Miguel & Tig can hide defunct/old Nuget packages.
+- **Live docs**: [tui-cs.github.io/Terminal.Gui](https://tui-cs.github.io/Terminal.Gui)
+- **DocFX source**: [`docfx/`](../docfx/) — see [`docfx/README.md`](../docfx/README.md) for local generation
+- **API docs** are auto-deployed to GitHub Pages on every push to `develop`
 
 ## Contributing
 
-See [CONTRIBUTING.md](https://github.com/gui-cs/Terminal.Gui/blob/master/CONTRIBUTING.md).
+See [CONTRIBUTING.md](../CONTRIBUTING.md) for build/test instructions, coding conventions, and PR guidelines.

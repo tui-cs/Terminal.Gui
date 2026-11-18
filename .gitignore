@@ -1,28 +1,93 @@
-bin
-obj
-~$*
-*.userprefs
-*~
-packages
-.vs
-# User-specific files
+# Build artifacts
+[Bb]in/
+[Oo]bj/
+[Rr]elease/
+[Dd]ebug/
+[Xx]64/
+[Aa][Rr][Mm]/
+[Aa][Rr][Mm]64/
+
+# User-local settings and caches
+*.rsuser
+*.suo
 *.user
+*.userosscache
+*.sln.docstates
+*.userprefs
+_ReSharper.**
+*.[Rr]e[Ss]harper
+*.DotSettings.user
+.vscode/*
+!.vscode/launch.json
+!.vscode/tasks.json
+.vs/
+
+# Visual Studio cache files
+# files ending in .cache can be ignored
+*.[Cc]ache
+# but keep track of directories ending in .cache
+!?*.[Cc]ache/
+
+# Roslyn generated cs files
+**.g.cs
+
+# Common temporary files
+~$*
+*~
+
+# Exclude everything in packages directory except the packages/build directory
+**/[Pp]ackages/*
+!**/[Pp]ackages/build/
 
 # API Docs
 docfx/api
+!docfx/api/index.md
+docfx/_site
 
-# Never push ./docs folder - the gh-pages branch is now used to publish to GH Pages
-docs/
-
+# Test Results
 UnitTests/TestResults
+TestResults
+*.actual
 
-#git merge files
+# git merge files
 *.orig
-
-.vscode/
+*.theirs
+*.ours
 
 demo.*
 
 *.deb
 
 *.tui/
+
+*.dotCover
+
+logs/
+
+BenchmarkDotNet.Artifacts/
+
+*.log
+
+*.log.*
+
+log.*
+
+/Tests/coverage/
+!/Tests/coverage/.gitkeep   # keep folder in repo
+/Tests/report/
+*.cobertura.xml
+
+# Claude Code local settings
+.claude/settings.local.json
+.claude/worktrees/
+# Session-local agent memory (machine-specific paths) - promote durable guidance to .claude/rules/ instead
+.claude/projects/
+.mcp.json
+.env
+tmpclaude-*-cwd
+
+# tuirec artifacts
+artifacts/
+docfx/artifacts/
+local_packages/
+*.cast

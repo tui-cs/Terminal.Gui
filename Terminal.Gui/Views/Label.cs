@@ -1,135 +1,82 @@
-﻿//
-// Label.cs: Label control
-//
-// Authors:
-//   Miguel de Icaza (miguel@gnome.org)
-//
+namespace Terminal.Gui.Views;
 
-using System;
-using System.Text;
+/// <summary>
+///     Displays text that describes the View next in the <see cref="View.SubViews"/>. When
+///     the user presses a hotkey that matches the <see cref="View.HotKey"/> of the Label, the next <see cref="View"/> in
+///     <see cref="View.SubViews"/> will be activated.
+/// </summary>
+/// <remarks>
+/// <img src="../images/views/Label.gif" alt="Label demo"/>
+///     <para>
+///         Title and Text are the same property. When Title is set Text s also set. When Text is set Title is also set.
+///     </para>
+///     <para>
+///         If <see cref="View.CanFocus"/> is <see langword="false"/> and the use clicks on the Label,
+///         the <see cref="Command.HotKey"/> will be invoked on the next <see cref="View"/> in
+///         <see cref="View.SubViews"/>.
+///     </para>
+/// </remarks>
+public class Label : View, IDesignable
+{
+    /// <inheritdoc/>
+    public Label ()
+    {
+        Height = Dim.Auto (DimAutoStyle.Text);
+        Width = Dim.Auto (DimAutoStyle.Text);
 
-namespace Terminal.Gui {
-	/// <summary>
-	/// The Label <see cref="View"/> displays a string at a given position and supports multiple lines separated by newline characters.
-	/// Multi-line Labels support word wrap.
-	/// </summary>
-	/// <remarks>
-	/// The <see cref="Label"/> view is functionality identical to <see cref="View"/> and is included for API backwards compatibility.
-	/// </remarks>
-	public class Label : View {
-		/// <inheritdoc/>
-		public Label ()
-		{
-			SetInitialProperties ();
-		}
+        TitleChanged += Label_TitleChanged;
+    }
 
-		/// <inheritdoc/>
-		public Label (Rect frame, bool autosize = false) : base (frame)
-		{
-			SetInitialProperties (autosize);
-		}
+    private void Label_TitleChanged (object? sender, EventArgs<string> e)
+    {
+        SetTextDirect (e.Value);
+        TextFormatter.HotKeySpecifier = HotKeySpecifier;
+    }
 
-		/// <inheritdoc/>
-		public Label (string text, bool autosize = true) : base (text)
-		{
-			SetInitialProperties (autosize);
-		}
+    /// <inheritdoc/>
+    protected override void OnTextChanged ()
+    {
+        Title = Text;
 
-		/// <inheritdoc/>
-		public Label (Rect rect, string text, bool autosize = false) : base (rect, text)
-		{
-			SetInitialProperties (autosize);
-		}
+        base.OnTextChanged ();
+    }
 
-		/// <inheritdoc/>
-		public Label (int x, int y, string text, bool autosize = true) : base (x, y, text)
-		{
-			SetInitialProperties (autosize);
-		}
+    /// <inheritdoc/>
+    public override Rune HotKeySpecifier { get => base.HotKeySpecifier; set => TextFormatter.HotKeySpecifier = base.HotKeySpecifier = value; }
 
-		/// <inheritdoc/>
-		public Label (string text, TextDirection direction, bool autosize = true)
-			: base (text, direction)
-		{
-			SetInitialProperties (autosize);
-		}
+    /// <inheritdoc/>
+    protected override bool OnActivating (CommandEventArgs args)
+    {
+        // If Label can't focus, forward HotKey to the next peer in the SubView list
+        if (CanFocus || !HotKey.IsValid)
+        {
+            return base.OnActivating (args);
+        }
+        int me = SuperView?.SubViews.IndexOf (this) ?? -1;
 
-		void SetInitialProperties (bool autosize = true)
-		{
-			Height = 1;
-			AutoSize = autosize;
-			//HotKeySpecifier = new Rune ('_');
-			//if (HotKey != Key.Null) {
-			//	AddKeyBinding (Key.Space | HotKey, Command.Accept);
-			//}
-		}
+        if (me == -1 || !(me < SuperView?.SubViews.Count - 1))
+        {
+            return base.OnActivating (args);
+        }
+        bool handled = SuperView?.SubViews.ElementAt (me + 1).InvokeCommand (Command.HotKey) == true;
 
-		/// <summary>
-		///   Clicked <see cref="Action"/>, raised when the user clicks the primary mouse button within the Bounds of this <see cref="View"/>
-		///   or if the user presses the action key while this view is focused. (TODO: IsDefault)
-		/// </summary>
-		/// <remarks>
-		///   Client code can hook up to this event, it is
-		///   raised when the button is activated either with
-		///   the mouse or the keyboard.
-		/// </remarks>
-		public event EventHandler Clicked;
+        if (!handled)
+        {
+            return base.OnActivating (args);
+        }
+        args.Handled = true;
 
-		/// <summary>
-		/// Method invoked when a mouse event is generated
-		/// </summary>
-		/// <param name="mouseEvent"></param>
-		/// <returns><c>true</c>, if the event was handled, <c>false</c> otherwise.</returns>
-		public override bool OnMouseEvent (MouseEvent mouseEvent)
-		{
-			MouseEventEventArgs args = new MouseEventEventArgs (mouseEvent);
-			if (OnMouseClick (args))
-				return true;
-			if (MouseEvent (mouseEvent))
-				return true;
+        return true;
+    }
 
-			if (mouseEvent.Flags == MouseFlags.Button1Clicked) {
-				if (!HasFocus && SuperView != null) {
-					if (!SuperView.HasFocus) {
-						SuperView.SetFocus ();
-					}
-					SetFocus ();
-					SetNeedsDisplay ();
-				}
+    /// <inheritdoc/>
+    bool IDesignable.EnableForDesign ()
+    {
+        Text = "_Label";
 
-				OnClicked ();
-				return true;
-			}
-			return false;
-		}
+        return true;
+    }
 
-		///<inheritdoc/>
-		public override bool OnEnter (View view)
-		{
-			Application.Driver.SetCursorVisibility (CursorVisibility.Invisible);
-
-			return base.OnEnter (view);
-		}
-
-		///<inheritdoc/>
-		public override bool ProcessHotKey (KeyEvent ke)
-		{
-			if (ke.Key == (Key.AltMask | HotKey)) {
-				if (!HasFocus) {
-					SetFocus ();
-				}
-				OnClicked ();
-				return true;
-			}
-			return base.ProcessHotKey (ke);
-		}
-
-		/// <summary>
-		/// Virtual method to invoke the <see cref="Clicked"/> event.
-		/// </summary>
-		public virtual void OnClicked ()
-		{
-			Clicked?.Invoke (this, EventArgs.Empty);
-		}
-	}
+    /// <inheritdoc/>
+    string? IDesignable.GetDemoKeyStrokes () => "wait:2000";
 }

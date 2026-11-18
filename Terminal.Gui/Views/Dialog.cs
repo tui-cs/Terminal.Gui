@@ -1,242 +1,183 @@
-﻿//
-// Dialog.cs: Dialog box
-//
-// Authors:
-//   Miguel de Icaza (miguel@gnome.org)
-//
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text.Json.Serialization;
-using System.Text;
-using Terminal.Gui;
-using static Terminal.Gui.ConfigurationManager;
+namespace Terminal.Gui.Views;
 
-namespace Terminal.Gui {
-	/// <summary>
-	/// The <see cref="Dialog"/> <see cref="View"/> is a <see cref="Window"/> that by default is centered and contains one 
-	/// or more <see cref="Button"/>s. It defaults to the <see cref="Colors.Dialog"/> color scheme and has a 1 cell padding around the edges.
-	/// </summary>
-	/// <remarks>
-	///  To run the <see cref="Dialog"/> modally, create the <see cref="Dialog"/>, and pass it to <see cref="Application.Run(Func{Exception, bool})"/>. 
-	///  This will execute the dialog until it terminates via the [ESC] or [CTRL-Q] key, or when one of the views
-	///  or buttons added to the dialog calls <see cref="Application.RequestStop"/>.
-	/// </remarks>
-	public class Dialog : Window {
-		/// <summary>
-		/// The default <see cref="ButtonAlignments"/> for <see cref="Dialog"/>. 
-		/// </summary>
-		/// <remarks>
-		/// This property can be set in a Theme.
-		/// </remarks>
-		[SerializableConfigurationProperty (Scope = typeof (ThemeScope)), JsonConverter (typeof (JsonStringEnumConverter))]
-		public static ButtonAlignments DefaultButtonAlignment { get; set; } = ButtonAlignments.Center;
+/// <summary>
+///     A modal dialog window with buttons across the bottom. When a button is pressed,
+///     <see cref="IRunnable{TResult}.Result"/>
+///     is set to the button's index (0-based).
+/// </summary>
+/// <remarks>
+/// <img src="../images/views/Dialog.gif" alt="Dialog demo"/>
+///     <para>
+///         This is the standard dialog class for simple button-index-based results. For dialogs that need to return
+///         custom result types, derive from <see cref="Dialog{TResult}"/> instead.
+///     </para>
+///     <para>
+///         By default, <see cref="Dialog"/> is centered with <see cref="Dim.Auto"/> sizing and uses the
+///         <see cref="Schemes.Dialog"/> color scheme (applied at construction time, regardless of running state).
+///     </para>
+///     <para>
+///         To run modally, pass the dialog to <see cref="IApplication.Run(IRunnable, Func{Exception, bool})"/>.
+///         The dialog executes until terminated by <see cref="Application.GetDefaultKey"/> (Esc by default),
+///         a press of one of the <see cref="Dialog{TResult}.Buttons"/>, or if any subview receives the
+///         <see cref="Command.Accept"/>
+///         command
+///         and does not handle it.
+///     </para>
+///     <para>
+///         Buttons are added via <see cref="Dialog{TResult}.AddButton"/> or the <see cref="Dialog{TResult}.Buttons"/>
+///         property. The last button added
+///         becomes the default (<see cref="Button.IsDefault"/>). Button alignment is controlled by
+///         <see cref="Dialog{TResult}.ButtonAlignment"/> and <see cref="Dialog{TResult}.ButtonAlignmentModes"/>.
+///     </para>
+///     <para>
+///         The dialog is positioned at <see cref="Pos.Center"/> with <see cref="Dim.Auto"/> sizing,
+///         limited to 100% of <see cref="IApplication.TopRunnableView"/> (or screen dimensions).
+///     </para>
+///     <para>
+///         <b>NOTE </b> - Setting <see cref="View.ViewportSettings"/> to
+///         <see cref="ViewportSettingsFlags.HasHorizontalScrollBar"/> or
+///         <see cref="ViewportSettingsFlags.HasVerticalScrollBar"/>
+///         is not supported and may cause layout issues.
+///     </para>
+/// </remarks>
+/// <example>
+///     <code>
+///     Dialog dialog = new () { Title = "Confirm" };
+/// 
+///     dialog.AddButton (new () { Title = "_Cancel" });
+///     dialog.AddButton (new () { Title = "_Ok" });
+/// 
+///     Label label = new () { Text = "Are you sure?" };
+///     dialog.Add (label);
+/// 
+///     Application.Run (dialog);
+/// 
+///     if (dialog.Result == 1) // OK button (second button, index 1)
+///     {
+///         // User clicked OK
+///     }
+///     </code>
+/// </example>
+public class Dialog : Dialog<int>
+{
+    /// <summary>
+    ///     The default border style for new <see cref="Dialog"/> instances. Can be configured via
+    ///     <see cref="TuiConfigurationBuilder"/> and theme files.
+    /// </summary>
+    public static LineStyle DefaultBorderStyle => DialogSettings.Current.DefaultBorderStyle;
 
-		// TODO: Reenable once border/borderframe design is settled
-		/// <summary>
-		/// Defines the default border styling for <see cref="Dialog"/>. Can be configured via <see cref="ConfigurationManager"/>.
-		/// </summary>
-		//[SerializableConfigurationProperty (Scope = typeof (ThemeScope))]
-		//public static Border DefaultBorder { get; set; } = new Border () {
-		//	LineStyle = LineStyle.Single,
-		//};
+    /// <summary>
+    ///     The default button alignment for new <see cref="Dialog"/> instances. Can be configured via theme files.
+    /// </summary>
+    public static Alignment DefaultButtonAlignment => DialogSettings.Current.DefaultButtonAlignment;
 
-		internal List<Button> buttons = new List<Button> ();
+    /// <summary>
+    ///     The default button alignment modes for new <see cref="Dialog"/> instances. Can be configured via theme files.
+    /// </summary>
+    public static AlignmentModes DefaultButtonAlignmentModes => DialogSettings.Current.DefaultButtonAlignmentModes;
 
-		/// <summary>
-		/// Initializes a new instance of the <see cref="Dialog"/> class using <see cref="LayoutStyle.Computed"/> positioning 
-		/// with no <see cref="Button"/>s.
-		/// </summary>
-		/// <remarks>
-		/// By default, <see cref="View.X"/> and <see cref="View.Y"/> are set to <c>Pos.Center ()</c> and <see cref="View.Width"/> and <see cref="View.Height"/> are set 
-		/// to <c>Width = Dim.Percent (85)</c>, centering the Dialog vertically and horizontally. 
-		/// </remarks>
-		public Dialog () : this (null) { }
+    /// <summary>
+    ///     The default shadow style for new <see cref="Dialog"/> instances. Can be configured via theme files.
+    /// </summary>
+    public static ShadowStyles DefaultShadow => DialogSettings.Current.DefaultShadow;
 
-		/// <summary>
-		/// Initializes a new instance of the <see cref="Dialog"/> class using <see cref="LayoutStyle.Computed"/> positioning 
-		/// and an optional set of <see cref="Button"/>s to display
-		/// </summary>
-		/// <param name="buttons">Optional buttons to lay out at the bottom of the dialog.</param>
-		/// <remarks>
-		/// By default, <see cref="View.X"/> and <see cref="View.Y"/> are set to <c>Pos.Center ()</c> and <see cref="View.Width"/> and <see cref="View.Height"/> are set 
-		/// to <c>Width = Dim.Percent (85)</c>, centering the Dialog vertically and horizontally. 
-		/// </remarks>
-		public Dialog (params Button [] buttons) : base ()
-		{
-			SetInitialProperties (buttons);
-		}
+    /// <summary>
+    ///     Helper property that gets whether the dialog was canceled (Result is <see langword="null"/> or 1).
+    /// </summary>
+    /// <remarks>
+    ///     Returns <see langword="true"/> if <see cref="Result"/> is <see langword="null"/>
+    ///     (user pressed Escape or closed the dialog without pressing a button) or if any button
+    ///     other than the last one was pressed.
+    /// </remarks>
+    public bool Canceled => Result is null || Result != Buttons.Length - 1;
 
-		private void SetInitialProperties (Button [] buttons)
-		{
-			X = Pos.Center ();
-			Y = Pos.Center ();
+    /// <summary>
+    ///     Gets or sets the result of the dialog, indicating which button was pressed.
+    /// </summary>
+    /// <remarks>
+    ///     <para>
+    ///         The value is the zero-based index of the button that was pressed, or <see langword="null"/>
+    ///         if the dialog was dismissed without a button press (e.g., via Escape key).
+    ///     </para>
+    ///     <para>
+    ///         This property shadows the base <see cref="IRunnable{TResult}.Result"/> property to provide
+    ///         explicit <c>int?</c> nullability for backward compatibility.
+    ///     </para>
+    /// </remarks>
+    public new int? Result
+    {
+        get => ((IRunnable)this).Result is int value ? value : null;
+        set
+        {
+            if (value >= Buttons.Length || value < 0)
+            {
+                throw new ArgumentOutOfRangeException (nameof (value), @"Result value must be a valid button index or null.");
+            }
 
-			Width = Dim.Percent (85);
-			Height = Dim.Percent (85);
+            ((IRunnable)this).Result = value;
+        }
+    }
 
-			ColorScheme = Colors.Dialog;
+    /// <summary>
+    ///     Overrides the <see cref="Dialog{TResult}"/>  Activating behavior to handle non-Default Dialog Button presses.
+    ///     The <see cref="View.DefaultAcceptView"/> button press is handled in <see cref="OnAccepting(CommandEventArgs)"/>.
+    /// </summary>
+    protected override bool OnActivating (CommandEventArgs args)
+    {
+        if (base.OnActivating (args))
+        {
+            return true;
+        }
 
-			Modal = true;
-			ButtonAlignment = DefaultButtonAlignment;
+        if (args.Context?.Source?.TryGetTarget (out View? sourceView) is not true || !Buttons.Contains (sourceView as Button))
+        {
+            return false;
+        }
+        Result = Buttons.IndexOf (sourceView as Button);
 
-			if (buttons != null) {
-				foreach (var b in buttons) {
-					AddButton (b);
-				}
-			}
+        return false;
+    }
 
-			LayoutComplete += (s, args) => {
-				LayoutButtons ();
-			};
+    /// <inheritdoc/>
+    protected override bool OnAccepting (CommandEventArgs args)
+    {
+        // For non-default button sources (e.g., Cancel), set Result before base handles it.
+        // Base (Dialog<int>.OnAccepting) will call RequestStop and return true (handled) for
+        // non-default IAcceptTarget sources, preventing DefaultAcceptView from being invoked.
+        View? sourceView = null;
+        args.Context?.Source?.TryGetTarget (out sourceView);
 
-		}
+        if (sourceView is Button button && Buttons.Contains (button) && button is IAcceptTarget { IsDefault: false })
+        {
+            Result = Buttons.IndexOf (button);
+        }
+        else if (sourceView is { } && DefaultAcceptView is Button defaultButton && Buttons.Contains (defaultButton))
+        {
+            // Non-button source (e.g., CheckBox double-click): set Result to default button's index
+            Result = Buttons.IndexOf (defaultButton);
+        }
 
-		/// <summary>
-		/// Adds a <see cref="Button"/> to the <see cref="Dialog"/>, its layout will be controlled by the <see cref="Dialog"/>
-		/// </summary>
-		/// <param name="button">Button to add.</param>
-		public void AddButton (Button button)
-		{
-			if (button == null) {
-				return;
-			}
+        return base.OnAccepting (args);
+    }
 
-			//button.AutoSize = false; // BUGBUG: v2 - Hack to get around autosize not accounting for Margin?
-			buttons.Add (button);
-			Add (button);
-			SetNeedsDisplay ();
-			if (IsInitialized) {
-				LayoutSubviews ();
-			}
-		}
+    /// <summary>
+    ///     Overrides the <see cref="Dialog{TResult}"/> Accepting behavior to set <see cref="Result"/> to the index of the
+    ///     dialog button pressed.
+    /// </summary>
+    /// <param name="ctx"></param>
+    /// <returns></returns>
+    protected override void OnAccepted (ICommandContext? ctx)
+    {
+        base.OnAccepted (ctx);
 
-		// Get the width of all buttons, not including any Margin.
-		internal int GetButtonsWidth ()
-		{
-			if (buttons.Count == 0) {
-				return 0;
-			}
-			//var widths = buttons.Select (b => b.TextFormatter.GetFormattedSize ().Width + b.BorderFrame.Thickness.Horizontal + b.Padding.Thickness.Horizontal);
-			var widths = buttons.Select (b => b.Frame.Width);
-			return widths.Sum ();
-		}
+        if (ctx?.Source?.TryGetTarget (out View? sourceView) is not true || !Buttons.Contains (sourceView as Button))
+        {
+            return;
+        }
 
-		/// <summary>
-		/// Determines the horizontal alignment of the Dialog buttons.
-		/// </summary>
-		public enum ButtonAlignments {
-			/// <summary>
-			/// Center-aligns the buttons (the default).
-			/// </summary>
-			Center = 0,
+        RequestStop ();
 
-			/// <summary>
-			/// Justifies the buttons
-			/// </summary>
-			Justify,
-
-			/// <summary>
-			/// Left-aligns the buttons
-			/// </summary>
-			Left,
-
-			/// <summary>
-			/// Right-aligns the buttons
-			/// </summary>
-			Right
-		}
-
-		/// <summary>
-		/// Determines how the <see cref="Dialog"/> <see cref="Button"/>s are aligned along the 
-		/// bottom of the dialog. 
-		/// </summary>
-		public ButtonAlignments ButtonAlignment { get; set; }
-
-		void LayoutButtons ()
-		{
-			if (buttons.Count == 0 || !IsInitialized) return;
-
-			int shiftLeft = 0;
-
-			int buttonsWidth = GetButtonsWidth ();
-			switch (ButtonAlignment) {
-			case ButtonAlignments.Center:
-				// Center Buttons
-				shiftLeft = (Bounds.Width - buttonsWidth - buttons.Count - 1) / 2 + 1;
-				for (int i = buttons.Count - 1; i >= 0; i--) {
-					Button button = buttons [i];
-					shiftLeft += button.Frame.Width + (i == buttons.Count - 1 ? 0 : 1);
-					if (shiftLeft > -1) {
-						button.X = Pos.AnchorEnd (shiftLeft);
-					} else {
-						button.X = Bounds.Width - shiftLeft;
-					}
-					button.Y = Pos.AnchorEnd (1);
-				}
-				break;
-
-			case ButtonAlignments.Justify:
-				// Justify Buttons
-				// leftmost and rightmost buttons are hard against edges. The rest are evenly spaced.
-
-				var spacing = (int)Math.Ceiling ((double)(Bounds.Width - buttonsWidth) / (buttons.Count - 1));
-				for (int i = buttons.Count - 1; i >= 0; i--) {
-					Button button = buttons [i];
-					if (i == buttons.Count - 1) {
-						shiftLeft += button.Frame.Width;
-						button.X = Pos.AnchorEnd (shiftLeft);
-					} else {
-						if (i == 0) {
-							// first (leftmost) button 
-							var left = Bounds.Width;
-							button.X = Pos.AnchorEnd (left);
-						} else {
-							shiftLeft += button.Frame.Width + (spacing);
-							button.X = Pos.AnchorEnd (shiftLeft);
-						}
-					}
-					button.Y = Pos.AnchorEnd (1);
-				}
-				break;
-
-			case ButtonAlignments.Left:
-				// Left Align Buttons
-				var prevButton = buttons [0];
-				prevButton.X = 0;
-				prevButton.Y = Pos.AnchorEnd (1);
-				for (int i = 1; i < buttons.Count; i++) {
-					Button button = buttons [i];
-					button.X = Pos.Right (prevButton) + 1;
-					button.Y = Pos.AnchorEnd (1);
-					prevButton = button;
-				}
-				break;
-
-			case ButtonAlignments.Right:
-				// Right align buttons
-				shiftLeft = buttons [buttons.Count - 1].Frame.Width;
-				buttons [buttons.Count - 1].X = Pos.AnchorEnd (shiftLeft);
-				buttons [buttons.Count - 1].Y = Pos.AnchorEnd (1);
-				for (int i = buttons.Count - 2; i >= 0; i--) {
-					Button button = buttons [i];
-					shiftLeft += button.Frame.Width + 1;
-					button.X = Pos.AnchorEnd (shiftLeft);
-					button.Y = Pos.AnchorEnd (1);
-				}
-				break;
-			}
-		}
-
-		///<inheritdoc/>
-		public override bool ProcessKey (KeyEvent kb)
-		{
-			switch (kb.Key) {
-			case Key.Esc:
-				Application.RequestStop (this);
-				return true;
-			}
-			return base.ProcessKey (kb);
-		}
-	}
+        int buttonIndex = Buttons.IndexOf (sourceView as Button);
+        Result = buttonIndex;
+    }
 }

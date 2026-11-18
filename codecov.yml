@@ -1,0 +1,69 @@
+# Codecov configuration for Terminal.Gui
+# Documentation: https://docs.codecov.com/docs/codecov-yaml
+
+# Coverage targets and thresholds
+coverage:
+  precision: 2
+  round: down
+  range: "60...90"  # Yellow between 60-90%, green above 90%
+  
+  status:
+    # Overall project coverage
+    project:
+      default:
+        target: 75%         # Minimum target coverage
+        threshold: 1%       # Allow 1% decrease without failing
+        base: auto          # Compare against base branch (develop)
+        if_ci_failed: error # Fail if CI fails
+        # Only measure Terminal.Gui library
+        paths:
+          - "Terminal.Gui/"
+        branches:
+          - develop
+          - main
+           
+    # Per-patch (PR) coverage
+    patch:
+      default:
+        target: 70%         # New code should have 70%+ coverage
+        threshold: 5%       # Allow 5% variance
+        base: auto
+        if_ci_failed: error
+        # Only measure Terminal.Gui library
+        paths:
+          - "Terminal.Gui/"
+
+# Comment configuration for PRs
+comment:
+  layout: "diff, files, footer"
+  behavior: default           # Update existing comment
+  require_changes: false      # Always comment
+  require_base: true          # Require base coverage to compare
+  require_head: true          # Require head coverage
+
+# Flag-based coverage grouping (matches your workflow flags)
+flags:
+  unittests-nonparallel:
+    carryforward: false       # Don't carry forward if missing
+    paths:
+      - "Terminal.Gui/"       # Only Terminal.Gui library  
+  unittests-parallel:
+    carryforward: false
+    paths:
+      - "Terminal.Gui/"       # Only Terminal.Gui library  
+  integrationtests:
+    carryforward: false
+    paths:
+      - "Terminal.Gui/"       # Only Terminal.Gui library
+
+# Files and paths to ignore (belt-and-suspenders approach)
+ignore:
+  - "Examples/**"             # Example projects (no trailing /*)
+  - "Tests/**"                # Test projects themselves
+  - "UnitTests/**"            # Legacy test location
+  - "docfx/**"                # Documentation
+  - "Scripts/**"              # PowerShell scripts
+  - "**/*.Designer.cs"        # Auto-generated files
+  - "**/obj/**"               # Build artifacts
+  - "**/bin/**"               # Build artifacts
+  - "**/*.AssemblyInfo.cs"    # Assembly info files

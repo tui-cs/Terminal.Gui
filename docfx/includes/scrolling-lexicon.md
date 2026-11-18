@@ -1,0 +1,8 @@
+| Term | Meaning |
+|:-----|:--------|
+| **Content Area** | The total area of content that can be scrolled, defined by @Terminal.Gui.View.GetContentSize. When larger than the Viewport, scrolling is enabled. |
+| **Scroll** | The act of causing content to move either horizontally or vertically within the @Terminal.Gui.View.Viewport. Also referred to as "Content Scrolling". |
+| **ScrollBar** | Indicates the size of scrollable content and controls the position of the visible content, either vertically or horizontally. At each end, a @Terminal.Gui.Button is provided, one to scroll up or left and one to scroll down or right. Between the buttons is a @Terminal.Gui.ScrollSlider that can be dragged to control the position of the visible content. The ScrollSlider is sized to show the proportion of the scrollable content to the size of the @Terminal.Gui.View.Viewport. |
+| **ScrollSlider** | A visual indicator that shows the proportion of the scrollable content to the size of the @Terminal.Gui.View.Viewport and allows the user to use the mouse to scroll. |
+| **Viewport** | The scrollable "viewport" into the View's Content Area (which is defined by the return value of @Terminal.Gui.View.GetContentSize). See [Layout Deep Dive](~/docs/layout.md) for more details. |
+| **ViewportSettings** | Configuration flags that adjust the behavior of scrolling, including whether negative coordinates are allowed and how clipping is applied. |

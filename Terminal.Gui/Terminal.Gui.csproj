@@ -1,95 +1,218 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-    <DebugType>portable</DebugType>
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-    <DefineConstants>TRACE;DEBUG_IDISPOSABLE</DefineConstants>
-    <DebugType>portable</DebugType>
-	<WarningsAsErrors>CS1574<!--,CA1034--></WarningsAsErrors>
-  </PropertyGroup>
-  <PropertyGroup>
-    <!-- Version numbers are automatically updated by gitversion when a release is released -->
-    <!-- In the source tree the version will always be 2.0 for all projects. -->
-    <!-- Do not modify these. Do NOT commit after manually running `dotnet-gitversion /updateprojectfiles` -->
-    <AssemblyVersion>2.0</AssemblyVersion>
-    <FileVersion>2.0</FileVersion>
-    <Version>2.0</Version>
-    <InformationalVersion>2.0</InformationalVersion>
-  </PropertyGroup>
-  <ItemGroup>
-    <None Remove="Resources\config.json" />
-  </ItemGroup>
-  <ItemGroup>
-    <EmbeddedResource Include="Resources\config.json" />
-  </ItemGroup>
-  <ItemGroup>
-    <!-- Enable Nuget Source Link for github -->
-    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.1.1" PrivateAssets="All" />
-    <PackageReference Include="Microsoft.DotNet.PlatformAbstractions" Version="3.1.6" />
-    <PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies" Version="1.0.3" PrivateAssets="all" />
-    <PackageReference Include="System.IO.Abstractions" Version="19.2.29" />
-    <PackageReference Include="System.Text.Json" Version="7.0.2" />
-    <PackageReference Include="System.Management" Version="7.0.1" />
-    <InternalsVisibleTo Include="UnitTests" />
-   </ItemGroup>
-  <!-- Uncomment the RestoreSources element to have dotnet restore pull NStack from a local dir for testing -->
-  <PropertyGroup>
-    <!-- See https://stackoverflow.com/a/44463578/297526 -->
-    <!--<RestoreSources>$(RestoreSources);..\..\NStack\NStack\bin\Debug;https://api.nuget.org/v3/index.json</RestoreSources>-->
-  </PropertyGroup>
-  <!-- API Documentation -->
-  <ItemGroup>
-    <None Include="..\docfx\images\logo.png">
-      <Pack>True</Pack>
-      <PackagePath>\</PackagePath>
-    </None>
-    <None Include="..\README.md">
-      <Pack>True</Pack>
-      <PackagePath>\</PackagePath>
-    </None>
-  </ItemGroup>
-  <ItemGroup>
-    <Compile Update="Resources\Strings.Designer.cs">
-      <DesignTime>True</DesignTime>
-      <AutoGen>True</AutoGen>
-      <DependentUpon>Strings.resx</DependentUpon>
-    </Compile>
-  </ItemGroup>
-  <ItemGroup>
-    <EmbeddedResource Update="Resources\Strings.resx">
-      <Generator>ResXFileCodeGenerator</Generator>
-      <LastGenOutput>Strings.Designer.cs</LastGenOutput>
-    </EmbeddedResource>
-  </ItemGroup>
-  <PropertyGroup>
-    <TargetFrameworks>net7.0</TargetFrameworks>
-    <LangVersion>10.0</LangVersion>
-    <RootNamespace>Terminal.Gui</RootNamespace>
-    <AssemblyName>Terminal.Gui</AssemblyName>
-    <DocumentationFile>bin\Release\Terminal.Gui.xml</DocumentationFile>
-    <GenerateDocumentationFile Condition=" '$(Configuration)' == 'Release' ">true</GenerateDocumentationFile>
-    <!--<GeneratePackageOnBuild Condition=" '$(Configuration)' == 'Release' ">true</GeneratePackageOnBuild>-->
-    <PackageId>Terminal.Gui</PackageId>
-    <PackageLicenseExpression>MIT</PackageLicenseExpression>
-    <PackageProjectUrl>https://github.com/gui-cs/Terminal.Gui/</PackageProjectUrl>
-    <RepositoryUrl>https://github.com/gui-cs/Terminal.Gui.git</RepositoryUrl>
-    <RepositoryType>git</RepositoryType>
-    <IncludeSymbols>true</IncludeSymbols>
-    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
-    <!-- Publish the repository URL in the built .nupkg (in the NuSpec <Repository> element) -->
-    <PublishRepositoryUrl>true</PublishRepositoryUrl>
-    <!-- Embed source files that are not tracked by the source control manager in the PDB -->
-    <EmbedUntrackedSources>true</EmbedUntrackedSources>
-    <PackageIcon>logo.png</PackageIcon>
-    <PackageReadmeFile>README.md</PackageReadmeFile>
-    <PackageTags>csharp, terminal, c#, f#, gui, toolkit, console, tui</PackageTags>
-    <Description>Cross platform Terminal UI toolkit for .NET</Description>
-    <Owners>Miguel de Icaza, Charlie Kindel</Owners>
-    <Summary>A toolkit for building rich console apps for .NET that works on Windows, Mac, and Linux/Unix.</Summary>
-    <Title>Terminal.Gui - Cross platform Terminal User Interface (TUI) toolkit for .NET</Title>
-    <PackageReleaseNotes>
-      See: https://github.com/gui-cs/Terminal.Gui/releases
-    </PackageReleaseNotes>
-  </PropertyGroup>
-  <ProjectExtensions><VisualStudio><UserProperties resources_4config_1json__JsonSchema="" /></VisualStudio></ProjectExtensions>
+<Project Sdk="Microsoft.NET.Sdk">
+    <!-- =================================================================== -->
+    <!-- Version numbers -->
+    <!-- Automatically set by GitVersion.MsBuild from git history + GitVersion.yml -->
+    <!-- =================================================================== -->
+    <!-- =================================================================== -->
+    <!-- Assembly name. -->
+    <!-- Referenced throughout this file for consistency. -->
+    <!-- =================================================================== -->
+    <PropertyGroup>
+        <AssemblyName>Terminal.Gui</AssemblyName>
+    </PropertyGroup>
+
+    <!-- =================================================================== -->
+    <!-- .NET Build Settings -->
+    <!-- =================================================================== -->
+    <PropertyGroup>
+        <!--Note - These three SHOULD be picked up from Directory.Build.props, but they are not. Not sure why. -->
+        <TargetFramework>net10.0</TargetFramework>
+        <LangVersion>14</LangVersion>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+        <!-- -->
+        <RootNamespace>$(AssemblyName)</RootNamespace>
+        <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+        <DefineTrace>true</DefineTrace>
+        <DebugType>portable</DebugType>
+        <DefineConstants>$(DefineConstants);CONTRACTS_FULL;CODE_ANALYSIS</DefineConstants>
+        <NoLogo>true</NoLogo>
+        <SuppressNETCoreSdkPreviewMessage>true</SuppressNETCoreSdkPreviewMessage>
+        <JsonSerializerIsReflectionEnabledByDefault>false</JsonSerializerIsReflectionEnabledByDefault>
+        <IsTrimmable>true</IsTrimmable>
+        <IsAotCompatible>true</IsAotCompatible>
+        <!-- Suppress IL2026/IL3050 warnings - all JSON converters are AOT-compatible via source generation -->
+        <NoWarn>$(NoWarn);IL2026;IL3050</NoWarn>
+    </PropertyGroup>
+    <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
+        <DefineDebug>true</DefineDebug>
+        <DefineConstants>$(DefineConstants);DEBUG_IDISPOSABLE</DefineConstants>
+    </PropertyGroup>
+    <PropertyGroup Condition=" '$(Configuration)' == 'Release' ">
+        <Optimize>true</Optimize>
+    </PropertyGroup>
+    <!-- =================================================================== -->
+    <!-- Configuration Manager -->
+    <!-- =================================================================== -->
+    <ItemGroup>
+        <None Remove="Resources\config.json" />
+        <EmbeddedResource Include="Resources\config.json" />
+    </ItemGroup>
+    <!-- =================================================================== -->
+    <!-- Dependencies -->
+    <!-- =================================================================== -->
+    <ItemGroup>
+        <PackageReference Include="ColorHelper" />
+        <PackageReference Include="JetBrains.Annotations" />
+        <PackageReference Include="Markdig" />
+        <PackageReference Include="Microsoft.Extensions.Configuration" />
+        <PackageReference Include="Microsoft.Extensions.Configuration.Binder" />
+        <PackageReference Include="Microsoft.Extensions.Configuration.Json" />
+        <PackageReference Include="Microsoft.Extensions.Logging.Abstractions " />
+        <PackageReference Include="Microsoft.Extensions.Options" />
+        <PackageReference Include="System.IO.Abstractions" />
+        <PackageReference Include="TextMateSharp" />
+        <PackageReference Include="TextMateSharp.Grammars" />
+        <PackageReference Include="Wcwidth" />
+    </ItemGroup>
+    <!-- =================================================================== -->
+    <!-- Source Generators -->
+    <!-- =================================================================== -->
+    <ItemGroup>
+        <ProjectReference Include="..\Terminal.Gui.Analyzers.Internal\Terminal.Gui.Analyzers.Internal.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+        <PackageReference Include="Microsoft.Net.Compilers.Toolset" PrivateAssets="all" />
+    </ItemGroup>
+    <ItemGroup>
+      <!-- Enable Nuget Source Link for github -->
+      <PackageReference Include="Microsoft.SourceLink.GitHub" PrivateAssets="All" />
+      <!-- GitVersion.MsBuild automatically sets Version, AssemblyVersion, FileVersion, -->
+      <!-- and InformationalVersion from git history + GitVersion.yml at build time. -->
+      <PackageReference Include="GitVersion.MsBuild" PrivateAssets="all" />
+    </ItemGroup>
+    <!-- =================================================================== -->
+    <!-- Global Usings and Type Aliases -->
+    <!-- =================================================================== -->
+    <ItemGroup>
+        <Using Include="JetBrains.Annotations" />
+        <Using Include="JetBrains.Annotations.PureAttribute" Alias="PureAttribute" />
+        <Using Include="System.Drawing" />
+        <Using Include="System.Text" />
+    </ItemGroup>
+    <!-- =================================================================== -->
+    <!-- Assembly names for which internal items are visible -->
+    <!-- =================================================================== -->
+    <ItemGroup>
+        <InternalsVisibleTo Include="Benchmarks" />
+        <InternalsVisibleTo Include="UnitTests" />
+        <InternalsVisibleTo Include="UnitTests.Legacy" />
+        <InternalsVisibleTo Include="UnitTests.NonParallelizable" />
+        <InternalsVisibleTo Include="UnitTests.Parallelizable" />
+        <InternalsVisibleTo Include="PerformanceTests" />
+        <InternalsVisibleTo Include="StressTests" />
+        <InternalsVisibleTo Include="IntegrationTests" />
+        <InternalsVisibleTo Include="TerminalGuiDesigner" />
+        <InternalsVisibleTo Include="UICatalog" />
+        <InternalsVisibleTo Include="AppTestHelpers" />
+        <InternalsVisibleTo Include="DynamicProxyGenAssembly2" />
+    </ItemGroup>
+    <!-- =================================================================== -->
+    <!-- API Documentation -->
+    <!-- =================================================================== -->
+    <ItemGroup>
+        <None Include="..\docfx\images\logo.png">
+            <Pack>true</Pack>
+            <PackagePath>\</PackagePath>
+        </None>
+        <None Include="..\README.md">
+            <Pack>true</Pack>
+            <PackagePath>\</PackagePath>
+        </None>
+    </ItemGroup>
+    <!-- =================================================================== -->
+    <!-- i18 -->
+    <!-- =================================================================== -->
+    <ItemGroup>
+        <Compile Update="Resources\Strings.Designer.cs">
+            <DesignTime>true</DesignTime>
+            <AutoGen>true</AutoGen>
+            <DependentUpon>Strings.resx</DependentUpon>
+        </Compile>
+    </ItemGroup>
+    <ItemGroup>
+        <EmbeddedResource Update="Resources\Strings.resx">
+            <Generator>PublicResXFileCodeGenerator</Generator>
+            <LastGenOutput>Strings.Designer.cs</LastGenOutput>
+        </EmbeddedResource>
+    </ItemGroup>
+    <!-- =================================================================== -->
+    <!-- Nuget  -->
+    <!-- =================================================================== -->
+    <PropertyGroup>
+        <PackageId>$(AssemblyName)</PackageId>
+        <PackageLicenseExpression>MIT</PackageLicenseExpression>
+        <PackageProjectUrl>https://github.com/tui-cs/$(AssemblyName)</PackageProjectUrl>
+        <PackageIcon>logo.png</PackageIcon>
+        <PackageReadmeFile>README.md</PackageReadmeFile>
+        <PackageTags>csharp, terminal, c#, f#, gui, toolkit, console, tui</PackageTags>
+        <Description>Cross platform Terminal UI toolkit for .NET</Description>
+        <Owners>Miguel de Icaza, Tig Kindel</Owners>
+        <Summary>A toolkit for building rich console apps for .NET that works on Windows, Mac, and Linux/Unix.</Summary>
+        <Title>$(AssemblyName) - Cross-platform Terminal User Interface (TUI) toolkit for .NET</Title>
+        <PackageReleaseNotes>
+            See: $(PackageProjectUrl)/releases
+        </PackageReleaseNotes>
+        <DocumentationFile>bin\$(Configuration)\$(AssemblyName).xml</DocumentationFile>
+        <GeneratePackageOnBuild Condition=" '$(Configuration)' == 'Debug' ">true</GeneratePackageOnBuild>
+        <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+        <RepositoryUrl>https://github.com/tui-cs/$(AssemblyName).git</RepositoryUrl>
+        <RepositoryType>git</RepositoryType>
+        <IncludeSymbols>true</IncludeSymbols>
+        <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+        <!-- Publish the repository URL in the built .nupkg (in the NuSpec <Repository> element) -->
+        <PublishRepositoryUrl>true</PublishRepositoryUrl>
+        <GitRepositoryRemoteName>upstream</GitRepositoryRemoteName>
+        <!-- Embed source files that are not tracked by the source control manager in the PDB -->
+        <EmbedUntrackedSources>true</EmbedUntrackedSources>
+        <EnableSourceLink>true</EnableSourceLink>
+        <Authors>Miguel de Icaza, Tig Kindel (@tig), @BDisp</Authors>
+    </PropertyGroup>
+    <PropertyGroup Condition=" '$(VersionSuffix)' != '' ">
+    <!-- When there's a version suffix (prerelease), set the PRERELEASE flag -->
+    <FILEFLAGS>VS_FF_PRERELEASE</FILEFLAGS>
+</PropertyGroup>
+    <ProjectExtensions>
+        <VisualStudio>
+            <UserProperties resources_4config_1json__JsonSchema="../../docfx/schemas/tui-config-schema.json" />
+        </VisualStudio>
+    </ProjectExtensions>
+
+    <!--<Target Name="PreBuildCleanup" BeforeTargets="BeforeBuild" Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
+        <Exec Command="rmdir /s /q &quot;$(UserProfile)\.nuget\packages\terminal.gui\2.0.0&quot;" Condition=" '$(OS)' == 'Windows_NT' " />
+        <Exec Command="rm -rf ~/.nuget/packages/terminal.gui/2.0.0" Condition=" '$(OS)' != 'Windows_NT' " />
+    </Target>-->
+        
+    <Target Name="CopyNuGetPackagesToLocalPackagesFolder" AfterTargets="Pack" Condition="'$(Configuration)' == 'Release'">
+	    <!-- Remove older NuGet Package from Global Cache -->
+	    <Exec Command="rmdir /s /q &quot;$(UserProfile)\.nuget\packages\terminal.gui\2.0.0&quot;" Condition=" '$(OS)' == 'Windows_NT' " />
+	    <Exec Command="rm -rf ~/.nuget/packages/terminal.gui/2.0.0" Condition=" '$(OS)' != 'Windows_NT' " />
+
+        <PropertyGroup>
+            <!-- Define the path for local_packages relative to the project directory -->
+            <LocalPackagesPath>$(MSBuildThisFileDirectory)..\local_packages\</LocalPackagesPath>
+            <!-- Output path without framework-specific folders -->
+            <PackageOutputPath>$(MSBuildThisFileDirectory)bin\$(Configuration)\</PackageOutputPath>
+        </PropertyGroup>
+
+        <!-- Ensure the local_packages folder exists -->
+        <Message Text="Checking if $(LocalPackagesPath) exists, creating if necessary." Importance="high" />
+        <MakeDir Directories="$(LocalPackagesPath)" />
+
+        <!-- Collect .nupkg and .snupkg files into an item group -->
+        <ItemGroup>
+            <NuGetPackages Include="$(PackageOutputPath)*.nupkg;$(PackageOutputPath)*.snupkg" />
+        </ItemGroup>
+
+        <!-- Check if any packages were found -->
+        <Message Text="Found packages: @(NuGetPackages)" Importance="high" />
+
+        <!-- Copy files only if found -->
+        <Copy SourceFiles="@(NuGetPackages)" DestinationFolder="$(LocalPackagesPath)" SkipUnchangedFiles="false" Condition="@(NuGetPackages) != ''" />
+
+        <!-- Log success -->
+        <Message Text="Copy completed successfully." Importance="high" />
+
+        <!-- Install NuGet Package to Global Cache -->
+        <Exec Command="dotnet nuget push &quot;$(MSBuildThisFileDirectory)bin\$(Configuration)\Terminal.Gui.$(Version).nupkg&quot; --source &quot;$(UserProfile)\.nuget\packages&quot; --skip-duplicate" Condition=" '$(OS)' == 'Windows_NT' " />
+        <Exec Command="dotnet nuget push &quot;$(MSBuildThisFileDirectory)bin\$(Configuration)/Terminal.Gui.$(Version).nupkg&quot; --source ~/.nuget/packages --skip-duplicate" Condition=" '$(OS)' != 'Windows_NT' " />
+    </Target>
 </Project>

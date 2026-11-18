@@ -1,0 +1,33 @@
+{
+  "version": "1.0",
+  "components": [
+    "Microsoft.VisualStudio.Component.DependencyValidation.Community",
+    "Microsoft.VisualStudio.Component.CoreEditor",
+    "Microsoft.VisualStudio.Workload.CoreEditor",
+    "Microsoft.Net.Component.4.8.SDK",
+    "Microsoft.Net.Component.4.7.2.TargetingPack",
+    "Microsoft.Net.ComponentGroup.DevelopmentPrerequisites",
+    "Microsoft.VisualStudio.Component.Roslyn.Compiler",
+    "Microsoft.Component.MSBuild",
+    "Microsoft.VisualStudio.Component.Roslyn.LanguageServices",
+    "Microsoft.VisualStudio.Component.TextTemplating",
+    "Microsoft.VisualStudio.Component.NuGet",
+    "Microsoft.VisualStudio.Component.ManagedDesktop.Core",
+    "Microsoft.NetCore.Component.Runtime.8.0",
+    "Microsoft.NetCore.Component.SDK",
+    "Microsoft.VisualStudio.Component.FSharp",
+    "Microsoft.NetCore.Component.DevelopmentTools",
+    "Microsoft.VisualStudio.Component.AppInsights.Tools",
+    "Microsoft.VisualStudio.Component.Debugger.JustInTime",
+    "Microsoft.Net.Component.4.6.2.TargetingPack",
+    "Microsoft.Net.Component.4.8.1.TargetingPack",
+    "Microsoft.VisualStudio.Component.ManagedDesktop.Prerequisites",
+    "Microsoft.VisualStudio.Component.NuGet.BuildTools",
+    "Microsoft.Net.Component.4.6.TargetingPack",
+    "Microsoft.VisualStudio.Component.VSSDK",
+    "Microsoft.VisualStudio.ComponentGroup.VisualStudioExtension.Prerequisites",
+    "Microsoft.Component.CodeAnalysis.SDK",
+    "Microsoft.VisualStudio.Workload.VisualStudioExtension"
+  ],
+  "extensions": []
+}

@@ -1,0 +1,81 @@
+- name: Overview
+  href: index.md
+- name: Getting Started
+  href: getting-started.md
+- name: Showcase
+  href: showcase.md
+- name: What's new in v2
+  href: newinv2.md
+- name: v1 To v2 Migration
+  href: migratingfromv1.md
+- name: 2.5.0 Breaking Changes
+  href: breaking-changes-2.5.0.md
+- name: Lexicon & Taxonomy
+  href: lexicon.md
+- name: Views
+  href: views.md
+- name: ANSI Handling
+  href: ansihandling.md
+- name: Application
+  href: application.md
+- name: Printing Above an Inline Application
+  href: inline-output.md
+- name: Arrangement
+  href: arrangement.md
+- name: Borders
+  href: borders.md
+- name: Bracketed Paste
+  href: bracketed-paste.md
+- name: Cancellable Work Pattern
+  href: cancellable-work-pattern.md
+- name: Command
+  href: command.md
+- name: Command Diagrams
+  href: command-diagrams.md
+- name: Configuration
+  href: config.md
+- name: Migrating ConfigurationManager
+  href: migrate-cm-to-mec.md
+- name: Cursor
+  href: cursor.md
+- name: Dim.Auto
+  href: dimauto.md
+- name: Drawing
+  href: drawing.md
+- name: Drivers
+  href: drivers.md
+- name: Events
+  href: events.md
+- name: Input Injection
+  href: input-injection.md
+- name: Keyboard
+  href: keyboard.md
+- name: Layout
+  href: layout.md
+- name: Markdown Tables
+  href: markdown-tables.md
+- name: Logging
+  href: logging.md
+- name: Menus
+  href: menus.md
+- name: Mouse
+  href: mouse.md
+- name: Multi-Tasking
+  href: multitasking.md
+- name: Navigation
+  href: navigation.md
+- name: Popovers
+  href: Popovers.md
+- name: Prompt
+  href: prompt.md
+- name: Scheme
+  href: scheme.md
+- name: Scrolling
+  href: scrolling.md
+- name: TableView
+  href: tableview.md
+- name: TreeView
+  href: treeview.md
+- name: View
+  href: View.md
+

@@ -1,236 +1,178 @@
-//
-// StatusBar.cs: a statusbar for an application
-//
-// Authors:
-//   Miguel de Icaza (miguel@gnome.org)
-//
-// TODO:
-//   Add mouse support
-using System;
-using System.Collections.Generic;
-using System.Text;
+namespace Terminal.Gui.Views;
 
-namespace Terminal.Gui {
-	/// <summary>
-	/// <see cref="StatusItem"/> objects are contained by <see cref="StatusBar"/> <see cref="View"/>s. 
-	/// Each <see cref="StatusItem"/> has a title, a shortcut (hotkey), and an <see cref="Action"/> that will be invoked when the 
-	/// <see cref="StatusItem.Shortcut"/> is pressed.
-	/// The <see cref="StatusItem.Shortcut"/> will be a global hotkey for the application in the current context of the screen.
-	/// The colour of the <see cref="StatusItem.Title"/> will be changed after each ~. 
-	/// A <see cref="StatusItem.Title"/> set to `~F1~ Help` will render as *F1* using <see cref="ColorScheme.HotNormal"/> and
-	/// *Help* as <see cref="ColorScheme.HotNormal"/>.
-	/// </summary>
-	public class StatusItem {
-		/// <summary>
-		/// Initializes a new <see cref="StatusItem"/>.
-		/// </summary>
-		/// <param name="shortcut">Shortcut to activate the <see cref="StatusItem"/>.</param>
-		/// <param name="title">Title for the <see cref="StatusItem"/>.</param>
-		/// <param name="action">Action to invoke when the <see cref="StatusItem"/> is activated.</param>
-		public StatusItem (Key shortcut, string title, Action action)
-		{
-			Title = title ?? "";
-			Shortcut = shortcut;
-			Action = action;
-		}
+/// <summary>
+///     A status bar is a <see cref="View"/> that snaps to the bottom of the Viewport displaying set of
+///     <see cref="Shortcut"/>s. The <see cref="StatusBar"/> should be context-sensitive. This means, if the main menu
+///     and an open text editor are visible, the items probably shown will be ~F1~ Help ~F2~ Save ~F3~ Load. While a dialog
+///     to ask a file to load is executed, the remaining commands will probably be ~F1~ Help. So for each context must be a
+///     new instance of a status bar.
+/// </summary>
+/// <remarks>
+/// <img src="../images/views/StatusBar.gif" alt="StatusBar demo"/>
+/// </remarks>
+public class StatusBar : Bar, IDesignable
+{
+    /// <inheritdoc/>
+    public StatusBar () : this ([]) { }
 
-		/// <summary>
-		/// Gets the global shortcut to invoke the action on the menu.
-		/// </summary>
-		public Key Shortcut { get; set; }
+    /// <inheritdoc/>
+    public StatusBar (IEnumerable<Shortcut> shortcuts) : base (shortcuts)
+    {
+        TabStop = TabBehavior.NoStop;
+        Orientation = Orientation.Horizontal;
+        Y = Pos.AnchorEnd ();
+        Width = Dim.Fill ();
+        Height = Dim.Auto (DimAutoStyle.Content, 1);
 
-		/// <summary>
-		/// Gets or sets the title.
-		/// </summary>
-		/// <value>The title.</value>
-		/// <remarks>
-		/// The colour of the <see cref="StatusItem.Title"/> will be changed after each ~. 
-		/// A <see cref="StatusItem.Title"/> set to `~F1~ Help` will render as *F1* using <see cref="ColorScheme.HotNormal"/> and
-		/// *Help* as <see cref="ColorScheme.HotNormal"/>.
-		/// </remarks>
-		public string Title { get; set; }
+        if (Border is { })
+        {
+            Border.LineStyle = DefaultSeparatorLineStyle;
+        }
 
-		/// <summary>
-		/// Gets or sets the action to be invoked when the statusbar item is triggered
-		/// </summary>
-		/// <value>Action to invoke.</value>
-		public Action Action { get; }
+        SchemeName = SchemeManager.SchemesToSchemeName (Schemes.Menu);
 
-		/// <summary>
-		/// Gets or sets arbitrary data for the status item.
-		/// </summary>
-		/// <remarks>This property is not used internally.</remarks>
-		public object Data { get; set; }
-	};
+        ThemeChanges.ThemeChanged += OnThemeChanged;
+    }
 
-	/// <summary>
-	/// A status bar is a <see cref="View"/> that snaps to the bottom of a <see cref="Toplevel"/> displaying set of <see cref="StatusItem"/>s.
-	/// The <see cref="StatusBar"/> should be context sensitive. This means, if the main menu and an open text editor are visible, the items probably shown will
-	/// be ~F1~ Help ~F2~ Save ~F3~ Load. While a dialog to ask a file to load is executed, the remaining commands will probably be ~F1~ Help.
-	/// So for each context must be a new instance of a statusbar.
-	/// </summary>
-	public class StatusBar : View {
-		/// <summary>
-		/// The items that compose the <see cref="StatusBar"/>
-		/// </summary>
-		public StatusItem [] Items { get; set; }
+    /// <inheritdoc />
+    protected override void OnSuperViewChanged (ValueChangedEventArgs<View?> e)
+    {
+        if (SuperView is null)
+        {
+            // BUGBUG: This is a hack for avoiding a race condition when theme overlays re-apply.
+            // BUGBUG: For some reason in some unit tests, when Top is disposed, MenuBar.Dispose does not get called.
+            // BUGBUG: Yet, the MenuBar does get Removed from Top (and it's SuperView set to null).
+            // BUGBUG: Related: https://github.com/tui-cs/Terminal.Gui/issues/4021
+            ThemeChanges.ThemeChanged -= OnThemeChanged;
+        }
+    }
+    private void OnThemeChanged (object? sender, App.EventArgs<string> e)
+    {
+        if (Border is { })
+        {
+            Border.LineStyle = DefaultSeparatorLineStyle;
+        }
+    }
 
-		/// <summary>
-		/// Initializes a new instance of the <see cref="StatusBar"/> class.
-		/// </summary>
-		public StatusBar () : this (items: new StatusItem [] { }) { }
+    /// <summary>
+    ///     Gets or sets the default Line Style for the separators between the shortcuts of the StatusBar.
+    /// </summary>
+    public static LineStyle DefaultSeparatorLineStyle => StatusBarSettings.Current.DefaultSeparatorLineStyle;
 
-		/// <summary>
-		/// Initializes a new instance of the <see cref="StatusBar"/> class with the specified set of <see cref="StatusItem"/>s.
-		/// The <see cref="StatusBar"/> will be drawn on the lowest line of the terminal or <see cref="View.SuperView"/> (if not null).
-		/// </summary>
-		/// <param name="items">A list of statusbar items.</param>
-		public StatusBar (StatusItem [] items) : base ()
-		{
-			Items = items;
-			CanFocus = false;
-			ColorScheme = Colors.Menu;
-			X = 0;
-			Y = Pos.AnchorEnd (1);
-			Width = Dim.Fill ();
-			Height = 1;
-		}
+    /// <inheritdoc />
+    protected override void OnSubViewLayout (LayoutEventArgs args)
+    {
+        for (int index = 0; index < SubViews.Count; index++)
+        {
+            View barItem = SubViews.ElementAt (index);
 
-		static string shortcutDelimiter = "-";
-		/// <summary>
-		/// Used for change the shortcut delimiter separator.
-		/// </summary>
-		public static string ShortcutDelimiter {
-			get => shortcutDelimiter;
-			set {
-				if (shortcutDelimiter != value) {
-					shortcutDelimiter = value == string.Empty ? " " : value;
-				}
-			}
-		}
+            barItem.BorderStyle = BorderStyle;
 
-		Attribute ToggleScheme (Attribute scheme)
-		{
-			var result = scheme == ColorScheme.Normal ? ColorScheme.HotNormal : ColorScheme.Normal;
-			Driver.SetAttribute (result);
-			return result;
-		}
+            if (barItem.Border is { })
+            {
+                barItem.Border.Thickness = index == SubViews.Count - 1 ? new Thickness (0, 0, 0, 0) : new Thickness (0, 0, 1, 0);
+            }
 
-		///<inheritdoc/>
-		public override void OnDrawContent (Rect contentArea)
-		{
-			Move (0, 0);
-			Driver.SetAttribute (GetNormalColor ());
-			for (int i = 0; i < Frame.Width; i++)
-				Driver.AddRune ((Rune)' ');
+            if (barItem is Shortcut shortcut)
+            {
+                shortcut.Orientation = Orientation.Horizontal;
+            }
+        }
+        base.OnSubViewLayout (args);
+    }
 
-			Move (1, 0);
-			var scheme = GetNormalColor ();
-			Driver.SetAttribute (scheme);
-			for (int i = 0; i < Items.Length; i++) {
-				var title = Items [i].Title;
-				for (int n = 0; n < Items [i].Title.GetRuneCount (); n++) {
-					if (title [n] == '~') {
-						scheme = ToggleScheme (scheme);
-						continue;
-					}
-					Driver.AddRune ((Rune)title [n]);
-				}
-				if (i + 1 < Items.Length) {
-					Driver.AddRune ((Rune)' ');
-					Driver.AddRune (CM.Glyphs.VLine);
-					Driver.AddRune ((Rune)' ');
-				}
-			}
-		}
+    /// <inheritdoc/>
+    protected override void OnSubViewAdded (View subView)
+    {
+        subView.CanFocus = false;
 
-		///<inheritdoc/>
-		public override bool ProcessHotKey (KeyEvent kb)
-		{
-			foreach (var item in Items) {
-				if (kb.Key == item.Shortcut) {
-					Run (item.Action);
-					return true;
-				}
-			}
-			return false;
-		}
+        if (subView is Shortcut shortcut)
+        {
+            // TODO: not happy about using AlignmentModes for this. Too implied.
+            // TODO: instead, add a property (a style enum?) to Shortcut to control this
+            shortcut.AlignmentModes = AlignmentModes.EndToStart;
+        }
+    }
 
-		///<inheritdoc/>
-		public override bool MouseEvent (MouseEvent me)
-		{
-			if (me.Flags != MouseFlags.Button1Clicked)
-				return false;
+    /// <inheritdoc />
+    bool IDesignable.EnableForDesign ()
+    {
+        var shortcut = new Shortcut
+        {
+            Text = "Quit",
+            Title = "Q_uit",
+            Key = Key.Z.WithCtrl,
+        };
 
-			int pos = 1;
-			for (int i = 0; i < Items.Length; i++) {
-				if (me.X >= pos && me.X < pos + GetItemTitleLength (Items [i].Title)) {
-					Run (Items [i].Action);
-					break;
-				}
-				pos += GetItemTitleLength (Items [i].Title) + 3;
-			}
-			return true;
-		}
+        Add (shortcut);
 
-		int GetItemTitleLength (string title)
-		{
-			int len = 0;
-			foreach (var ch in title) {
-				if (ch == '~')
-					continue;
-				len++;
-			}
+        shortcut = new Shortcut
+        {
+            Text = "Help Text",
+            Title = "Help",
+            Key = Key.F1,
+        };
 
-			return len;
-		}
+        Add (shortcut);
 
-		void Run (Action action)
-		{
-			if (action == null)
-				return;
+        shortcut = new Shortcut
+        {
+            Title = "_Show/Hide",
+            Key = Key.F10,
+            CommandView = new CheckBox
+            {
+                CanFocus = false,
+                Text = "_Show/Hide"
+            },
+        };
 
-			Application.MainLoop.AddIdle (() => {
-				action ();
-				return false;
-			});
-		}
+        Add (shortcut);
 
-		///<inheritdoc/>
-		public override bool OnEnter (View view)
-		{
-			Application.Driver.SetCursorVisibility (CursorVisibility.Invisible);
+        var LeftButton = new Button
+        {
+            Text = "I'll Hide",
+            // Visible = false
+        };
+        LeftButton.Accepting += OnButtonClicked;
+        Add (LeftButton);
 
-			return base.OnEnter (view);
-		}
+#pragma warning disable TGUI001
+        shortcut.Accepting += (_, e) =>
+                              {
+                                  LeftButton.Visible = !LeftButton.Visible;
+                                  LeftButton.Enabled = LeftButton.Visible;
+                                  e.Handled = false;
+                              };
+#pragma warning restore TGUI001
 
-		/// <summary>
-		/// Inserts a <see cref="StatusItem"/> in the specified index of <see cref="Items"/>.
-		/// </summary>
-		/// <param name="index">The zero-based index at which item should be inserted.</param>
-		/// <param name="item">The item to insert.</param>
-		public void AddItemAt (int index, StatusItem item)
-		{
-			var itemsList = new List<StatusItem> (Items);
-			itemsList.Insert (index, item);
-			Items = itemsList.ToArray ();
-			SetNeedsDisplay ();
-		}
+        Add (new Label
+        {
+            HotKeySpecifier = new Rune ('_'),
+            Text = "Fo_cusLabel",
+            CanFocus = true
+        });
 
-		/// <summary>
-		/// Removes a <see cref="StatusItem"/> at specified index of <see cref="Items"/>.
-		/// </summary>
-		/// <param name="index">The zero-based index of the item to remove.</param>
-		/// <returns>The <see cref="StatusItem"/> removed.</returns>
-		public StatusItem RemoveItem (int index)
-		{
-			var itemsList = new List<StatusItem> (Items);
-			var item = itemsList [index];
-			itemsList.RemoveAt (index);
-			Items = itemsList.ToArray ();
-			SetNeedsDisplay ();
+        var MiddleButton = new Button
+        {
+            Text = "Or me!",
+        };
+        MiddleButton.Accepting += (s, e) => App?.RequestStop ();
 
-			return item;
-		}
-	}
+        Add (MiddleButton);
+
+        return true;
+
+        void OnButtonClicked (object? sender, EventArgs? e) { MessageBox.Query (App!, "Hi", $"You clicked {sender}"); }
+    }
+
+    /// <inheritdoc/>
+    string? IDesignable.GetDemoKeyStrokes () => "wait:500,Tab,wait:500,Tab,wait:500,Tab,wait:800";
+
+    /// <inheritdoc />
+    protected override void Dispose (bool disposing)
+    {
+        base.Dispose (disposing);
+
+        ThemeChanges.ThemeChanged -= OnThemeChanged;
+    }
 }

@@ -1,0 +1,31 @@
+{{!Licensed to the .NET Foundation under one or more agreements. The .NET Foundation licenses this file to you under the MIT license.}}
+
+{{>partials/class.header}}
+
+{{#children}}
+<h2 class="section" id="{{id}}">{{>partials/classSubtitle}}</h2>
+
+{{#children}}
+<dl class="jumplist">
+  <dt><xref uid="{{uid}}" altProperty="fullName" displayProperty="name"/></dt>
+  <dd>{{{summary}}}</dd>
+</dl>
+{{/children}}
+
+{{/children}}
+
+{{#seealso.0}}
+<h2 id="seealso">{{__global.seealso}}</h2>
+<div class="seealso">
+{{/seealso.0}}
+{{#seealso}}
+  {{#isCref}}
+    <div>{{{type.specName.0.value}}}</div>
+  {{/isCref}}
+  {{^isCref}}
+    <div>{{{url}}}</div>
+  {{/isCref}}
+{{/seealso}}
+{{#seealso.0}}
+</div>
+{{/seealso.0}}

@@ -1,0 +1,244 @@
+# Workflow to analyze hang dumps from failed test runs
+# Can be triggered manually or automatically when unit-tests.yml fails on macOS
+
+name: Analyze Hang Dump
+
+on:
+  # Manual trigger with optional run ID to download artifacts from
+  workflow_dispatch:
+    inputs:
+      run_id:
+        description: 'Run ID to download hang dump from (leave empty to use uploaded artifact)'
+        required: false
+        type: string
+      dump_artifact_name:
+        description: 'Artifact name containing the dump (default: parallel_unittests-logs-macOS)'
+        required: false
+        default: 'parallel_unittests-logs-macOS'
+        type: string
+
+  # Automatically trigger when unit-tests workflow fails
+  workflow_run:
+    workflows: ["Unit Tests"]
+    types:
+      - completed
+
+jobs:
+  analyze-dump:
+    name: Analyze macOS Hang Dump
+    # Only run on macOS to have native DAC support
+    runs-on: macos-latest
+
+    # For workflow_run trigger, only run if the triggering workflow failed
+    if: |
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'failure')
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: |
+            8.0.x
+            9.0.x
+            10.0.x
+
+      - name: Install dotnet-dump
+        run: |
+          dotnet tool install -g dotnet-dump
+          echo "$HOME/.dotnet/tools" >> $GITHUB_PATH
+
+      - name: Download artifact from specified run
+        if: github.event_name == 'workflow_dispatch' && github.event.inputs.run_id != ''
+        uses: actions/download-artifact@v8
+        with:
+          name: ${{ github.event.inputs.dump_artifact_name }}
+          path: dump-artifacts
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          run-id: ${{ github.event.inputs.run_id }}
+
+      - name: Download artifact from triggering workflow
+        if: github.event_name == 'workflow_run'
+        uses: actions/download-artifact@v8
+        with:
+          name: parallel_unittests-logs-macOS
+          path: dump-artifacts
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          run-id: ${{ github.event.workflow_run.id }}
+
+      - name: Find and analyze hang dumps
+        id: analyze
+        run: |
+          echo "============================================"
+          echo "Searching for hang dump files..."
+          echo "============================================"
+
+          # Find all hang dump files
+          DUMP_FILES=$(find dump-artifacts -name "*_hangdump.dmp" 2>/dev/null || true)
+
+          if [ -z "$DUMP_FILES" ]; then
+            echo "No hang dump files found in artifacts"
+            echo "Contents of dump-artifacts:"
+            find dump-artifacts -type f 2>/dev/null || echo "Directory empty or not found"
+            exit 0
+          fi
+
+          mkdir -p analysis-results
+
+          for DUMP_FILE in $DUMP_FILES; do
+            echo ""
+            echo "============================================"
+            echo "Analyzing: $DUMP_FILE"
+            echo "============================================"
+
+            BASENAME=$(basename "$DUMP_FILE" .dmp)
+            ANALYSIS_FILE="analysis-results/${BASENAME}_analysis.txt"
+
+            echo "Analysis started at: $(date -u +%Y-%m-%dT%H:%M:%SZ)" > "$ANALYSIS_FILE"
+            echo "Dump file: $DUMP_FILE" >> "$ANALYSIS_FILE"
+            echo "" >> "$ANALYSIS_FILE"
+
+            # 1. Basic runtime info
+            echo "=== RUNTIME INFO ===" >> "$ANALYSIS_FILE"
+            dotnet dump analyze "$DUMP_FILE" -c "runtimes" -c "exit" >> "$ANALYSIS_FILE" 2>&1 || true
+
+            # 2. All CLR threads
+            echo "" >> "$ANALYSIS_FILE"
+            echo "=== CLR THREADS ===" >> "$ANALYSIS_FILE"
+            dotnet dump analyze "$DUMP_FILE" -c "clrthreads" -c "exit" >> "$ANALYSIS_FILE" 2>&1 || true
+
+            # 3. Thread pool statistics
+            echo "" >> "$ANALYSIS_FILE"
+            echo "=== THREAD POOL ===" >> "$ANALYSIS_FILE"
+            dotnet dump analyze "$DUMP_FILE" -c "threadpool" -c "exit" >> "$ANALYSIS_FILE" 2>&1 || true
+
+            # 4. Sync blocks (deadlock detection)
+            echo "" >> "$ANALYSIS_FILE"
+            echo "=== SYNC BLOCKS (DEADLOCK CHECK) ===" >> "$ANALYSIS_FILE"
+            dotnet dump analyze "$DUMP_FILE" -c "syncblk" -c "exit" >> "$ANALYSIS_FILE" 2>&1 || true
+
+            # 5. Get all managed thread stacks
+            echo "" >> "$ANALYSIS_FILE"
+            echo "=== ALL MANAGED THREAD STACKS ===" >> "$ANALYSIS_FILE"
+
+            # Extract thread IDs from clrthreads output
+            THREAD_OUTPUT=$(dotnet dump analyze "$DUMP_FILE" -c "clrthreads" -c "exit" 2>/dev/null || true)
+            THREAD_IDS=$(echo "$THREAD_OUTPUT" | grep -oE "^\s*[0-9]+" | tr -d ' ' | head -50)
+
+            for TID in $THREAD_IDS; do
+              echo "" >> "$ANALYSIS_FILE"
+              echo "--- Thread $TID ---" >> "$ANALYSIS_FILE"
+              dotnet dump analyze "$DUMP_FILE" -c "setthread $TID" -c "clrstack -a" -c "exit" >> "$ANALYSIS_FILE" 2>&1 || true
+            done
+
+            # 6. Terminal.Gui specific heap analysis
+            echo "" >> "$ANALYSIS_FILE"
+            echo "=== TERMINAL.GUI HEAP STATISTICS ===" >> "$ANALYSIS_FILE"
+            dotnet dump analyze "$DUMP_FILE" -c "dumpheap -stat -type Terminal.Gui" -c "exit" >> "$ANALYSIS_FILE" 2>&1 || true
+
+            # 7. Look for specific Terminal.Gui objects
+            echo "" >> "$ANALYSIS_FILE"
+            echo "=== APPLICATION INSTANCES ===" >> "$ANALYSIS_FILE"
+            dotnet dump analyze "$DUMP_FILE" -c "dumpheap -type ApplicationImpl" -c "exit" >> "$ANALYSIS_FILE" 2>&1 || true
+
+            echo "" >> "$ANALYSIS_FILE"
+            echo "=== MAIN LOOP COORDINATOR ===" >> "$ANALYSIS_FILE"
+            dotnet dump analyze "$DUMP_FILE" -c "dumpheap -type MainLoopCoordinator" -c "exit" >> "$ANALYSIS_FILE" 2>&1 || true
+
+            echo "" >> "$ANALYSIS_FILE"
+            echo "=== TIMED EVENTS ===" >> "$ANALYSIS_FILE"
+            dotnet dump analyze "$DUMP_FILE" -c "dumpheap -type TimedEvents" -c "exit" >> "$ANALYSIS_FILE" 2>&1 || true
+
+            # 8. Look for waiting/blocked threads
+            echo "" >> "$ANALYSIS_FILE"
+            echo "=== WAIT HANDLES ===" >> "$ANALYSIS_FILE"
+            dotnet dump analyze "$DUMP_FILE" -c "dumpheap -type ManualResetEvent" -c "exit" >> "$ANALYSIS_FILE" 2>&1 || true
+            dotnet dump analyze "$DUMP_FILE" -c "dumpheap -type AutoResetEvent" -c "exit" >> "$ANALYSIS_FILE" 2>&1 || true
+            dotnet dump analyze "$DUMP_FILE" -c "dumpheap -type SemaphoreSlim" -c "exit" >> "$ANALYSIS_FILE" 2>&1 || true
+
+            echo "" >> "$ANALYSIS_FILE"
+            echo "=== ANALYSIS COMPLETE ===" >> "$ANALYSIS_FILE"
+            echo "Completed at: $(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$ANALYSIS_FILE"
+
+            echo ""
+            echo "Analysis saved to: $ANALYSIS_FILE"
+            echo ""
+            echo "=== QUICK SUMMARY (first 200 lines) ==="
+            head -200 "$ANALYSIS_FILE"
+          done
+
+      - name: Generate summary report
+        run: |
+          echo "# Hang Dump Analysis Report" > analysis-results/SUMMARY.md
+          echo "" >> analysis-results/SUMMARY.md
+          echo "Generated: $(date -u +%Y-%m-%dT%H:%M:%SZ)" >> analysis-results/SUMMARY.md
+          echo "" >> analysis-results/SUMMARY.md
+
+          if [ "${{ github.event_name }}" == "workflow_run" ]; then
+            echo "Triggered by: Unit Tests workflow run #${{ github.event.workflow_run.id }}" >> analysis-results/SUMMARY.md
+            echo "Run URL: ${{ github.event.workflow_run.html_url }}" >> analysis-results/SUMMARY.md
+          else
+            echo "Triggered by: Manual workflow dispatch" >> analysis-results/SUMMARY.md
+            if [ -n "${{ github.event.inputs.run_id }}" ]; then
+              echo "Source Run ID: ${{ github.event.inputs.run_id }}" >> analysis-results/SUMMARY.md
+            fi
+          fi
+
+          echo "" >> analysis-results/SUMMARY.md
+          echo "## Analysis Files" >> analysis-results/SUMMARY.md
+          echo "" >> analysis-results/SUMMARY.md
+
+          for f in analysis-results/*_analysis.txt; do
+            if [ -f "$f" ]; then
+              echo "- $(basename "$f")" >> analysis-results/SUMMARY.md
+            fi
+          done
+
+          # Extract key findings
+          echo "" >> analysis-results/SUMMARY.md
+          echo "## Key Findings" >> analysis-results/SUMMARY.md
+          echo "" >> analysis-results/SUMMARY.md
+
+          for f in analysis-results/*_analysis.txt; do
+            if [ -f "$f" ]; then
+              echo "### $(basename "$f" _analysis.txt)" >> analysis-results/SUMMARY.md
+              echo "" >> analysis-results/SUMMARY.md
+
+              # Thread count
+              THREAD_COUNT=$(grep -c "^--- Thread" "$f" 2>/dev/null || echo "0")
+              echo "- **Threads analyzed**: $THREAD_COUNT" >> analysis-results/SUMMARY.md
+
+              # Check for deadlocks
+              if grep -q "Waiting" "$f" 2>/dev/null; then
+                echo "- **⚠️ Potential blocking detected** - see SYNC BLOCKS section" >> analysis-results/SUMMARY.md
+              fi
+
+              # Check for Terminal.Gui objects
+              TG_OBJECTS=$(grep -A5 "TERMINAL.GUI HEAP" "$f" 2>/dev/null | grep -oE "[0-9]+ " | head -1 || echo "0")
+              echo "- **Terminal.Gui objects**: $TG_OBJECTS" >> analysis-results/SUMMARY.md
+
+              echo "" >> analysis-results/SUMMARY.md
+            fi
+          done
+
+      - name: Upload analysis results
+        uses: actions/upload-artifact@v7
+        with:
+          name: hang-dump-analysis
+          path: analysis-results/
+          retention-days: 30
+
+      - name: Print analysis location
+        run: |
+          echo ""
+          echo "============================================"
+          echo "Analysis complete!"
+          echo "============================================"
+          echo ""
+          echo "Download the 'hang-dump-analysis' artifact to view full results."
+          echo ""
+          echo "Key files:"
+          ls -la analysis-results/ 2>/dev/null || echo "No analysis files generated"

@@ -117,27 +117,6 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
-  <data name="ctxSelectAll" xml:space="preserve">
-    <value>_Select All</value>
-  </data>
-  <data name="ctxDeleteAll" xml:space="preserve">
-    <value>_Delete All</value>
-  </data>
-  <data name="ctxCopy" xml:space="preserve">
-    <value>_Copy</value>
-  </data>
-  <data name="ctxCut" xml:space="preserve">
-    <value>Cu_t</value>
-  </data>
-  <data name="ctxPaste" xml:space="preserve">
-    <value>_Paste</value>
-  </data>
-  <data name="ctxUndo" xml:space="preserve">
-    <value>_Undo</value>
-  </data>
-  <data name="ctxRedo" xml:space="preserve">
-    <value>_Redo</value>
-  </data>
   <data name="fdDirectory" xml:space="preserve">
     <value>Directory</value>
   </data>
@@ -192,10 +171,7 @@
     <value>Modified</value>
   </data>
   <data name="fdPathCaption" xml:space="preserve">
-    <value>Enter Path</value>
-  </data>
-  <data name="fdSearchCaption" xml:space="preserve">
-    <value>Enter Search</value>
+    <value>_Enter Path</value>
   </data>
   <data name="fdSize" xml:space="preserve">
     <value>Size</value>
@@ -223,11 +199,14 @@
   <data name="fdNewFailed" xml:space="preserve">
     <value>New Failed</value>
   </data>
+  <data name="fdPathTraversalError" xml:space="preserve">
+    <value>Name must not contain path separators or navigate outside the current directory.</value>
+  </data>
   <data name="fdNewTitle" xml:space="preserve">
     <value>New Folder</value>
   </data>
-  <data name="fdNo" xml:space="preserve">
-    <value>No</value>
+  <data name="btnNo" xml:space="preserve">
+    <value>_No</value>
   </data>
   <data name="fdRenameFailedTitle" xml:space="preserve">
     <value>Rename Failed</value>
@@ -238,10 +217,167 @@
   <data name="fdRenameTitle" xml:space="preserve">
     <value>Rename</value>
   </data>
-  <data name="fdYes" xml:space="preserve">
-    <value>Yes</value>
+  <data name="btnYes" xml:space="preserve">
+    <value>_Yes</value>
   </data>
   <data name="fdExisting" xml:space="preserve">
     <value>Existing</value>
+  </data>
+  <data name="btnOpen" xml:space="preserve">
+    <value>O_pen</value>
+  </data>
+  <data name="btnSave" xml:space="preserve">
+    <value>_Save</value>
+  </data>
+  <data name="btnSaveAs" xml:space="preserve">
+    <value>Save _as</value>
+  </data>
+  <data name="btnOk" xml:space="preserve">
+    <value>_OK</value>
+  </data>
+  <data name="btnCancel" xml:space="preserve">
+    <value>_Cancel</value>
+  </data>
+  <data name="fdCtxDelete" xml:space="preserve">
+    <value>_Delete</value>
+  </data>
+  <data name="fdCtxHide" xml:space="preserve">
+    <value>_Hide {0}</value>
+  </data>
+  <data name="fdCtxNew" xml:space="preserve">
+    <value>_New</value>
+  </data>
+  <data name="fdCtxRename" xml:space="preserve">
+    <value>_Rename</value>
+  </data>
+  <data name="fdCtxSortAsc" xml:space="preserve">
+    <value>_Sort {0} ASC</value>
+  </data>
+  <data name="fdCtxSortDesc" xml:space="preserve">
+    <value>_Sort {0} DESC</value>
+  </data>
+  <data name="dpTitle" xml:space="preserve">
+    <value>Date Picker</value>
+  </data>
+  <data name="charMapCPInfoDlgTitle" xml:space="preserve">
+    <value>Getting Codepoint Information</value>
+  </data>
+  <data name="charMapCopyGlyph" xml:space="preserve">
+    <value>Copy _Glyph</value>
+  </data>
+  <data name="charMapCopyCP" xml:space="preserve">
+    <value>Copy Code_point</value>
+  </data>
+  <data name="charMapInfoDlgInfoLabel" xml:space="preserve">
+    <value>Codepoint Information from</value>
+  </data>
+  <data name="error" xml:space="preserve">
+    <value>Error</value>
+  </data>
+  <data name="failedGetting" xml:space="preserve">
+    <value>failed getting</value>
+  </data>
+  <data name="cmdOpen" xml:space="preserve">
+    <value>_Open...</value>
+  </data>
+  <data name="cmdSave" xml:space="preserve">
+    <value>_Save</value>
+  </data>
+  <data name="cmdSaveAs" xml:space="preserve">
+    <value>Save _As...</value>
+  </data>
+  <data name="cmdCut" xml:space="preserve">
+    <value>Cu_t</value>
+  </data>
+  <data name="cmdCopy" xml:space="preserve">
+    <value>_Copy</value>
+  </data>
+  <data name="cmdPaste" xml:space="preserve">
+    <value>_Paste</value>
+  </data>
+  <data name="cmdSelectAll" xml:space="preserve">
+    <value>_Select all</value>
+  </data>
+  <data name="cmdNew" xml:space="preserve">
+    <value>_New</value>
+  </data>
+  <data name="cmdOpen_Help" xml:space="preserve">
+    <value>Open a file</value>
+  </data>
+  <data name="cmdQuit_Help" xml:space="preserve">
+    <value>Exit the application</value>
+  </data>
+  <data name="cmdSaveAs_Help" xml:space="preserve">
+    <value>Save file as</value>
+  </data>
+  <data name="cmdCut_Help" xml:space="preserve">
+    <value>Cut to clipboard</value>
+  </data>
+  <data name="cmdCopy_Help" xml:space="preserve">
+    <value>Copy to clipboard</value>
+  </data>
+  <data name="cmdSelectAll_Help" xml:space="preserve">
+    <value>Select all</value>
+  </data>
+  <data name="cmdNew_Help" xml:space="preserve">
+    <value>New file</value>
+  </data>
+  <data name="fdTree" xml:space="preserve">
+    <value>_Tree</value>
+    <comment>Show/Hide Tree View</comment>
+  </data>
+  <data name="fdSearchCaption" xml:space="preserve">
+    <value>_Find</value>
+  </data>
+  <data name="cmdPaste_Help" xml:space="preserve">
+    <value>Paste from clipboard</value>
+  </data>
+  <data name="cmdQuit" xml:space="preserve">
+    <value>E_xit</value>
+  </data>
+  <data name="cmdClose" xml:space="preserve">
+    <value>_Close</value>
+  </data>
+  <data name="cmdFind" xml:space="preserve">
+    <value>_Find</value>
+  </data>
+  <data name="menuFile" xml:space="preserve">
+    <value>_File</value>
+  </data>
+  <data name="menuEdit" xml:space="preserve">
+    <value>_Edit</value>
+  </data>
+  <data name="menuHelp" xml:space="preserve">
+    <value>_Help</value>
+  </data>
+  <data name="cmdSave_Help" xml:space="preserve">
+    <value>Save file</value>
+  </data>
+  <data name="cmdUndo" xml:space="preserve">
+    <value>_Undo</value>
+  </data>
+  <data name="cmdUndo_Help" xml:space="preserve">
+    <value>Undo last action</value>
+  </data>
+  <data name="cmdRedo" xml:space="preserve">
+    <value>_Redo</value>
+  </data>
+  <data name="cmdRedo_Help" xml:space="preserve">
+    <value>Redo last action</value>
+  </data>
+  <data name="cmdDeleteAll" xml:space="preserve">
+    <value>_Delete All</value>
+  </data>
+  <data name="cmdDeleteAll_Help" xml:space="preserve">
+    <value>Delete all</value>
+  </data>
+  <data name="cmdEdit" xml:space="preserve">
+    <value>_Edit</value>
+  </data>
+  <data name="cmdEdit_Help" xml:space="preserve">
+    <value>Edit</value>
+  </data>
+  <data name="cmdClose_Help" xml:space="preserve">
+    <value>Close</value>
   </data>
 </root>

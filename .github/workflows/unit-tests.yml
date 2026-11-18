@@ -1,0 +1,135 @@
+name: Build & Run Unit Tests
+
+on:
+  push:
+    branches: [ main, develop ]
+    paths-ignore:
+      - '**.md'
+  pull_request:
+    branches: [ main, develop ]
+    paths-ignore:
+      - '**.md'
+
+jobs:
+  non_parallel_unittests:
+    name: Non-Parallel Unit Tests
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ ubuntu-latest, windows-latest, macos-latest ]
+
+    timeout-minutes: 15
+    env:
+      DisableRealDriverIO: "1"
+    steps:
+
+    - name: Checkout code
+      uses: actions/checkout@v7
+      with:
+        fetch-depth: 0 # GitVersion.MsBuild needs full history
+
+    - name: Setup .NET Core
+      uses: actions/setup-dotnet@v6
+      with:
+        dotnet-version: 10.x
+        dotnet-quality: 'ga'
+
+    - name: Restore NuGet packages
+      run: dotnet restore
+
+    - name: Build
+      run: dotnet build --no-restore
+
+    # Optimize Windows performance
+    - name: Disable Windows Defender (Windows only)
+      if: runner.os == 'Windows'
+      shell: powershell
+      run: |
+        Add-MpPreference -ExclusionPath "${{ github.workspace }}"
+        Add-MpPreference -ExclusionProcess "dotnet.exe"
+
+    - name: Run UnitTests.NonParallelizable
+      shell: bash
+      run: |
+        dotnet test \
+          --project Tests/UnitTests.NonParallelizable \
+          --no-build \
+          --verbosity normal \
+          --diagnostic --diagnostic-output-directory logs/UnitTests.NonParallelizable/${{ runner.os }}
+
+    - name: Upload Test Logs
+      if: always()
+      uses: actions/upload-artifact@v7
+      with:
+        name: non_parallel_unittests-logs-${{ runner.os }}
+        path: |
+          logs/UnitTests.NonParallelizable/
+          Tests/UnitTests.NonParallelizable/logs/
+          TestResults/
+          **/*.dmp
+        if-no-files-found: ignore
+        retention-days: 7
+
+  parallel_unittests:
+    name: Parallel Unit Tests
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ ubuntu-latest, windows-latest, macos-latest ]
+
+    timeout-minutes: 60
+    env:
+      DisableRealDriverIO: "1"
+    steps:
+
+    - name: Checkout code
+      uses: actions/checkout@v7
+      with:
+        fetch-depth: 0 # GitVersion.MsBuild needs full history
+
+    - name: Setup .NET Core
+      uses: actions/setup-dotnet@v6
+      with:
+        dotnet-version: 10.x
+        dotnet-quality: 'ga'
+
+    - name: Restore NuGet packages
+      run: dotnet restore
+
+    - name: Build
+      run: dotnet build --no-restore
+
+    - name: Disable Windows Defender (Windows only)
+      if: runner.os == 'Windows'
+      shell: powershell
+      run: |
+        Add-MpPreference -ExclusionPath "${{ github.workspace }}"
+        Add-MpPreference -ExclusionProcess "dotnet.exe"
+
+    - name: Run UnitTestsParallelizable
+      shell: bash
+      run: |
+        dotnet test \
+          --project Tests/UnitTestsParallelizable \
+          --no-build \
+          --verbosity normal \
+          --diagnostic --diagnostic-output-directory logs/UnitTestsParallelizable/${{ runner.os }}
+
+        echo "============================================"
+        echo "Parallel unit tests completed successfully!"
+        echo "============================================"
+
+    - name: Upload UnitTestsParallelizable Logs
+      if: always()
+      uses: actions/upload-artifact@v7
+      with:
+        name: parallel_unittests-logs-${{ runner.os }}
+        path: |
+          logs/UnitTestsParallelizable/
+          Tests/UnitTestsParallelizable/logs/
+          TestResults/
+          **/*.dmp
+        if-no-files-found: ignore
+        retention-days: 7

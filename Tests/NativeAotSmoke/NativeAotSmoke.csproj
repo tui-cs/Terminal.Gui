@@ -1,0 +1,33 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <PublishAot>true</PublishAot>
+    <InvariantGlobalization>false</InvariantGlobalization>
+    <NoWarn>$(NoWarn);IL2026;IL3050;IL2123;IL3057</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\Terminal.Gui\Terminal.Gui.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Terminal.Gui.Editor" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="..\..\Examples\UICatalog\Scenarios\EditorsAndHelpers\ExpanderButton.cs" Link="Editors\ExpanderButton.cs" />
+    <Compile Include="..\..\Examples\UICatalog\Scenarios\EditorsAndHelpers\EditorBase.cs" Link="Editors\EditorBase.cs" />
+    <Compile Include="..\..\Examples\UICatalog\Scenarios\EditorsAndHelpers\ViewPropertiesEditor.cs" Link="Editors\ViewPropertiesEditor.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="Terminal.Gui.App" />
+    <Using Include="Terminal.Gui.Drawing" />
+    <Using Include="Terminal.Gui.Input" />
+    <Using Include="Terminal.Gui.ViewBase" />
+    <Using Include="Terminal.Gui.Views" />
+  </ItemGroup>
+</Project>
+

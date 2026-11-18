@@ -117,27 +117,6 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
-  <data name="ctxCopy" xml:space="preserve">
-    <value>_Copiar</value>
-  </data>
-  <data name="ctxCut" xml:space="preserve">
-    <value>Cor_tar</value>
-  </data>
-  <data name="ctxDeleteAll" xml:space="preserve">
-    <value>_Apagar Tudo</value>
-  </data>
-  <data name="ctxPaste" xml:space="preserve">
-    <value>Co_lar</value>
-  </data>
-  <data name="ctxRedo" xml:space="preserve">
-    <value>_Refazer</value>
-  </data>
-  <data name="ctxSelectAll" xml:space="preserve">
-    <value>_Selecionar Tudo</value>
-  </data>
-  <data name="ctxUndo" xml:space="preserve">
-    <value>_Desfazer</value>
-  </data>
   <data name="fdDirectory" xml:space="preserve">
     <value>Diretório</value>
   </data>
@@ -166,6 +145,99 @@
     <value>Acabam_ento</value>
   </data>
   <data name="wzNext" xml:space="preserve">
-    <value>S_eguir</value>
+    <value>S_eguir...</value>
+  </data>
+  <data name="btnOpen" xml:space="preserve">
+    <value>Abrir</value>
+  </data>
+  <data name="btnSave" xml:space="preserve">
+    <value>Guardar</value>
+  </data>
+  <data name="btnSaveAs" xml:space="preserve">
+    <value>Guardar como</value>
+  </data>
+  <data name="dpTitle" xml:space="preserve">
+    <value>Seletor de Data</value>
+  </data>
+  <data name="cmdOpen" xml:space="preserve">
+    <value>_Abrir</value>
+  </data>
+  <data name="cmdSave" xml:space="preserve">
+    <value>_Guardar</value>
+  </data>
+  <data name="cmdSaveAs" xml:space="preserve">
+    <value>Guardar _como</value>
+  </data>
+  <data name="cmdCut" xml:space="preserve">
+    <value>Cor_tar</value>
+  </data>
+  <data name="cmdCopy" xml:space="preserve">
+    <value>_Copiar</value>
+  </data>
+  <data name="cmdPaste" xml:space="preserve">
+    <value>Co_lar</value>
+  </data>
+  <data name="cmdSelectAll" xml:space="preserve">
+    <value>_Selecionar Tudo</value>
+  </data>
+  <data name="cmdNew" xml:space="preserve">
+    <value>_Novo</value>
+  </data>
+  <data name="cmdOpen_Help" xml:space="preserve">
+    <value>Abrir um ficheiro</value>
+  </data>
+  <data name="cmdQuit_Help" xml:space="preserve">
+    <value>Sair da aplicação</value>
+  </data>
+  <data name="cmdSaveAs_Help" xml:space="preserve">
+    <value>Guardar como</value>
+  </data>
+  <data name="cmdCut_Help" xml:space="preserve">
+    <value>Cortar para a área de transferência</value>
+  </data>
+  <data name="cmdCopy_Help" xml:space="preserve">
+    <value>Copiar para a área de transferência</value>
+  </data>
+  <data name="cmdSelectAll_Help" xml:space="preserve">
+    <value>Selecionar tudo</value>
+  </data>
+  <data name="cmdNew_Help" xml:space="preserve">
+    <value>Novo</value>
+  </data>
+  <data name="cmdPaste_Help" xml:space="preserve">
+    <value>Colar da área de transferência</value>
+  </data>
+  <data name="cmdQuit" xml:space="preserve">
+    <value>_Sair</value>
+  </data>
+  <data name="cmdUndo" xml:space="preserve">
+    <value>_Desfazer</value>
+  </data>
+  <data name="cmdUndo_Help" xml:space="preserve">
+    <value>Desfazer a última ação</value>
+  </data>
+  <data name="cmdRedo" xml:space="preserve">
+    <value>_Refazer</value>
+  </data>
+  <data name="cmdRedo_Help" xml:space="preserve">
+    <value>Refazer a última ação</value>
+  </data>
+  <data name="cmdDeleteAll" xml:space="preserve">
+    <value>_Apagar Tudo</value>
+  </data>
+  <data name="cmdDeleteAll_Help" xml:space="preserve">
+    <value>Apagar tudo</value>
+  </data>
+  <data name="cmdEdit" xml:space="preserve">
+    <value>_Editar</value>
+  </data>
+  <data name="cmdEdit_Help" xml:space="preserve">
+    <value>Editar</value>
+  </data>
+  <data name="cmdClose_Help" xml:space="preserve">
+    <value>Fechar</value>
+  </data>
+  <data name="cmdSave_Help" xml:space="preserve">
+    <value>Guardar o ficheiro</value>
   </data>
 </root>

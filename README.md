@@ -1,179 +1,116 @@
-NOTE: This is the WORK IN PROGRESS `v2.x` branch. The `main` branch is the stable `v1.x` branch.
-
-![Terminal.Gui](https://socialify.git.ci/gui-cs/Terminal.Gui/image?description=1&font=Rokkitt&forks=1&language=1&logo=https%3A%2F%2Fraw.githubusercontent.com%2Fgui-cs%2FTerminal.Gui%2Fdevelop%2Fdocfx%2Fimages%2Flogo.png&name=1&owner=1&pattern=Circuit%20Board&stargazers=1&theme=Auto)
-![.NET Core](https://github.com/gui-cs/Terminal.Gui/workflows/.NET%20Core/badge.svg?branch=master)
-![Code scanning - action](https://github.com/gui-cs/Terminal.Gui/workflows/Code%20scanning%20-%20action/badge.svg)
-[![Version](https://img.shields.io/nuget/v/Terminal.Gui.svg)](https://www.nuget.org/packages/Terminal.Gui)
-![Code Coverage](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/migueldeicaza/90ef67a684cb71db1817921a970f8d27/raw/code-coverage.json)
+![NuGet Version](https://img.shields.io/nuget/v/Terminal.Gui)
+![Bugs](https://img.shields.io/github/issues/tui-cs/Terminal.Gui)
+[![codecov](https://codecov.io/gh/tui-cs/Terminal.Gui/graph/badge.svg?token=1Ac9gyGtrj)](https://codecov.io/gh/tui-cs/Terminal.Gui)
 [![Downloads](https://img.shields.io/nuget/dt/Terminal.Gui)](https://www.nuget.org/packages/Terminal.Gui)
-[![License](https://img.shields.io/github/license/gui-cs/gui.cs.svg)](LICENSE)
-![Bugs](https://img.shields.io/github/issues/gui-cs/gui.cs/bug)
 
-***The current, stable, release of Terminal.Gui is [v1.x](https://www.nuget.org/packages/Terminal.Gui). It is stable, rich, and broadly used. The team is now focused on designing and building a significant upgrade we're referring to as `v2`. Therefore:***
- * *`v1` is now in maintenance mode, meaning we will accept PRs for v1.x (the `develop` branch) only for issues impacting existing functionality.*
- * *All new development happens on the `v2_develop` branch. See the V2 discussion [here](https://github.com/gui-cs/Terminal.Gui/discussions/1940).*
- * *Developers are encouraged to continue building on [v1.x](https://www.nuget.org/packages/Terminal.Gui) until we announce `v2` is stable.*
+# Terminal.Gui
 
-**Terminal.Gui**: A toolkit for building rich console apps for .NET, .NET Core, and Mono that works on Windows, the Mac, and Linux/Unix.
+Cross-platform UI toolkit for building sophisticated terminal UI (TUI) applications on Windows, macOS, and Linux/Unix.
 
-![Sample app](docfx/images/sample.gif)
+![Terminal.Gui — cross-platform TUI toolkit for .NET. Build full-featured terminal UIs with menus, forms, tables, charts, wizards and file dialogs. +11k stars, +50 built-in views, +1.7M downloads, TrueColor with Unicode and mouse — Windows / macOS / Linux, MIT-licensed.](docfx/images/hero.gif)
 
-## Quick Start
+## Terminal.Gui enables building sophisticated console applications with modern UIs
 
-Paste these commands into your favorite terminal on Windows, Mac, or Linux. This will install the [Terminal.Gui.Templates](https://github.com/gui-cs/Terminal.Gui.templates), create a new "Hello World" TUI app, and run it.
+- **Responsive TUI** - Easy to use, innovative, layout system enables console apps as responsive as any responsive web page.
+- **Performant and Scalable** - Built for modern TUIs - fast, double-buffering-based rendering; Tables and Tree Views scale to infinite elements with sorting and filtering.
+- **Keyboard First; Mouse First Too** - Optimized for TUI experiences where the user's hands never need to leave the keyboard; full mouse support too.
+- **Rich Built-in Widgets (Views)** - Text editors, buttons, checkboxes, trees, tables, markdown, linear ranges, menus, selectors, and more.
+- **Visualizations** - Charts, graphs, progress indicators, and color pickers with TrueColor support.
+- **Text Editors** - Full-featured text editing with clipboard, undo/redo, and Unicode support
+- **Fully Configurable** - Themes, colors, key bindings, and settings are all customizable and persistable.
+- **File Management** - File and directory browsers with search and filtering, supporting Nerdfonts and coloring.
+- **Wizards and Multi-Step Processes** - Guided workflows with navigation and validation.
+- **Cross-Platform** - Consistent experience on Windows, macOS, and Linux.
+- **Apps Work In-line or Full Screen** - Build CLI tools like Claude Code/Copilot/Codex CLI that scroll with the terminal (in-line) or full screen.
 
-(Press `CTRL-Q` to exit the app)
+See the [Views Overview](https://tui-cs.github.io/Terminal.Gui/docs/views) for available controls and [What's New in v2](https://tui-cs.github.io/Terminal.Gui/docs/newinv2) for architectural improvements.
+
+
+# Quick Start
+
+Install the [Terminal.Gui.Templates](https://github.com/tui-cs/Terminal.Gui.templates), create a new TUI app, and run it:
 
 ```powershell
-dotnet new --install Terminal.Gui.templates
-dotnet new tui -n myproj
+dotnet new install Terminal.Gui.Templates
+dotnet new tui-simple -n myproj
 cd myproj
 dotnet run
 ```
 
-## Documentation 
+Run the comprehensive [UI Catalog](Examples/UICatalog) demo to explore all controls:
 
-* [Documentation Home](https://gui-cs.github.io/Terminal.Gui/index.html)
-* [Terminal.Gui Overview](https://gui-cs.github.io/Terminal.Gui/articles/overview.html)
-* [List of Views/Controls](https://gui-cs.github.io/Terminal.Gui/articles/views.html)
-* [Conceptual Documentation](https://gui-cs.github.io/Terminal.Gui/articles/index.html)
-* [API Documentation](https://gui-cs.github.io/Terminal.Gui/api/Terminal.Gui/Terminal.Gui.html)
+```powershell
+dotnet run --project Examples/UICatalog/UICatalog.csproj
+```
 
-_The Documentation matches the most recent Nuget release from the `main` branch ([![Version](https://img.shields.io/nuget/v/Terminal.Gui.svg)](https://www.nuget.org/packages/Terminal.Gui))_
-
-## Features
-
-* **Cross Platform** - Windows, Mac, and Linux. Terminal drivers for Curses, [Windows Console](https://github.com/gui-cs/Terminal.Gui/issues/27), and the .NET Console mean apps will work well on both color and monochrome terminals. 
-* **Keyboard and Mouse Input** - Both keyboard and mouse input are supported, including support for drag & drop.
-* **[Flexible Layout](https://gui-cs.github.io/Terminal.Gui/articles/overview.html#layout)** - Supports both *Absolute layout* and an innovative *Computed Layout* system. *Computed Layout* makes it easy to layout controls relative to each other and enables dynamic terminal UIs.
-* **[Configuration & Themes](https://gui-cs.github.io/Terminal.Gui/articles/config.html)** - Terminal.Gui supports a rich configuration system that allows end-user customization of how the UI looks (e.g. colors) and behaves (e.g. key-bindings).
-* **Clipboard support** - Cut, Copy, and Paste of text provided through the [`Clipboard`](https://gui-cs.github.io/Terminal.Gui/api/Terminal.Gui/Terminal.Gui.Clipboard.html) class.
-* **[Arbitrary Views](https://gui-cs.github.io/Terminal.Gui/api/Terminal.Gui/Terminal.Gui.ViewTests.html)** - All visible UI elements are subclasses of the `View` class, and these in turn can contain an arbitrary number of sub-views.
-* **Advanced App Features** - The [Mainloop](https://gui-cs.github.io/Terminal.Gui/api/Terminal.Gui/Terminal.Gui.MainLoop.html) supports processing events, idle handlers, timers, and monitoring file
-descriptors. Most classes are safe for threading.
-* **Reactive Extensions** - Use [reactive extensions](https://github.com/dotnet/reactive) and benefit from increased code readability, and the ability to apply the MVVM pattern and [ReactiveUI](https://www.reactiveui.net/) data bindings. See the [source code](https://github.com/gui-cs/Terminal.Gui/tree/master/ReactiveExample) of a sample app in order to learn how to achieve this.
-
-## Showcase & Examples
-
-* **[UI Catalog](https://github.com/gui-cs/Terminal.Gui/tree/master/UICatalog)** - The UI Catalog project provides an easy to use and extend sample illustrating the capabilities of **Terminal.Gui**. Run `dotnet run --project UICatalog` to run the UI Catalog.
-* **[C# Example](https://github.com/gui-cs/Terminal.Gui/tree/master/Example)** - Run `dotnet run` in the `Example` directory to run the C# Example.
-* **[F# Example](https://github.com/gui-cs/Terminal.Gui/tree/master/FSharpExample)** - An example showing how to build a Terminal.Gui app using F#.
-* **[Reactive Example](https://github.com/gui-cs/Terminal.Gui/tree/master/ReactiveExample)** - A sample app that shows how to use `System.Reactive` and `ReactiveUI` with `Terminal.Gui`. The app uses the MVVM architecture that may seem familiar to folks coming from WPF, Xamarin Forms, UWP, Avalonia, or Windows Forms. In this app, we implement the data bindings using ReactiveUI `WhenAnyValue` syntax and [Pharmacist](https://github.com/reactiveui/pharmacist) — a tool that converts all events in a NuGet package into observable wrappers.
-* **[PowerShell's `Out-ConsoleGridView`](https://github.com/PowerShell/GraphicalTools)** - `OCGV` sends the output from a command to  an interactive table. 
-* **[PoshRedisViewer](https://github.com/En3Tho/PoshRedisViewer)** - A compact Redis viewer module for PowerShell written in F# and Gui.cs
-* **[TerminalGuiDesigner](https://github.com/tznind/TerminalGuiDesigner)** - Cross platform view designer for building Terminal.Gui applications.
-
-See the [`Terminal.Gui/` README](https://github.com/gui-cs/Terminal.Gui/tree/master/Terminal.Gui) for an overview of how the library is structured. The [Conceptual Documentation](https://gui-cs.github.io/Terminal.Gui/articles/index.html) provides insight into core concepts.
-
-## Sample Usage in C#
-
-The following example shows a basic Terminal.Gui application written in C#:
+# Simple Example
 
 ```csharp
-// A simple Terminal.Gui example in C# - using C# 9.0 Top-level statements
+using Terminal.Gui.App;
+using Terminal.Gui.ViewBase;
+using Terminal.Gui.Views;
 
-using Terminal.Gui;
+using IApplication app = Application.Create ();
+app.Init ();
 
-Application.Run<ExampleWindow> ();
+using Window window = new () { Title = "Hello World (Esc to quit)" };
+Label label = new ()
+{
+    Text = "Hello, Terminal.Gui v2!",
+    X = Pos.Center (),
+    Y = Pos.Center ()
+};
+window.Add (label);
 
-System.Console.WriteLine ($"Username: {((ExampleWindow)Application.Top).usernameText.Text}");
-
-// Before the application exits, reset Terminal.Gui for clean shutdown
-Application.Shutdown ();
-
-// Defines a top-level window with border and title
-public class ExampleWindow : Window {
-	public TextField usernameText;
-	
-	public ExampleWindow ()
-	{
-		Title = $"Example App ({Application.QuitKey} to quit)";
-
-		// Create input components and labels
-		var usernameLabel = new Label () { 
-			Text = "Username:" 
-		};
-
-		usernameText = new TextField ("") {
-			// Position text field adjacent to the label
-			X = Pos.Right (usernameLabel) + 1,
-
-			// Fill remaining horizontal space
-			Width = Dim.Fill (),
-		};
-
-		var passwordLabel = new Label () {
-			Text = "Password:",
-			X = Pos.Left (usernameLabel),
-			Y = Pos.Bottom (usernameLabel) + 1
-		};
-
-		var passwordText = new TextField ("") {
-			Secret = true,
-			// align with the text box above
-			X = Pos.Left (usernameText),
-			Y = Pos.Top (passwordLabel),
-			Width = Dim.Fill (),
-		};
-
-		// Create login button
-		var btnLogin = new Button () {
-			Text = "Login",
-			Y = Pos.Bottom(passwordLabel) + 1,
-			// center the login button horizontally
-			X = Pos.Center (),
-			IsDefault = true,
-		};
-
-		// When login button is clicked display a message popup
-		btnLogin.Clicked += (s,e) => {
-			if (usernameText.Text == "admin" && passwordText.Text == "password") {
-				MessageBox.Query ("Logging In", "Login Successful", "Ok");
-				Application.RequestStop ();
-			} else {
-				MessageBox.ErrorQuery ("Logging In", "Incorrect username or password", "Ok");
-			}
-		};
-
-		// Add the views to the Window
-		Add (usernameLabel, usernameText, passwordLabel, passwordText, btnLogin);
-	}
-}
+app.Run (window);
 ```
 
-When run the application looks as follows:
+See [Examples/README.md](Examples/README.md) for details about the in-repository examples and links to the moved examples repository.
 
-![Simple Usage app](./docfx/images/Example.png)
+# Showcase
 
-_Sample application running_
+See the [Showcase](https://tui-cs.github.io/Terminal.Gui/docs/showcase) for applications built with Terminal.Gui.
 
-## Installing
+# Documentation 
 
-Use NuGet to install the `Terminal.Gui` NuGet package: https://www.nuget.org/packages/Terminal.Gui
+Comprehensive documentation is at [tui-cs.github.io/Terminal.Gui](https://tui-cs.github.io/Terminal.Gui).
 
-### Installation in .NET Core Projects
+## Getting Started
 
-To install Terminal.Gui into a .NET Core project, use the `dotnet` CLI tool with following command.
+- **[Getting Started Guide](https://tui-cs.github.io/Terminal.Gui/docs/getting-started)** - First Terminal.Gui application
+- **[API Reference](https://tui-cs.github.io/Terminal.Gui/api/Terminal.Gui.App.html)** - Complete API documentation
+- **[What's New in v2](https://tui-cs.github.io/Terminal.Gui/docs/newinv2)** - New features and improvements
 
-```
+## Migration & Deep Dives
+
+- **[Migrating from v1 to v2](https://tui-cs.github.io/Terminal.Gui/docs/migratingfromv1)** - Complete migration guide
+- **[Application Architecture](https://tui-cs.github.io/Terminal.Gui/docs/application)** - Instance-based model and IRunnable pattern
+- **[Layout System](https://tui-cs.github.io/Terminal.Gui/docs/layout)** - Positioning, sizing, and adornments
+- **[Keyboard Handling](https://tui-cs.github.io/Terminal.Gui/docs/keyboard)** - Key bindings and commands
+- **[View Documentation](https://tui-cs.github.io/Terminal.Gui/docs/View)** - View hierarchy and lifecycle
+- **[Configuration](https://tui-cs.github.io/Terminal.Gui/docs/config)** - Themes and persistent settings
+
+See the [documentation index](https://tui-cs.github.io/Terminal.Gui/docs/index) for all topics.
+
+# Installing
+
+```powershell
 dotnet add package Terminal.Gui
 ```
 
-Or, you can use the [Terminal.Gui.Templates](https://github.com/gui-cs/Terminal.Gui.templates).
+Or use the [Terminal.Gui.Templates](https://github.com/tui-cs/Terminal.Gui.templates):
 
-## Building the Library and Running the Examples
+```powershell
+dotnet new install Terminal.Gui.Templates
+```
 
-* Windows, Mac, and Linux - Build and run using the .NET SDK command line tools (`dotnet build` in the root directory). Run `UICatalog` with `dotnet run --project UICatalog`.
-* Windows - Open `Terminal.sln` with Visual Studio 2022.
+### Powered by
+[![JetBrains logo.](https://resources.jetbrains.com/storage/products/company/brand/logos/jetbrains.svg)](https://jb.gg/OpenSource)
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) for instructions for downloading and forking the source.
+# Contributing
 
-## Contributing
+Contributions welcome! See [CONTRIBUTING.md](CONTRIBUTING.md).
 
-See [CONTRIBUTING.md](https://github.com/gui-cs/Terminal.Gui/blob/master/CONTRIBUTING.md).
+# History
 
-Debates on architecture and design can be found in Issues tagged with [design](https://github.com/gui-cs/Terminal.Gui/issues?q=is%3Aopen+is%3Aissue+label%3Adesign).
-
-## History
-
-See [gui-cs](https://github.com/gui-cs/) for how this project came to be.
+See [tui-cs](https://github.com/tui-cs/) for project history and origins.

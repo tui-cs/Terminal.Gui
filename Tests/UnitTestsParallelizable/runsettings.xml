@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RunSettings>
+	<MaxCpuCount>0</MaxCpuCount>
+  
+	<!-- New: xUnit Config for Stop-on-Fail --><!--
+	<xUnit>
+		<ParallelizeAssembly>true</ParallelizeAssembly>
+		<ParallelizeTestCollections>true</ParallelizeTestCollections>
+		--><!-- Enable collection parallelism --><!--
+		<MaxParallelThreads>4x</MaxParallelThreads>
+		--><!-- Or 'unlimited' / '2x' for CPU multiplier --><!--
+		<StopOnFail>true</StopOnFail>
+		--><!-- Still stop on first failure --><!--
+	</xUnit>-->
+
+</RunSettings>

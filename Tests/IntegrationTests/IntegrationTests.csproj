@@ -1,0 +1,47 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+	      <OutputType>Exe</OutputType>
+	      <UseAppHost>true</UseAppHost>
+	      <IsTestProject>true</IsTestProject>
+        <Nullable>enable</Nullable>
+        <IsPackable>false</IsPackable>
+        <DefineConstants>$(DefineConstants);JETBRAINS_ANNOTATIONS;CONTRACTS_FULL</DefineConstants>
+        <DebugType>portable</DebugType>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <NoLogo>true</NoLogo>
+        <SuppressNETCoreSdkPreviewMessage>true</SuppressNETCoreSdkPreviewMessage>
+    </PropertyGroup>
+    <PropertyGroup Condition="'$(Configuration)'=='Debug'">
+        <DefineDebug>true</DefineDebug>
+        <DefineConstants>$(DefineConstants);DEBUG_IDISPOSABLE</DefineConstants>
+    </PropertyGroup>
+    <PropertyGroup Condition="'$(Configuration)'=='Release'">
+        <Optimize>true</Optimize>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <PackageReference Include="coverlet.collector">
+          <PrivateAssets>all</PrivateAssets>
+          <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+        </PackageReference>
+        <PackageReference Include="Microsoft.NET.Test.Sdk" />
+        <PackageReference Include="xunit.runner.visualstudio" />
+        <PackageReference Include="xunit.v3" />
+    </ItemGroup>
+    <ItemGroup>
+        <ProjectReference Include="..\..\Terminal.Gui\Terminal.Gui.csproj" />
+        <ProjectReference Include="..\..\Tests\AppTestHelpers.XunitHelpers\AppTestHelpers.XunitHelpers.csproj" />
+        <ProjectReference Include="..\..\Tests\AppTestHelpers\AppTestHelpers.csproj" />
+        <ProjectReference Include="..\..\Examples\UICatalog\UICatalog.csproj" />
+        <ProjectReference Include="..\UnitTests.Legacy\UnitTests.Legacy.csproj" />
+    </ItemGroup>
+    <ItemGroup>
+        <Using Include="Xunit" />
+    </ItemGroup>
+    <ItemGroup>
+        <None Update="xunit.runner.json">
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        </None>
+    </ItemGroup>
+</Project>

@@ -1,178 +1,197 @@
-﻿using System;
 using System.Collections;
 using System.Data;
-using System.Linq;
 
-namespace Terminal.Gui {
-	/// <summary>
-	/// <see cref="ITableSource"/> implementation that wraps 
-	/// a <see cref="System.Collections.IList"/>.  This class is
-	/// mutable: changes are permitted to the wrapped <see cref="IList"/>.
-	/// </summary>
-	public class ListTableSource : ITableSource {
-		/// <summary>
-		/// The list this source wraps.
-		/// </summary>
-		public IList List;
+namespace Terminal.Gui.Views;
 
-		/// <summary>
-		/// The style this source uses.
-		/// </summary>
-		public ListColumnStyle Style;
+/// <summary>
+///     <see cref="ITableSource"/> implementation that wraps a <see cref="System.Collections.IList"/>.  This class is
+///     mutable: changes are permitted to the wrapped <see cref="IList"/>.
+/// </summary>
+public class ListTableSource : ITableSource
+{
+    /// <summary>The list this source wraps.</summary>
+    public IList List;
 
-		/// <summary>
-		/// The data table this source wraps.
-		/// </summary>
-		public DataTable DataTable { get; private set; }
+    /// <summary>The style this source uses.</summary>
+    public ListColumnStyle Style;
 
-		private TableView _tableView;
+    private readonly TableView _tableView;
+    private Rectangle _lastBounds;
+    private IList? _lastList;
+    private int _lastMaxCellWidth;
+    private int _lastMinCellWidth;
+    private ListColumnStyle? _lastStyle;
 
-		private Rect _lastBounds;
-		private int _lastMaxCellWidth;
-		private int _lastMinCellWidth;
-		private ListColumnStyle _lastStyle;
-		private IList _lastList;
+    /// <summary>
+    ///     Creates a new columned list table instance based on the data in <paramref name="list"/> and dimensions from
+    ///     <paramref name="tableView"/>.
+    /// </summary>
+    /// <param name="list"></param>
+    /// <param name="tableView"></param>
+    /// <param name="style"></param>
+    public ListTableSource (IList list, TableView tableView, ListColumnStyle style)
+    {
+        List = list;
+        _tableView = tableView;
+        Style = style;
 
-		/// <summary>
-		/// Creates a new columned list table instance based on the data in <paramref name="list"/>
-		/// and dimensions from <paramref name="tableView"/>.
-		/// </summary>
-		/// <param name="list"></param>
-		/// <param name="tableView"></param>
-		/// <param name="style"></param>
-		public ListTableSource (IList list, TableView tableView, ListColumnStyle style)
-		{
-			this.List = list;
-			this._tableView = tableView;
-			Style = style;
+        DataTable = CreateTable (CalculateColumns ());
 
-			this.DataTable = CreateTable (CalculateColumns ());
+        // TODO: Determine the best event for this
+        tableView.DrawingContent += TableView_DrawContent;
+    }
 
-			// TODO: Determine the best event for this
-			tableView.DrawContent += TableView_DrawContent;
-		}
+    /// <summary>Creates a new instance with default <see cref="ListColumnStyle"/>.</summary>
+    public ListTableSource (IList list, TableView tableView) : this (list, tableView, new ListColumnStyle ()) { }
 
-		/// <inheritdoc/>
-		public ListTableSource (IList list, TableView tableView) : this (list, tableView, new ListColumnStyle ()) { }
+    /// <summary>The number of items in the <see cref="IList"/> source.</summary>
+    public int Count => List.Count;
 
-		private void TableView_DrawContent (object sender, DrawEventArgs e)
-		{
-			if ((!_tableView.Bounds.Equals (_lastBounds)) ||
-				_tableView.MaxCellWidth != _lastMaxCellWidth ||
-				_tableView.MinCellWidth != _lastMinCellWidth ||
-				Style != _lastStyle ||
-				this.List != _lastList) {
+    /// <summary>The <see cref="System.Data.DataTable"/> this source wraps.</summary>
+    public DataTable DataTable { get; private set; }
 
-				this.DataTable = CreateTable (CalculateColumns ());
-			}
-			_lastBounds = _tableView.Bounds;
-			_lastMinCellWidth = _tableView.MaxCellWidth;
-			_lastMaxCellWidth = _tableView.MaxCellWidth;
-			_lastStyle = Style;
-			_lastList = this.List;
-		}
+    /// <inheritdoc/>
+    public object this [int row, int col]
+    {
+        get
+        {
+            int idx;
 
-		/// <inheritdoc/>
-		public object this [int row, int col] {
-			get {
-				int idx;
-				if (Style.Orientation == Orientation.Vertical) {
-					idx = (col * Rows) + row;
-				} else {
-					idx = (row * Columns) + col;
-				}
-				if (idx < 0 || idx >= Count) {
-					return null;
-				}
-				return this.List [idx];
-			}
-		}
+            if (Style.Orientation == Orientation.Vertical)
+            {
+                idx = col * Rows + row;
+            }
+            else
+            {
+                idx = row * Columns + col;
+            }
 
-		/// <summary>
-		/// The number of items in the IList source
-		/// </summary>
-		public int Count => this.List.Count;
+            if (idx < 0 || idx >= Count)
+            {
+                return null!;
+            }
 
-		/// <inheritdoc/>
-		public int Rows => this.DataTable.Rows.Count;
+            return List [idx]!;
+        }
+    }
 
-		/// <inheritdoc/>
-		public int Columns => this.DataTable.Columns.Count;
+    /// <inheritdoc/>
+    public int Rows => DataTable.Rows.Count;
 
-		/// <inheritdoc/>
-		public string [] ColumnNames => Enumerable.Range (0, Columns).Select (n => n.ToString ()).ToArray ();
+    /// <inheritdoc/>
+    public int Columns => DataTable.Columns.Count;
 
-		/// <summary>
-		/// Creates a DataTable from an IList to display in a <see cref="TableView"/>
-		/// </summary>
-		private DataTable CreateTable (int cols = 1)
-		{
-			var table = new DataTable ();
-			for (int col = 0; col < cols; col++) {
-				table.Columns.Add (new DataColumn (col.ToString ()));
-			}
-			for (int row = 0; row < (Count / table.Columns.Count); row++) {
-				table.Rows.Add ();
-			}
-			// return partial row
-			if (Count % table.Columns.Count != 0) {
-				table.Rows.Add ();
-			}
+    /// <inheritdoc/>
+    public string [] ColumnNames => Enumerable.Range (0, Columns).Select (n => n.ToString ()).ToArray ();
 
-			return table;
-		}
+    private int CalculateColumns ()
+    {
+        int cols;
 
-		/// <summary>
-		/// Returns the size in characters of the longest value read from <see cref="ListTableSource.List"/>
-		/// </summary>
-		/// <returns></returns>
-		private int CalculateMaxLength ()
-		{
-			if (List == null || Count == 0) {
-				return 0;
-			}
+        int colWidth = CalculateMaxLength ();
 
-			int maxLength = 0;
-			foreach (var t in List) {
-				int l;
-				if (t is string s) {
-					l = s.GetColumns ();
-				} else {
-					l = t.ToString ().Length;
-				}
+        if (colWidth > _tableView.MaxCellWidth)
+        {
+            colWidth = _tableView.MaxCellWidth;
+        }
 
-				if (l > maxLength) {
-					maxLength = l;
-				}
-			}
+        if (_tableView.MinCellWidth > 0 && colWidth < _tableView.MinCellWidth)
+        {
+            if (_tableView.MinCellWidth > _tableView.MaxCellWidth)
+            {
+                colWidth = _tableView.MaxCellWidth;
+            }
+            else
+            {
+                colWidth = _tableView.MinCellWidth;
+            }
+        }
 
-			return maxLength;
-		}
+        if (Style.Orientation == Orientation.Vertical != Style.ScrollParallel)
+        {
+            float f = (float)_tableView.Viewport.Height - _tableView.GetHeaderHeight ();
+            cols = (int)Math.Ceiling (Count / f);
+        }
+        else
+        {
+            cols = (int)Math.Ceiling (((float)_tableView.Viewport.Width - 1) / colWidth) - 2;
+        }
 
-		private int CalculateColumns ()
-		{
-			int cols;
+        return cols > 1 ? cols : 1;
+    }
 
-			int colWidth = CalculateMaxLength ();
-			if (colWidth > _tableView.MaxCellWidth) {
-				colWidth = _tableView.MaxCellWidth;
-			}
+    /// <summary>Returns the size in characters of the longest value read from <see cref="ListTableSource.List"/></summary>
+    /// <returns></returns>
+    private int CalculateMaxLength ()
+    {
+        if (Count == 0)
+        {
+            return 0;
+        }
 
-			if (_tableView.MinCellWidth > 0 && colWidth < _tableView.MinCellWidth) {
-				if (_tableView.MinCellWidth > _tableView.MaxCellWidth) {
-					colWidth = _tableView.MaxCellWidth;
-				} else {
-					colWidth = _tableView.MinCellWidth;
-				}
-			}
-			if ((Style.Orientation == Orientation.Vertical) != Style.ScrollParallel) {
-				float f = (float)_tableView.Bounds.Height - _tableView.GetHeaderHeight ();
-				cols = (int)Math.Ceiling (Count / f);
-			} else {
-				cols = ((int)Math.Ceiling (((float)_tableView.Bounds.Width - 1) / colWidth)) - 2;
-			}
+        var maxLength = 0;
 
-			return (cols > 1) ? cols : 1;
-		}
-	}
+        foreach (object t in List)
+        {
+            int l;
+
+            if (t is string s)
+            {
+                l = s.GetColumns ();
+            }
+            else
+            {
+                l = t.ToString ()?.Length ?? 0;
+            }
+
+            if (l > maxLength)
+            {
+                maxLength = l;
+            }
+        }
+
+        return maxLength;
+    }
+
+    /// <summary>Creates a <see cref="DataTable"/> from an <see cref="IList"/> to display in a <see cref="TableView"/>.</summary>
+    private DataTable CreateTable (int cols = 1)
+    {
+        var table = new DataTable ();
+
+        for (var col = 0; col < cols; col++)
+        {
+            table.Columns.Add (new DataColumn (col.ToString ()));
+        }
+
+        for (var row = 0; row < Count / table.Columns.Count; row++)
+        {
+            table.Rows.Add ();
+        }
+
+        // return partial row
+        if (Count % table.Columns.Count != 0)
+        {
+            table.Rows.Add ();
+        }
+
+        return table;
+    }
+
+    private void TableView_DrawContent (object? sender, DrawEventArgs e)
+    {
+        if (!_tableView.Viewport.Equals (_lastBounds)
+            || _tableView.MaxCellWidth != _lastMaxCellWidth
+            || _tableView.MinCellWidth != _lastMinCellWidth
+            || Style != _lastStyle
+            || List != _lastList)
+        {
+            DataTable = CreateTable (CalculateColumns ());
+        }
+
+        _lastBounds = _tableView.Viewport;
+        _lastMinCellWidth = _tableView.MinCellWidth;
+        _lastMaxCellWidth = _tableView.MaxCellWidth;
+        _lastStyle = Style;
+        _lastList = List;
+    }
 }

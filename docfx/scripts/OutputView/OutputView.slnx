@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="OutputView.csproj" />
+  <Project Path="../../../Terminal.Gui/Terminal.Gui.csproj" />
+</Solution>

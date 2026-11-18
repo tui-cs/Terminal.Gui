@@ -117,27 +117,6 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
-  <data name="ctxCopy" xml:space="preserve">
-    <value>コピー (C)</value>
-  </data>
-  <data name="ctxCut" xml:space="preserve">
-    <value>切り取り (T)</value>
-  </data>
-  <data name="ctxDeleteAll" xml:space="preserve">
-    <value>全て削除 (D)</value>
-  </data>
-  <data name="ctxPaste" xml:space="preserve">
-    <value>貼り付け (P)</value>
-  </data>
-  <data name="ctxRedo" xml:space="preserve">
-    <value>やり直し (R)</value>
-  </data>
-  <data name="ctxSelectAll" xml:space="preserve">
-    <value>全て選択 (S)</value>
-  </data>
-  <data name="ctxUndo" xml:space="preserve">
-    <value>元に戻す (U)</value>
-  </data>
   <data name="fdDirectory" xml:space="preserve">
     <value>ディレクトリ</value>
   </data>
@@ -154,18 +133,207 @@
     <value>開く</value>
   </data>
   <data name="fdSelectFolder" xml:space="preserve">
-    <value>フォルダーを選択</value>
+    <value>フォルダーを選択 (_S)</value>
   </data>
   <data name="fdSelectMixed" xml:space="preserve">
-    <value>混在選択</value>
+    <value>混在選択 (_S)</value>
   </data>
   <data name="wzBack" xml:space="preserve">
-    <value>戻る</value>
+    <value>戻る (_B)</value>
   </data>
   <data name="wzFinish" xml:space="preserve">
-    <value>終える</value>
+    <value>終わる (_N)</value>
   </data>
   <data name="wzNext" xml:space="preserve">
-    <value>次に</value>
+    <value>次に (_N)...</value>
+  </data>
+  <data name="fdDirectoryAlreadyExistsFeedback" xml:space="preserve">
+    <value>同じ名前のディレクトリはすでに存在しました</value>
+  </data>
+  <data name="fdDirectoryMustExistFeedback" xml:space="preserve">
+    <value>すでに存在したディレクトリを選択してください</value>
+  </data>
+  <data name="fdFileAlreadyExistsFeedback" xml:space="preserve">
+    <value>同じ名前のファイルはすでに存在しました</value>
+  </data>
+  <data name="fdFileMustExistFeedback" xml:space="preserve">
+    <value>すでに存在したファイルを選択してください</value>
+  </data>
+  <data name="fdFilename" xml:space="preserve">
+    <value>ファイル名</value>
+  </data>
+  <data name="fdFileOrDirectoryMustExistFeedback" xml:space="preserve">
+    <value>すでに存在したファイルまたはディレクトリを選択してください</value>
+  </data>
+  <data name="fdModified" xml:space="preserve">
+    <value>変更日時</value>
+  </data>
+  <data name="fdPathCaption" xml:space="preserve">
+    <value>パスを入力</value>
+  </data>
+  <data name="fdSize" xml:space="preserve">
+    <value>サイズ</value>
+  </data>
+  <data name="fdType" xml:space="preserve">
+    <value>タイプ</value>
+  </data>
+  <data name="fdWrongFileTypeFeedback" xml:space="preserve">
+    <value>ファイルタイプが間違っでいます</value>
+  </data>
+  <data name="fdAnyFiles" xml:space="preserve">
+    <value>任意ファイル</value>
+  </data>
+  <data name="fdDeleteBody" xml:space="preserve">
+    <value>“{0}”を削除もよろしいですか？この操作は元に戻りません</value>
+  </data>
+  <data name="fdDeleteFailedTitle" xml:space="preserve">
+    <value>削除失敗</value>
+  </data>
+  <data name="fdDeleteTitle" xml:space="preserve">
+    <value>{0} を削除</value>
+  </data>
+  <data name="fdNewFailed" xml:space="preserve">
+    <value>新規失敗</value>
+  </data>
+  <data name="fdNewTitle" xml:space="preserve">
+    <value>新規ディレクトリ</value>
+  </data>
+  <data name="btnNo" xml:space="preserve">
+    <value>いいえ (_N)</value>
+  </data>
+  <data name="fdRenameFailedTitle" xml:space="preserve">
+    <value>変更失敗</value>
+  </data>
+  <data name="fdRenamePrompt" xml:space="preserve">
+    <value>名前：</value>
+  </data>
+  <data name="fdRenameTitle" xml:space="preserve">
+    <value>名前を変更</value>
+  </data>
+  <data name="btnYes" xml:space="preserve">
+    <value>はい (_Y)</value>
+  </data>
+  <data name="fdExisting" xml:space="preserve">
+    <value>既存</value>
+  </data>
+  <data name="btnOpen" xml:space="preserve">
+    <value>開く (_O)</value>
+  </data>
+  <data name="btnSave" xml:space="preserve">
+    <value>保存 (_S)</value>
+  </data>
+  <data name="btnSaveAs" xml:space="preserve">
+    <value>名前を付けて保存 (_S)</value>
+  </data>
+  <data name="btnOk" xml:space="preserve">
+    <value>OK (_O)</value>
+  </data>
+  <data name="btnCancel" xml:space="preserve">
+    <value>キャンセル (_C)</value>
+  </data>
+  <data name="fdCtxDelete" xml:space="preserve">
+    <value>削除 (_D)</value>
+  </data>
+  <data name="fdCtxHide" xml:space="preserve">
+    <value>{0}を隠す (_H)</value>
+  </data>
+  <data name="fdCtxNew" xml:space="preserve">
+    <value>新規 (_N)</value>
+  </data>
+  <data name="fdCtxRename" xml:space="preserve">
+    <value>名前変更 (_R)</value>
+  </data>
+  <data name="fdCtxSortAsc" xml:space="preserve">
+    <value>{0}で昇順ソート (_S)</value>
+  </data>
+  <data name="fdCtxSortDesc" xml:space="preserve">
+    <value>{0}で降順ソート (_S)</value>
+  </data>
+  <data name="dpTitle" xml:space="preserve">
+    <value>日付ピッカー</value>
+  </data>
+  <data name="cmdOpen" xml:space="preserve">
+    <value>開く (_O)</value>
+  </data>
+  <data name="cmdSave" xml:space="preserve">
+    <value>保存 (_S)</value>
+  </data>
+  <data name="cmdSaveAs" xml:space="preserve">
+    <value>名前を付けて保存(_A)</value>
+  </data>
+  <data name="cmdCut" xml:space="preserve">
+    <value>切り取り (_T)</value>
+  </data>
+  <data name="cmdCopy" xml:space="preserve">
+    <value>コピー (_C)</value>
+  </data>
+  <data name="cmdPaste" xml:space="preserve">
+    <value>貼り付け (_P)</value>
+  </data>
+  <data name="cmdSelectAll" xml:space="preserve">
+    <value>全て選択 (_S)</value>
+  </data>
+  <data name="cmdNew" xml:space="preserve">
+    <value>新規 (_N)</value>
+  </data>
+  <data name="cmdOpen_Help" xml:space="preserve">
+    <value>ファイルを開く</value>
+  </data>
+  <data name="cmdQuit_Help" xml:space="preserve">
+    <value>アプリケーションを終了</value>
+  </data>
+  <data name="cmdSaveAs_Help" xml:space="preserve">
+    <value>名前を付けて保存</value>
+  </data>
+  <data name="cmdCut_Help" xml:space="preserve">
+    <value>クリップボードに切り取り</value>
+  </data>
+  <data name="cmdCopy_Help" xml:space="preserve">
+    <value>クリップボードにコピー</value>
+  </data>
+  <data name="cmdSelectAll_Help" xml:space="preserve">
+    <value>すべて選択</value>
+  </data>
+  <data name="cmdNew_Help" xml:space="preserve">
+    <value>新規</value>
+  </data>
+  <data name="fdSearchCaption" xml:space="preserve">
+    <value>検索を入力</value>
+  </data>
+  <data name="cmdPaste_Help" xml:space="preserve">
+    <value>クリップボードから貼り付け</value>
+  </data>
+  <data name="cmdQuit" xml:space="preserve">
+    <value>終了 (_X)</value>
+  </data>
+  <data name="cmdUndo" xml:space="preserve">
+    <value>元に戻す (_U)</value>
+  </data>
+  <data name="cmdUndo_Help" xml:space="preserve">
+    <value>元に戻す</value>
+  </data>
+  <data name="cmdRedo" xml:space="preserve">
+    <value>やり直し (_R)</value>
+  </data>
+  <data name="cmdRedo_Help" xml:space="preserve">
+    <value>やり直し</value>
+  </data>
+  <data name="cmdDeleteAll" xml:space="preserve">
+    <value>全て削除 (_D)</value>
+  </data>
+  <data name="cmdDeleteAll_Help" xml:space="preserve">
+    <value>すべて削除</value>
+  </data>
+  <data name="cmdEdit" xml:space="preserve">
+    <value>編集 (_E)</value>
+  </data>
+  <data name="cmdEdit_Help" xml:space="preserve">
+    <value>編集</value>
+  </data>
+  <data name="cmdClose_Help" xml:space="preserve">
+    <value>閉じる</value>
+  </data>
+  <data name="cmdSave_Help" xml:space="preserve">
+    <value>ファイルを保存</value>
   </data>
 </root>

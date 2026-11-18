@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RunSettings>
+	<!-- Existing Coverlet/Code Coverage Config -->
+	<DataCollectionRunSettings>
+		<DataCollectors>
+			<DataCollector friendlyName="XPlat Code Coverage">
+				<Configuration>
+					<Format>cobertura</Format>
+					<ExcludeByFile>**/obj/**/*.*</ExcludeByFile>
+					<Exclude>[*]*.g.cs</Exclude>
+					<Exclude>[*]*AssemblyInfo.cs</Exclude>
+					<!-- ONLY include Terminal.Gui assembly -->
+					<Include>[Terminal.Gui]*</Include>
+				</Configuration>
+			</DataCollector>
+		</DataCollectors>
+	</DataCollectionRunSettings>
+
+	<!-- New: xUnit Config for Stop-on-Fail -->
+	<xUnit>
+		<ParallelizeAssembly>true</ParallelizeAssembly>
+		<ParallelizeTestCollections>true</ParallelizeTestCollections>
+		<!-- Enable collection parallelism -->
+		<MaxParallelThreads>2x</MaxParallelThreads>
+		<!-- Or 'unlimited' / '2x' for CPU multiplier -->
+		<StopOnFail>true</StopOnFail>
+		<!-- Still stop on first failure -->
+	</xUnit>
+
+	<!-- Optional: Global Run Config (e.g., results dir) -->
+	<RunConfiguration>
+		<ResultsDirectory>../TestResults</ResultsDirectory>
+	</RunConfiguration>
+</RunSettings>

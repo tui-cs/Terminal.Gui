@@ -1,29 +1,32 @@
 {
-	"name": "Terminal.Gui Codespace",
-	"image": "mcr.microsoft.com/vscode/devcontainers/dotnet:7.0",
-	"customizations": {
-		"vscode": {
-			"settings": {
-				"terminal.integrated.defaultProfile.linux": "pwsh"
-			},
-			"extensions": [
-				"eamodio.gitlens",
-				"ms-dotnettools.csharp",
-				"VisualStudioExptTeam.vscodeintellicode",
-				"ms-vscode.powershell",
-				"cschleiden.vscode-github-actions",
-				"redhat.vscode-yaml",
-				"bierner.markdown-preview-github-styles",
-				"ban.spellright",
-				"jmrog.vscode-nuget-package-manager",
-				"coenraads.bracket-pair-colorizer",
-				"vscode-icons-team.vscode-icons",
-				"editorconfig.editorconfig",
-				"formulahendry.dotnet-test-explorer"
-			],
-			"postCreateCommand": "dotnet restore && dotnet clean && dotnet build --configuration Release --no-restore && dotnet test --configuration Debug --no-restore --verbosity normal --collect:'XPlat Code Coverage' --settings UnitTests/coverlet.runsettings"		
-		}
-	}
-}
+  "name": "Terminal.Gui Development",
+  "image": "mcr.microsoft.com/devcontainers/dotnet:8.0",
 
-// Built with ❤ by [Pipeline Foundation](https://pipeline.foundation)
+  "features": {
+    "ghcr.io/devcontainers/features/node:1": {
+      "version": "20"
+    },
+    "ghcr.io/devcontainers/features/github-cli:1": {}
+  },
+
+  "postCreateCommand": "npm install -g @anthropic-ai/claude-code && dotnet restore",
+
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-dotnettools.csharp",
+        "ms-dotnettools.csdevkit"
+      ]
+    }
+  },
+
+  "remoteEnv": {
+    "DOTNET_CLI_TELEMETRY_OPTOUT": "1"
+  },
+
+  "hostRequirements": {
+    "cpus": 4,
+    "memory": "8gb",
+    "storage": "32gb"
+  }
+}

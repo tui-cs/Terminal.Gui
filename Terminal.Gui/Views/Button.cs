@@ -1,311 +1,391 @@
-﻿//
-// Button.cs: Button control
-//
-// Authors:
-//   Miguel de Icaza (miguel@gnome.org)
-//
+namespace Terminal.Gui.Views;
 
-using System;
-using System.Text;
+/// <summary>
+///     Raises the <see cref="View.Accepting"/> and <see cref="View.Accepted"/> events when the user presses
+///     <see cref="View.HotKey"/>,
+///     <c>Enter</c>, or <c>Space</c> or clicks with the mouse.
+/// </summary>
+/// <remarks>
+/// <img src="../images/views/Button.gif" alt="Button demo"/>
+///     <para>Use <see cref="View.HotKeySpecifier"/> to change the hot key specifier from the default of ('_').</para>
+///     <para>
+///         Button can act as the default <see cref="Command.Accept"/> handler for all peer-Views. See
+///         <see cref="IsDefault"/>.
+///     </para>
+///     <para>
+///         Set <see cref="View.MouseHoldRepeat"/> to <see langword="true"/> to have the
+///         <see cref="View.Accepting"/> event invoked repeatedly while the button is pressed.
+///     </para>
+///     <para>
+///         Button does not raise <see cref="View.Activating"/> events.
+///     </para>
+///     <para>Default key bindings:</para>
+///     <list type="table">
+///         <listheader>
+///             <term>Key</term> <description>Action</description>
+///         </listheader>
+///         <item>
+///             <term>Space</term> <description>Accepts the button (<see cref="Command.Accept"/>).</description>
+///         </item>
+///         <item>
+///             <term>Enter</term> <description>Accepts the button (<see cref="Command.Accept"/>).</description>
+///         </item>
+///     </list>
+///     <para>Default mouse bindings:</para>
+///     <list type="table">
+///         <listheader>
+///             <term>Mouse Event</term> <description>Action</description>
+///         </listheader>
+///         <item>
+///             <term>Click / Double-Click / Triple-Click</term>
+///             <description>Accepts the button (<see cref="Command.Accept"/>).</description>
+///         </item>
+///     </list>
+/// </remarks>
+public class Button : View, IDesignable, IAcceptTarget
+{
+    private readonly TextFormatter _interiorTextFormatter = new ();
+    private readonly Rune _leftBracket;
+    private readonly Rune _leftDefault;
+    private readonly Rune _rightBracket;
+    private readonly Rune _rightDefault;
 
-namespace Terminal.Gui {
-	/// <summary>
-	///   Button is a <see cref="View"/> that provides an item that invokes an <see cref="Action"/> when activated by the user.
-	/// </summary>
-	/// <remarks>
-	/// <para>
-	///   Provides a button showing text invokes an <see cref="Action"/> when clicked on with a mouse
-	///   or when the user presses SPACE, ENTER, or hotkey. The hotkey is the first letter or digit following the first underscore ('_') 
-	///   in the button text. 
-	/// </para>
-	/// <para>
-	///   Use <see cref="View.HotKeySpecifier"/> to change the hotkey specifier from the default of ('_'). 
-	/// </para>
-	/// <para>
-	///   If no hotkey specifier is found, the first uppercase letter encountered will be used as the hotkey.
-	/// </para>
-	/// <para>
-	///   When the button is configured as the default (<see cref="IsDefault"/>) and the user presses
-	///   the ENTER key, if no other <see cref="View"/> processes the <see cref="KeyEvent"/>, the <see cref="Button"/>'s
-	///   <see cref="Action"/> will be invoked.
-	/// </para>
-	/// </remarks>
-	public class Button : View {
-		bool is_default;
-		Rune _leftBracket;
-		Rune _rightBracket;
-		Rune _leftDefault;
-		Rune _rightDefault;
+    /// <summary>
+    ///     Gets or sets whether <see cref="Button"/>s are shown with a shadow effect by default.
+    /// </summary>
+    public static ShadowStyles DefaultShadow => ButtonSettings.Current.DefaultShadow;
 
-		/// <summary>
-		///   Initializes a new instance of <see cref="Button"/> using <see cref="LayoutStyle.Computed"/> layout.
-		/// </summary>
-		/// <remarks>
-		///   The width of the <see cref="Button"/> is computed based on the
-		///   text length. The height will always be 1.
-		/// </remarks>
-		public Button () : this (text: string.Empty, is_default: false) { }
+    /// <summary>
+    ///     Gets or sets the default Highlight Style.
+    /// </summary>
+    public static MouseState DefaultMouseHighlightStates => ButtonSettings.Current.DefaultMouseHighlightStates;
 
-		/// <summary>
-		///   Initializes a new instance of <see cref="Button"/> using <see cref="LayoutStyle.Computed"/> layout.
-		/// </summary>
-		/// <remarks>
-		///   The width of the <see cref="Button"/> is computed based on the
-		///   text length. The height will always be 1.
-		/// </remarks>
-		/// <param name="text">The button's text</param>
-		/// <param name="is_default">
-		///   If <c>true</c>, a special decoration is used, and the user pressing the enter key 
-		///   in a <see cref="Dialog"/> will implicitly activate this button.
-		/// </param>
-		public Button (string text, bool is_default = false) : base (text)
-		{
-			SetInitialProperties (text, is_default);
-		}
+    /// <summary>Initializes a new instance of <see cref="Button"/>.</summary>
+    public Button ()
+    {
+        TextAlignment = Alignment.Center;
+        VerticalTextAlignment = Alignment.Center;
 
-		/// <summary>
-		///   Initializes a new instance of <see cref="Button"/> using <see cref="LayoutStyle.Absolute"/> layout, based on the given text
-		/// </summary>
-		/// <remarks>
-		///   The width of the <see cref="Button"/> is computed based on the
-		///   text length. The height will always be 1.
-		/// </remarks>
-		/// <param name="x">X position where the button will be shown.</param>
-		/// <param name="y">Y position where the button will be shown.</param>
-		/// <param name="text">The button's text</param>
-		public Button (int x, int y, string text) : this (x, y, text, false) { }
+        _leftBracket = Glyphs.LeftBracket;
+        _rightBracket = Glyphs.RightBracket;
+        _leftDefault = Glyphs.LeftDefaultIndicator;
+        _rightDefault = Glyphs.RightDefaultIndicator;
 
-		/// <summary>
-		///   Initializes a new instance of <see cref="Button"/> using <see cref="LayoutStyle.Absolute"/> layout, based on the given text.
-		/// </summary>
-		/// <remarks>
-		///   The width of the <see cref="Button"/> is computed based on the
-		///   text length. The height will always be 1.
-		/// </remarks>
-		/// <param name="x">X position where the button will be shown.</param>
-		/// <param name="y">Y position where the button will be shown.</param>
-		/// <param name="text">The button's text</param>
-		/// <param name="is_default">
-		///   If <c>true</c>, a special decoration is used, and the user pressing the enter key 
-		///   in a <see cref="Dialog"/> will implicitly activate this button.
-		/// </param>
-		public Button (int x, int y, string text, bool is_default)
-		    : base (new Rect (x, y, text.GetRuneCount () + 4 + (is_default ? 2 : 0), 1), text)
-		{
-			SetInitialProperties (text, is_default);
-		}
-		// TODO: v2 - Remove constructors with parameters
-		/// <summary>
-		/// Private helper to set the initial properties of the View that were provided via constructors.
-		/// </summary>
-		/// <param name="text"></param>
-		/// <param name="is_default"></param>
-		void SetInitialProperties (string text, bool is_default)
-		{
-			TextAlignment = TextAlignment.Centered;
-			VerticalTextAlignment = VerticalTextAlignment.Middle;
+        _interiorTextFormatter.Alignment = Alignment.Center;
+        _interiorTextFormatter.VerticalAlignment = Alignment.Center;
+        _interiorTextFormatter.HotKeySpecifier = HotKeySpecifier;
 
-			HotKeySpecifier = new Rune ('_');
+        Height = Dim.Auto (DimAutoStyle.Text);
+        Width = Dim.Auto (DimAutoStyle.Text);
 
-			_leftBracket = CM.Glyphs.LeftBracket;
-			_rightBracket = CM.Glyphs.RightBracket;
-			_leftDefault = CM.Glyphs.LeftDefaultIndicator;
-			_rightDefault = CM.Glyphs.RightDefaultIndicator;
+        CanFocus = true;
 
-			CanFocus = true;
-			AutoSize = true;
-			this.is_default = is_default;
-			Text = text ?? string.Empty;
+        KeyBindings.ReplaceCommands (Key.Space, Command.Accept);
+        KeyBindings.ReplaceCommands (Key.Enter, Command.Accept);
 
-			OnResizeNeeded ();
+        // Replace default Accept binding with HotKey for mouse clicks
+        // These are managed dynamically when MouseHoldRepeat changes
+        SetMouseBindings (MouseHoldRepeat);
 
-			// Things this view knows how to do
-			AddCommand (Command.Accept, () => AcceptKey ());
+        TitleChanged += Button_TitleChanged;
 
-			// Default keybindings for this view
-			AddKeyBinding (Key.Enter, Command.Accept);
-			AddKeyBinding (Key.Space, Command.Accept);
-			if (HotKey != Key.Null) {
-				AddKeyBinding (Key.Space | HotKey, Command.Accept);
-			}
-		}
+        // Determine and apply the initial shadow via the CWP InitializingShadowStyle event, so that
+        // subclasses and external subscribers can change or suppress the default allocation
+        // before any shadow infrastructure is created.
+        RaiseInitializingShadowStyle ();
+        MouseHighlightStates = DefaultMouseHighlightStates;
+    }
 
-		/// <summary>
-		/// Gets or sets whether the <see cref="Button"/> is the default action to activate in a dialog.
-		/// </summary>
-		/// <value><c>true</c> if is default; otherwise, <c>false</c>.</value>
-		public bool IsDefault {
-			get => is_default;
-			set {
-				is_default = value;
-				UpdateTextFormatterText ();
-				OnResizeNeeded ();
-			}
-		}
+    /// <summary>
+    ///     Called before the Button's initial <see cref="View.ShadowStyle"/> is applied during construction.
+    ///     Override to change or suppress the default shadow — set <see cref="ValueChangingEventArgs{T}.NewValue"/>
+    ///     to the desired style, or set <see cref="ValueChangingEventArgs{T}.Handled"/> to
+    ///     <see langword="true"/> to skip applying any shadow.
+    /// </summary>
+    /// <param name="args">
+    ///     Event args whose <see cref="ValueChangingEventArgs{T}.NewValue"/> is pre-set to
+    ///     <see cref="DefaultShadow"/>. Subclasses that never display a shadow
+    ///     (e.g. <see cref="ScrollButton"/> or internal buttons used by arrangement UI)
+    ///     should set <c>args.NewValue = null</c> to avoid the create-then-destroy allocation pattern.
+    /// </param>
+    protected virtual void OnInitializingShadowStyle (ValueChangingEventArgs<ShadowStyles?> args) { }
 
-		/// <inheritdoc/>
-		public override Key HotKey {
-			get => base.HotKey;
-			set {
-				if (base.HotKey != value) {
-					var v = value == Key.Unknown ? Key.Null : value;
-					if (base.HotKey != Key.Null && ContainsKeyBinding (Key.Space | base.HotKey)) {
-						if (v == Key.Null) {
-							ClearKeyBinding (Key.Space | base.HotKey);
-						} else {
-							ReplaceKeyBinding (Key.Space | base.HotKey, Key.Space | v);
-						}
-					} else if (v != Key.Null) {
-						AddKeyBinding (Key.Space | v, Command.Accept);
-					}
-					base.HotKey = TextFormatter.HotKey = v;
-				}
-			}
-		}
+    /// <summary>
+    ///     Fired before the Button's initial <see cref="View.ShadowStyle"/> is applied during construction.
+    ///     Subscribers can modify <see cref="ValueChangingEventArgs{T}.NewValue"/> or set
+    ///     <see cref="ValueChangingEventArgs{T}.Handled"/> to <see langword="true"/> to suppress the shadow.
+    /// </summary>
+    public event EventHandler<ValueChangingEventArgs<ShadowStyles?>>? InitializingShadowStyle;
 
-		/// <summary>
-		/// 
-		/// </summary>
-		public bool NoDecorations { get; set; }
+    private void RaiseInitializingShadowStyle ()
+    {
+        ValueChangingEventArgs<ShadowStyles?> args = new (null, DefaultShadow);
 
-		/// <summary>
-		/// 
-		/// </summary>
-		public bool NoPadding { get; set; }
+        // 1. Virtual method — subclasses override to change/suppress the default shadow.
+        OnInitializingShadowStyle (args);
 
-		/// <inheritdoc/>
-		protected override void UpdateTextFormatterText ()
-		{
-			if (NoDecorations) {
-				TextFormatter.Text = Text;
-			} else
-			if (IsDefault)
-				TextFormatter.Text = $"{_leftBracket}{_leftDefault} {Text} {_rightDefault}{_rightBracket}";
-			else {
-				if (NoPadding) {
-					TextFormatter.Text = $"{_leftBracket}{Text}{_rightBracket}";
-				} else {
-					TextFormatter.Text = $"{_leftBracket} {Text} {_rightBracket}";
-				}
-			}
-		}
+        // 2. Event — external subscribers get a chance to customize.
+        InitializingShadowStyle?.Invoke (this, args);
 
-		///<inheritdoc/>
-		public override bool ProcessHotKey (KeyEvent kb)
-		{
-			if (!Enabled) {
-				return false;
-			}
+        // 3. Apply the (potentially modified) shadow style unless already handled.
+        if (!args.Handled)
+        {
+            base.ShadowStyle = args.NewValue;
+        }
+    }
 
-			return ExecuteHotKey (kb);
-		}
+    /// <inheritdoc/>
+    protected override void OnMouseHoldRepeatChanged (ValueChangedEventArgs<MouseFlags?> args) => SetMouseBindings (args.NewValue);
 
-		///<inheritdoc/>
-		public override bool ProcessColdKey (KeyEvent kb)
-		{
-			if (!Enabled) {
-				return false;
-			}
+    private void SetMouseBindings (MouseFlags? mouseHoldRepeat)
+    {
+        if (mouseHoldRepeat.HasValue)
+        {
+            // MouseHoldRepeat enabled: Remove ALL Click/Release/Press bindings, add only configured event?HotKey
+            MouseBindings.Remove (MouseFlags.LeftButtonPressed);
+            MouseBindings.Remove (MouseFlags.LeftButtonClicked);
+            MouseBindings.Remove (MouseFlags.LeftButtonDoubleClicked);
+            MouseBindings.Remove (MouseFlags.LeftButtonTripleClicked);
+            MouseBindings.Remove (MouseFlags.LeftButtonReleased);
 
-			return ExecuteColdKey (kb);
-		}
+            // Add configured mouse event?HotKey binding
+            MouseBindings.Add (mouseHoldRepeat.Value, Command.Accept);
+        }
+        else
+        {
+            // MouseHoldRepeat disabled: Remove ALL Click/Release/Press bindings, add only Clicked?HotKey
+            MouseBindings.Remove (MouseFlags.LeftButtonClicked);
+            MouseBindings.Remove (MouseFlags.LeftButtonReleased);
 
-		///<inheritdoc/>
-		public override bool ProcessKey (KeyEvent kb)
-		{
-			if (!Enabled) {
-				return false;
-			}
+            // Add Clicked?HotKey bindings (default behavior)
+            MouseBindings.Add (MouseFlags.LeftButtonClicked, Command.Accept);
+            MouseBindings.Add (MouseFlags.LeftButtonDoubleClicked, Command.Accept);
+            MouseBindings.Add (MouseFlags.LeftButtonTripleClicked, Command.Accept);
+        }
+    }
 
-			var result = InvokeKeybindings (kb);
-			if (result != null)
-				return (bool)result;
+    /// <inheritdoc/>
+    protected override void OnHotKeyCommand (ICommandContext? commandContext) => InvokeCommand (Command.Accept);
 
-			return base.ProcessKey (kb);
-		}
+    private void Button_TitleChanged (object? sender, EventArgs<string> e)
+    {
+        SetTextDirect (e.Value);
+        TextFormatter.HotKeySpecifier = HotKeySpecifier;
+        _interiorTextFormatter.HotKeySpecifier = HotKeySpecifier;
+    }
 
-		bool ExecuteHotKey (KeyEvent ke)
-		{
-			if (ke.Key == (Key.AltMask | HotKey)) {
-				return AcceptKey ();
-			}
-			return false;
-		}
+    /// <inheritdoc/>
+    protected override void OnTextChanged ()
+    {
+        Title = Text;
 
-		bool ExecuteColdKey (KeyEvent ke)
-		{
-			if (IsDefault && ke.KeyValue == '\n') {
-				return AcceptKey ();
-			}
-			return ExecuteHotKey (ke);
-		}
+        base.OnTextChanged ();
+    }
 
-		bool AcceptKey ()
-		{
-			if (!HasFocus) {
-				SetFocus ();
-			}
-			OnClicked ();
-			return true;
-		}
+    /// <inheritdoc/>
+    public override Rune HotKeySpecifier
+    {
+        get => base.HotKeySpecifier;
+        set => _interiorTextFormatter.HotKeySpecifier = TextFormatter.HotKeySpecifier = base.HotKeySpecifier = value;
+    }
 
-		/// <summary>
-		/// Virtual method to invoke the <see cref="Clicked"/> event.
-		/// </summary>
-		public virtual void OnClicked ()
-		{
-			Clicked?.Invoke (this, EventArgs.Empty);
-		}
+    /// <inheritdoc/>
+    public bool IsDefault
+    {
+        get;
+        set
+        {
+            if (field == value)
+            {
+                return;
+            }
 
-		/// <summary>
-		///   Clicked <see cref="Action"/>, raised when the user clicks the primary mouse button within the Bounds of this <see cref="View"/>
-		///   or if the user presses the action key while this view is focused. (TODO: IsDefault)
-		/// </summary>
-		/// <remarks>
-		///   Client code can hook up to this event, it is
-		///   raised when the button is activated either with
-		///   the mouse or the keyboard.
-		/// </remarks>
-		public event EventHandler Clicked;
+            field = value;
 
-		///<inheritdoc/>
-		public override bool MouseEvent (MouseEvent me)
-		{
-			if (me.Flags == MouseFlags.Button1Clicked) {
-				if (CanFocus && Enabled) {
-					if (!HasFocus) {
-						SetFocus ();
-						SetNeedsDisplay ();
-						Draw ();
-					}
-					OnClicked ();
-				}
+            UpdateTextFormatterText ();
+            SetNeedsLayout ();
+        }
+    }
 
-				return true;
-			}
-			return false;
-		}
+    /// <summary>
+    ///     Gets or sets whether the Button will show decorations or not. If <see langword="true"/> the glyphs that normally
+    ///     bracket the Button Title and the <see cref="IsDefault"/> indicator will not be shown.
+    /// </summary>
+    public bool NoDecorations { get; set; }
 
-		///<inheritdoc/>
-		public override void PositionCursor ()
-		{
-			if (HotKey == Key.Unknown && Text != "") {
-				for (int i = 0; i < TextFormatter.Text.GetRuneCount (); i++) {
-					if (TextFormatter.Text [i] == Text [0]) {
-						Move (i, 0);
-						return;
-					}
-				}
-			}
-			base.PositionCursor ();
-		}
+    /// <summary>
+    ///     Gets or sets whether the Button will include padding on each side of the Title.
+    /// </summary>
+    public bool NoPadding { get; set; }
 
-		///<inheritdoc/>
-		public override bool OnEnter (View view)
-		{
-			Application.Driver.SetCursorVisibility (CursorVisibility.Invisible);
+    /// <inheritdoc/>
+    protected override void UpdateTextFormatterText ()
+    {
+        base.UpdateTextFormatterText ();
+        TextFormatter.Text = GetDecoratedText ();
+    }
 
-			return base.OnEnter (view);
-		}
-	}
+    /// <inheritdoc/>
+    protected override bool OnDrawingText (DrawContext? context)
+    {
+        if (NoDecorations || Driver is null)
+        {
+            return base.OnDrawingText (context);
+        }
+
+        Rectangle drawRect = new (ContentToScreen (Point.Empty), GetContentSize ());
+
+        if (drawRect.Width < 2 || drawRect.Height < 1)
+        {
+            return base.OnDrawingText (context);
+        }
+
+        Rectangle interiorRect = new (drawRect.X + 1, drawRect.Y, drawRect.Width - 2, drawRect.Height);
+        Attribute normalAttr = HasFocus ? GetAttributeForRole (VisualRole.Focus) : GetAttributeForRole (VisualRole.Normal);
+        Attribute hotAttr = HasFocus ? GetAttributeForRole (VisualRole.HotFocus) : GetAttributeForRole (VisualRole.HotNormal);
+        string interiorText = GetInteriorText ();
+
+        // Mirror all TextFormatter settings onto _interiorTextFormatter. Guard each assignment
+        // so NeedsFormat is not set when a value is unchanged.
+        if (_interiorTextFormatter.Text != interiorText)
+        {
+            _interiorTextFormatter.Text = interiorText;
+        }
+
+        if (_interiorTextFormatter.Alignment != TextAlignment)
+        {
+            _interiorTextFormatter.Alignment = TextAlignment;
+        }
+
+        if (_interiorTextFormatter.VerticalAlignment != VerticalTextAlignment)
+        {
+            _interiorTextFormatter.VerticalAlignment = VerticalTextAlignment;
+        }
+
+        if (_interiorTextFormatter.Direction != TextDirection)
+        {
+            _interiorTextFormatter.Direction = TextDirection;
+        }
+
+        if (_interiorTextFormatter.PreserveTrailingSpaces != PreserveTrailingSpaces)
+        {
+            _interiorTextFormatter.PreserveTrailingSpaces = PreserveTrailingSpaces;
+        }
+
+        if (_interiorTextFormatter.MultiLine != TextFormatter.MultiLine)
+        {
+            _interiorTextFormatter.MultiLine = TextFormatter.MultiLine;
+        }
+
+        if (_interiorTextFormatter.WordWrap != TextFormatter.WordWrap)
+        {
+            _interiorTextFormatter.WordWrap = TextFormatter.WordWrap;
+        }
+
+        if (_interiorTextFormatter.TabWidth != TextFormatter.TabWidth)
+        {
+            _interiorTextFormatter.TabWidth = TextFormatter.TabWidth;
+        }
+
+        if (_interiorTextFormatter.PreserveTabs != TextFormatter.PreserveTabs)
+        {
+            _interiorTextFormatter.PreserveTabs = TextFormatter.PreserveTabs;
+        }
+
+        if (_interiorTextFormatter.ConstrainToWidth != interiorRect.Width)
+        {
+            _interiorTextFormatter.ConstrainToWidth = interiorRect.Width;
+        }
+
+        if (_interiorTextFormatter.ConstrainToHeight != interiorRect.Height)
+        {
+            _interiorTextFormatter.ConstrainToHeight = interiorRect.Height;
+        }
+
+        Region? interiorDrawRegion = (interiorRect.Width > 0 && !string.IsNullOrEmpty (interiorText))
+            ? _interiorTextFormatter.GetDrawRegion (interiorRect)
+            : null;
+
+        context?.AddDrawnRegion (new Region (drawRect));
+
+        int delimiterRow = GetDelimiterRow (drawRect, interiorDrawRegion);
+
+        // Fill the entire content area with the focus/normal attribute to ensure continuous
+        // highlight across all rows and across the bracket columns.
+        Driver.SetAttribute (normalAttr);
+        Driver.FillRect (drawRect);
+
+        Driver.Move (drawRect.X, delimiterRow);
+        Driver.AddRune (_leftBracket);
+
+        Driver.Move (drawRect.X + drawRect.Width - 1, delimiterRow);
+        Driver.AddRune (_rightBracket);
+
+        if (interiorDrawRegion is not null)
+        {
+            _interiorTextFormatter.Draw (Driver, interiorRect, normalAttr, hotAttr, Rectangle.Empty);
+        }
+
+        SetSubViewNeedsDrawDownHierarchy ();
+
+        return true;
+    }
+
+    /// <inheritdoc/>
+    public bool EnableForDesign ()
+    {
+        Title = "_Button";
+
+        return true;
+    }
+
+    /// <inheritdoc/>
+    public string? GetDemoKeyStrokes () => "wait:500,Enter,wait:1000";
+
+    // GetDecoratedText (called by UpdateTextFormatterText for Dim.Auto sizing) and GetInteriorText
+    // (called by OnDrawingText for rendering) must remain in sync when modifying button text formatting.
+    private string GetDecoratedText ()
+    {
+        if (NoDecorations)
+        {
+            return Text;
+        }
+
+        return $"{_leftBracket}{GetInteriorText ()}{_rightBracket}";
+    }
+
+    private string GetInteriorText ()
+    {
+        if (IsDefault)
+        {
+            return $"{_leftDefault} {Text} {_rightDefault}";
+        }
+
+        if (NoPadding)
+        {
+            return Text;
+        }
+
+        return $" {Text} ";
+    }
+
+    private int GetDelimiterRow (Rectangle drawRect, Region? interiorDrawRegion)
+    {
+        if (interiorDrawRegion is not null)
+        {
+            Rectangle interiorBounds = interiorDrawRegion.GetBounds ();
+
+            if (!interiorBounds.IsEmpty)
+            {
+                return interiorBounds.Y;
+            }
+        }
+
+        return VerticalTextAlignment switch
+        {
+            Alignment.End => drawRect.Y + drawRect.Height - 1,
+            Alignment.Center => drawRect.Y + (drawRect.Height - 1) / 2,
+            _ => drawRect.Y
+        };
+    }
 }

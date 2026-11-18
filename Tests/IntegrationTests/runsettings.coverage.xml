@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<RunSettings>
+	<DataCollectionRunSettings>
+		<DataCollectors>
+			<DataCollector friendlyName="XPlat Code Coverage">
+				<Configuration>
+					<Format>cobertura</Format>
+					<ExcludeByFile>**/obj/**/*.*</ExcludeByFile>
+					<Exclude>[*]*.g.cs</Exclude>
+					<Exclude>[*]*AssemblyInfo.cs</Exclude>
+					<!-- Exclude test projects -->
+					<!-- ONLY include Terminal.Gui assembly -->
+					<Include>[Terminal.Gui]*</Include>
+				</Configuration>
+			</DataCollector>
+		</DataCollectors>
+	</DataCollectionRunSettings>
+
+	<xUnit>
+		<ParallelizeAssembly>false</ParallelizeAssembly>
+		<ParallelizeTestCollections>false</ParallelizeTestCollections>
+		<MaxParallelThreads>1</MaxParallelThreads>
+		<StopOnFail>true</StopOnFail>
+	</xUnit>
+	<!-- Optional: Global Run Config (e.g., results dir) -->
+	<RunConfiguration>
+		<ResultsDirectory>../TestResults</ResultsDirectory>
+	</RunConfiguration>
+</RunSettings>

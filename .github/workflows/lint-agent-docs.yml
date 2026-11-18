@@ -1,0 +1,52 @@
+name: Lint Agent Docs
+
+# The AI agent instruction files (CLAUDE.md, AGENTS.md, .cursorrules, etc.) drift
+# from repo state because they are hand-maintained in parallel. This check fails
+# when known rot patterns reappear (stale test project names, machine-local paths,
+# contradictory style guidance, deprecated test filter syntax, wrong SDK versions).
+
+on:
+  push:
+    branches: [develop]
+    paths:
+      - 'CLAUDE.md'
+      - 'AGENTS.md'
+      - 'CONTRIBUTING.md'
+      - 'ai-v2-primer.md'
+      - 'llms.txt'
+      - '.cursorrules'
+      - '.windsurfrules'
+      - '.aider.md'
+      - '.github/copilot-instructions.md'
+      - '.claude/**'
+      - 'global.json'
+      - 'Scripts/lint-agent-docs.ps1'
+      - '.github/workflows/lint-agent-docs.yml'
+  pull_request:
+    paths:
+      - 'CLAUDE.md'
+      - 'AGENTS.md'
+      - 'CONTRIBUTING.md'
+      - 'ai-v2-primer.md'
+      - 'llms.txt'
+      - '.cursorrules'
+      - '.windsurfrules'
+      - '.aider.md'
+      - '.github/copilot-instructions.md'
+      - '.claude/**'
+      - 'global.json'
+      - 'Scripts/lint-agent-docs.ps1'
+      - '.github/workflows/lint-agent-docs.yml'
+
+jobs:
+  lint-agent-docs:
+    name: Lint Agent Docs
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - name: Run agent docs lint
+        shell: pwsh
+        run: ./Scripts/lint-agent-docs.ps1

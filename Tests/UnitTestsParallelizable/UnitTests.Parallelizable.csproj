@@ -1,0 +1,63 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+	  <OutputType>Exe</OutputType>
+	  <UseAppHost>true</UseAppHost>
+	  <IsTestProject>true</IsTestProject>
+    <Nullable>enable</Nullable>
+    <IsPackable>false</IsPackable>
+    <UseDataCollector />
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <DefineTrace>true</DefineTrace>
+    <DebugType>portable</DebugType>
+    <DefineConstants>$(DefineConstants);JETBRAINS_ANNOTATIONS;CONTRACTS_FULL</DefineConstants>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <NoLogo>true</NoLogo>
+    <NoWarn>$(NoWarn);AD0001</NoWarn>
+    <SuppressNETCoreSdkPreviewMessage>true</SuppressNETCoreSdkPreviewMessage>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)'=='Debug'">
+    <DefineDebug>true</DefineDebug>
+    <DefineConstants>$(DefineConstants);DEBUG_IDISPOSABLE</DefineConstants>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)'=='Release'">
+    <Optimize>true</Optimize>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="..\UnitTests.Legacy\OutputAssert.cs" Link="OutputAssert.cs" />
+    <Compile Include="..\..\Tools\MigrateConfig\ConfigJsonMigrator.cs" Link="Configuration\ConfigJsonMigrator.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="JetBrains.Annotations" PrivateAssets="all" />
+    <PackageReference Include="Moq" />
+    <PackageReference Include="ReportGenerator" />
+    <PackageReference Include="TestableIO.System.IO.Abstractions.TestingHelpers" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="xunit.runner.visualstudio" />
+    <PackageReference Include="xunit.v3" />
+    <PackageReference Include="Xunit.Combinatorial" />
+    <PackageReference Include="coverlet.collector">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\Examples\UICatalog\UICatalog.csproj" />
+    <ProjectReference Include="..\..\Terminal.Gui.Interop.Spectre\Terminal.Gui.Interop.Spectre.csproj" />
+    <ProjectReference Include="..\..\Terminal.Gui\Terminal.Gui.csproj">
+    </ProjectReference>
+    <ProjectReference Include="..\AppTestHelpers\AppTestHelpers.csproj" />
+    <ProjectReference Include="..\UnitTests.Legacy\UnitTests.Legacy.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="xunit.runner.json" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+  <ItemGroup>
+    <Using Include="System.Drawing" />
+    <Using Include="Terminal.Gui" />
+    <Using Include="Xunit" />
+  </ItemGroup>
+</Project>

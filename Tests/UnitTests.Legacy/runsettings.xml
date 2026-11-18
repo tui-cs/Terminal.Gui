@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RunSettings>
+	<!-- xUnit Config for Stop-on-Fail -->
+	<xUnit>
+		<ParallelizeAssembly>false</ParallelizeAssembly>
+		<!-- Disable assembly parallelism -->
+		<ParallelizeTestCollections>false</ParallelizeTestCollections>
+		<!-- Disable collection parallelism -->
+		<MaxParallelThreads>1</MaxParallelThreads>
+		<!-- Ensure single-threaded -->
+		<StopOnFail>true</StopOnFail>
+		<!-- STOP HERE ON FIRST FAILURE! -->
+	</xUnit>
+
+	<RunConfiguration>
+		<ResultsDirectory>../../TestResults</ResultsDirectory>
+	</RunConfiguration>
+</RunSettings>

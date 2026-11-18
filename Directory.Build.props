@@ -1,0 +1,11 @@
+<Project>
+    <PropertyGroup>
+        <TargetFramework>net10.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <!--<Nullable>enable</Nullable>-->
+        <LangVersion>14</LangVersion>
+    </PropertyGroup>
+    <PropertyGroup>
+        <DisableDebugIDisposable>false</DisableDebugIDisposable>
+    </PropertyGroup>
+</Project>

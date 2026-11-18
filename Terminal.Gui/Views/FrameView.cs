@@ -1,68 +1,44 @@
-﻿using System;
-using System.Linq;
-using System.Text.Json.Serialization;
-using System.Text;
-using static Terminal.Gui.ConfigurationManager;
+namespace Terminal.Gui.Views;
 
-namespace Terminal.Gui {
-	/// <summary>
-	/// The FrameView is a container frame that draws a frame around the contents. It is similar to
-	/// a GroupBox in Windows.
-	/// </summary>
-	public class FrameView : View {
-		/// <summary>
-		/// Initializes a new instance of the <see cref="Gui.FrameView"/> class using <see cref="LayoutStyle.Absolute"/> layout.
-		/// </summary>
-		/// <param name="frame">Frame.</param>
-		/// <param name="title">Title.</param>
-		/// <param name="views">Views.</param>
-		public FrameView (Rect frame, string title = null, View [] views = null) : base (frame)
-		{
-			SetInitialProperties (frame, title, views);
-		}
+// TODO: FrameView is mis-named, really. It's far more about it being a TabGroup than a frame. 
 
-		/// <summary>
-		/// Initializes a new instance of the <see cref="Gui.FrameView"/> class using <see cref="LayoutStyle.Computed"/> layout.
-		/// </summary>
-		/// <param name="title">Title.</param>
-		public FrameView (string title)
-		{
-			SetInitialProperties (Rect.Empty, title, null);
-		}
+/// <summary>
+///     A non-overlapped container for other views with a border and optional title.
+/// </summary>
+/// <remarks>
+/// <img src="../images/views/FrameView.gif" alt="FrameView demo"/>
+///     <para>
+///         FrameView has <see cref="View.BorderStyle"/> set to <see cref="float"/> and
+///         inherits it's scheme from the <see cref="View.SuperView"/>.
+///     </para>
+///     <para>
+///         
+///     </para>
+/// </remarks>
+/// <seealso cref="Window"/>
+public class FrameView : View
+{
+    /// <summary>
+    ///     Initializes a new instance of the <see cref="FrameView"/> class.
+    ///     layout.
+    /// </summary>
+    public FrameView ()
+    {
+        CanFocus = true;
+        TabStop = TabBehavior.TabGroup;
+        BorderStyle = DefaultBorderStyle;
 
-		/// <summary>
-		/// Initializes a new instance of the <see cref="Gui.FrameView"/> class using <see cref="LayoutStyle.Computed"/> layout.
-		/// </summary>
-		public FrameView () : this (title: string.Empty) {
+        // BUGBUG: View base really should not be adding key bindings for SPACE and ENTER by default.
+        KeyBindings.Clear ();
+    }
 
-		}
-
-		/// <summary>
-		/// The default <see cref="LineStyle"/> for <see cref="FrameView"/>'s border. The default is <see cref="LineStyle.Single"/>.
-		/// </summary>
-		/// <remarks>
-		/// This property can be set in a Theme to change the default <see cref="LineStyle"/> for all <see cref="FrameView"/>s. 
-		/// </remarks>
-		[SerializableConfigurationProperty (Scope = typeof (ThemeScope)), JsonConverter (typeof (JsonStringEnumConverter))]
-		public static LineStyle DefaultBorderStyle { get; set; } = LineStyle.Single;
-
-		void SetInitialProperties (Rect frame, string title, View [] views = null)
-		{
-			this.Title = title;
-			Border.Thickness = new Thickness (1);
-			Border.BorderStyle = DefaultBorderStyle;
-			//Border.ColorScheme = ColorScheme;
-			Border.Data = "Border";
-		}
-
-		///<inheritdoc/>
-		public override bool OnEnter (View view)
-		{
-			if (Subviews.Count == 0 || !Subviews.Any (subview => subview.CanFocus)) {
-				Application.Driver?.SetCursorVisibility (CursorVisibility.Invisible);
-			}
-
-			return base.OnEnter (view);
-		}
-	}
+    /// <summary>
+    ///     Defines the default border styling for <see cref="FrameView"/>. Can be configured via
+    ///     <see cref="TuiConfigurationBuilder"/>.
+    /// </summary>
+    /// <remarks>
+    ///     This property can be set in a Theme to change the default <see cref="LineStyle"/> for all
+    ///     <see cref="FrameView"/>s.
+    /// </remarks>
+    public static LineStyle DefaultBorderStyle => FrameViewSettings.Current.DefaultBorderStyle;
 }

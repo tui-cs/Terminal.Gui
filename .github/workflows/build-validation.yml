@@ -1,0 +1,75 @@
+name: Build Validation
+
+on:
+  push:
+    branches: [ main, develop ]
+    paths-ignore:
+      - '**.md'
+  pull_request:
+    branches: [ main, develop ]
+    paths-ignore:
+      - '**.md'
+
+permissions:
+  contents: read
+      
+jobs:
+  build-validation:
+    name: Build Validation (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ ubuntu-latest, windows-latest ]
+    
+    timeout-minutes: 20
+    steps:
+
+    - name: Checkout code
+      uses: actions/checkout@v7
+      with:
+        fetch-depth: 0 # GitVersion.MsBuild needs full history
+
+    - name: Setup .NET Core
+      uses: actions/setup-dotnet@v6
+      with:
+        dotnet-version: 10.x
+        dotnet-quality: 'ga'
+
+    - name: Restore dependencies
+      run: dotnet restore
+
+    # Suppress CS0618 (member is obsolete) and CS0612 (member is obsolete without message)
+    # Using -property: syntax with URL-encoded semicolon (%3B) to avoid shell interpretation issues
+    - name: Build Debug
+      run: dotnet build --configuration Debug --no-restore -property:NoWarn=0618%3B0612
+
+    - name: Build Release Terminal.Gui
+      run: dotnet build Terminal.Gui/Terminal.Gui.csproj --configuration Release --no-incremental --force -property:NoWarn=0618%3B0612
+
+    - name: Pack Release Terminal.Gui
+      run: dotnet pack Terminal.Gui/Terminal.Gui.csproj --configuration Release --output ./local_packages -property:NoWarn=0618%3B0612
+
+    - name: Pack Release Terminal.Gui.Interop.Spectre
+      run: dotnet pack Terminal.Gui.Interop.Spectre/Terminal.Gui.Interop.Spectre.csproj --configuration Release --output ./local_packages -property:NoWarn=0618%3B0612
+
+    - name: AOT Publish Test App (catches trimming and reflection errors)
+      run: dotnet publish ./Tests/NativeAotSmoke/NativeAotSmoke.csproj --configuration Release --output ./aot-publish -property:NoWarn=0618%3B0612
+
+    - name: AOT Smoke Test (run the published AOT binary on Linux)
+      if: runner.os == 'Linux'
+      env:
+        DisableRealDriverIO: "1"
+      run: |
+        chmod +x ./aot-publish/NativeAotSmoke
+        ./aot-publish/NativeAotSmoke --smoke-test
+
+    - name: AOT Smoke Test (run the published AOT binary on Windows)
+      if: runner.os == 'Windows'
+      env:
+        DisableRealDriverIO: "1"
+      shell: pwsh
+      run: ./aot-publish/NativeAotSmoke.exe --smoke-test
+
+    - name: Build Release Solution
+      run: dotnet build --configuration Release --no-restore -property:NoWarn=0618%3B0612

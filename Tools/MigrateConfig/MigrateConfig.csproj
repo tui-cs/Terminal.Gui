@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RootNamespace>Terminal.Gui.Tools.MigrateConfig</RootNamespace>
+    <AssemblyName>migrate-tui-config</AssemblyName>
+    <!--
+      This project is intentionally NOT included in Terminal.slnx.
+      It is a standalone migration utility, not shipping library code.
+      Run with: dotnet run -p Tools/MigrateConfig (input.json) (output.json)
+    -->
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+</Project>

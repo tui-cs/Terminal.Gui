@@ -1,0 +1,109 @@
+<Solution>
+  <Configurations>
+    <Platform Name="Any CPU" />
+  </Configurations>
+  <Folder Name="/Docs/">
+    <File Path=".github/CODEOWNERS" />
+    <File Path=".github/copilot-instructions.md" />
+    <File Path="CODE_OF_CONDUCT.md" />
+    <File Path="CONTRIBUTING.md" />
+    <File Path="docfx/docs/ansihandling.md" />
+    <File Path="docfx/docs/application.md" />
+    <File Path="docfx/docs/arrangement.md" />
+    <File Path="docfx/docs/borders.md" />
+    <File Path="docfx/docs/cancellable-work-pattern.md" />
+    <File Path="docfx/docs/command.md" />
+    <File Path="docfx/docs/config.md" />
+    <File Path="docfx/docs/cursor.md" />
+    <File Path="docfx/docs/dimauto.md" />
+    <File Path="docfx/docs/drawing.md" />
+    <File Path="docfx/docs/drivers.md" />
+    <File Path="docfx/docs/events.md" />
+    <File Path="docfx/docs/getting-started.md" />
+    <File Path="docfx/docs/index.md" />
+    <File Path="docfx/docs/input-injection.md" />
+    <File Path="docfx/docs/keyboard.md" />
+    <File Path="docfx/docs/layout.md" />
+    <File Path="docfx/docs/lexicon.md" />
+    <File Path="docfx/docs/logging.md" />
+    <File Path="docfx/docs/menus.md" />
+    <File Path="docfx/docs/migratingfromv1.md" />
+    <File Path="docfx/docs/mouse.md" />
+    <File Path="docfx/docs/multitasking.md" />
+    <File Path="docfx/docs/navigation.md" />
+    <File Path="docfx/docs/newinv2.md" />
+    <File Path="docfx/docs/Popovers.md" />
+    <File Path="docfx/docs/prompt.md" />
+    <File Path="docfx/docs/scheme.md" />
+    <File Path="docfx/docs/scrolling.md" />
+    <File Path="docfx/docs/shortcut.md" />
+    <File Path="docfx/docs/showcase.md" />
+    <File Path="docfx/docs/tableview.md" />
+    <File Path="docfx/docs/toc.yml" />
+    <File Path="docfx/docs/treeview.md" />
+    <File Path="docfx/docs/View.md" />
+    <File Path="docfx/docs/views.md" />
+    <File Path="README.md" />
+  </Folder>
+  <Folder Name="/Examples/">
+    <File Path="Examples/Config/example_config.json" />
+    <File Path="Examples/Config/macos.json" />
+    <File Path="Examples/Config/README.md" />
+    <File Path="Examples/Config/windows.json" />
+    <File Path="Examples/PowershellExample.ps1" />
+    <Project Path="docfx/scripts/OutputView/OutputView.csproj" />
+    <Project Path="Examples/ScenarioRunner/ScenarioRunner.csproj" />
+    <Project Path="Examples/UICatalog/UICatalog.csproj" />
+  </Folder>
+  <Folder Name="/Solution Items/" />
+  <Folder Name="/Solution Items/GitHub/">
+    <File Path=".github/workflows/api-docs.yml" />
+    <File Path=".github/workflows/build-validation.yml" />
+    <File Path=".github/workflows/check-duplicates.yml" />
+    <File Path=".github/workflows/integration-tests.yml" />
+    <File Path=".github/workflows/publish.yml" />
+    <File Path=".github/workflows/quick-build.yml" />
+    <File Path=".github/workflows/README.md" />
+    <File Path=".github/workflows/stress-tests.yml" />
+    <File Path=".github/workflows/unit-tests.yml" />
+    <File Path="copilot-instructions.md" />
+    <File Path="GitVersion.yml" />
+  </Folder>
+  <Folder Name="/Solution Items/Settings/">
+    <File Path=".claude/REFRESH.md" />
+    <File Path=".claude/settings.json" />
+    <File Path=".editorconfig" />
+    <File Path=".filenesting.json" />
+    <File Path=".gitignore" />
+    <File Path="AGENTS.md" />
+    <File Path="Directory.Build.props" />
+    <File Path="Directory.Packages.props" />
+    <File Path="docfx/schemas/tui-config-schema.json" />
+    <File Path="GitVersion.yml" />
+    <File Path="global.json" />
+    <File Path="nuget.config" />
+    <File Path="Terminal.sln.DotSettings" />
+    <File Path="testenvironments.json" />
+  </Folder>
+  <Folder Name="/Solution Items/Testing/">
+    <File Path="codecov.yml" />
+    <File Path="Scripts/Run-LocalCoverage.ps1" />
+    <File Path="Tests/UnitTests.Legacy/runsettings.xml" />
+  </Folder>
+  <Folder Name="/Tests/">
+    <Project Path="Tests/AppTestHelpers.XunitHelpers.Generator/AppTestHelpers.XunitHelpers.Generator.csproj" />
+    <Project Path="Tests/AppTestHelpers.XunitHelpers/AppTestHelpers.XunitHelpers.csproj" />
+    <Project Path="Tests/AppTestHelpers/AppTestHelpers.csproj" />
+    <Project Path="Tests/Benchmarks/Benchmarks.csproj" />
+    <Project Path="Tests/IntegrationTests/IntegrationTests.csproj" />
+    <Project Path="Tests/NativeAotSmoke/NativeAotSmoke.csproj" />
+    <Project Path="Tests/PerformanceTests/PerformanceTests.csproj" />
+    <Project Path="Tests/StressTests/StressTests.csproj" />
+    <Project Path="Tests/UnitTests.Legacy/UnitTests.Legacy.csproj" />
+    <Project Path="Tests/UnitTests.NonParallelizable/UnitTests.NonParallelizable.csproj" />
+    <Project Path="Tests/UnitTestsParallelizable/UnitTests.Parallelizable.csproj" />
+  </Folder>
+  <Project Path="Terminal.Gui.Analyzers.Internal/Terminal.Gui.Analyzers.Internal.csproj" />
+  <Project Path="Terminal.Gui.Interop.Spectre/Terminal.Gui.Interop.Spectre.csproj" />
+  <Project Path="Terminal.Gui/Terminal.Gui.csproj" />
+</Solution>

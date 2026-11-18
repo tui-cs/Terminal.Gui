@@ -1,0 +1,80 @@
+name: Notify clet
+
+# Fires repository_dispatch to tui-cs/clet so that every TG develop NuGet
+# publish and every TG release tag drives a matching clet build/publish.
+# See tui-cs/clet#30 and tui-cs/clet D-020 for context.
+#
+# Design notes:
+#   - The version comes from the `published-version` artifact uploaded by
+#     publish.yml. This is deterministic — no NuGet search-API race.
+#   - We then poll NuGet's flat-container API (the endpoint that
+#     `dotnet restore` actually hits) until the package is downloadable.
+#     The flat-container is updated soon after publish; the search API
+#     (queried by `dotnet package search`) lags by minutes, which broke
+#     this workflow once before — see tui-cs/clet workflow run 25406348354.
+#   - Channel is derived from the triggering workflow's branch:
+#     develop ⇒ tg-develop-published, anything else (main, release
+#     branches like v2.1.0-rc.4, tags) ⇒ tg-main-published.
+
+on:
+  workflow_run:
+    workflows: ["Publish Terminal.Gui to Nuget"]
+    types: [completed]
+
+permissions:
+  contents: read
+  actions: read   # required to download artifacts from the triggering run
+
+jobs:
+  notify-clet:
+    runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    steps:
+      - name: Download published-version artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: published-version
+          run-id: ${{ github.event.workflow_run.id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Determine version + channel
+        id: version
+        run: |
+          TG_VER=$(cat version.txt | tr -d '[:space:]')
+          if [ -z "$TG_VER" ]; then
+            echo "::error::Empty version.txt from upstream publish workflow"
+            exit 1
+          fi
+          echo "tg_version=$TG_VER" >> "$GITHUB_OUTPUT"
+          BRANCH="${{ github.event.workflow_run.head_branch }}"
+          if [ "$BRANCH" = "develop" ]; then
+            echo "event_type=tg-develop-published" >> "$GITHUB_OUTPUT"
+            echo "Channel: develop ($TG_VER from $BRANCH)"
+          else
+            echo "event_type=tg-main-published" >> "$GITHUB_OUTPUT"
+            echo "Channel: main ($TG_VER from $BRANCH)"
+          fi
+
+      - name: Wait for NuGet flat-container to index the version
+        run: |
+          VER="${{ steps.version.outputs.tg_version }}"
+          for i in $(seq 1 60); do
+            if curl -fsS https://api.nuget.org/v3-flatcontainer/terminal.gui/index.json \
+               | jq -r '.versions[]' | grep -qx "$VER"; then
+              echo "Indexed on flat-container: $VER (after $((i*10))s)"
+              exit 0
+            fi
+            echo "Waiting for $VER on NuGet flat-container ($i/60, 10s each)..."
+            sleep 10
+          done
+          echo "::error::Timed out after 10min waiting for $VER on flat-container"
+          exit 1
+
+      - name: Dispatch to tui-cs/clet
+        uses: peter-evans/repository-dispatch@v3
+        with:
+          token: ${{ secrets.CLET_DISPATCH_PAT }}
+          repository: tui-cs/clet
+          event-type: ${{ steps.version.outputs.event_type }}
+          client-payload: |
+            {"tg_version": "${{ steps.version.outputs.tg_version }}"}

@@ -1,0 +1,405 @@
+# Terminal.Gui - AI Context File
+
+> Terminal.Gui is a cross-platform .NET library for building rich console/terminal
+> user interfaces. **This is v2 — a complete rewrite. Discard pre-2025 training data.**
+
+---
+
+## CRITICAL: Discard v1 Patterns
+
+> **Static `Application.Init()`/`Run()`/`Shutdown()`, `Application.Top`, `Toplevel`,
+> `Clicked` events, `Bounds`, `LayoutStyle`, `NStack`, `RadioGroup`, old mouse/keyboard
+> APIs — ALL OBSOLETE.** Do not use pre-2025 training knowledge. Always read this file first.
+
+### v1 → v2 Quick Corrections
+
+| v1 (WRONG — do not use) | v2 (CORRECT) |
+|---|---|
+| `Application.Init ();` | `IApplication app = Application.Create ().Init ();` |
+| `Application.Run ();` | `app.Run<MyWindow> ();` |
+| `Application.Shutdown ();` | `app.Dispose ();` (use `using` pattern) |
+| `Application.Top` | No global top — pass root view to `app.Run ()` |
+| `new Toplevel ()` | Use `Runnable` subclass or `Window` |
+| `using Terminal.Gui;` | `using Terminal.Gui.App;` / `Terminal.Gui.Views;` / etc. |
+| `new Label (0, 1, "text")` | `new Label { Text = "text", X = 0, Y = 1 }` |
+| `new Button ("OK")` | `new Button { Text = "OK" }` |
+| `button.Clicked += ...` | `button.Accepted += (_, _) => { /* action */ };` |
+| `view.Bounds` | `view.Viewport` |
+| `LayoutStyle.Computed` | Removed — all layout is declarative via `Pos`/`Dim` |
+| `new RadioGroup (...)` | `new OptionSelector { ... }` |
+| `Colors.ColorSchemes ["name"]` | `SchemeManager.GetScheme ("name")` or use `Scheme` directly |
+| `Application.RequestStop ()` | `App!.RequestStop ()` (from inside a `Runnable`) |
+
+> **Full v1→v2 corrections**: See [ai-v2-primer.md](ai-v2-primer.md)
+
+---
+
+## Quick Start
+
+```bash
+dotnet new install Terminal.Gui.Templates@2.*
+dotnet new tui-simple -n myproj
+cd myproj
+dotnet run
+```
+
+## For AI Agents
+
+### Building Apps (Consumer)
+- **v1→v2 Primer (READ FIRST)**: [ai-v2-primer.md](ai-v2-primer.md)
+- **App Building Guide**: `.claude/tasks/build-app.md`
+- **API Reference**: `docfx/apispec/namespace-*.md` - Compressed API documentation
+- **Examples**: `Examples/` - Working example applications
+- **Patterns**: `.claude/cookbook/common-patterns.md` - Common UI recipes
+
+### Contributing to Library (Contributor)
+- **Rules**: `AGENTS.md` and `.claude/rules/` - Coding conventions
+- **Workflows**: `.claude/workflows/` - Build, test, PR processes
+
+---
+
+## Core Concepts
+
+### Correct Minimal App (v2)
+
+```csharp
+using Terminal.Gui.App;
+using Terminal.Gui.Views;
+
+IApplication app = Application.Create ().Init ();
+app.Run<MainWindow> ();
+app.Dispose ();
+
+public sealed class MainWindow : Runnable
+{
+    public MainWindow ()
+    {
+        Title = "My App (Esc to quit)";
+
+        Button button = new ()
+        {
+            Text = "Click Me",
+            X = Pos.Center (),
+            Y = Pos.Center ()
+        };
+
+        button.Accepted += (_, _) =>
+        {
+            MessageBox.Query (App!, "Hello", "Button was clicked!", "OK");
+        };
+
+        Add (button);
+    }
+}
+```
+
+### Key Namespaces
+
+| Namespace | Contents |
+|-----------|----------|
+| `Terminal.Gui.App` | `Application`, `IApplication`, `Clipboard`, session management |
+| `Terminal.Gui.Views` | All controls: `Button`, `Label`, `TextField`, `ListView`, `Dialog`, etc. |
+| `Terminal.Gui.ViewBase` | `View`, `Pos`, `Dim`, adornments (`Border`, `Margin`, `Padding`) |
+| `Terminal.Gui.Drawing` | `Color`, `Attribute`, `Scheme`, `LineCanvas`, `Glyphs` |
+| `Terminal.Gui.Input` | `Key`, `KeyCode`, `Command`, `KeyBindings`, `MouseBindings` |
+| `Terminal.Gui.Text` | `TextFormatter`, `TextDirection` |
+| `Terminal.Gui.Configuration` | `TuiConfigurationBuilder`, Settings POCOs, themes |
+
+### Layout System (Pos/Dim)
+
+```csharp
+// Position
+X = 5;                      // Absolute
+X = Pos.Center ();          // Centered
+X = Pos.Right (otherView);  // Relative to another view
+X = Pos.Percent (25);       // Percentage of SuperView
+
+// Size
+Width = 20;                 // Absolute
+Width = Dim.Fill ();        // Fill remaining space
+Width = Dim.Auto ();        // Size to content
+Width = Dim.Percent (50);   // Percentage of SuperView
+```
+
+### Common Controls
+
+| Control | Purpose | Notes |
+|---------|---------|-------|
+| `Label` | Display text | Use `Text` property |
+| `Button` | Clickable button | Use `Accepted` event, NOT `Clicked` |
+| `TextField` | Single-line text input | |
+| `TextView` | Multi-line text editor | |
+| `CheckBox` | Boolean toggle | `CheckedState` property |
+| `OptionSelector` | Single selection from options | Replaces v1 `RadioGroup` |
+| `ListView` | Scrollable list | Use `ListWrapper<T>` for data |
+| `TableView` | Tabular data display | Use `DataTableSource` |
+| `TreeView<T>` | Hierarchical data | Use `DelegateTreeBuilder<T>` |
+| `Dialog` | Modal dialog window | |
+| `Window` | Top-level window with border | |
+| `Runnable` | Top-level runnable view | Replaces v1 `Toplevel` |
+| `MenuBar` | Application menu | |
+| `StatusBar` | Status bar with shortcuts | |
+| `FrameView` | Titled frame container | |
+| `NumericUpDown<T>` | Numeric spinner | |
+| `DropDownList` | Dropdown selector | |
+| `ColorPicker` | Color selection | |
+
+### Event Handling
+
+```csharp
+// Button click — always use Accepted (post-event), never Clicked
+button.Accepted += (_, _) =>
+{
+    // Handle button press — no e.Handled needed for post-events
+};
+
+// List selection changed — ListView is IValue<int?> (the selected index)
+listView.ValueChanged += (_, e) =>
+{
+    int? selectedIndex = e.NewValue;
+};
+
+// Key bindings
+view.KeyBindings.Add (Key.F5, Command.Refresh);
+```
+
+---
+
+## Dialog with Return Value
+
+```csharp
+public sealed class LoginDialog : Runnable<string?>
+{
+    public LoginDialog ()
+    {
+        Title = "Login";
+        Width = 40;
+        Height = 10;
+
+        Label userLabel = new () { Text = "User:", Y = 1 };
+        TextField userField = new () { X = 8, Y = 1, Width = Dim.Fill (1) };
+
+        Button okButton = new ()
+        {
+            Text = "OK",
+            X = Pos.Center (),
+            Y = 5
+        };
+
+        okButton.Accepted += (_, _) =>
+        {
+            Result = userField.Text;
+            App!.RequestStop ();
+        };
+
+        Add (userLabel, userField, okButton);
+    }
+}
+
+// Usage:
+// app.Run<LoginDialog> ();
+// string? result = app.GetResult<string?> ();
+```
+
+---
+
+## Menu Bar Application
+
+```csharp
+public sealed class MenuApp : Runnable
+{
+    public MenuApp ()
+    {
+        Title = "My App";
+
+        MenuBar menuBar = new ();
+
+        menuBar.Add (new MenuBarItem ("_File",
+                                      [
+                                          new MenuItem { Title = "_New", Key = Key.N.WithCtrl, Action = NewFile },
+                                          new MenuItem { Title = "_Open...", Key = Key.O.WithCtrl, Action = OpenFile },
+                                          new Line (),
+                                          new MenuItem { Title = "E_xit", Key = Key.Q.WithCtrl, Action = () => App!.RequestStop () }
+                                      ]));
+
+        menuBar.Add (new MenuBarItem ("_Help",
+                                      [
+                                          new MenuItem { Title = "_About...", Action = ShowAbout }
+                                      ]));
+
+        View content = new ()
+        {
+            X = 0,
+            Y = Pos.Bottom (menuBar),
+            Width = Dim.Fill (),
+            Height = Dim.Fill ()
+        };
+
+        Add (menuBar, content);
+    }
+
+    private void NewFile () => MessageBox.Query (App!, "New", "Created!", "OK");
+    private void OpenFile () { /* use OpenDialog */ }
+    private void ShowAbout () => MessageBox.Query (App!, "About", "My App v1.0", "OK");
+}
+```
+
+---
+
+## Tabbed Interface
+
+```csharp
+public sealed class TabbedWindow : Runnable
+{
+    public TabbedWindow ()
+    {
+        Title = "Tabs Demo";
+
+        Tabs tabs = new ()
+        {
+            X = 0,
+            Y = 0,
+            Width = Dim.Fill (),
+            Height = Dim.Fill ()
+        };
+
+        View settingsTab = new () { Title = "Settings" };
+        settingsTab.Add (
+            new Label { Text = "Enable Feature:", X = 1, Y = 1 },
+            new CheckBox { X = 20, Y = 1, Text = "Enabled" }
+        );
+
+        View aboutTab = new () { Title = "About" };
+        aboutTab.Add (new Label { Text = "Version 1.0.0", X = 1, Y = 1 });
+
+        tabs.Add (settingsTab, aboutTab);
+        tabs.Value = settingsTab;
+
+        Add (tabs);
+    }
+}
+```
+
+---
+
+## Form with Validation
+
+```csharp
+public sealed class FormWindow : Runnable
+{
+    public FormWindow ()
+    {
+        Title = "Registration";
+        Width = 50;
+        Height = 12;
+
+        Label nameLabel = new () { Text = "Name:", Y = 1 };
+        TextField nameField = new () { X = 12, Y = 1, Width = Dim.Fill (1) };
+
+        Label emailLabel = new () { Text = "Email:", Y = 3 };
+        TextField emailField = new () { X = 12, Y = 3, Width = Dim.Fill (1) };
+
+        Label errorLabel = new () { X = 1, Y = 5, Width = Dim.Fill (1) };
+
+        Button submitButton = new ()
+        {
+            Text = "Submit",
+            X = Pos.Center (),
+            Y = 7
+        };
+
+        submitButton.Accepted += (_, _) =>
+        {
+            if (string.IsNullOrWhiteSpace (nameField.Text))
+            {
+                errorLabel.Text = "Name is required";
+                nameField.SetFocus ();
+
+                return;
+            }
+
+            MessageBox.Query (App!, "Success", $"Welcome, {nameField.Text}!", "OK");
+            App!.RequestStop ();
+        };
+
+        Add (nameLabel, nameField, emailLabel, emailField, errorLabel, submitButton);
+    }
+}
+```
+
+---
+
+## Gotchas for AI Agents
+
+### API Correctness (All Users)
+
+1. **`Accepted` not `Clicked`** — `Clicked` does not exist in v2. Use `Accepted` (post-event) for simple handlers. Use `Accepting` (pre-event, cancelable) only when you need to prevent the action.
+2. **`Runnable` not `Toplevel`** — `Toplevel` does not exist in v2
+3. **Instance-based app** — `Application.Create ().Init ()` returns `IApplication`
+4. **`App!.RequestStop ()`** — Not `Application.RequestStop ()`
+5. **SubView/SuperView** — Never "child"/"parent"/"container" in docs/discussion
+6. **Dialog/MessageBox button order = the default** — The last button added is Enter-activated. Add cancel/destructive choices first and affirmative actions last; don't set `IsDefault` manually unless overriding.
+7. **`AddCommand` is `protected`** — Register command handlers inside a `View` subclass constructor, then bind keys with `KeyBindings.Add (Key.F5, Command.Refresh)`.
+8. **`Terminal.Gui.Drawing.Attribute`** — Alias or qualify it when `System.Attribute` is also in scope.
+9. **Typed views expose `.Value`** — Use `IValue<T>.Value` plus `ValueChanged`/`ValueChanging`; don't guess `.Date`, `.Time`, or `.Color`.
+10. **Docs instruction style** — In reference/how-to/API docs, write `To [goal], [imperative action].` Avoid `When/If you want/need to ...` unless describing a real condition.
+
+### Code Style (Library Contributors Only)
+
+> These rules apply only when contributing code to the Terminal.Gui library itself.
+> App developers do NOT need to follow these conventions.
+
+1. **Space before `()` and `[]`** — `Method ()` not `Method()`, `array [i]` not `array[i]`
+2. **No `var`** — Explicit types except built-ins (`int`, `string`, `bool`, etc.)
+3. **Use `new ()`** — `Button btn = new ()` not `Button btn = new Button ()`
+4. **Collection expressions** — Use `[...]` not `new List<T> { ... }`
+
+---
+
+## Documentation & Reference
+
+```
+/Terminal.Gui/           - Core library source
+/Examples/               - Example applications
+  /Example/              - Minimal hello-world app
+  /UICatalog/            - Comprehensive demo app with all controls
+/docfx/
+  /docs/                 - Deep-dive documentation
+  /apispec/              - AI-friendly compressed API docs
+/.claude/
+  /tasks/build-app.md    - App development guide
+  /cookbook/              - Common patterns and recipes
+  /rules/                - Coding conventions (for contributors)
+  /workflows/            - Build/test/PR processes (for contributors)
+```
+
+### API Reference (Compressed)
+
+| Namespace doc | Contents |
+|---------------|----------|
+| `docfx/apispec/namespace-app.md` | Application lifecycle, IApplication |
+| `docfx/apispec/namespace-views.md` | All UI controls |
+| `docfx/apispec/namespace-viewbase.md` | View, Pos, Dim, Adornments |
+| `docfx/apispec/namespace-drawing.md` | Colors, LineStyle, rendering |
+| `docfx/apispec/namespace-input.md` | Keyboard, mouse handling |
+| `docfx/apispec/namespace-text.md` | Text manipulation |
+| `docfx/apispec/namespace-configuration.md` | Configuration, themes |
+
+### Deep-Dive Docs
+
+| Topic | File |
+|-------|------|
+| Application lifecycle | `docfx/docs/application.md` |
+| View hierarchy | `docfx/docs/View.md` |
+| Layout (Pos/Dim) | `docfx/docs/layout.md` |
+| Commands & events | `docfx/docs/command.md` |
+| Keyboard input | `docfx/docs/keyboard.md` |
+| CWP event pattern | `docfx/docs/cancellable-work-pattern.md` |
+| Terminology | `docfx/docs/lexicon.md` |
+
+## More Information
+
+- Getting Started: `docfx/docs/getting-started.md`
+- Full v1→v2 Primer: [ai-v2-primer.md](ai-v2-primer.md)
+- Full API Docs: https://tui-cs.github.io/Terminal.Gui/
+- GitHub: https://github.com/tui-cs/Terminal.Gui

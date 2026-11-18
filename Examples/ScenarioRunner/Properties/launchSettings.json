@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "ScenarioRunner": {
+      "commandName": "Project",
+      "commandLineArgs": "run Dialogs"
+    }
+  }
+}

@@ -1,0 +1,61 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+	<PropertyGroup>
+		<AssemblyName>UnitTests.NonParallelizable</AssemblyName>
+		<OutputType>Exe</OutputType>
+		<UseAppHost>true</UseAppHost>
+		<IsTestProject>true</IsTestProject>
+		<IsPackable>false</IsPackable>
+		<UseDataCollector>true</UseDataCollector>
+		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+		<DefineTrace>true</DefineTrace>
+		<DebugType>portable</DebugType>
+		<DefineConstants>$(DefineConstants);JETBRAINS_ANNOTATIONS;CONTRACTS_FULL</DefineConstants>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<NoLogo>true</NoLogo>
+		<NoWarn>$(NoWarn);AD0001</NoWarn>
+		<SuppressNETCoreSdkPreviewMessage>true</SuppressNETCoreSdkPreviewMessage>
+	</PropertyGroup>
+	<PropertyGroup Condition="'$(Configuration)'=='Debug'">
+		<DefineDebug>true</DefineDebug>
+		<DefineConstants>$(DefineConstants);DEBUG_IDISPOSABLE</DefineConstants>
+	</PropertyGroup>
+	<PropertyGroup Condition="'$(Configuration)'=='Release'">
+		<Optimize>true</Optimize>
+	</PropertyGroup>
+	<ItemGroup>
+		<PackageReference Include="JetBrains.Annotations" PrivateAssets="all" />
+		<PackageReference Include="Moq" />
+		<PackageReference Include="ReportGenerator" />
+		<PackageReference Include="Microsoft.NET.Test.Sdk" />
+		<PackageReference Include="xunit.runner.visualstudio" />
+		<PackageReference Include="xunit.v3" />
+		<PackageReference Include="Xunit.Combinatorial" />
+		<PackageReference Include="coverlet.collector">
+			<PrivateAssets>all</PrivateAssets>
+			<IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+		</PackageReference>
+	</ItemGroup>
+	<ItemGroup>
+		<ProjectReference Include="..\..\Terminal.Gui\Terminal.Gui.csproj" />
+		<ProjectReference Include="..\AppTestHelpers\AppTestHelpers.csproj" />
+		<ProjectReference Include="..\TestAssets\ConfigPropertyTypeLoad\ConsumerLib\ConsumerLib.csproj" ReferenceOutputAssembly="false" OutputItemType="ConfigPropertyTypeLoadFixture" />
+		<ProjectReference Include="..\TestAssets\ConfigPropertyTypeLoad\AttrProviderMissing\AttrProviderMissing.csproj" ReferenceOutputAssembly="false" OutputItemType="ConfigPropertyTypeLoadFixture" />
+	</ItemGroup>
+	<ItemGroup>
+		<None Update="xunit.runner.json">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		</None>
+	</ItemGroup>
+	<Target Name="CopyConfigPropertyTypeLoadFixtures" AfterTargets="Build">
+		<PropertyGroup>
+			<ConfigPropertyTypeLoadFixtureRoot>$(TargetDir)ConfigPropertyTypeLoadFixtures\</ConfigPropertyTypeLoadFixtureRoot>
+		</PropertyGroup>
+		<MakeDir Directories="$(ConfigPropertyTypeLoadFixtureRoot)" />
+		<Copy SourceFiles="@(ConfigPropertyTypeLoadFixture)" DestinationFolder="$(ConfigPropertyTypeLoadFixtureRoot)" SkipUnchangedFiles="true" />
+	</Target>
+	<ItemGroup>
+		<Using Include="System.Drawing" />
+		<Using Include="Terminal.Gui" />
+		<Using Include="Xunit" />
+	</ItemGroup>
+</Project>

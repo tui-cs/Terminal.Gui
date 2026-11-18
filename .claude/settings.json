@@ -1,0 +1,65 @@
+{
+  "enabledPlugins": {
+    "commit-commands@claude-plugins-official": true,
+    "csharp-lsp@claude-plugins-official": true,
+    "code-review@claude-plugins-official": true
+  },
+  "permissions": {
+    "allow": [
+      "WebFetch(domain:github.com)",
+      "Bash(dotnet restore:*)",
+      "Bash(dotnet build:*)",
+      "Bash(dotnet test:*)",
+
+      "Bash(git checkout:*)",
+      "Bash(git pull:*)",
+      "Bash(git fetch:*)",
+      "Bash(git reset:*)",
+
+      "Bash(where:*)",
+
+      "Bash(dotnet tool list:*)",
+      "Bash(dotnet tool install:*)",
+
+      "Bash(jb cleanupcode:*)",
+      "Bash(jb inspectcode --help:*)",
+      "Bash(jb inspectcode:*)",
+
+      "Bash(git add:*)",
+
+      "Bash(git commit:*)",
+
+      "Bash(python:*)",
+      "Bash(done)",
+      "Bash(gh pr create:*)",
+      "Bash(gh issue view:*)",
+      "Bash(gh issue comment:*)",
+      "WebSearch",
+      "Bash(git worktree:*)",
+      "Bash(git status:*)",
+      "Bash(git check-ignore:*)",
+      "Bash(gh pr view:*)",
+      "Bash(gh pr comment:*)",
+      "Bash(grep:*)",
+      "Bash(ls:*)",
+      "Bash(xargs:*)",
+      "Bash(dotnet run:*)",
+      "Skill(code-review:code-review)",
+      "Bash(git log:*)",
+      "Bash(git rev-parse:*)",
+      "Bash(findstr:*)",
+      "Bash(dotnet:*)",
+
+      "Bash(do sed:*)",
+      "Bash(Select-String \"warning\")",
+      "Bash(Select-Object -First 30)",
+      "Bash(tee:*)",
+      "Bash(git show:*)",
+      "Bash(curl:*)",
+      "Bash(dir:*)",
+      "Bash(docfx metadata:*)",
+      "WebFetch(domain:vercel.com)",
+      "Bash(cd:*)"
+    ]
+  }
+}

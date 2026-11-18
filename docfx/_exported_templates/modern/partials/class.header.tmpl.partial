@@ -1,0 +1,158 @@
+{{!Licensed to the .NET Foundation under one or more agreements. The .NET Foundation licenses this file to you under the MIT license.}}
+
+<h1 id="{{id}}" data-uid="{{uid}}" class="text-break">
+  {{>partials/title}}
+  {{#sourceurl}}<a class="header-action link-secondary" title="View source" href="{{sourceurl}}"><i class="bi bi-code-slash"></i></a>{{/sourceurl}}
+</h1>
+
+<div class="facts text-secondary">
+  <dl><dt>{{__global.namespace}}</dt><dd>{{{namespace.specName.0.value}}}</dd></dl>
+  {{#assemblies.0}}<dl><dt>{{__global.assembly}}</dt><dd>{{assemblies.0}}.dll</dd></dl>{{/assemblies.0}}
+</div>
+
+<div class="markdown summary">{{{summary}}}</div>
+<div class="markdown conceptual">{{{conceptual}}}</div>
+
+{{#syntax.content.0.value}}
+<div class="codewrapper">
+  <pre><code class="lang-csharp hljs">{{syntax.content.0.value}}</code></pre>
+</div>
+{{/syntax.content.0.value}}
+
+{{#syntax.parameters.0}}
+<h4 class="section">{{__global.parameters}}</h4>
+<dl class="parameters">
+{{/syntax.parameters.0}}
+{{#syntax.parameters}}
+  <dt><code>{{{id}}}</code> {{{type.specName.0.value}}}</dt>
+  <dd>{{{description}}}</dd>
+{{/syntax.parameters}}
+{{#syntax.parameters.0}}
+</dl>
+{{/syntax.parameters.0}}
+
+{{#syntax.return}}
+<h4 class="section">{{__global.returns}}</h4>
+<dl class="parameters">
+  <dt>{{{type.specName.0.value}}}</dt>
+  <dd>{{{description}}}</dd>
+</dl>
+{{/syntax.return}}
+
+{{#syntax.typeParameters.0}}
+<h4 class="section">{{__global.typeParameters}}</h4>
+<dl class="parameters">
+{{/syntax.typeParameters.0}}
+{{#syntax.typeParameters}}
+  <dt><code>{{{id}}}</code></dt>
+  <dd>{{{description}}}</dd>
+{{/syntax.typeParameters}}
+{{#syntax.typeParameters.0}}
+</dl>
+{{/syntax.typeParameters.0}}
+
+{{#inClass}}
+{{#inheritance.0}}
+<dl class="typelist inheritance">
+  <dt>{{__global.inheritance}}</dt>
+  <dd>
+{{/inheritance.0}}
+{{#inheritance}}
+    <div>{{{specName.0.value}}}</div>
+{{/inheritance}}
+    <div><span class="xref">{{name.0.value}}</span></div>
+{{#inheritance.0}}
+  </dd>
+</dl>
+{{/inheritance.0}}
+{{/inClass}}
+
+{{#implements.0}}
+<dl class="typelist implements">
+  <dt>{{__global.implements}}</dt>
+  <dd>
+{{/implements.0}}
+{{#implements}}
+    <div>{{{specName.0.value}}}</div>
+{{/implements}}
+{{#implements.0}}
+  </dd>
+</dl>
+{{/implements.0}}
+
+{{#inClass}}
+{{#derivedClasses.0}}
+<dl class="typelist derived">
+  <dt>{{__global.derived}}</dt>
+  <dd>
+{{/derivedClasses.0}}
+{{#derivedClasses}}
+    <div>{{{specName.0.value}}}</div>
+{{/derivedClasses}}
+{{#derivedClasses.0}}
+  </dd>
+</dl>
+{{/derivedClasses.0}}
+{{/inClass}}
+
+{{#inheritedMembers.0}}
+<dl class="typelist inheritedMembers">
+  <dt>{{__global.inheritedMembers}}</dt>
+  <dd>
+{{/inheritedMembers.0}}
+{{#inheritedMembers}}
+  <div>
+  {{#definition}}
+    <xref uid="{{definition}}" text="{{nameWithType.0.value}}" alt="{{fullName.0.value}}"/>
+  {{/definition}}
+  {{^definition}}
+    <xref uid="{{uid}}" text="{{nameWithType.0.value}}" alt="{{fullName.0.value}}"/>
+  {{/definition}}
+  </div>
+{{/inheritedMembers}}
+{{#inheritedMembers.0}}
+</dl>
+{{/inheritedMembers.0}}
+
+{{#extensionMethods.0}}
+<dl class="typelist extensionMethods">
+  <dt>{{__global.extensionMethods}}</dt>
+  <dd>
+{{/extensionMethods.0}}
+{{#extensionMethods}}
+<div>
+  {{#definition}}
+    <xref uid="{{definition}}" altProperty="fullName" displayProperty="nameWithType"/>
+  {{/definition}}
+  {{^definition}}
+    <xref uid="{{uid}}" altProperty="fullName" displayProperty="nameWithType"/>
+  {{/definition}}
+</div>
+{{/extensionMethods}}
+{{#extensionMethods.0}}
+</dl>
+{{/extensionMethods.0}}
+
+{{#isEnum}}
+{{#children}}
+<h2 id="{{id}}">{{>partials/classSubtitle}}</h2>
+<dl class="parameters">
+{{#children}}
+  <dt id="{{id}}"><code>{{syntax.content.0.value}}</code></dt>
+  <dd>{{{summary}}}</dd>
+{{/children}}
+</dl>
+{{/children}}
+{{/isEnum}}
+
+{{#example.0}}
+<h2 id="{{id}}_examples">{{__global.examples}}</h2>
+{{/example.0}}
+{{#example}}
+{{{.}}}
+{{/example}}
+
+{{#remarks}}
+<h2 id="{{id}}_remarks">{{__global.remarks}}</h2>
+<div class="markdown level0 remarks">{{{remarks}}}</div>
+{{/remarks}}

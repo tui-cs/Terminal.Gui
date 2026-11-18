@@ -1,0 +1,16 @@
+{
+  "profiles": {
+    "WSL": {
+      "commandName": "WSL2",
+      "distributionName": ""
+    },
+    "OutputView ": {
+      "commandName": "Project",
+      "commandLineArgs": "--view=AttributePicker"
+    },
+    "OutputView --ansi": {
+      "commandName": "Project",
+      "commandLineArgs": "--view=ColorPicker --ansi --output=\"ColorPIcker.html\"\r\n"
+    }
+  }
+}

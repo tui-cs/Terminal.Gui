@@ -1,0 +1,59 @@
+:root {
+    --bs-font-monospace: 'Cascadia Code', SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+    --bs-font-sans-serif: "Segoe UI", Roboto, "Helvetica Neue", "Noto Sans", "Liberation Sans", Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+    --bs-body-font-weight: 200;
+    --bs-body-font-weight: 0.9rem;
+    --bs-body-font-size: 0.9rem;
+    --bs-nav-link-font-size: 0.8rem;
+    --bs-nav-link-font-weight: 200;
+    --bs-navbar-brand-font-size: 1.3em;
+}
+
+[data-bs-theme=dark] {
+    --bs-body-color: #dee2e6;
+    --bs-body-bg: #152332;
+}
+
+[data-bs-theme=light] {
+    --bs-body-color:  #152332;
+    --bs-body-bg: #dee2e6;
+}
+
+.toc, .navbar-brand, .nav-link {
+    font-family: var(--bs-font-sans-serif)
+}
+
+.toc {
+    font-size: 0.9rem;
+}
+
+.toc li {
+    margin: .2em 0;
+}
+
+.toc ul {
+    font-size: var(--bs-nav-link-font-size);
+}
+
+h6, .h6, h5, .h5, h4, .h4, h3, .h3, h2, .h2, h1, .h1 {
+    font-weight: 200;
+} 
+
+.toc form.filter>i.bi {
+    font-size: var(--bs-nav-link-font-size);
+}
+
+.toc .flex-fill {
+    font-size: var(--bs-nav-link-font-size);
+}
+
+.form-control {
+    font-size: var(--bs-nav-link-font-size);
+    font-weight: var(--bs-nav-link-font-weight);
+}
+.inheritedMembers { display: none; }
+
+/* Widen the TOC sidebar to accommodate long namespace names (e.g., Terminal.Gui.Editor.Highlighting.Xshd) */
+body:not([data-search]) > main > .toc-offcanvas {
+    max-width: 340px;
+}

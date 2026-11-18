@@ -1,0 +1,50 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+    <PropertyGroup>
+	    <StartupObject>UICatalog.UICatalog</StartupObject>
+        <OutputType>Exe</OutputType>
+        <!-- Version numbers are automatically set by GitVersion.MsBuild from git history + GitVersion.yml -->
+        <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
+    </PropertyGroup>
+    <PropertyGroup Condition="'$(Configuration)'=='Release'">
+        <DefineConstants>TRACE</DefineConstants>
+    </PropertyGroup>
+    <PropertyGroup Condition="'$(Configuration)'=='Debug'">
+        <DefineConstants>TRACE;DEBUG_IDISPOSABLE</DefineConstants>
+    </PropertyGroup>
+    <ItemGroup>
+        <None Remove="Resources\config.json" />
+    </ItemGroup>
+    <ItemGroup>
+        <EmbeddedResource Include="Resources\config.json" />
+        <EmbeddedResource Include="README.md" />
+    </ItemGroup>
+    <ItemGroup>
+        <None Update="Scenarios\AnimationScenario\Spinning_globe_dark_small.gif" CopyToOutputDirectory="PreserveNewest" />
+    </ItemGroup>
+    <ItemGroup>
+        <PackageReference Include="JetBrains.Annotations" PrivateAssets="all" />
+        <PackageReference Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" />
+        <PackageReference Include="Serilog" />
+        <PackageReference Include="Serilog.Extensions.Logging" />
+        <PackageReference Include="Serilog.Sinks.Debug" />
+        <PackageReference Include="Serilog.Sinks.File" />
+        <PackageReference Include="SixLabors.ImageSharp" />
+        <PackageReference Include="CsvHelper" />
+        <PackageReference Include="Microsoft.DotNet.PlatformAbstractions" />
+        <PackageReference Include="System.CommandLine" V="" />
+        <PackageReference Include="Terminal.Gui.Editor" />
+    </ItemGroup>
+    <ItemGroup>
+        <ProjectReference Include="..\..\Terminal.Gui.Interop.Spectre\Terminal.Gui.Interop.Spectre.csproj" />
+        <ProjectReference Include="..\..\Terminal.Gui\Terminal.Gui.csproj" />
+    </ItemGroup>
+    <ItemGroup>
+        <Using Include="System.Drawing.Rectangle" Alias="Rectangle" />
+        <Using Include="System.Drawing.RectangleF" Alias="RectangleF" />
+        <Using Include="System.Drawing.Point" Alias="Point" />
+        <Using Include="System.Drawing.PointF" Alias="PointF" />
+        <Using Include="System.Drawing.Size" Alias="Size" />
+        <Using Include="System.Drawing.SizeF" Alias="SizeF" />
+    </ItemGroup>
+    <ProjectExtensions><VisualStudio><UserProperties resources_4config_1json__JsonSchema="..\..\..\docfx\schemas\tui-config-schema.json" /></VisualStudio></ProjectExtensions>
+</Project>
