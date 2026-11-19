@@ -11,6 +11,7 @@ public class ListViewWithMultiLine : Scenario
 {
     private readonly string [] _modeNames =
     [
+        "Single column",
         "Single line",
         "Two-line objects",
         "Typed columns",
@@ -23,6 +24,8 @@ public class ListViewWithMultiLine : Scenario
     private ListView? _listView;
     private TextField? _itemHeightField;
     private Label? _modeLabel;
+    private Label? _headerAlignLabel;
+    private Label? _itemAlignLabel;
     private int _mode;
     private bool _updatingHeight;
     private ObservableCollection<Scenario>? _scenarios;
@@ -144,9 +147,18 @@ public class ListViewWithMultiLine : Scenario
                                  };
         appWindow.Add (headerAlign);
 
-        Button itemAlign = new ()
+        _headerAlignLabel = new Label
         {
             X = Pos.Right (headerAlign) + 1,
+            Y = Pos.Top (heightLabel),
+            Width = 6,
+            Text = nameof (Alignment.Center)
+        };
+        appWindow.Add (_headerAlignLabel);
+
+        Button itemAlign = new ()
+        {
+            X = Pos.Right (_headerAlignLabel) + 1,
             Y = Pos.Top (heightLabel),
             Text = "Item a_lign"
         };
@@ -156,6 +168,15 @@ public class ListViewWithMultiLine : Scenario
                                    CycleAlignment (header: false);
                                };
         appWindow.Add (itemAlign);
+
+        _itemAlignLabel = new Label
+        {
+            X = Pos.Right (itemAlign) + 1,
+            Y = Pos.Top (heightLabel),
+            Width = 6,
+            Text = nameof (Alignment.Start)
+        };
+        appWindow.Add (_itemAlignLabel);
 
         _listView = new ListView
         {
@@ -184,13 +205,27 @@ public class ListViewWithMultiLine : Scenario
         switch (_mode)
         {
             case 0:
+                ObservableCollection<string> colLines = [];
+
+                foreach (Scenario scenario in _scenarios)
+                {
+                    colLines.Add ($"{scenario.GetName ()}\n{scenario.GetDescription ()}");
+                }
+
+                _listView.ItemHeight = 1;
+                _listView.ColumnHeaders = null;
+                _listView.SetSource (colLines);
+
+                break;
+    
+            case 1:
                 _listView.ItemHeight = 1;
                 _listView.ColumnHeaders = null;
                 _listView.SetSource (_scenarios);
 
                 break;
 
-            case 1:
+            case 2:
                 ObservableCollection<ScenarioLine> lines = [];
 
                 foreach (Scenario scenario in _scenarios)
@@ -201,14 +236,14 @@ public class ListViewWithMultiLine : Scenario
                 _listView.ItemHeight = 2;
                 _listView.ColumnHeaders =
                 [
-                    new ListView.ColumnHeader { MemberName = "Name" },
+                    new ListView.ColumnHeader { HeaderName = "Scenario", MemberName = "Name" },
                     new ListView.ColumnHeader { MemberName = "Description" }
                 ];
                 _listView.SetSource (lines);
 
                 break;
 
-            case 2:
+            case 3:
                 ObservableCollection<NumericLine> numbers = [];
 
                 for (int i = 0; i < 40; i++)
@@ -250,7 +285,7 @@ public class ListViewWithMultiLine : Scenario
 
                 break;
 
-            case 3:
+            case 4:
                 ObservableCollection<string> strings = [];
                 int index = 0;
 
@@ -260,7 +295,7 @@ public class ListViewWithMultiLine : Scenario
                     index++;
                 }
 
-                _listView.ItemHeight = 1;
+                _listView.ItemHeight = 2;
                 _listView.ColumnHeaders =
                 [
                     new ListView.ColumnHeader
@@ -271,14 +306,14 @@ public class ListViewWithMultiLine : Scenario
                         MemberType = typeof (int),
                         MemberFormat = "{0:00}"
                     },
-                    new ListView.ColumnHeader { HeaderName = "Name", HeaderAlignment = Alignment.Center },
+                    new ListView.ColumnHeader { HeaderName = "Scenario", HeaderAlignment = Alignment.Center },
                     new ListView.ColumnHeader { HeaderName = "Description", HeaderAlignment = Alignment.Center }
                 ];
                 _listView.SetSource (strings);
 
                 break;
 
-            case 4:
+            case 5:
                 _listView.ItemHeight = 1;
                 _listView.ColumnHeaders = null;
                 _listView.SetSource<string> (null);
@@ -289,7 +324,7 @@ public class ListViewWithMultiLine : Scenario
                 _listView.ItemHeight = 1;
                 _listView.ColumnHeaders =
                 [
-                    new ListView.ColumnHeader { HeaderName = "Name", HeaderAlignment = Alignment.Center },
+                    new ListView.ColumnHeader { HeaderName = "Scenario", HeaderAlignment = Alignment.Center },
                     new ListView.ColumnHeader { HeaderName = "Description", HeaderAlignment = Alignment.Center }
                 ];
                 _listView.SetSource<string> (null);
@@ -300,6 +335,19 @@ public class ListViewWithMultiLine : Scenario
         _updatingHeight = true;
         _itemHeightField.Text = _listView.ItemHeight.ToString ();
         _updatingHeight = false;
+        AdoptColumnAlignment ();
+        ShowAlignment ();
+    }
+
+    private void AdoptColumnAlignment ()
+    {
+        if (_listView?.ColumnHeaders is not { Count: > 0 } headers)
+        {
+            return;
+        }
+
+        _listView.HeadersAlignment = headers [0].HeaderAlignment;
+        _listView.ItemsAlignment = headers [0].MemberAlignment;
     }
 
     private void CycleAlignment (bool header)
@@ -317,6 +365,8 @@ public class ListViewWithMultiLine : Scenario
         {
             _listView.ItemsAlignment = Next (_listView.ItemsAlignment);
         }
+
+        ShowAlignment ();
 
         if (_listView.ColumnHeaders is null)
         {
@@ -338,6 +388,24 @@ public class ListViewWithMultiLine : Scenario
         }
 
         _listView.SetNeedsDraw ();
+    }
+
+    private void ShowAlignment ()
+    {
+        if (_listView is null)
+        {
+            return;
+        }
+
+        if (_headerAlignLabel is not null)
+        {
+            _headerAlignLabel.Text = _listView.HeadersAlignment.ToString ();
+        }
+
+        if (_itemAlignLabel is not null)
+        {
+            _itemAlignLabel.Text = _listView.ItemsAlignment.ToString ();
+        }
     }
 
     private static Alignment Next (Alignment alignment)
@@ -388,8 +456,15 @@ public class ListViewWithMultiLine : Scenario
         }
 
         e.RowAttribute = e.Row % 2 == 0
-                             ? new Attribute (Color.BrightGreen, Color.Magenta)
-                             : new Attribute (Color.BrightMagenta, Color.Green);
+                             ? new Attribute (Color.Green, Color.Magenta)
+                             : new Attribute (Color.Magenta, Color.Green);
+    }
+
+    private sealed class ScenarioColumn
+    {
+        public string Scenario { get; init; } = "";
+
+        public string Description { get; init; } = "";
     }
 
     private sealed class ScenarioLine

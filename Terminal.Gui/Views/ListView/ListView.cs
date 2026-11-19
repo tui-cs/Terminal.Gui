@@ -43,8 +43,10 @@ namespace Terminal.Gui.Views;
 ///     </para>
 ///     <para>
 ///         By default each item is one row tall. Set <see cref="ItemHeight"/> to a larger value to give every item
-///         that many rows. Set <see cref="ColumnHeaders"/> to lay those rows out as columns, including properties of
-///         arbitrary item types. <see cref="ShowColumnHeaders"/> pins a header row above the items.
+///         that many rows. Without column headers, each newline starts a new row, and a line wider than the width
+///         wraps onto the following rows. Columns stay side by side.
+///         Set <see cref="ColumnHeaders"/> to name those columns, including properties of arbitrary item types.
+///         <see cref="ShowColumnHeaders"/> pins a header row above the items.
 ///     </para>
 ///     <para>Default key bindings:</para>
 ///     <list type="table">
@@ -420,8 +422,9 @@ public partial class ListView : View, IDesignable, IValue<int?>
     public Alignment ItemsAlignment { get; set; } = Alignment.Start;
 
     /// <summary>
-    ///     Gets or sets the columns used to render items. String items are split on newlines. Other items are read
-    ///     through each header's <see cref="ColumnHeader.MemberName"/>.
+    ///     Gets or sets the columns used to render items. String items are split on newlines into one value per
+    ///     column, and further newlines stay in the last column. Other items are read through each header's
+    ///     <see cref="ColumnHeader.MemberName"/>.
     /// </summary>
     public List<ColumnHeader>? ColumnHeaders
     {

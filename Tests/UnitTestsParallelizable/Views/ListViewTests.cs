@@ -3518,42 +3518,274 @@ Five ",
 
     // Grok - Grok 4.7
     [Fact]
-    public void ItemHeight_Renders_Each_Item_On_Multiple_Rows ()
+    public void ItemHeight_One_Shows_Only_The_First_Newline_Line ()
     {
-        IApplication app = Application.Create ();
-        app.Init (DriverRegistry.Names.ANSI);
-        app.Driver?.SetScreenSize (16, 6);
-
-        ObservableCollection<string> source = ["One\n1", "Two\n2"];
         ListView listView = new ()
         {
-            Width = Dim.Fill (),
-            Height = Dim.Fill (),
-            ItemHeight = 2,
-            Source = new ListWrapper<string> (source)
+            Width = 20,
+            Height = 2,
+            ItemHeight = 1,
+            Source = new ListWrapper<string> (["Alpha\nBeta"])
         };
-        Runnable top = new ();
-        top.Add (listView);
-        app.Begin (top);
-        app.LayoutAndDraw ();
 
-        string contents = app.Driver!.ToString ();
-        Assert.Contains ("One", contents);
-        Assert.Contains ("1", contents);
-        Assert.Contains ("Two", contents);
-        Assert.Contains ("2", contents);
+        AssertDriver (
+                      listView,
+                      20,
+                      2,
+                      """
+                      Alpha
+                      """);
+    }
 
-        app.Dispose ();
+    // Grok - Grok 4.7
+    [Fact]
+    public void ItemHeight_Shows_Each_Newline_On_The_Next_Row ()
+    {
+        ListView listView = new ()
+        {
+            Width = 20,
+            Height = 3,
+            ItemHeight = 2,
+            Source = new ListWrapper<string> (["Alpha\nBeta\nGamma"])
+        };
+
+        AssertDriver (
+                      listView,
+                      20,
+                      3,
+                      """
+                      Alpha
+                      Beta
+                      """);
+    }
+
+    // Grok - Grok 4.7
+    [Fact]
+    public void ItemHeight_Wraps_A_Newline_Line_That_Is_Wider_Than_The_Column ()
+    {
+        ListView listView = new ()
+        {
+            Width = 10,
+            Height = 3,
+            ItemHeight = 3,
+            Source = new ListWrapper<string> (["Alpha\nA sentence has words."])
+        };
+
+        AssertDriver (
+                      listView,
+                      10,
+                      3,
+                      """
+                      Alpha
+                      A sentence
+                      has words.
+                      """);
+    }
+
+    // Grok - Grok 4.7
+    [Fact]
+    public void ItemHeight_Renders_Each_Item_On_Multiple_Rows ()
+    {
+        ListView listView = new ()
+        {
+            Width = 10,
+            Height = 6,
+            ItemHeight = 2,
+            Source = new ListWrapper<string> (["One\n1", "Two\n2"])
+        };
+
+        AssertDriver (
+                      listView,
+                      10,
+                      6,
+                      """
+                      One
+                      1
+                      Two
+                      2
+                      """);
+    }
+
+    // Grok - Grok 4.7
+    [Fact]
+    public void ItemHeight_Keeps_Columns_Side_By_Side ()
+    {
+        ListView listView = new ()
+        {
+            Width = 21,
+            Height = 4,
+            ShowColumnHeaders = true,
+            ItemHeight = 2,
+            ColumnMargin = 2,
+            ColumnHeaders =
+            [
+                new ListView.ColumnHeader
+                {
+                    HeaderName = "Scenario",
+                    MemberName = "Left",
+                    HeaderAlignment = Alignment.Start,
+                    MemberAlignment = Alignment.Start,
+                    Width = 8
+                },
+                new ListView.ColumnHeader
+                {
+                    HeaderName = "Description",
+                    MemberName = "Right",
+                    HeaderAlignment = Alignment.Start,
+                    MemberAlignment = Alignment.Start,
+                    Width = 11
+                }
+            ],
+            Source = new ListWrapper<TwoColumnRow> ([new () { Left = "Name", Right = "About\nMore" }])
+        };
+
+        string gap = "  ";
+        string expected = string.Join (
+                                       '\n',
+                                       [
+                                           "Scenario" + gap + "Description",
+                                           "Name" + new string (' ', 6) + "About",
+                                           new string (' ', 10) + "More"
+                                       ]);
+
+        AssertDriver (listView, 21, 4, expected);
+    }
+
+    // Grok - Grok 4.7
+    [Fact]
+    public void ItemHeight_Wraps_Wide_Text_Onto_Extra_Rows ()
+    {
+        ListView listView = new ()
+        {
+            Width = 13,
+            Height = 2,
+            ItemHeight = 2,
+            Source = new ListWrapper<string> (["A sentence has words."])
+        };
+
+        AssertDriver (
+                      listView,
+                      13,
+                      2,
+                      """
+                      A sentence
+                      has words.
+                      """);
+    }
+
+    // Grok - Grok 4.7
+    [Fact]
+    public void ItemHeight_Wraps_Only_As_Many_Lines_As_ItemHeight ()
+    {
+        ListView listView = new ()
+        {
+            Width = 3,
+            Height = 4,
+            ItemHeight = 2,
+            Source = new ListWrapper<string> (["A sentence has words."])
+        };
+
+        AssertDriver (
+                      listView,
+                      3,
+                      4,
+                      """
+                      A
+                      sen
+                      """);
+    }
+
+    // Grok - Grok 4.7
+    [Fact]
+    public void ItemHeight_Wraps_Wide_Text_Inside_Its_Column ()
+    {
+        ListView listView = new ()
+        {
+            Width = 21,
+            Height = 4,
+            ShowColumnHeaders = true,
+            ItemHeight = 3,
+            ColumnMargin = 2,
+            ColumnHeaders =
+            [
+                new ListView.ColumnHeader
+                {
+                    HeaderName = "Name",
+                    MemberName = "Left",
+                    HeaderAlignment = Alignment.Start,
+                    MemberAlignment = Alignment.Start,
+                    Width = 6
+                },
+                new ListView.ColumnHeader
+                {
+                    HeaderName = "About",
+                    MemberName = "Right",
+                    HeaderAlignment = Alignment.Start,
+                    MemberAlignment = Alignment.Start,
+                    Width = 13
+                }
+            ],
+            Source = new ListWrapper<TwoColumnRow> ([new () { Left = "Item", Right = "A sentence has words.\nMore" }])
+        };
+
+        AssertDriver (
+                      listView,
+                      21,
+                      4,
+                      """
+                      Name    About
+                      Item    A sentence
+                              has words.
+                              More
+                      """);
+    }
+
+    // Grok - Grok 4.7
+    [Fact]
+    public void ItemHeight_Wraps_Auto_Sized_Column_Inside_The_Viewport ()
+    {
+        ListView listView = new ()
+        {
+            Width = 24,
+            Height = 3,
+            ShowColumnHeaders = true,
+            ItemHeight = 2,
+            ColumnMargin = 2,
+            ColumnHeaders =
+            [
+                new ListView.ColumnHeader
+                {
+                    HeaderName = "Scenario",
+                    MemberName = "Left",
+                    HeaderAlignment = Alignment.Start,
+                    MemberAlignment = Alignment.Start
+                },
+                new ListView.ColumnHeader
+                {
+                    HeaderName = "Description",
+                    MemberName = "Right",
+                    HeaderAlignment = Alignment.Start,
+                    MemberAlignment = Alignment.Start
+                }
+            ],
+            Source = new ListWrapper<TwoColumnRow> ([new () { Left = "Name", Right = "A sentence has words." }])
+        };
+
+        AssertDriver (
+                      listView,
+                      24,
+                      3,
+                      """
+                      Scenario  Description
+                      Name      A sentence has
+                                words.
+                      """);
     }
 
     // Grok - Grok 4.7
     [Fact]
     public void ColumnHeaders_Render_Typed_Members ()
     {
-        IApplication app = Application.Create ();
-        app.Init (DriverRegistry.Names.ANSI);
-        app.Driver?.SetScreenSize (24, 5);
-
         ObservableCollection<QuantityRow> source = [new () { Name = "Apples", Qty = 3 }];
         ListView listView = new ()
         {
@@ -3574,18 +3806,534 @@ Five ",
             ],
             Source = new ListWrapper<QuantityRow> (source)
         };
+        AssertDriver (
+                      listView,
+                      24,
+                      5,
+                      """
+                       Name         Qty
+                      Apples                03
+                      """);
+    }
+
+    // Grok - Grok 4.7
+    [Fact]
+    public void Column_Properties_Have_Defaults ()
+    {
+        ListView listView = new ();
+        ListView.ColumnHeader header = new ();
+
+        Assert.False (listView.ShowColumnHeaders);
+        Assert.Equal (2, listView.ColumnMargin);
+        Assert.Equal (Alignment.Start, listView.HeadersAlignment);
+        Assert.Equal (Alignment.Start, listView.ItemsAlignment);
+        Assert.Null (listView.ColumnHeaders);
+        Assert.Null (header.HeaderName);
+        Assert.Equal (Alignment.Center, header.HeaderAlignment);
+        Assert.Equal (0, header.Width);
+        Assert.Null (header.MemberName);
+        Assert.Equal (typeof (string), header.MemberType);
+        Assert.Equal (Alignment.Start, header.MemberAlignment);
+        Assert.Null (header.MemberFormat);
+    }
+
+    // Grok - Grok 4.7
+    [Fact]
+    public void VisibleItems_Counts_Item_Rows_And_Skips_Header ()
+    {
+        ListView listView = new ()
+        {
+            Width = 10,
+            Height = 6,
+            Source = new ListWrapper<string> (["a", "b", "c", "d", "e", "f", "g"])
+        };
+        UseList (listView, 10, 6, _ =>
+        {
+            Assert.Equal (6, listView.VisibleItems);
+
+            listView.ShowColumnHeaders = true;
+            Assert.Equal (5, listView.VisibleItems);
+
+            listView.ItemHeight = 2;
+            Assert.Equal (2, listView.VisibleItems);
+        });
+    }
+
+    // Grok - Grok 4.7
+    [Fact]
+    public void ItemHeight_And_Header_Change_Content_Height ()
+    {
+        ListView listView = new ()
+        {
+            Width = 10,
+            Height = 6,
+            Source = new ListWrapper<string> (["a", "b", "c", "d", "e", "f", "g"])
+        };
+        UseList (listView, 10, 6, _ =>
+        {
+            Assert.Equal (7, listView.GetContentSize ().Height);
+
+            listView.ShowColumnHeaders = true;
+            Assert.Equal (8, listView.GetContentSize ().Height);
+
+            listView.ShowColumnHeaders = false;
+            listView.ItemHeight = 2;
+            Assert.Equal (10, listView.GetContentSize ().Height);
+        });
+    }
+
+    // Grok - Grok 4.7
+    [Fact]
+    public void MovePageDown_Uses_Visible_Items_When_ItemHeight_Is_Greater_Than_One ()
+    {
+        ObservableCollection<string> source = [];
+
+        for (int i = 0; i < 10; i++)
+        {
+            source.Add ($"Item{i}");
+        }
+
+        ListView listView = new ()
+        {
+            Width = 10,
+            Height = 6,
+            ItemHeight = 2,
+            Source = new ListWrapper<string> (source)
+        };
+        UseList (listView, 10, 6, _ =>
+        {
+            Assert.True (listView.MovePageDown ());
+            Assert.Equal (3, listView.SelectedItem);
+        });
+    }
+
+    // Grok - Grok 4.7
+    [Fact]
+    public void MovePageDown_Skips_Header_Row ()
+    {
+        ObservableCollection<string> source = [];
+
+        for (int i = 0; i < 10; i++)
+        {
+            source.Add ($"Item{i}");
+        }
+
+        ListView listView = new ()
+        {
+            Width = 10,
+            Height = 6,
+            ShowColumnHeaders = true,
+            ColumnHeaders = [new ListView.ColumnHeader { HeaderName = "Item" }],
+            Source = new ListWrapper<string> (source)
+        };
+        UseList (listView, 10, 6, _ =>
+        {
+            Assert.True (listView.MovePageDown ());
+            Assert.Equal (5, listView.SelectedItem);
+        });
+    }
+
+    // Grok - Grok 4.7
+    [Fact]
+    public void ShowColumnHeaders_Draws_Header_Only_When_Enabled ()
+    {
+        ListView listView = new ()
+        {
+            Width = 12,
+            Height = 3,
+            ColumnHeaders = [new ListView.ColumnHeader { HeaderName = "Name", HeaderAlignment = Alignment.Start, MemberName = "Name" }],
+            Source = new ListWrapper<QuantityRow> ([new () { Name = "Apples", Qty = 1 }])
+        };
+
+        AssertDriver (
+                      listView,
+                      12,
+                      3,
+                      """
+                      Apples
+                      """);
+
+        listView.ShowColumnHeaders = true;
+        AssertDriver (
+                      listView,
+                      12,
+                      3,
+                      """
+                      Name
+                      Apples
+                      """);
+    }
+
+    // Grok - Grok 4.7
+    [Fact]
+    public void ColumnMargin_Separates_Auto_Sized_Columns ()
+    {
+        ListView listView = Columns (margin: 2, "AB", "CDE", "F");
+
+        AssertDriver (
+                      listView,
+                      10,
+                      2,
+                      """
+                      AB  CDE  F
+                      AB  CDE  F
+                      """);
+
+        listView.ColumnMargin = 1;
+        listView.Width = 8;
+        AssertDriver (
+                      listView,
+                      8,
+                      2,
+                      """
+                      AB CDE F
+                      AB CDE F
+                      """);
+    }
+
+    // Grok - Grok 4.7
+    [Fact]
+    public void ColumnHeader_Width_Fixes_Or_Hides_Column ()
+    {
+        ListView listView = new ()
+        {
+            Width = 16,
+            Height = 2,
+            ShowColumnHeaders = true,
+            ColumnMargin = 1,
+            ColumnHeaders =
+            [
+                new ListView.ColumnHeader
+                {
+                    HeaderName = "Keep",
+                    HeaderAlignment = Alignment.Start,
+                    MemberAlignment = Alignment.Start,
+                    MemberName = "Left",
+                    Width = 4
+                },
+                new ListView.ColumnHeader
+                {
+                    HeaderName = "Hide",
+                    MemberName = "Right",
+                    Width = -1
+                },
+                new ListView.ColumnHeader
+                {
+                    HeaderName = "Tail",
+                    HeaderAlignment = Alignment.Start,
+                    MemberAlignment = Alignment.Start,
+                    MemberName = "Right",
+                    Width = 4
+                }
+            ],
+            Source = new ListWrapper<TwoColumnRow> ([new () { Left = "ABCDEF", Right = "WXYZ" }])
+        };
+
+        AssertDriver (
+                      listView,
+                      16,
+                      2,
+                      """
+                      Keep Tail
+                      ABCD WXYZ
+                      """);
+    }
+
+    // Grok - Grok 4.7
+    [Theory]
+    [InlineData (Alignment.Start, "Left      Right")]
+    [InlineData (Alignment.End, "    Left   Right")]
+    [InlineData (Alignment.Center, "  Left    Right")]
+    [InlineData (Alignment.Fill, "Left      Right")]
+    public void ColumnAlignment_Stays_Inside_Column (Alignment alignment, string line)
+    {
+        ListView listView = new ()
+        {
+            Width = 16,
+            Height = 2,
+            ShowColumnHeaders = true,
+            ColumnMargin = 2,
+            HeadersAlignment = alignment,
+            ItemsAlignment = alignment,
+            ColumnHeaders =
+            [
+                new ListView.ColumnHeader
+                {
+                    HeaderName = "Left",
+                    HeaderAlignment = alignment,
+                    MemberName = "Left",
+                    MemberAlignment = alignment,
+                    Width = 8
+                },
+                new ListView.ColumnHeader
+                {
+                    HeaderName = "Right",
+                    HeaderAlignment = alignment,
+                    MemberName = "Right",
+                    MemberAlignment = alignment,
+                    Width = 6
+                }
+            ],
+            Source = new ListWrapper<TwoColumnRow> ([new () { Left = "Left", Right = "Right" }])
+        };
+
+        AssertDriver (listView, 16, 2, line + "\n" + line);
+    }
+
+    // Grok - Grok 4.7
+    [Fact]
+    public void Fill_Alignment_Does_Not_Cross_Column_Boundary ()
+    {
+        ListView listView = new ()
+        {
+            Width = 14,
+            Height = 4,
+            ShowColumnHeaders = true,
+            ColumnMargin = 2,
+            ColumnHeaders =
+            [
+                new ListView.ColumnHeader
+                {
+                    HeaderName = "Cc",
+                    HeaderAlignment = Alignment.Fill,
+                    MemberName = "Left",
+                    MemberAlignment = Alignment.Fill,
+                    Width = 8
+                },
+                new ListView.ColumnHeader
+                {
+                    HeaderName = "Dd",
+                    HeaderAlignment = Alignment.Fill,
+                    MemberName = "Right",
+                    MemberAlignment = Alignment.Fill,
+                    Width = 4
+                }
+            ],
+            Source = new ListWrapper<TwoColumnRow> (
+            [
+                new () { Left = "A B", Right = "Z" },
+                new () { Left = "TooLong!!", Right = "Ok" },
+                new () { Left = "", Right = "End" }
+            ])
+        };
+
+        string gap = "  ";
+        string expected = string.Join (
+                                       '\n',
+                                       [
+                                           "Cc" + new string (' ', 6) + gap + "Dd",
+                                           "A" + new string (' ', 6) + "B" + gap + "Z",
+                                           "TooLong!" + gap + "Ok",
+                                           new string (' ', 10) + "End"
+                                       ]);
+
+        AssertDriver (listView, 14, 4, expected);
+    }
+
+    // Grok - Grok 4.7
+    [Fact]
+    public void String_Items_Split_Into_Columns_And_Format ()
+    {
+        ListView listView = new ()
+        {
+            Width = 14,
+            Height = 2,
+            ShowColumnHeaders = true,
+            ColumnMargin = 2,
+            ColumnHeaders =
+            [
+                new ListView.ColumnHeader
+                {
+                    HeaderName = "Index",
+                    HeaderAlignment = Alignment.Start,
+                    MemberAlignment = Alignment.Start,
+                    MemberType = typeof (int),
+                    MemberFormat = "{0:00}",
+                    Width = 5
+                },
+                new ListView.ColumnHeader
+                {
+                    HeaderName = "Name",
+                    HeaderAlignment = Alignment.Start,
+                    MemberAlignment = Alignment.Start,
+                    Width = 5
+                }
+            ],
+            Source = new ListWrapper<string> (["3\nApple"])
+        };
+
+        AssertDriver (
+                      listView,
+                      14,
+                      2,
+                      """
+                      Index  Name
+                      03     Apple
+                      """);
+    }
+
+    // Grok - Grok 4.7
+    [Fact]
+    public void String_Columns_Wrap_Like_Real_Columns ()
+    {
+        ListView listView = new ()
+        {
+            Width = 28,
+            Height = 3,
+            ShowColumnHeaders = true,
+            ItemHeight = 2,
+            ColumnMargin = 2,
+            ColumnHeaders =
+            [
+                new ListView.ColumnHeader
+                {
+                    HeaderName = "Index",
+                    HeaderAlignment = Alignment.Start,
+                    MemberAlignment = Alignment.Start,
+                    MemberType = typeof (int),
+                    MemberFormat = "{0:00}",
+                    Width = 5
+                },
+                new ListView.ColumnHeader
+                {
+                    HeaderName = "Name",
+                    HeaderAlignment = Alignment.Start,
+                    MemberAlignment = Alignment.Start,
+                    Width = 6
+                },
+                new ListView.ColumnHeader
+                {
+                    HeaderName = "Description",
+                    HeaderAlignment = Alignment.Start,
+                    MemberAlignment = Alignment.Start,
+                    Width = 13
+                }
+            ],
+            Source = new ListWrapper<string> (["3\nName\nA sentence has words."])
+        };
+
+        AssertDriver (
+                      listView,
+                      28,
+                      3,
+                      """
+                      Index  Name    Description
+                      03     Name    A sentence
+                                     has words.
+                      """);
+    }
+
+    // Grok - Grok 4.7
+    [Fact]
+    public void String_Columns_Keep_Further_Newlines_In_The_Last_Column ()
+    {
+        ListView listView = new ()
+        {
+            Width = 23,
+            Height = 3,
+            ShowColumnHeaders = true,
+            ItemHeight = 2,
+            ColumnMargin = 2,
+            ColumnHeaders =
+            [
+                new ListView.ColumnHeader
+                {
+                    HeaderName = "Index",
+                    HeaderAlignment = Alignment.Start,
+                    MemberAlignment = Alignment.Start,
+                    MemberType = typeof (int),
+                    MemberFormat = "{0:00}",
+                    Width = 5
+                },
+                new ListView.ColumnHeader
+                {
+                    HeaderName = "Name",
+                    HeaderAlignment = Alignment.Start,
+                    MemberAlignment = Alignment.Start,
+                    Width = 6
+                },
+                new ListView.ColumnHeader
+                {
+                    HeaderName = "About",
+                    HeaderAlignment = Alignment.Start,
+                    MemberAlignment = Alignment.Start,
+                    Width = 8
+                }
+            ],
+            Source = new ListWrapper<string> (["3\nApple\nAbout\nMore"])
+        };
+
+        AssertDriver (
+                      listView,
+                      23,
+                      3,
+                      """
+                      Index  Name    About
+                      03     Apple   About
+                                     More
+                      """);
+    }
+
+    private void AssertDriver (ListView listView, int width, int height, string expected)
+    {
+        UseList (listView, width, height, app => DriverAssert.AssertDriverContentsWithFrameAre (expected, _output, app.Driver));
+    }
+
+    private static void UseList (ListView listView, int width, int height, Action<IApplication> assert)
+    {
+        IApplication app = Application.Create ();
+        app.Init (DriverRegistry.Names.ANSI);
+        app.Driver?.SetScreenSize (width, height);
         Runnable top = new ();
         top.Add (listView);
-        app.Begin (top);
-        app.LayoutAndDraw ();
 
-        string contents = app.Driver!.ToString ();
-        Assert.Contains ("Name", contents);
-        Assert.Contains ("Qty", contents);
-        Assert.Contains ("Apples", contents);
-        Assert.Contains ("03", contents);
+        try
+        {
+            app.Begin (top);
+            app.LayoutAndDraw ();
+            assert (app);
+        }
+        finally
+        {
+            if (listView.SuperView == top)
+            {
+                top.Remove (listView);
+            }
 
-        app.Dispose ();
+            app.Dispose ();
+        }
+    }
+
+    private static ListView Columns (int margin, params string [] cells)
+    {
+        List<ListView.ColumnHeader> headers = [];
+
+        foreach (string cell in cells)
+        {
+            headers.Add (new ListView.ColumnHeader
+            {
+                HeaderName = cell,
+                HeaderAlignment = Alignment.Start,
+                MemberAlignment = Alignment.Start
+            });
+        }
+
+        return new ListView
+        {
+            Width = cells.Sum (cell => cell.Length) + (margin * (cells.Length - 1)),
+            Height = 2,
+            ShowColumnHeaders = true,
+            ColumnMargin = margin,
+            ColumnHeaders = headers,
+            Source = new ListWrapper<string> ([string.Join ('\n', cells)])
+        };
+    }
+
+    private sealed class TwoColumnRow
+    {
+        public string Left { get; init; } = "";
+
+        public string Right { get; init; } = "";
     }
 
     private sealed class QuantityRow

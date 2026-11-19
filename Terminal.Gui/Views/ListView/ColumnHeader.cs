@@ -7,8 +7,9 @@ public partial class ListView
     /// </summary>
     /// <remarks>
     ///     <para>
-    ///         String items are split on newlines and placed into columns, or into successive lines when
-    ///         <see cref="ItemHeight"/> is greater than one.
+    ///         String items are split on newlines into one value per column. Further newlines stay in the last
+    ///         column. A property stays in its own column. A value wider than its column wraps onto the extra rows
+    ///         when <see cref="ItemHeight"/> is greater than one.
     ///     </para>
     ///     <para>
     ///         Other item types are read through <see cref="MemberName"/>. <see cref="MemberType"/> and

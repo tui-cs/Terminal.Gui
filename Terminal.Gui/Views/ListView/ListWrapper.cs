@@ -98,12 +98,12 @@ public class ListWrapper<T> : IListDataSource, IListViewLayout
                     break;
 
                 case string s:
-                    RenderString (container, s, width, viewportX);
+                    RenderString (container, NewlineLine (s, 0), width, viewportX);
 
                     break;
 
                 default:
-                    RenderString (container, t.ToString ()!, width, viewportX);
+                    RenderString (container, NewlineLine (t.ToString (), 0), width, viewportX);
 
                     break;
             }
@@ -285,7 +285,18 @@ public class ListWrapper<T> : IListDataSource, IListViewLayout
 
         if (alignment == Alignment.Fill)
         {
-            return TextFormatter.ClipAndJustify (text, width, true);
+            // Justify expands spaces between words, but a single word stays short. The cell must still
+            // occupy exactly width columns so the next column starts at its own boundary.
+            string filled = TextFormatter.ClipAndJustify (text, width, true);
+
+            if (filled.GetColumns () > width)
+            {
+                filled = TextFormatter.ClipAndJustify (filled, width, false);
+            }
+
+            int missing = Math.Max (0, width - filled.GetColumns ());
+
+            return filled + new string (' ', missing);
         }
 
         string clipped = text.GetColumns () > width
@@ -308,21 +319,27 @@ public class ListWrapper<T> : IListDataSource, IListViewLayout
         return clipped + new string (' ', pad);
     }
 
-    private string BuildRowText (ListView listView, List<string> lines, int row, bool header)
+    private string BuildRowText (ListView listView, object? value, int row, bool header, int width)
     {
-        int height = Math.Max (1, listView.ItemHeight);
         int columnCount = ColumnCount (listView);
 
         if (listView.ColumnHeaders is not { Count: > 0 } || _columnWidths.Length == 0)
         {
-            int index = Math.Max (row, 0);
-
-            if (index >= lines.Count)
+            if (header)
             {
                 return " ";
             }
 
-            return lines [index];
+            if (listView.ItemHeight <= 1)
+            {
+                return CellLine (listView, value, 0, row);
+            }
+
+            string text = value as string ?? value?.ToString () ?? string.Empty;
+
+            // Newlines start a new row. A line wider than the column wraps onto the rows that remain.
+
+            return Align (WrappedLine (text, width, row), width, listView.ItemsAlignment);
         }
 
         StringBuilder builder = new ();
@@ -338,10 +355,10 @@ public class ListWrapper<T> : IListDataSource, IListViewLayout
             int columnWidth = _columnWidths [c];
             int gap = c < columnCount - 1 ? margin : 0;
             int contentWidth = Math.Max (0, columnWidth - gap);
-            ListView.ColumnHeader? columnHeader = HeaderAt (listView, header ? c : ColumnIndex (c, row, columnCount, height));
+            ListView.ColumnHeader? columnHeader = HeaderAt (listView, c);
             string text = header
                               ? HeaderTitle (columnHeader, c)
-                              : CellAt (lines, c, row, columnCount, height);
+                              : CellText (listView, value, c, row, contentWidth);
             Alignment alignment = header
                                       ? columnHeader?.HeaderAlignment ?? listView.HeadersAlignment
                                       : columnHeader?.MemberAlignment ?? listView.ItemsAlignment;
@@ -356,35 +373,184 @@ public class ListWrapper<T> : IListDataSource, IListViewLayout
         return builder.ToString ();
     }
 
-    private static string CellAt (List<string> lines, int column, int row, int columnCount, int height)
+    /// <summary>The newline segment at <paramref name="line"/>, or empty when the item has fewer lines.</summary>
+    private static string NewlineLine (string? text, int line)
     {
-        int index = columnCount > height ? column : row;
-
-        if (index < 0 || index >= lines.Count)
+        if (string.IsNullOrEmpty (text) || line < 0)
         {
-            return " ";
+            return string.Empty;
         }
 
-        return lines [index];
+        List<string> lines = TextFormatter.SplitNewLine (text);
+
+        if (line >= lines.Count)
+        {
+            return string.Empty;
+        }
+
+        return lines [line];
     }
 
-    private static string CellText (ListView listView, object? value, int index)
+    /// <summary>
+    ///     One wrapped row of <paramref name="text"/>. Newlines stay hard breaks. A line wider than
+    ///     <paramref name="width"/> continues on the following rows.
+    /// </summary>
+    private static string WrappedLine (string? text, int width, int line)
     {
-        ListView.ColumnHeader? header = HeaderAt (listView, index);
+        if (width <= 0 || line < 0)
+        {
+            return string.Empty;
+        }
 
+        text ??= string.Empty;
+        List<string> lines = [];
+
+        foreach (string paragraph in TextFormatter.SplitNewLine (text))
+        {
+            if (paragraph.GetColumns () <= width)
+            {
+                lines.Add (paragraph);
+
+                continue;
+            }
+
+            lines.AddRange (TextFormatter.Format (paragraph, width, justify: false, wordWrap: true));
+        }
+
+        if (line >= lines.Count)
+        {
+            return string.Empty;
+        }
+
+        return lines [line];
+    }
+
+    /// <summary>
+    ///     Cell text before alignment. A column value wider than its width wraps when <see cref="ListView.ItemHeight"/>
+    ///     is greater than one.
+    /// </summary>
+    private static string CellText (ListView listView, object? value, int column, int line, int width)
+    {
+        if (listView.ItemHeight > 1 && TryGetColumnText (listView, value, column, out string columnText))
+        {
+            return WrappedLine (columnText, width, line);
+        }
+
+        return CellLine (listView, value, column, line);
+    }
+
+    /// <summary>
+    ///     Full text of one column. A property comes from <see cref="ListView.ColumnHeader.MemberName"/>. A string item
+    ///     is split on newlines into one value per column.
+    /// </summary>
+    private static bool TryGetColumnText (ListView listView, object? value, int column, out string text)
+    {
+        text = string.Empty;
+
+        if (value is null)
+        {
+            return false;
+        }
+
+        if (value is not string && HeaderAt (listView, column) is { MemberName.Length: > 0 } header)
+        {
+            text = FormatMember (value, header);
+
+            return true;
+        }
+
+        if (value is not string source || listView.ColumnHeaders is not { Count: > 0 })
+        {
+            return false;
+        }
+        text = StringColumnText (listView, source, column);
+
+        return true;
+
+    }
+
+    /// <summary>
+    ///     One string field for <paramref name="column"/>. Newlines before the last column separate columns. The last
+    ///     column keeps every remaining line.
+    /// </summary>
+    private static string StringColumnText (ListView listView, string text, int column)
+    {
+        string segment = ColumnSegment (text, column, ColumnCount (listView));
+        ListView.ColumnHeader? header = HeaderAt (listView, column);
+
+        if (string.IsNullOrEmpty (segment) || header is null || string.IsNullOrEmpty (header.MemberFormat))
+        {
+            return segment;
+        }
+
+        List<string> lines = TextFormatter.SplitNewLine (segment);
+
+        for (int i = 0; i < lines.Count; i++)
+        {
+            lines [i] = FormatText (lines [i], header);
+        }
+
+        return string.Join ('\n', lines);
+    }
+
+    private static string ColumnSegment (string text, int column, int columnCount)
+    {
+        if (column < 0 || column >= columnCount)
+        {
+            return string.Empty;
+        }
+
+        List<string> split = TextFormatter.SplitNewLine (text);
+
+        if (column >= split.Count)
+        {
+            return string.Empty;
+        }
+
+        if (column < columnCount - 1 || column == split.Count - 1)
+        {
+            return split [column];
+        }
+
+        return string.Join ('\n', split.GetRange (column, split.Count - column));
+    }
+
+    /// <summary>
+    ///     Text for one column on one row of an item. Each column keeps its own value. Further lines of that value use
+    ///     the extra rows when <see cref="ListView.ItemHeight"/> is greater than one.
+    /// </summary>
+    private static string CellLine (ListView listView, object? value, int column, int line)
+    {
         if (value is null)
         {
             return " ";
         }
 
-        if (value is not string && header is { MemberName.Length: > 0 })
+        if (TryGetColumnText (listView, value, column, out string columnText))
         {
-            return FormatMember (value, header);
+            List<string> columnLines = TextFormatter.SplitNewLine (columnText);
+
+            if (line < 0 || line >= columnLines.Count)
+            {
+                return " ";
+            }
+
+            return columnLines [line];
         }
 
         string text = value as string ?? value.ToString () ?? string.Empty;
         List<string> split = TextFormatter.SplitNewLine (text);
-        string piece = index < split.Count ? split [index] : " ";
+        int index = listView.ColumnHeaders is { Count: > 0 }
+                        ? (line * ColumnCount (listView)) + column
+                        : line;
+
+        if (index < 0 || index >= split.Count)
+        {
+            return " ";
+        }
+
+        string piece = split [index];
+        ListView.ColumnHeader? header = HeaderAt (listView, column);
 
         if (header is null || string.IsNullOrEmpty (header.MemberFormat))
         {
@@ -396,7 +562,6 @@ public class ListWrapper<T> : IListDataSource, IListViewLayout
 
     private static int ColumnCount (ListView listView)
     {
-        int height = Math.Max (1, listView.ItemHeight);
         List<ListView.ColumnHeader>? headers = listView.ColumnHeaders;
 
         if (headers is not { Count: > 0 })
@@ -404,17 +569,7 @@ public class ListWrapper<T> : IListDataSource, IListViewLayout
             return 1;
         }
 
-        return Math.Max (Math.Max (headers.Count, 1) / height, 1);
-    }
-
-    private static int ColumnIndex (int column, int row, int columnCount, int height)
-    {
-        if (columnCount > height)
-        {
-            return column;
-        }
-
-        return row;
+        return headers.Count;
     }
 
     private static string FormatMember (object source, ListView.ColumnHeader header)
@@ -449,22 +604,6 @@ public class ListWrapper<T> : IListDataSource, IListViewLayout
         object converted = Convert.ChangeType (text, header.MemberType);
 
         return string.Format (header.MemberFormat ?? "{0}", converted);
-    }
-
-    private List<string> GetItemLines (ListView listView, int item)
-    {
-        int height = Math.Max (1, listView.ItemHeight);
-        int columnCount = ColumnCount (listView);
-        int count = columnCount > height ? columnCount : height;
-        object? value = _source is not null && item >= 0 && item < _source.Count ? _source [item] : null;
-        List<string> lines = [];
-
-        for (int i = 0; i < count; i++)
-        {
-            lines.Add (CellText (listView, value, i));
-        }
-
-        return lines;
     }
 
     private static ListView.ColumnHeader? HeaderAt (ListView listView, int index)
@@ -515,18 +654,38 @@ public class ListWrapper<T> : IListDataSource, IListViewLayout
                 continue;
             }
 
-            int contentWidth = MeasureCell (listView, c, columnCount, height);
+            int contentWidth = MeasureCell (listView, c, height);
             int columnWidth;
+            int remaining = Math.Max (0, width - used);
 
             if (header is null || header.Width == 0)
             {
                 if (c == columnCount - 1)
                 {
-                    columnWidth = Math.Max (contentWidth, Math.Max (0, width - used));
+                    columnWidth = Math.Max (contentWidth, remaining);
+
+                    // A tall item can show the rest of a long value on its extra rows. Keep the last auto
+                    // column inside the viewport so that text wraps instead of widening the list.
+                    if (listView.ItemHeight > 1 && remaining > 0 && columnWidth > remaining)
+                    {
+                        columnWidth = remaining;
+                    }
                 }
                 else
                 {
                     columnWidth = contentWidth;
+
+                    if (listView.ItemHeight > 1 && columnWidth > 0)
+                    {
+                        int later = columnCount - c - 1;
+                        int reserved = later * (1 + margin);
+                        int available = Math.Max (1, remaining - reserved);
+
+                        if (columnWidth > available)
+                        {
+                            columnWidth = available;
+                        }
+                    }
                 }
             }
             else
@@ -543,21 +702,14 @@ public class ListWrapper<T> : IListDataSource, IListViewLayout
         MaxItemLength = Math.Max (used, 0);
     }
 
-    private int MeasureCell (ListView listView, int column, int columnCount, int height)
+    private int MeasureCell (ListView listView, int column, int height)
     {
         int max = 0;
         ListView.ColumnHeader? header = HeaderAt (listView, column);
 
-        if (header is not null && columnCount > height)
+        if (header is not null)
         {
             max = HeaderTitle (header, column).GetColumns ();
-        }
-        else if (columnCount <= height && listView.ColumnHeaders is { Count: > 0 })
-        {
-            foreach (ListView.ColumnHeader columnHeader in listView.ColumnHeaders)
-            {
-                max = Math.Max (max, HeaderTitle (columnHeader, 0).GetColumns ());
-            }
         }
 
         if (_source is null)
@@ -567,21 +719,9 @@ public class ListWrapper<T> : IListDataSource, IListViewLayout
 
         for (int i = 0; i < _source.Count; i++)
         {
-            List<string> lines = GetItemLines (listView, i);
-
-            if (columnCount > height)
+            for (int line = 0; line < height; line++)
             {
-                if (column < lines.Count)
-                {
-                    max = Math.Max (max, lines [column].GetColumns ());
-                }
-
-                continue;
-            }
-
-            foreach (string line in lines)
-            {
-                max = Math.Max (max, line.GetColumns ());
+                max = Math.Max (max, CellLine (listView, _source [i], column, line).GetColumns ());
             }
         }
 
@@ -597,7 +737,7 @@ public class ListWrapper<T> : IListDataSource, IListViewLayout
 
         string text = container.ColumnHeaders is not { Count: > 0 }
                           ? Align ("Col0", Math.Max (width, 0), container.HeadersAlignment)
-                          : BuildRowText (container, [], 0, true);
+                          : BuildRowText (container, null, 0, true, width);
         container.Move (Math.Max (col - viewportX, 0), line);
         RenderString (container, text, width, viewportX);
     }
@@ -609,7 +749,7 @@ public class ListWrapper<T> : IListDataSource, IListViewLayout
             MeasureColumns (container, Math.Max (width, 0));
         }
 
-        List<string> lines = GetItemLines (container, item);
+        object? value = _source is not null && item >= 0 && item < _source.Count ? _source [item] : null;
         int height = Math.Max (1, container.ItemHeight);
 
         for (int r = 0; r < height; r++)
@@ -620,7 +760,7 @@ public class ListWrapper<T> : IListDataSource, IListViewLayout
             }
 
             container.Move (Math.Max (col - viewportX, 0), line + r);
-            RenderString (container, BuildRowText (container, lines, r, false), width, viewportX);
+            RenderString (container, BuildRowText (container, value, r, false, width), width, viewportX);
         }
     }
 
