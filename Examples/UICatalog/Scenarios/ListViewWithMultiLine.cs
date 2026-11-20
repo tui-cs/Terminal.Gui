@@ -11,11 +11,11 @@ public class ListViewWithMultiLine : Scenario
 {
     private readonly string [] _modeNames =
     [
-        "Single column",
-        "Single line",
-        "Two-line objects",
+        "Single column with line breaks",
+        "Single column with padding",
+        "Multiple columns with two-lines",
         "Typed columns",
-        "String columns",
+        "String array columns",
         "Empty list",
         "Headers only"
     ];
@@ -36,10 +36,8 @@ public class ListViewWithMultiLine : Scenario
         _app = Application.Create ();
         _app.Init ();
 
-        using Window appWindow = new ()
-        {
-            Title = GetQuitKeyAndName ()
-        };
+        using Window appWindow = new ();
+        appWindow.Title = GetQuitKeyAndName ();
 
         _scenarios = GetScenarios ();
 
@@ -115,6 +113,54 @@ public class ListViewWithMultiLine : Scenario
                                           _listView.MarkMultiple = e.NewValue == CheckState.Checked;
                                       };
         appWindow.Add (markMultiple);
+
+        CheckBox showHorizontal = new ()
+        {
+            X = Pos.Right (markMultiple) + 1,
+            Y = Pos.Top (markMultiple),
+            Text = "Show hori_zontal"
+        };
+        showHorizontal.ValueChanging += (_, e) =>
+                                        {
+                                            if (_listView is null)
+                                            {
+                                                return;
+                                            }
+
+                                            if (e.NewValue == CheckState.Checked)
+                                            {
+                                                _listView.ViewportSettings |= ViewportSettingsFlags.HasHorizontalScrollBar;
+                                            }
+                                            else
+                                            {
+                                                _listView.ViewportSettings &= ~ViewportSettingsFlags.HasHorizontalScrollBar;
+                                            }
+                                        };
+        appWindow.Add (showHorizontal);
+
+        CheckBox showVertical = new ()
+        {
+            X = Pos.Right (showHorizontal) + 1,
+            Y = Pos.Top (markMultiple),
+            Text = "Show _vertical"
+        };
+        showVertical.ValueChanging += (_, e) =>
+                                      {
+                                          if (_listView is null)
+                                          {
+                                              return;
+                                          }
+
+                                          if (e.NewValue == CheckState.Checked)
+                                          {
+                                              _listView.ViewportSettings |= ViewportSettingsFlags.HasVerticalScrollBar;
+                                          }
+                                          else
+                                          {
+                                              _listView.ViewportSettings &= ~ViewportSettingsFlags.HasVerticalScrollBar;
+                                          }
+                                      };
+        appWindow.Add (showVertical);
 
         Label heightLabel = new ()
         {
@@ -200,7 +246,7 @@ public class ListViewWithMultiLine : Scenario
             return;
         }
 
-        _modeLabel.Text = _modeNames [_mode];
+        _modeLabel.Text = $"{_mode}-{_modeNames [_mode]}";
 
         switch (_mode)
         {
@@ -212,12 +258,12 @@ public class ListViewWithMultiLine : Scenario
                     colLines.Add ($"{scenario.GetName ()}\n{scenario.GetDescription ()}");
                 }
 
-                _listView.ItemHeight = 1;
+                _listView.ItemHeight = 2;
                 _listView.ColumnHeaders = null;
                 _listView.SetSource (colLines);
 
                 break;
-    
+
             case 1:
                 _listView.ItemHeight = 1;
                 _listView.ColumnHeaders = null;
@@ -286,16 +332,16 @@ public class ListViewWithMultiLine : Scenario
                 break;
 
             case 4:
-                ObservableCollection<string> strings = [];
+                ObservableCollection<string []> strings = [];
                 int index = 0;
 
                 foreach (Scenario scenario in _scenarios)
                 {
-                    strings.Add ($"{index}\n{scenario.GetName ()}\n{scenario.GetDescription ()}");
+                    strings.Add ([$"{index}", $"{scenario.GetName ()}", $"{scenario.GetDescription ()}"]);
                     index++;
                 }
 
-                _listView.ItemHeight = 2;
+                _listView.ItemHeight = 1;
                 _listView.ColumnHeaders =
                 [
                     new ListView.ColumnHeader
@@ -324,7 +370,7 @@ public class ListViewWithMultiLine : Scenario
                 _listView.ItemHeight = 1;
                 _listView.ColumnHeaders =
                 [
-                    new ListView.ColumnHeader { HeaderName = "Scenario", HeaderAlignment = Alignment.Center },
+                    new ListView.ColumnHeader { HeaderName = "Name", HeaderAlignment = Alignment.Center },
                     new ListView.ColumnHeader { HeaderName = "Description", HeaderAlignment = Alignment.Center }
                 ];
                 _listView.SetSource<string> (null);

@@ -7,13 +7,14 @@ public partial class ListView
     /// </summary>
     /// <remarks>
     ///     <para>
-    ///         String items are split on newlines into one value per column. Further newlines stay in the last
-    ///         column. A property stays in its own column. A value wider than its column wraps onto the extra rows
-    ///         when <see cref="ItemHeight"/> is greater than one.
+    ///         A value stays in its own column. A list or array item places element <c>i</c> in column <c>i</c>.
+    ///         A line break in that value starts another row of the same column.
+    ///         When <see cref="ItemHeight"/> is greater than one, a value wider than its column wraps onto the
+    ///         extra rows.
     ///     </para>
     ///     <para>
     ///         Other item types are read through <see cref="MemberName"/>. <see cref="MemberType"/> and
-    ///         <see cref="MemberFormat"/> control conversion and formatting.
+    ///         <see cref="MemberFormat"/> control conversion and formatting of a property or a list element.
     ///     </para>
     /// </remarks>
     public class ColumnHeader

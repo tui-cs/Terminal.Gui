@@ -441,7 +441,8 @@ public class ListWrapper<T> : IListDataSource, IListViewLayout
 
     /// <summary>
     ///     Full text of one column. A property comes from <see cref="ListView.ColumnHeader.MemberName"/>. A string item
-    ///     is split on newlines into one value per column.
+    ///     is the first column. A list or array item places element <paramref name="column"/> in that column. Line
+    ///     breaks stay in the column that contains them.
     /// </summary>
     private static bool TryGetColumnText (ListView listView, object? value, int column, out string text)
     {
@@ -459,60 +460,37 @@ public class ListWrapper<T> : IListDataSource, IListViewLayout
             return true;
         }
 
-        if (value is not string source || listView.ColumnHeaders is not { Count: > 0 })
+        if (value is string source && column == 0)
+        {
+            text = source;
+
+            return true;
+        }
+
+        if (value is not IList cells || column < 0 || column >= cells.Count)
         {
             return false;
         }
-        text = StringColumnText (listView, source, column);
+
+        object? cell = cells [column];
+
+        if (cell is null)
+        {
+            text = " ";
+
+            return true;
+        }
+
+        if (HeaderAt (listView, column) is { } cellHeader)
+        {
+            text = FormatText (cell.ToString () ?? string.Empty, cellHeader);
+
+            return true;
+        }
+
+        text = cell.ToString () ?? " ";
 
         return true;
-
-    }
-
-    /// <summary>
-    ///     One string field for <paramref name="column"/>. Newlines before the last column separate columns. The last
-    ///     column keeps every remaining line.
-    /// </summary>
-    private static string StringColumnText (ListView listView, string text, int column)
-    {
-        string segment = ColumnSegment (text, column, ColumnCount (listView));
-        ListView.ColumnHeader? header = HeaderAt (listView, column);
-
-        if (string.IsNullOrEmpty (segment) || header is null || string.IsNullOrEmpty (header.MemberFormat))
-        {
-            return segment;
-        }
-
-        List<string> lines = TextFormatter.SplitNewLine (segment);
-
-        for (int i = 0; i < lines.Count; i++)
-        {
-            lines [i] = FormatText (lines [i], header);
-        }
-
-        return string.Join ('\n', lines);
-    }
-
-    private static string ColumnSegment (string text, int column, int columnCount)
-    {
-        if (column < 0 || column >= columnCount)
-        {
-            return string.Empty;
-        }
-
-        List<string> split = TextFormatter.SplitNewLine (text);
-
-        if (column >= split.Count)
-        {
-            return string.Empty;
-        }
-
-        if (column < columnCount - 1 || column == split.Count - 1)
-        {
-            return split [column];
-        }
-
-        return string.Join ('\n', split.GetRange (column, split.Count - column));
     }
 
     /// <summary>
@@ -538,26 +516,20 @@ public class ListWrapper<T> : IListDataSource, IListViewLayout
             return columnLines [line];
         }
 
-        string text = value as string ?? value.ToString () ?? string.Empty;
-        List<string> split = TextFormatter.SplitNewLine (text);
-        int index = listView.ColumnHeaders is { Count: > 0 }
-                        ? (line * ColumnCount (listView)) + column
-                        : line;
-
-        if (index < 0 || index >= split.Count)
+        if (listView.ColumnHeaders is { Count: > 0 })
         {
             return " ";
         }
 
-        string piece = split [index];
-        ListView.ColumnHeader? header = HeaderAt (listView, column);
+        string text = value as string ?? value.ToString () ?? string.Empty;
+        List<string> split = TextFormatter.SplitNewLine (text);
 
-        if (header is null || string.IsNullOrEmpty (header.MemberFormat))
+        if (line < 0 || line >= split.Count)
         {
-            return piece;
+            return " ";
         }
 
-        return FormatText (piece, header);
+        return split [line];
     }
 
     private static int ColumnCount (ListView listView)
