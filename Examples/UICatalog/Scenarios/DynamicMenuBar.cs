@@ -210,6 +210,10 @@ public class DynamicMenuBar : Scenario
                 BorderStyle = LineStyle.Dotted
             };
             Add (RbChkStyle);
+            RbChkStyle.ValueChanged += (_, _) =>
+                                      {
+                                          UpdateItemFieldsEnabled ();
+                                      };
 
             Label lblShortcut = new () { X = Pos.Right (CkbAssignHotKeys) + 2, Y = Pos.Top (CkbSubMenu), Text = "Shortcut:" };
             Add (lblShortcut);
@@ -409,7 +413,7 @@ public class DynamicMenuBar : Scenario
                 AssignHotKeys = FromAssignHotKeysCheckState (CkbAssignHotKeys.Value),
                 CheckStyle = RbChkStyle.Value ?? DynamicMenuCheckStyle.NoCheck,
                 ShortcutKey = TextShortcutKey.Text,
-                AllowNullChecked = CkbNullCheck.Value == CheckState.Checked
+                AllowNullChecked = CkbNullCheck.Enabled && CkbNullCheck.Value == CheckState.Checked
             };
 
         /// <summary>
@@ -423,6 +427,9 @@ public class DynamicMenuBar : Scenario
             bool allowAction = !isSeparator && !hasSubMenus;
             bool isMenuBarItem = _menuItem is MenuBarItem { SuperView: MenuBar }
                                  || (_menuItem is null && !_hasParent);
+            bool supportsNullCheck = allowAction
+                                     && !isMenuBarItem
+                                     && RbChkStyle.Value == DynamicMenuCheckStyle.Checked;
 
             TextTitle.Enabled = !isSeparator;
             TextHelp.Enabled = allowAction;
@@ -432,8 +439,13 @@ public class DynamicMenuBar : Scenario
             BtnClearShortcut.Enabled = allowAction;
             CkbSubMenu.Enabled = !isSeparator;
             CkbAssignHotKeys.Enabled = !isSeparator;
-            CkbNullCheck.Enabled = allowAction && !isMenuBarItem;
+            CkbNullCheck.Enabled = supportsNullCheck;
             RbChkStyle.Enabled = allowAction && !isMenuBarItem;
+
+            if (!supportsNullCheck)
+            {
+                CkbNullCheck.Value = CheckState.UnChecked;
+            }
 
             // Separators only inside a popover/submenu Menu (MenuBar : Menu, so SuperView-is-Menu is not enough).
             CkbSeparator.Enabled = CanUseSeparator ();
