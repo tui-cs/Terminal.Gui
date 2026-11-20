@@ -231,6 +231,28 @@ public class DynamicMenuBar : Scenario
             BtnClearShortcut.Accepting += (_, _) => { TextShortcutKey.Text = ""; };
             Add (BtnClearShortcut);
 
+            CkbSeparator.ValueChanging += (_, e) =>
+                                          {
+                                              if (_loadingDetails
+                                                  || e.NewValue != CheckState.Checked
+                                                  || CkbSeparator.Value == CheckState.Checked
+                                                  || !CurrentMenuHasSubMenus ())
+                                              {
+                                                  return;
+                                              }
+
+                                              int? result = MessageBox.Query (_app!,
+                                                                              "Change menu type",
+                                                                              "Changing this item to a separator will remove its sub-menus.",
+                                                                              "Cancel",
+                                                                              "Continue");
+
+                                              if (result != 1)
+                                              {
+                                                  e.Handled = true;
+                                              }
+                                          };
+
             CkbSeparator.ValueChanged += (_, e) =>
                                          {
                                              if (_loadingDetails)
@@ -417,6 +439,8 @@ public class DynamicMenuBar : Scenario
             bool isSeparator = CkbSeparator.Value == CheckState.Checked;
             bool hasSubMenus = CkbSubMenu.Value == CheckState.Checked;
             bool allowAction = !isSeparator && !hasSubMenus;
+            bool isMenuBarItem = _menuItem is MenuBarItem { SuperView: MenuBar }
+                                 || (_menuItem is null && !_hasParent);
 
             TextTitle.Enabled = !isSeparator;
             TextHelp.Enabled = allowAction;
@@ -426,8 +450,8 @@ public class DynamicMenuBar : Scenario
             BtnClearShortcut.Enabled = allowAction;
             CkbSubMenu.Enabled = !isSeparator;
             CkbAssignHotKeys.Enabled = !isSeparator;
-            CkbNullCheck.Enabled = allowAction;
-            RbChkStyle.Enabled = allowAction;
+            CkbNullCheck.Enabled = allowAction && !isMenuBarItem;
+            RbChkStyle.Enabled = allowAction && !isMenuBarItem;
 
             // Separators only inside a popover/submenu Menu (MenuBar : Menu, so SuperView-is-Menu is not enough).
             CkbSeparator.Enabled = CanUseSeparator ();
@@ -438,6 +462,8 @@ public class DynamicMenuBar : Scenario
         ///     (nested under a non-<see cref="MenuBar"/> <see cref="Menu"/>).
         /// </summary>
         private bool CanUseSeparator () => _separator is { } || _hasParent;
+
+        internal bool IsEditingSeparator (Line line) => ReferenceEquals (_separator, line);
 
         private void RaiseMenuTypeChanged ()
         {
@@ -692,10 +718,11 @@ public class DynamicMenuBar : Scenario
 
             Button btnOk = new () { Text = "Ok" };
 
-            btnOk.Accepting += (_, _) =>
+            btnOk.Accepting += (_, e) =>
                                {
                                    if (CkbSeparator.Value != CheckState.Checked && string.IsNullOrEmpty (TextTitle.Text))
                                    {
+                                       e.Handled = true;
                                        MessageBox.ErrorQuery (_app!, "Invalid title", "Must enter a valid title!.", "Ok");
 
                                        return;
@@ -1140,12 +1167,13 @@ public class DynamicMenuBar : Scenario
 
             _lstMenus.ValueChanged += (_, _) => { SetFrameDetailsFromListSelection (); };
 
-            btnOk.Accepting += (_, _) =>
+            btnOk.Accepting += (_, e) =>
                                {
                                    DynamicMenuItem details = frmMenuDetails.CreateDynamicMenuItem ();
 
                                    if (!details.IsSeparator && string.IsNullOrEmpty (details.Title))
                                    {
+                                       e.Handled = true;
                                        MessageBox.ErrorQuery (_app!, "Invalid title", "Must enter a valid title!.", "Ok");
 
                                        return;
@@ -1242,6 +1270,7 @@ public class DynamicMenuBar : Scenario
                                                _currentEditMenuBarItem = null;
                                            }
 
+                                           ReleaseMenuItemShortcuts (menuItem);
                                            menuItem.SuperView?.Remove (menuItem);
                                            menuItem.Dispose ();
                                        }
@@ -1370,47 +1399,38 @@ public class DynamicMenuBar : Scenario
 
             btnRemoveMenuBar.Accepting += (_, _) =>
                                           {
-                                              if (_dynamicMenuBar == null)
+                                              if (_dynamicMenuBar is not { SubViews.Count: > 0 })
                                               {
                                                   return;
                                               }
 
-                                              if (_dynamicMenuBar is { SubViews.Count: > 0 })
+                                              MenuItem? barItemToRemove = _dynamicMenuBar.SubViews.ElementAtOrDefault (_currentSelectedMenuBar) as MenuItem;
+
+                                              if (barItemToRemove is null)
                                               {
-                                                  _currentMenuBarItem?.SuperView?.Remove (_currentMenuBarItem);
-
-                                                  if (_currentMenuBarItem is MenuBarItem menuBarItem)
-                                                  {
-                                                      if (_currentEditMenuBarItem != null
-                                                          && _currentEditMenuBarItem
-                                                          == (menuBarItem.PopoverMenu?.Root?.SubViews.Count > 0
-                                                                  ? menuBarItem.PopoverMenu.Root.SubViews.ElementAt (0)
-                                                                  : null))
-                                                      {
-                                                          _currentEditMenuBarItem.Dispose ();
-                                                          _currentEditMenuBarItem = null;
-                                                      }
-                                                      menuBarItem.PopoverMenu?.Root?.Dispose ();
-                                                      menuBarItem.PopoverMenu?.Dispose ();
-                                                      menuBarItem.Dispose ();
-                                                  }
-                                                  else if (_currentMenuBarItem is { } menuItem)
-                                                  {
-                                                      menuItem.Dispose ();
-                                                  }
-
-                                                  // Same index is the following bar item. Past the end, keep the new last one.
-                                                  if (_currentSelectedMenuBar >= _dynamicMenuBar.SubViews.Count)
-                                                  {
-                                                      _currentSelectedMenuBar = _dynamicMenuBar.SubViews.Count - 1;
-                                                  }
-
-                                                  _currentMenuBarItem = _currentSelectedMenuBar >= 0 && _dynamicMenuBar.SubViews.Count > 0
-                                                                            ? _dynamicMenuBar.SubViews.ElementAt (_currentSelectedMenuBar) as MenuItem
-                                                                            : null;
-                                                  _currentEditMenuBarItem = null;
+                                                  return;
                                               }
 
+                                              ReleaseMenuItemShortcuts (barItemToRemove);
+                                              _dynamicMenuBar.Remove (barItemToRemove);
+
+                                              if (barItemToRemove is MenuBarItem menuBarItem)
+                                              {
+                                                  ClearBarItemDropdown (menuBarItem);
+                                              }
+
+                                              barItemToRemove.Dispose ();
+
+                                              // Same index is the following bar item. Past the end, keep the new last one.
+                                              if (_currentSelectedMenuBar >= _dynamicMenuBar.SubViews.Count)
+                                              {
+                                                  _currentSelectedMenuBar = _dynamicMenuBar.SubViews.Count - 1;
+                                              }
+
+                                              _currentMenuBarItem = _currentSelectedMenuBar >= 0 && _dynamicMenuBar.SubViews.Count > 0
+                                                                        ? _dynamicMenuBar.SubViews.ElementAt (_currentSelectedMenuBar) as MenuItem
+                                                                        : null;
+                                              _currentEditMenuBarItem = null;
                                               RemoveMenuBar ();
                                               SetListViewSource (_currentMenuBarItem, true);
                                               ShowMenuDetails (_currentMenuBarItem);
@@ -1579,21 +1599,34 @@ public class DynamicMenuBar : Scenario
 
             void ApplyImportedMenuBar (MenuScriptDocument document)
             {
+                MenuBar replacement = BuildImportedMenuBar (document);
+
                 if (_dynamicMenuBar is { })
                 {
+                    ReleaseMenuBarShortcuts (_dynamicMenuBar);
                     Remove (_dynamicMenuBar);
                     _dynamicMenuBar.Dispose ();
-                    _dynamicMenuBar = null;
                 }
 
-                _dynamicMenuBar = new MenuBar { AssignHotKeys = true };
+                _dynamicMenuBar = replacement;
                 Add (_dynamicMenuBar);
+
+                _currentSelectedMenuBar = _dynamicMenuBar.SubViews.Count > 0 ? 0 : -1;
+                _currentMenuBarItem = null;
+                _currentEditMenuBarItem = null;
+                SelectCurrentMenuBarItem ();
+                _dynamicMenuBar.SetNeedsDraw ();
+            }
+
+            MenuBar BuildImportedMenuBar (MenuScriptDocument document)
+            {
+                MenuBar menuBar = new () { AssignHotKeys = true };
 
                 foreach (MenuScriptBarItemModel barModel in document.BarItems)
                 {
                     DynamicMenuItem barItem = MenuScriptImporter.ToDynamicMenuItem (barModel);
                     MenuBarItem created = (MenuBarItem)CreateNewMenuEntry (barItem);
-                    _dynamicMenuBar.Add (created);
+                    menuBar.Add (created);
                     ApplyMenuItemShortcut (created, barModel.ShortcutKey);
 
                     if (barModel.Children is { Count: > 0 })
@@ -1602,11 +1635,7 @@ public class DynamicMenuBar : Scenario
                     }
                 }
 
-                _currentSelectedMenuBar = _dynamicMenuBar.SubViews.Count > 0 ? 0 : -1;
-                _currentMenuBarItem = null;
-                _currentEditMenuBarItem = null;
-                SelectCurrentMenuBarItem ();
-                _dynamicMenuBar.SetNeedsDraw ();
+                return menuBar;
             }
 
             void ImportMenuChildren (MenuItem parent, List<MenuScriptEntryModel> children)
@@ -1847,6 +1876,7 @@ public class DynamicMenuBar : Scenario
 
                     if (popover.Root is { } root)
                     {
+                        ReleaseMenuShortcuts (root);
                         List<View> items = [.. root.SubViews];
                         root.RemoveAll ();
 
@@ -1875,6 +1905,7 @@ public class DynamicMenuBar : Scenario
                 menuItem.SubMenu = null;
 
                 List<View> items = [.. subMenu.SubViews];
+                ReleaseMenuShortcuts (subMenu);
                 subMenu.RemoveAll ();
 
                 foreach (View child in items)
@@ -1973,6 +2004,8 @@ public class DynamicMenuBar : Scenario
             // explicitly so <c>AddApp</c> registers the binding.
             void ApplyMenuItemShortcut (MenuItem menuItem, string? shortcutKey)
             {
+                ReleaseApplicationShortcut (menuItem);
+
                 if (string.IsNullOrEmpty (shortcutKey) || !Key.TryParse (shortcutKey, out Key key) || key == Key.Empty)
                 {
                     menuItem.Key = Key.Empty;
@@ -1989,6 +2022,55 @@ public class DynamicMenuBar : Scenario
 
                 menuItem.BindKeyToApplication = true;
                 menuItem.Key = key;
+            }
+
+            void ReleaseMenuBarShortcuts (MenuBar menuBar)
+            {
+                foreach (MenuItem menuItem in menuBar.SubViews.OfType<MenuItem> ())
+                {
+                    ReleaseMenuItemShortcuts (menuItem);
+                }
+            }
+
+            void ReleaseMenuItemShortcuts (MenuItem menuItem)
+            {
+                ReleaseApplicationShortcut (menuItem);
+
+                if (menuItem is MenuBarItem { PopoverMenu.Root: { } root })
+                {
+                    ReleaseMenuShortcuts (root);
+                }
+
+                if (menuItem.SubMenu is { } subMenu)
+                {
+                    ReleaseMenuShortcuts (subMenu);
+                }
+            }
+
+            void ReleaseMenuShortcuts (Menu menu)
+            {
+                foreach (MenuItem menuItem in menu.SubViews.OfType<MenuItem> ())
+                {
+                    ReleaseMenuItemShortcuts (menuItem);
+                }
+            }
+
+            void ReleaseApplicationShortcut (MenuItem menuItem)
+            {
+                if (!menuItem.BindKeyToApplication || menuItem.Key == Key.Empty)
+                {
+                    return;
+                }
+
+                IApplication? app = menuItem.App ?? App;
+
+                if (app?.Keyboard.KeyBindings.TryGet (menuItem.Key, out KeyBinding binding) != true
+                    || !ReferenceEquals (binding.Target, menuItem))
+                {
+                    return;
+                }
+
+                app.Keyboard.KeyBindings.Remove (menuItem.Key);
             }
 
             // Enabled is copied onto the item. AssignHotKeys is stored on the submenu Menu, or on Data until one exists.
@@ -2169,10 +2251,12 @@ public class DynamicMenuBar : Scenario
                 {
                     DynamicMenuItemList entry = DataContext.Menus [idx];
 
-                    if (entry.Separator is { } existingLine)
+                    if (entry.Separator is { } existingLine && frmMenuDetails.IsEditingSeparator (existingLine))
                     {
                         if (details.IsSeparator)
                         {
+                            existingLine.Enabled = details.Enabled;
+
                             return;
                         }
 
@@ -2220,6 +2304,7 @@ public class DynamicMenuBar : Scenario
                         }
 
                         int itemIdx = host.SubViews.IndexOf (menuItem);
+                        ReleaseMenuItemShortcuts (menuItem);
                         host.Remove (menuItem);
                         menuItem.Dispose ();
 
@@ -2291,6 +2376,7 @@ public class DynamicMenuBar : Scenario
                 if (menuItem.HasSubMenu)
                 {
                     currentEditMenuBarItem.Action = null;
+                    ApplyMenuItemShortcut (currentEditMenuBarItem, string.Empty);
 
                     if (currentEditMenuBarItem.SubMenu is null)
                     {
@@ -2698,6 +2784,7 @@ public class DynamicMenuBar : Scenario
             List<string> barEntries = [];
             bool needsActionOnlyHelper = false;
             bool needsBarItemOptionsHelper = false;
+            bool needsRadioHelper = false;
 
             foreach (View sub in menuBar.SubViews)
             {
@@ -2715,6 +2802,11 @@ public class DynamicMenuBar : Scenario
                 else if (dropdown.AssignHotKeys is not null)
                 {
                     needsBarItemOptionsHelper = true;
+                }
+
+                if (dropdown is { } && ContainsRadio (dropdown))
+                {
+                    needsRadioHelper = true;
                 }
 
                 barEntries.Add (FormatMenuBarItemEntry (barItem, helpers, ref id, indent: 27));
@@ -2756,13 +2848,21 @@ public class DynamicMenuBar : Scenario
                 AppendBarItemOptionsHelper (sb);
             }
 
+            if (needsRadioHelper)
+            {
+                sb.AppendLine ();
+                AppendRadioHelper (sb);
+            }
+
             sb.AppendLine ();
             sb.AppendLine ("    Key ParseKey (string s) => Key.TryParse (s, out Key key) ? key : Key.Empty;");
             sb.AppendLine ("}");
             sb.AppendLine ();
             sb.AppendLine ("/*");
             sb.AppendLine (ImportBeginMarker);
-            sb.AppendLine (JsonSerializer.Serialize (BuildDocument (menuBar), JsonOptions));
+            string json = JsonSerializer.Serialize (BuildDocument (menuBar), JsonOptions)
+                                        .Replace ("*/", "*\\/", StringComparison.Ordinal);
+            sb.AppendLine (json);
             sb.AppendLine (ImportEndMarker);
             sb.AppendLine ("*/");
 
@@ -2991,7 +3091,7 @@ public class DynamicMenuBar : Scenario
             sb.AppendLine ();
             sb.AppendLine ("        if (barItem.SubMenu is { Visible: true } subMenu)");
             sb.AppendLine ("        {");
-            sb.AppendLine ("            subMenu.HideMenu ();");
+            sb.AppendLine ("            subMenu.Visible = false;");
             sb.AppendLine ("        }");
             sb.AppendLine ();
             sb.AppendLine ("        barItem.Action.Invoke ();");
@@ -3013,17 +3113,93 @@ public class DynamicMenuBar : Scenario
             sb.AppendLine ("    }");
         }
 
+        private static bool ContainsRadio (Menu menu)
+        {
+            foreach (View subView in menu.SubViews)
+            {
+                if (subView is not MenuItem menuItem)
+                {
+                    continue;
+                }
+
+                if (menuItem.CommandView is CheckBox { RadioStyle: true }
+                    || (menuItem.SubMenu is { } subMenu && ContainsRadio (subMenu)))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private static void AppendRadioHelper (StringBuilder sb)
+        {
+            sb.AppendLine ("    MenuItem ConfigureRadioMenuItem (MenuItem menuItem, Action action)");
+            sb.AppendLine ("    {");
+            sb.AppendLine ("        menuItem.Action = () =>");
+            sb.AppendLine ("        {");
+            sb.AppendLine ("            if (menuItem.CommandView is not CheckBox { RadioStyle: true } radio)");
+            sb.AppendLine ("            {");
+            sb.AppendLine ("                action ();");
+            sb.AppendLine ("                return;");
+            sb.AppendLine ("            }");
+            sb.AppendLine ();
+            sb.AppendLine ("            radio.Value = CheckState.Checked;");
+            sb.AppendLine ();
+            sb.AppendLine ("            if (menuItem.SuperView is Menu menu)");
+            sb.AppendLine ("            {");
+            sb.AppendLine ("                List<View> views = [.. menu.SubViews];");
+            sb.AppendLine ("                int index = views.IndexOf (menuItem);");
+            sb.AppendLine ("                int start = index;");
+            sb.AppendLine ("                int end = index;");
+            sb.AppendLine ();
+            sb.AppendLine ("                while (start > 0 && IsRadio (views [start - 1]))");
+            sb.AppendLine ("                {");
+            sb.AppendLine ("                    start--;");
+            sb.AppendLine ("                }");
+            sb.AppendLine ();
+            sb.AppendLine ("                while (end < views.Count - 1 && IsRadio (views [end + 1]))");
+            sb.AppendLine ("                {");
+            sb.AppendLine ("                    end++;");
+            sb.AppendLine ("                }");
+            sb.AppendLine ();
+            sb.AppendLine ("                for (int i = start; i <= end; i++)");
+            sb.AppendLine ("                {");
+            sb.AppendLine ("                    if (views [i] is MenuItem peer");
+            sb.AppendLine ("                        && peer != menuItem");
+            sb.AppendLine ("                        && peer.CommandView is CheckBox { RadioStyle: true } peerRadio)");
+            sb.AppendLine ("                    {");
+            sb.AppendLine ("                        peerRadio.Value = CheckState.UnChecked;");
+            sb.AppendLine ("                    }");
+            sb.AppendLine ("                }");
+            sb.AppendLine ("            }");
+            sb.AppendLine ();
+            sb.AppendLine ("            action ();");
+            sb.AppendLine ("        };");
+            sb.AppendLine ();
+            sb.AppendLine ("        return menuItem;");
+            sb.AppendLine ("    }");
+            sb.AppendLine ();
+            sb.AppendLine ("    bool IsRadio (View view) => view is MenuItem { CommandView: CheckBox { RadioStyle: true } };");
+        }
+
         private static void AppendViewArrayHelper (StringBuilder helpers, string helperName, Menu menu, ref int id)
         {
-            helpers.AppendLine ($"    View [] {helperName} () =>");
-            helpers.AppendLine ("    [");
-
             List<View> subs = [.. menu.SubViews];
+            List<string> entries = [];
 
             for (int i = 0; i < subs.Count; i++)
             {
-                string comma = i < subs.Count - 1 ? "," : "";
-                helpers.AppendLine ($"{FormatMenuChild (subs [i], helpers, ref id, indent: 8)}{comma}");
+                entries.Add (FormatMenuChild (subs [i], helpers, ref id, indent: 8));
+            }
+
+            helpers.AppendLine ($"    View [] {helperName} () =>");
+            helpers.AppendLine ("    [");
+
+            for (int i = 0; i < entries.Count; i++)
+            {
+                string comma = i < entries.Count - 1 ? "," : "";
+                helpers.AppendLine ($"{entries [i]}{comma}");
             }
 
             helpers.AppendLine ("    ];");
@@ -3106,8 +3282,22 @@ public class DynamicMenuBar : Scenario
             AppendInitializerHotKey (entry, menuItem, pad);
 
             string actionText = GetStoredActionText (menuItem);
-            entry.AppendLine ($"{pad}    Action = () => MessageBox.ErrorQuery (app, \"{Escape (menuItem.Title)}\", \"{Escape (actionText)}\", \"Ok\")");
+
+            if (menuItem.CommandView is not CheckBox { RadioStyle: true })
+            {
+                entry.AppendLine ($"{pad}    Action = () => MessageBox.ErrorQuery (app, \"{Escape (menuItem.Title)}\", \"{Escape (actionText)}\", \"Ok\")");
+            }
+
             entry.Append ($"{pad}}}");
+
+            if (menuItem.CommandView is CheckBox { RadioStyle: true })
+            {
+                return $"""
+                        {pad}ConfigureRadioMenuItem (
+                        {entry.ToString ().TrimEnd ()},
+                        {pad}    () => MessageBox.ErrorQuery (app, "{Escape (menuItem.Title)}", "{Escape (actionText)}", "Ok"))
+                        """;
+            }
 
             return entry.ToString ().TrimEnd ();
         }
@@ -3174,8 +3364,9 @@ public class DynamicMenuBar : Scenario
         {
             switch (menuItem.CommandView)
             {
-                case CheckBox { RadioStyle: true }:
-                    entry.AppendLine ($"{pad}    CommandView = new CheckBox {{ Text = \"{Escape (menuItem.Title)}\", RadioStyle = true, CanFocus = false }},");
+                case CheckBox { RadioStyle: true } radio:
+                    entry.AppendLine (
+                                      $"{pad}    CommandView = new CheckBox {{ Text = \"{Escape (menuItem.Title)}\", RadioStyle = true, CanFocus = false, Value = CheckState.{radio.Value} }},");
 
                     break;
 
@@ -3261,7 +3452,14 @@ public class DynamicMenuBar : Scenario
                 return false;
             }
 
-            return document is { };
+            if (!IsValidDocument (document))
+            {
+                document = null;
+
+                return false;
+            }
+
+            return true;
         }
 
         public static DynamicMenuItem ToDynamicMenuItem (MenuScriptBarItemModel model) =>
@@ -3295,13 +3493,23 @@ public class DynamicMenuBar : Scenario
 
         private static bool TryExtractJson (string script, out string json)
         {
-            int begin = script.IndexOf (MenuScriptGenerator.ImportBeginMarker, StringComparison.Ordinal);
-            int end = script.IndexOf (MenuScriptGenerator.ImportEndMarker, StringComparison.Ordinal);
+            int beginMarker = FindMarkerLine (script, MenuScriptGenerator.ImportBeginMarker, 0);
+            int endMarker = beginMarker < 0
+                                ? -1
+                                : FindMarkerLine (script, MenuScriptGenerator.ImportEndMarker, beginMarker + MenuScriptGenerator.ImportBeginMarker.Length);
 
-            if (begin >= 0 && end > begin)
+            if (beginMarker >= 0 && endMarker > beginMarker)
             {
-                begin += MenuScriptGenerator.ImportBeginMarker.Length;
-                json = script [begin..end].Trim ();
+                int begin = script.IndexOf ('\n', beginMarker);
+
+                if (begin < 0 || begin >= endMarker)
+                {
+                    json = string.Empty;
+
+                    return false;
+                }
+
+                json = script [(begin + 1)..endMarker].Trim ();
 
                 return json.Length > 0;
             }
@@ -3319,6 +3527,119 @@ public class DynamicMenuBar : Scenario
 
             return false;
         }
+
+        private static int FindMarkerLine (string text, string marker, int startIndex)
+        {
+            int index = startIndex;
+
+            while ((index = text.IndexOf (marker, index, StringComparison.Ordinal)) >= 0)
+            {
+                int lineStart = text.LastIndexOf ('\n', index) + 1;
+                int lineEnd = text.IndexOfAny (['\r', '\n'], index + marker.Length);
+
+                if (lineEnd < 0)
+                {
+                    lineEnd = text.Length;
+                }
+
+                bool hasOnlyWhitespaceBefore = text.AsSpan (lineStart, index - lineStart).Trim ().IsEmpty;
+                bool hasOnlyWhitespaceAfter = text.AsSpan (index + marker.Length, lineEnd - index - marker.Length).Trim ().IsEmpty;
+
+                if (hasOnlyWhitespaceBefore && hasOnlyWhitespaceAfter)
+                {
+                    return index;
+                }
+
+                index += marker.Length;
+            }
+
+            return -1;
+        }
+
+        private static bool IsValidDocument (MenuScriptDocument? document)
+        {
+            if (document is not { Version: 1, BarItems: { Count: > 0 } barItems })
+            {
+                return false;
+            }
+
+            foreach (MenuScriptBarItemModel? barItem in barItems)
+            {
+                if (!IsValidBarItem (barItem))
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        private static bool IsValidBarItem (MenuScriptBarItemModel? model)
+        {
+            if (model is null
+                || model.Title is null
+                || model.Title.Length == 0
+                || model.Help is null
+                || model.Action is null
+                || !IsValidShortcut (model.ShortcutKey)
+                || !IsValidHotKey (model.HotKey)
+                || model.Children is null)
+            {
+                return false;
+            }
+
+            return AreValidEntries (model.Children);
+        }
+
+        private static bool AreValidEntries (List<MenuScriptEntryModel>? entries)
+        {
+            if (entries is null)
+            {
+                return false;
+            }
+
+            foreach (MenuScriptEntryModel? entry in entries)
+            {
+                if (!IsValidEntry (entry))
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        private static bool IsValidEntry (MenuScriptEntryModel? model)
+        {
+            if (model is null
+                || model.Title is null
+                || model.Help is null
+                || model.Action is null
+                || model.Children is null
+                || !Enum.IsDefined (model.CheckStyle)
+                || !IsValidShortcut (model.ShortcutKey)
+                || !IsValidHotKey (model.HotKey)
+                || (!model.IsSeparator && model.Title.Length == 0)
+                || (model.IsSeparator && model.Children.Count > 0))
+            {
+                return false;
+            }
+
+            return AreValidEntries (model.Children);
+        }
+
+        private static bool IsValidShortcut (string? shortcut)
+        {
+            if (shortcut is null)
+            {
+                return false;
+            }
+
+            return shortcut.Length == 0 || Key.TryParse (shortcut, out _);
+        }
+
+        private static bool IsValidHotKey (string? hotKey) =>
+            hotKey is not null && (hotKey.Length == 0 || TryParseMenuHotKey (hotKey, out _));
     }
 
     private static class MenuHierarchy
