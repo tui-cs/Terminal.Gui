@@ -19,7 +19,7 @@ public class SelectorBaseTests
         Assert.Equal (Orientation.Vertical, selector.Orientation);
         Assert.Null (selector.Labels);
         Assert.Null (selector.Values);
-        Assert.False (selector.AssignHotKeys);
+        Assert.Null (selector.AssignHotKeys);
         Assert.Empty (selector.UsedHotKeys);
         Assert.Equal (SelectorStyles.None, selector.Styles);
         Assert.True (selector.DoubleClickAccepts);

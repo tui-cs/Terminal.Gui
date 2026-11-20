@@ -224,7 +224,7 @@ foreach (Rune rune in text.EnumerateRunes ())
 ### Test Patterns
 
 - **AI Created Tests MUST follow these patterns exactly.**
-- **Add comment indicating the test was AI generated** - e.g., `// CoPilot - ChatGPT v4`
+- **Add a comment indicating the test was AI generated** - use the form `// <agent> - <model>`, naming the agent and model that produced it; Claude Code, Codex, Grok, and other agents are equally valid.
 - **Make tests granular** - Each test should cover smallest area possible
 - Follow existing test patterns in respective test projects
 - **Avoid adding new tests to the `UnitTests` Project** - Make them parallelizable and add them to `UnitTests.Parallelizable`

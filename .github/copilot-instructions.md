@@ -219,7 +219,7 @@ public string Name
 
 ## Testing Conventions
 
-- Add a comment identifying AI-generated tests: `// Copilot`
+- Add a comment identifying AI-generated tests in the form `// <agent> - <model>`, using the agent and model that produced each test. Claude Code, Codex, Grok, and other agents are equally valid.
 - Each test covers the smallest unit possible
 - Don't use `[AutoInitShutdown]` or `[SetupFakeApplication]` (legacy, being phased out)
 - Avoid `Application.Init` in tests unless testing that specific functionality
