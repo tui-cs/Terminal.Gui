@@ -380,6 +380,24 @@ public class MarkdownTableTests
                      $"Table width {table.Frame.Width} suggests markdown delimiters were measured");
     }
 
+    // CoPilot - GPT-6
+    private static int [] ComputeColumnWidths (TableData data, int maxWidth)
+    {
+        List<StyledSegment> [] headers = [.. data.Headers.Select (Cell)];
+        List<List<StyledSegment> []> rows = [];
+
+        foreach (string [] row in data.Rows)
+        {
+            rows.Add ([.. row.Select (Cell)]);
+        }
+
+        MarkdownTableContent content = new (headers, [.. rows]);
+
+        return MarkdownTable.ComputeColumnWidths (content, maxWidth);
+
+        static List<StyledSegment> Cell (string text) => [new StyledSegment (text, MarkdownStyleRole.Normal)];
+    }
+
     #region Column Width Algorithm Tests
 
     [Fact]
@@ -390,7 +408,7 @@ public class MarkdownTableTests
         TableData data = TableData.TryParse (lines)!;
 
         // maxWidth = 100 is plenty of room
-        int [] widths = MarkdownTable.ComputeColumnWidths (data, 100);
+        int [] widths = ComputeColumnWidths (data, 100);
 
         // "A"/"x" = 1 col + 2 padding = 3; "B"/"y" = 1 col + 2 padding = 3
         Assert.Equal (3, widths [0]);
@@ -406,7 +424,7 @@ public class MarkdownTableTests
 
         // Natural: col0 = max("Cat","X") = 3+2=5, col1 = ~28+2=30
         // Force into 25 cols — col1 (wider) should shrink, col0 should be preserved
-        int [] widths = MarkdownTable.ComputeColumnWidths (data, 25);
+        int [] widths = ComputeColumnWidths (data, 25);
 
         // col0 should be at or near its natural width (5)
         Assert.True (widths [0] >= 4, $"Left column {widths [0]} was shrunk too much");
@@ -428,7 +446,7 @@ public class MarkdownTableTests
 
         // Natural: both cols = 5+2=7, total = 7+7+3 = 17
         // Force into 15 — need to lose 2 from column content
-        int [] widths = MarkdownTable.ComputeColumnWidths (data, 15);
+        int [] widths = ComputeColumnWidths (data, 15);
 
         // Left column should be >= right column (left wins)
         Assert.True (widths [0] >= widths [1], $"Left ({widths [0]}) should be >= right ({widths [1]}) when tied");
@@ -447,7 +465,7 @@ public class MarkdownTableTests
         TableData data = TableData.TryParse (lines)!;
 
         // "Navigation" is 10 chars — min should be 10+2=12
-        int [] widths = MarkdownTable.ComputeColumnWidths (data, 30);
+        int [] widths = ComputeColumnWidths (data, 30);
 
         // col0 min = "Navigation" (10) + 2 = 12
         Assert.True (widths [0] >= 12, $"Column 0 width {widths [0]} is below longest word 'Navigation' (need >=12)");
@@ -462,7 +480,7 @@ public class MarkdownTableTests
 
         // Both cols: longest word = 9 chars, min = 9+2=11
         // Total min = 11+11+3 = 25. Force into 15 — must go below min.
-        int [] widths = MarkdownTable.ComputeColumnWidths (data, 15);
+        int [] widths = ComputeColumnWidths (data, 15);
 
         // Should still fit within maxWidth
         int total = widths.Sum () + widths.Length + 1;
@@ -479,7 +497,7 @@ public class MarkdownTableTests
         List<string> lines = ["| Header |", "|--------|", "| Cell |"];
         TableData data = TableData.TryParse (lines)!;
 
-        int [] widths = MarkdownTable.ComputeColumnWidths (data, 50);
+        int [] widths = ComputeColumnWidths (data, 50);
 
         // "Header" = 6+2=8
         Assert.Equal (8, widths [0]);
@@ -492,28 +510,28 @@ public class MarkdownTableTests
         List<string> lines = ["| H | Long Header |", "|---|-------------|", "|   | content     |"];
         TableData data = TableData.TryParse (lines)!;
 
-        int [] widths = MarkdownTable.ComputeColumnWidths (data, 80);
+        int [] widths = ComputeColumnWidths (data, 80);
 
         Assert.True (widths [0] >= 3, $"Empty column width {widths [0]} should be at least 3");
     }
 
     [Fact]
-    public void MeasureRenderedWidth_Strips_Markdown ()
+    public void MeasureRenderedWidth_Uses_Styled_Content ()
     {
-        // Copilot — Rendered width should not include markdown delimiters
-        Assert.Equal (4, MarkdownTable.MeasureRenderedWidth ("**bold**"));
-        Assert.Equal (6, MarkdownTable.MeasureRenderedWidth ("*italic*"));
-        Assert.Equal (4, MarkdownTable.MeasureRenderedWidth ("`code`"));
-        Assert.Equal (5, MarkdownTable.MeasureRenderedWidth ("plain"));
+        // CoPilot - GPT-6: Measure display segments rather than reparsing source.
+        Assert.Equal (4, MarkdownTable.MeasureRenderedWidth ([new StyledSegment ("bold", MarkdownStyleRole.Strong)]));
+        Assert.Equal (6, MarkdownTable.MeasureRenderedWidth ([new StyledSegment ("italic", MarkdownStyleRole.Emphasis)]));
+        Assert.Equal (4, MarkdownTable.MeasureRenderedWidth ([new StyledSegment ("code", MarkdownStyleRole.InlineCode)]));
+        Assert.Equal (5, MarkdownTable.MeasureRenderedWidth ([new StyledSegment ("plain", MarkdownStyleRole.Normal)]));
     }
 
     [Fact]
     public void MeasureLongestWord_Finds_Longest ()
     {
-        // Copilot — Should find the longest individual word
-        Assert.Equal (5, MarkdownTable.MeasureLongestWord ("hi there world"));
-        Assert.Equal (10, MarkdownTable.MeasureLongestWord ("Navigation"));
-        Assert.Equal (4, MarkdownTable.MeasureLongestWord ("**bold** text"));
+        // CoPilot - GPT-6: Measure displayed words across segment boundaries.
+        Assert.Equal (5, MarkdownTable.MeasureLongestWord ([new StyledSegment ("hi there world", MarkdownStyleRole.Normal)]));
+        Assert.Equal (10, MarkdownTable.MeasureLongestWord ([new StyledSegment ("Navigation", MarkdownStyleRole.Normal)]));
+        Assert.Equal (4, MarkdownTable.MeasureLongestWord ([new StyledSegment ("bold", MarkdownStyleRole.Strong), new StyledSegment (" text", MarkdownStyleRole.Normal)]));
     }
 
     [Fact]

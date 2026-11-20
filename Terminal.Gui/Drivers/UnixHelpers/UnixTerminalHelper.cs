@@ -155,8 +155,16 @@ internal static class UnixTerminalHelper
         }
         finally
         {
-            // Re-enable mouse events and bracketed paste after resume.
-            output.Write (EscSeqUtils.CSI_EnableMouseEvents);
+            // Restore mouse reporting and bracketed paste after resume.
+            if (output is AnsiOutput ansiOutput)
+            {
+                ansiOutput.RestoreMouseReporting ();
+            }
+            else
+            {
+                output.Write (EscSeqUtils.CSI_EnableMouseEvents);
+            }
+
             output.Write (EscSeqUtils.CSI_EnableBracketedPaste);
         }
     }

@@ -46,6 +46,19 @@ public class MainLoopCoordinatorTests (ITestOutputHelper outputHelper) : IDispos
         return app;
     }
 
+    // CoPilot - GPT-6
+    [Fact]
+    public void RunIterationAfterStopDoesNotUseDisposedLoop ()
+    {
+        Mock<IApplicationMainLoop<char>> loop = new ();
+        MainLoopCoordinator<char> coordinator = new (new TimedEvents (), new ConcurrentQueue<char> (), loop.Object, new AnsiComponentFactory ());
+
+        coordinator.Stop ();
+        coordinator.RunIteration ();
+
+        loop.Verify (instance => instance.Iteration (), Times.Never);
+    }
+
     /// <summary>
     ///     Verifies that Dispose() stops the input loop when using Application.Create().
     ///     This is the key test that proves the input thread respects cancellation.
@@ -259,14 +272,17 @@ public class MainLoopCoordinatorTests (ITestOutputHelper outputHelper) : IDispos
         TestAnsiComponentFactory factory = new (input, output);
         MainLoopCoordinator<char> coordinator = new (timedEvents, inputQueue, loop, factory);
         Mock<IApplication> appMock = new ();
+        AnsiStartupGate startupGate = new ();
 
         appMock.SetupProperty (a => a.Driver);
+        appMock.SetupProperty (a => a.AnsiStartupGate, startupGate);
         appMock.SetupProperty (a => a.MainThreadId, 456);
 
         await coordinator.StartInputTaskAsync (appMock.Object);
 
         DriverImpl driver = Assert.IsType<DriverImpl> (appMock.Object.Driver);
         Assert.Null (driver.KittyKeyboardCapabilities);
+        Assert.True (startupGate.IsReady);
 
         Assert.DoesNotContain (EscSeqUtils.CSI_EnableKittyKeyboardFlags (EscSeqUtils.KittyKeyboardRequestedFlags),
                                output.GetLastOutput (),
@@ -275,6 +291,52 @@ public class MainLoopCoordinatorTests (ITestOutputHelper outputHelper) : IDispos
         coordinator.Stop ();
 
         Assert.DoesNotContain (EscSeqUtils.CSI_DisableKittyKeyboardFlags, output.GetLastOutput (), StringComparison.Ordinal);
+    }
+
+    // Codex - GPT-6
+    [Fact]
+    public void DeviceAttributesReply_ReleasesOptionalStartupProbes_ButNotCursorPosition ()
+    {
+        AnsiStartupGate startupGate = new ();
+        startupGate.RegisterQuery (AnsiStartupQuery.KittyKeyboard, TimeSpan.FromSeconds (1));
+        startupGate.RegisterQuery (AnsiStartupQuery.TerminalColors, TimeSpan.FromSeconds (1));
+        startupGate.RegisterQuery (AnsiStartupQuery.CursorPosition, TimeSpan.FromMilliseconds (500));
+
+        AnsiEscapeSequenceRequest? capturedRequest = null;
+        Mock<IDriver> driverMock = new ();
+        driverMock.Setup (d => d.QueueAnsiRequest (It.IsAny<AnsiEscapeSequenceRequest> ()))
+                  .Callback<AnsiEscapeSequenceRequest> (request => capturedRequest = request);
+
+        MainLoopCoordinator<char>.QueueDeviceAttributesProbe (driverMock.Object, startupGate);
+
+        Assert.NotNull (capturedRequest);
+        Assert.DoesNotContain (AnsiStartupQuery.DeviceAttributesPrimary, startupGate.PendingQueries);
+        Assert.Contains (AnsiStartupQuery.KittyKeyboard, startupGate.PendingQueries);
+        Assert.Contains (AnsiStartupQuery.TerminalColors, startupGate.PendingQueries);
+
+        capturedRequest.ResponseReceived ("\u001B[?1;0c");
+
+        Assert.Equal ([AnsiStartupQuery.CursorPosition], startupGate.PendingQueries);
+    }
+
+    // Codex - GPT-6
+    [Fact]
+    public void MissingDeviceAttributesReply_DoesNotDelayCompletedOptionalProbes ()
+    {
+        AnsiStartupGate startupGate = new ();
+        startupGate.RegisterQuery (AnsiStartupQuery.KittyKeyboard, TimeSpan.FromSeconds (1));
+        startupGate.RegisterQuery (AnsiStartupQuery.TerminalColors, TimeSpan.FromSeconds (1));
+
+        Mock<IDriver> driverMock = new ();
+        driverMock.Setup (d => d.QueueAnsiRequest (It.IsAny<AnsiEscapeSequenceRequest> ()));
+
+        MainLoopCoordinator<char>.QueueDeviceAttributesProbe (driverMock.Object, startupGate);
+        Assert.False (startupGate.IsReady);
+
+        startupGate.MarkComplete (AnsiStartupQuery.KittyKeyboard);
+        startupGate.MarkComplete (AnsiStartupQuery.TerminalColors);
+
+        Assert.True (startupGate.IsReady);
     }
 
     [Fact]

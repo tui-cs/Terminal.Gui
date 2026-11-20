@@ -1,10 +1,14 @@
 using System.Text.RegularExpressions;
 using Markdig;
+using Markdig.Extensions.Abbreviations;
+using Markdig.Extensions.Alerts;
+using Markdig.Extensions.DefinitionLists;
 using Markdig.Extensions.Tables;
 using Markdig.Extensions.TaskLists;
 using Markdig.Helpers;
 using Markdig.Syntax;
 using Markdig.Syntax.Inlines;
+using Microsoft.Extensions.Logging;
 
 namespace Terminal.Gui.Views;
 
@@ -25,7 +29,31 @@ public partial class Markdown
         _blocks.Clear ();
 
         MarkdownPipeline pipeline = MarkdownPipeline ?? _defaultPipeline;
-        MarkdownDocument doc = Markdig.Markdown.Parse (_markdown, pipeline);
+        MarkdownDocument doc;
+
+        try
+        {
+            doc = Markdig.Markdown.Parse (_markdown, pipeline);
+        }
+        catch (ArgumentException exception)
+        {
+            // Markdig uses ArgumentException for nesting limits; avoid depending on its message.
+            Logging.Logger.LogWarning (exception, "Markdown parsing failed; rendering the source as literal text.");
+            doc = new MarkdownDocument ();
+            int lineNumber = 0;
+
+            // Lower literal paragraphs through the same state-reset and layout path as parsed input.
+            foreach (string line in _markdown.Replace ("\r\n", "\n", StringComparison.Ordinal).Replace ('\r', '\n').Split ('\n'))
+            {
+                ContainerInline inline = new ();
+                inline.AppendChild (new LiteralInline (line));
+                doc.Add (new ParagraphBlock
+                {
+                    Line = lineNumber++,
+                    Inline = inline
+                });
+            }
+        }
 
         LowerFromAst (doc);
 
@@ -68,12 +96,50 @@ public partial class Markdown
         switch (block)
         {
             case HeadingBlock heading:
-                HandleHeadingBlock (heading, prefix);
+                HandleHeadingBlock (heading, prefix, contPrefix);
 
                 break;
 
             case ParagraphBlock para:
                 HandleParagraphBlock (para, prefix, contPrefix, defaultRole);
+
+                break;
+
+            case DefinitionTerm term:
+                _blocks.Add (new IntermediateBlock (WalkInlines (term.Inline?.FirstChild, defaultRole, _markdown), true, prefix, contPrefix));
+
+                break;
+
+            case DefinitionList definitions:
+                foreach (Block item in definitions)
+                {
+                    int previousCount = _blocks.Count;
+                    WalkBlock (item, prefix, contPrefix, defaultRole);
+
+                    if (_blocks.Count == previousCount)
+                    {
+                        continue;
+                    }
+
+                    prefix = contPrefix;
+                }
+
+                break;
+
+            case DefinitionItem definition:
+                foreach (Block content in definition)
+                {
+                    int previousCount = _blocks.Count;
+                    string indent = content is DefinitionTerm ? string.Empty : "  ";
+                    WalkBlock (content, prefix + indent, contPrefix + indent, defaultRole);
+
+                    if (_blocks.Count == previousCount)
+                    {
+                        continue;
+                    }
+
+                    prefix = contPrefix;
+                }
 
                 break;
 
@@ -85,6 +151,19 @@ public partial class Markdown
 
             case ThematicBreakBlock:
                 _blocks.Add (new IntermediateBlock ([new InlineRun ("", MarkdownStyleRole.ThematicBreak)], false, isThematicBreak: true));
+
+                break;
+
+            case AlertBlock alert:
+                // Markdig accepts custom alphabetic kinds; retain their names and markers too.
+                string kind = alert.Kind.ToString ();
+                string marker = TranslateListMarkerText (prefix + "> ") + $"[!{kind}]";
+                _blocks.Add (new IntermediateBlock ([new InlineRun (kind.ToUpperInvariant (), MarkdownStyleRole.Strong)], true, prefix + "> ", contPrefix + "> ", sourceText: marker));
+
+                foreach (Block content in alert)
+                {
+                    WalkBlock (content, contPrefix + "> ", contPrefix + "> ", MarkdownStyleRole.Quote);
+                }
 
                 break;
 
@@ -122,12 +201,12 @@ public partial class Markdown
         }
     }
 
-    private void HandleHeadingBlock (HeadingBlock heading, string prefix)
+    private void HandleHeadingBlock (HeadingBlock heading, string prefix, string contPrefix)
     {
-        List<InlineRun> runs = WalkInlines (heading.Inline?.FirstChild, MarkdownStyleRole.Heading);
+        List<InlineRun> runs = WalkInlines (heading.Inline?.FirstChild, MarkdownStyleRole.Heading, _markdown);
 
         // Compute anchor slug from heading text before inserting the marker
-        string headingText = string.Concat (runs.Select (r => r.Text));
+        string headingText = string.Concat (runs.Select (r => r.Text)).Replace ('\n', ' ');
         string anchor = DeduplicateSlug (GenerateAnchorSlug (headingText), _slugCounts);
 
         if (ShowHeadingPrefix)
@@ -140,12 +219,12 @@ public partial class Markdown
             runs.Insert (0, new InlineRun (prefix, MarkdownStyleRole.HeadingMarker));
         }
 
-        _blocks.Add (new IntermediateBlock (runs, true, anchor: anchor));
+        _blocks.Add (new IntermediateBlock (runs, true, continuationPrefix: contPrefix, anchor: anchor));
     }
 
     private void HandleParagraphBlock (ParagraphBlock para, string prefix, string contPrefix, MarkdownStyleRole defaultRole)
     {
-        List<InlineRun> runs = WalkInlines (para.Inline?.FirstChild, defaultRole);
+        List<InlineRun> runs = WalkInlines (para.Inline?.FirstChild, defaultRole, _markdown);
         _blocks.Add (new IntermediateBlock (runs, true, prefix, contPrefix));
     }
 
@@ -182,6 +261,13 @@ public partial class Markdown
             string itemPrefix = prefix + marker;
             string itemCont = contPrefix + new string (' ', marker.GetColumns ());
 
+            if (listItem.Count == 0)
+            {
+                _blocks.Add (new IntermediateBlock ([], true, itemPrefix, itemCont));
+
+                continue;
+            }
+
             var isFirst = true;
 
             foreach (Block child in listItem)
@@ -199,13 +285,13 @@ public partial class Markdown
                         // To align wrapped task text after variable-width glyph markers, include the trailing space in the continuation indent.
                         string taskCont = contPrefix + new string (' ', marker.GetColumns () + checkbox.GetColumns ());
 
-                        List<InlineRun> runs = WalkInlines (firstInline.NextSibling, role);
+                        List<InlineRun> runs = WalkInlines (firstInline.NextSibling, role, _markdown);
                         TrimLeadingSpace (runs);
                         _blocks.Add (new IntermediateBlock (runs, true, taskPrefix, taskCont));
                     }
                     else
                     {
-                        List<InlineRun> runs = WalkInlines (firstInline, defaultRole);
+                        List<InlineRun> runs = WalkInlines (firstInline, defaultRole, _markdown);
                         _blocks.Add (new IntermediateBlock (runs, true, itemPrefix, itemCont));
                     }
 
@@ -222,136 +308,321 @@ public partial class Markdown
 
     private void HandleTableBlock (Table table)
     {
-        List<string> headers = [];
-        Alignment [] alignments = [];
-        List<string []> rows = [];
-        var headerParsed = false;
+        bool grid = table.Parser is GridTableParser;
+        List<TableRowData> rows = [];
+        List<MarkdownTableCellContent> cells = [];
+        HashSet<(int Row, int Column)> occupied = [];
+        int columnCount = table.ColumnDefinitions.Count;
+        int rowIndex = 0;
 
-        foreach (Block tableRow in table)
+        foreach (TableRow row in table.Cast<TableRow> ())
         {
-            if (tableRow is not TableRow row)
+            List<TableCellData> definitions = [];
+            int nextColumn = 0;
+
+            foreach (TableCell cell in row.Cast<TableCell> ())
             {
-                continue;
+                while (occupied.Contains ((rowIndex, nextColumn)))
+                {
+                    nextColumn++;
+                }
+
+                int column = cell.ColumnIndex >= 0 ? cell.ColumnIndex : nextColumn;
+                string source = grid ? MarkdownTableCellParser.Serialize (cell, GetCellInlineSource) : ExtractCellText (cell);
+                TableCellData definition = new (column, source, cell.ColumnSpan, cell.RowSpan);
+                definitions.Add (definition);
+                IReadOnlyList<IntermediateBlock> blocks = grid
+                                                             ? MarkdownTableCellParser.Lower (cell, _markdown)
+                                                             : [new (LowerCellInlines (cell.OfType<ParagraphBlock> ().FirstOrDefault ()?.Inline?.FirstChild,
+                                                                                      row.IsHeader ? MarkdownStyleRole.Heading : MarkdownStyleRole.Normal, _markdown), true)];
+                cells.Add (new (rowIndex, definition, blocks));
+                columnCount = Math.Max (columnCount, checked(column + cell.ColumnSpan));
+
+                for (int y = rowIndex; y < checked(rowIndex + cell.RowSpan); y++)
+                {
+                    for (int x = column; x < column + cell.ColumnSpan; x++)
+                    {
+                        occupied.Add ((y, x));
+                    }
+                }
+
+                nextColumn = column + cell.ColumnSpan;
             }
 
-            string [] cells = row.Select (cell => ExtractCellText ((TableCell)cell)).ToArray ();
-
-            if (!headerParsed)
-            {
-                headers.AddRange (cells);
-
-                alignments = table.ColumnDefinitions.Take (headers.Count)
-                                  .Select (col => col.Alignment switch
-                                                  {
-                                                      TableColumnAlign.Center => Alignment.Center,
-                                                      TableColumnAlign.Right => Alignment.End,
-                                                      _ => Alignment.Start
-                                                  })
-                                  .ToArray ();
-                headerParsed = true;
-            }
-            else if (!row.IsHeader)
-            {
-                rows.Add (cells);
-            }
+            rows.Add (new (row.IsHeader, definitions));
+            rowIndex++;
         }
 
-        if (headers.Count == 0)
+        if (columnCount == 0)
         {
             return;
         }
 
-        // Pad alignments if there are more headers than alignment definitions
-        if (alignments.Length < headers.Count)
+        int requiredRows = cells.Count == 0 ? rows.Count : cells.Max (cell => cell.Row + cell.Definition.RowSpan);
+
+        while (rows.Count < requiredRows)
         {
-            Alignment [] padded = new Alignment [headers.Count];
-            alignments.CopyTo (padded, 0);
-            alignments = padded;
+            rows.Add (new (false, []));
         }
 
-        TableData tableData = new (headers.ToArray (), alignments, rows.ToArray ());
-        _blocks.Add (new IntermediateBlock ([new InlineRun ("", MarkdownStyleRole.Table)], false, tableData: tableData));
+        TableColumnData [] columns = [.. Enumerable.Range (0, columnCount).Select (column =>
+        {
+            TableColumnDefinition? definition = column < table.ColumnDefinitions.Count ? table.ColumnDefinitions [column] : null;
+            Alignment alignment = definition?.Alignment switch
+            {
+                TableColumnAlign.Center => Alignment.Center,
+                TableColumnAlign.Right => Alignment.End,
+                _ => Alignment.Start
+            };
+
+            return new TableColumnData (alignment, definition?.Width);
+        })];
+        string original = MarkdownTableSource.Extract (table, _markdown);
+        TableData data = new (columns, rows, grid, grid, original);
+        MarkdownTableContent content = new (data, cells);
+        _blocks.Add (new ([new ("", MarkdownStyleRole.Table)], false, tableData: data, tableContent: content));
     }
 
-    private static string ExtractCellText (TableCell cell)
+    private string GetCellInlineSource (Inline? inline)
     {
-        // Option A: reconstruct raw markdown-like text from the AST so MarkdownTable
-        // can re-parse inline formatting with its existing MarkdownInlineParser path.
-        StringBuilder sb = new ();
+        StringBuilder source = new ();
+        AppendInlineSource (inline, source);
 
-        foreach (Block child in cell)
+        return source.ToString ();
+    }
+
+    internal static List<InlineRun> LowerCellInlines (Inline? inline, MarkdownStyleRole defaultRole, string source) =>
+        WalkInlines (inline, defaultRole, source, isTableCell: true);
+
+    private string ExtractCellText (TableCell cell)
+    {
+        // Reuse literal source only when reparsing the entire cell preserves its display semantics.
+        if (MarkdownPipeline is { }
+            && cell.Count == 1
+            && cell [0] is ParagraphBlock { Inline.FirstChild: LiteralInline { NextSibling: null } literal })
         {
-            if (child is ParagraphBlock para)
+            string original = EscapeCellPipes (GetInlineSource (literal, _markdown).Trim ());
+            List<InlineRun> runs = MarkdownInlineParser.ParseInlines (original, MarkdownStyleRole.Normal);
+
+            if (string.Concat (runs.Select (run => run.Text)) == literal.Content.ToString ()
+                && runs.All (run => run.StyleRole == MarkdownStyleRole.Normal
+                                    && run.AdditionalStyle == TextStyle.None
+                                    && run.Url is null
+                                    && run.ImageSource is null))
             {
-                AppendInlineText (para.Inline?.FirstChild, sb);
+                return original;
             }
         }
 
-        return sb.ToString ().Trim ();
+        StringBuilder source = new ();
+
+        foreach (Block block in cell)
+        {
+            if (block is not ParagraphBlock paragraph)
+            {
+                continue;
+            }
+
+            if (source.Length > 0)
+            {
+                source.Append (' ');
+            }
+
+            AppendInlineSource (paragraph.Inline?.FirstChild, source);
+        }
+
+        return EscapeCellPipes (source.ToString ().Trim ());
     }
 
-    private static void AppendInlineText (Inline? inline, StringBuilder sb)
+    private static string EscapeCellPipes (string source)
+    {
+        if (!source.Contains ('|'))
+        {
+            return source;
+        }
+
+        // Grid cells can contain raw pipes; clipboard rows always use pipe-table syntax.
+        StringBuilder escaped = new (source.Length);
+        int backslashes = 0;
+
+        foreach (char character in source)
+        {
+            if (character == '|' && backslashes % 2 == 0)
+            {
+                escaped.Append ('\\');
+            }
+
+            escaped.Append (character);
+            backslashes = character == '\\' ? backslashes + 1 : 0;
+        }
+
+        return escaped.ToString ();
+    }
+
+    private void AppendInlineSource (Inline? inline, StringBuilder source)
     {
         while (inline is { })
         {
+            string original = GetInlineSource (inline, _markdown);
+
             switch (inline)
             {
-                case LiteralInline lit:
-                    sb.Append (lit.Content.ToString ());
+                case LiteralInline literal:
+                    string text = literal.Content.ToString ();
+
+                    // Encode custom-pipeline literals so reparsing cannot enable other extensions.
+                    if (MarkdownPipeline is { })
+                    {
+                        source.Append (EncodeCellLiteral (text));
+
+                        break;
+                    }
+
+                    source.Append (literal.IsFirstCharacterEscaped && original.Length > 0 ? original : text);
 
                     break;
 
-                case EmphasisInline em:
-                    var delim = new string (em.DelimiterChar, em.DelimiterCount);
-                    sb.Append (delim);
-                    AppendInlineText (em.FirstChild, sb);
-                    sb.Append (delim);
+                case EmphasisInline emphasis:
+                    string marker = new (emphasis.DelimiterChar, emphasis.DelimiterCount);
+                    source.Append (marker);
+                    AppendInlineSource (emphasis.FirstChild, source);
+                    source.Append (marker);
 
                     break;
 
                 case CodeInline code:
-                    sb.Append ('`');
-                    sb.Append (code.Content);
-                    sb.Append ('`');
+                    if (original.Length > 0 && !original.Contains ('\n') && !original.Contains ('\r'))
+                    {
+                        source.Append (original);
 
-                    break;
+                        break;
+                    }
 
-                case LinkInline { IsImage: true } link:
-                    sb.Append ("![");
-                    AppendInlineText (link.FirstChild, sb);
-                    sb.Append ("](");
-                    sb.Append (link.Url);
-                    sb.Append (')');
+                    AppendCellCode (source, code.Content);
 
                     break;
 
                 case LinkInline link:
-                    sb.Append ('[');
-                    AppendInlineText (link.FirstChild, sb);
-                    sb.Append ("](");
-                    sb.Append (link.Url);
-                    sb.Append (')');
+                    source.Append (link.IsImage ? "![" : "[");
+                    AppendInlineSource (link.FirstChild, source);
+                    source.Append ("](<");
+                    source.Append (EscapeCellDestination (link.Url));
+                    source.Append ('>');
+
+                    if (link.Title is { })
+                    {
+                        source.Append (" \"");
+                        source.Append (EncodeCellLiteral (link.Title));
+                        source.Append ('"');
+                    }
+
+                    source.Append (')');
 
                     break;
 
                 case HtmlEntityInline entity:
-                    sb.Append (entity.Transcoded.ToString ());
+                    source.Append (original.Length > 0 ? original : EncodeCellLiteral (entity.Transcoded.ToString ()));
+
+                    break;
+
+                case AbbreviationInline abbreviation:
+                    source.Append (EncodeCellLiteral (abbreviation.Abbreviation.Label ?? string.Empty));
 
                     break;
 
                 case AutolinkInline auto:
-                    sb.Append (auto.Url);
+                    source.Append (original.Length > 0 ? original : $"<{EscapeCellDestination (auto.Url)}>");
 
                     break;
 
-                case ContainerInline container:
-                    AppendInlineText (container.FirstChild, sb);
+                case LineBreakInline lineBreak:
+                    // Keep a pipe-table row on one physical line, including explicit hard breaks.
+                    source.Append (lineBreak.IsHard ? "&#10;" : " ");
+
+                    break;
+
+                case HtmlInline:
+                    // Match the display path, which omits inline HTML tags.
+
+                    break;
+
+                case ContainerInline group:
+                    AppendInlineSource (group.FirstChild, source);
+
+                    break;
+
+                case LeafInline:
+                    source.Append (EncodeCellLiteral (original));
 
                     break;
             }
 
             inline = inline.NextSibling;
         }
+    }
+
+    private static void AppendCellCode (StringBuilder source, string content)
+    {
+        int longestRun = 0;
+        int currentRun = 0;
+
+        foreach (char character in content)
+        {
+            currentRun = character == '`' ? currentRun + 1 : 0;
+            longestRun = Math.Max (longestRun, currentRun);
+        }
+
+        string delimiter = new ('`', longestRun + 1);
+        bool pad = content.StartsWith ('`') || content.EndsWith ('`')
+                   || (content.StartsWith (' ') && content.EndsWith (' ') && !string.IsNullOrWhiteSpace (content));
+        source.Append (delimiter);
+
+        if (pad)
+        {
+            source.Append (' ');
+        }
+
+        source.Append (content.Replace ("\\|", "|", StringComparison.Ordinal).Replace ("|", "\\|", StringComparison.Ordinal));
+
+        if (pad)
+        {
+            source.Append (' ');
+        }
+
+        source.Append (delimiter);
+    }
+
+    private static string GetInlineSource (Inline inline, string source) =>
+        inline.Span.Start >= 0 && inline.Span.End >= inline.Span.Start && inline.Span.End < source.Length
+            ? source.Substring (inline.Span.Start, inline.Span.Length)
+            : string.Empty;
+
+    private static string EscapeCellDestination (string? destination) =>
+        (destination ?? string.Empty).Replace ("\\", "\\\\", StringComparison.Ordinal)
+                                     .Replace ("|", "\\|", StringComparison.Ordinal)
+                                     .Replace ("(", "\\(", StringComparison.Ordinal)
+                                     .Replace (")", "\\)", StringComparison.Ordinal)
+                                     .Replace ("<", "\\<", StringComparison.Ordinal)
+                                     .Replace (">", "\\>", StringComparison.Ordinal);
+
+    private static string EncodeCellLiteral (string text)
+    {
+        StringBuilder source = new ();
+
+        foreach (char character in text)
+        {
+            if (!character.IsAsciiPunctuation ())
+            {
+                source.Append (character);
+
+                continue;
+            }
+
+            // Encode punctuation systematically so literal text cannot enable inline extensions.
+            source.Append ("&#").Append ((int)character).Append (';');
+        }
+
+        return source.ToString ();
     }
 
     private void HandleHtmlBlock (HtmlBlock html, string prefix, string contPrefix, MarkdownStyleRole defaultRole)
@@ -410,7 +681,7 @@ public partial class Markdown
         }
     }
 
-    private static List<InlineRun> WalkInlines (Inline? inline, MarkdownStyleRole defaultRole)
+    private static List<InlineRun> WalkInlines (Inline? inline, MarkdownStyleRole defaultRole, string source, bool isTableCell = false)
     {
         List<InlineRun> runs = [];
 
@@ -431,37 +702,54 @@ public partial class Markdown
                 case EmphasisInline em:
                     MarkdownStyleRole emRole = em is { DelimiterChar: '~', DelimiterCount: >= 2 } ? MarkdownStyleRole.Strikethrough :
                                                em.DelimiterCount >= 2 ? MarkdownStyleRole.Strong : MarkdownStyleRole.Emphasis;
-                    runs.AddRange (WalkInlines (em.FirstChild, emRole));
+                    TextStyle emphasisStyle = emRole switch
+                    {
+                        MarkdownStyleRole.Strong => TextStyle.Bold,
+                        MarkdownStyleRole.Strikethrough => TextStyle.Strikethrough,
+                        _ => TextStyle.Italic
+                    };
+                    runs.AddRange (WalkInlines (em.FirstChild, emRole, source, isTableCell)
+                                       .Select (run => run with
+                                       {
+                                           AdditionalStyle = run.AdditionalStyle | emphasisStyle
+                                       }));
 
                     break;
 
                 case CodeInline code:
-                    runs.Add (new InlineRun (code.Content, MarkdownStyleRole.InlineCode));
+                    // Normalize table separators before a surrounding link replaces the code role.
+                    string codeText = isTableCell ? code.Content.Replace ("\\|", "|", StringComparison.Ordinal) : code.Content;
+                    runs.Add (new InlineRun (codeText, MarkdownStyleRole.InlineCode));
 
                     break;
 
                 case LinkInline { IsImage: true } link:
-                    List<InlineRun> altRuns = WalkInlines (link.FirstChild, MarkdownStyleRole.ImageAlt);
+                    List<InlineRun> altRuns = WalkInlines (link.FirstChild, MarkdownStyleRole.ImageAlt, source, isTableCell);
                     string altText = string.Concat (altRuns.Select (r => r.Text));
                     string fallback = MarkdownImageResolver.GetFallbackText (altText);
-                    runs.Add (new InlineRun (fallback, MarkdownStyleRole.ImageAlt, imageSource: link.Url));
+                    runs.Add (new InlineRun (fallback, MarkdownStyleRole.ImageAlt, ImageSource: link.Url));
 
                     break;
 
                 case LinkInline link:
                     string? url = link.Url;
-                    List<InlineRun> linkRuns = WalkInlines (link.FirstChild, MarkdownStyleRole.Link);
-                    runs.AddRange (linkRuns.Select (r => new InlineRun (r.Text, MarkdownStyleRole.Link, url, r.ImageSource, r.Attribute)));
+                    List<InlineRun> linkRuns = WalkInlines (link.FirstChild, MarkdownStyleRole.Link, source, isTableCell);
+                    runs.AddRange (linkRuns.Select (r => r with
+                    {
+                        StyleRole = MarkdownStyleRole.Link,
+                        Url = url,
+                        LinkIdentity = link.Span.Start
+                    }));
 
                     break;
 
                 case AutolinkInline auto:
-                    runs.Add (new InlineRun (auto.Url, MarkdownStyleRole.Link, auto.Url));
+                    runs.Add (new InlineRun (auto.Url, MarkdownStyleRole.Link, auto.Url) { LinkIdentity = auto.Span.Start });
 
                     break;
 
-                case LineBreakInline:
-                    runs.Add (new InlineRun (" ", defaultRole));
+                case LineBreakInline lineBreak:
+                    runs.Add (new InlineRun (lineBreak.IsHard ? "\n" : " ", defaultRole));
 
                     break;
 
@@ -479,12 +767,23 @@ public partial class Markdown
                     // Inline HTML — skip in terminal context.
                     break;
 
+                case AbbreviationInline abbreviation:
+                    runs.Add (new InlineRun (abbreviation.Abbreviation.Label ?? string.Empty, defaultRole));
+
+                    break;
+
+                case LeafInline unknown:
+                    // Preserve unsupported leaf syntax instead of silently dropping its text.
+                    runs.Add (new InlineRun (GetInlineSource (unknown, source), defaultRole));
+
+                    break;
+
                 default:
                     // For unrecognized container inline types (e.g. PipeTableDelimiterInline),
                     // recurse into children to extract any text content.
                     if (inline is ContainerInline unknownContainer)
                     {
-                        runs.AddRange (WalkInlines (unknownContainer.FirstChild, defaultRole));
+                        runs.AddRange (WalkInlines (unknownContainer.FirstChild, defaultRole, source, isTableCell));
                     }
 
                     break;
@@ -511,7 +810,10 @@ public partial class Markdown
         }
 
         InlineRun first = runs [0];
-        runs [0] = new InlineRun (trimmed, first.StyleRole, first.Url, first.ImageSource, first.Attribute);
+        runs [0] = first with
+        {
+            Text = trimmed
+        };
 
         if (runs [0].Text.Length == 0)
         {
@@ -519,7 +821,7 @@ public partial class Markdown
         }
     }
 
-    private static int GetBlockEndLine (Block block) =>
+    internal static int GetBlockEndLine (Block block) =>
         block switch
         {
             FencedCodeBlock fcb => fcb.Line + fcb.Lines.Count + 1, // opening fence + content + closing fence
@@ -527,6 +829,8 @@ public partial class Markdown
             QuoteBlock qb => qb.Count > 0 ? GetBlockEndLine (qb [^1]) : qb.Line,
             ListBlock lb => lb.Count > 0 ? GetBlockEndLine (lb [^1]) : lb.Line,
             ListItemBlock lib => lib.Count > 0 ? GetBlockEndLine (lib [^1]) : lib.Line,
+            DefinitionList definitions => definitions.Count > 0 ? GetBlockEndLine (definitions [^1]) : definitions.Line,
+            DefinitionItem definition => definition.Count > 0 ? GetBlockEndLine (definition [^1]) : definition.Line,
             Table t => t.Count > 0 ? GetBlockEndLine (t [^1]) : t.Line,
             _ => block.Line
         };
@@ -535,7 +839,7 @@ public partial class Markdown
     {
         if (codeLines.Count == 0)
         {
-            _blocks.Add (new IntermediateBlock ([new InlineRun ("", MarkdownStyleRole.CodeBlock, role: VisualRole.Code)], false, isCodeBlock: true, language: language));
+            _blocks.Add (new IntermediateBlock ([new InlineRun ("", MarkdownStyleRole.CodeBlock, Role: VisualRole.Code)], false, isCodeBlock: true, language: language));
 
             return;
         }
@@ -548,19 +852,14 @@ public partial class Markdown
 
             if (SyntaxHighlighter is null)
             {
-                runs = [new InlineRun (line, MarkdownStyleRole.CodeBlock, role: VisualRole.Code)];
+                runs = [new InlineRun (line, MarkdownStyleRole.CodeBlock, Role: VisualRole.Code)];
             }
             else
             {
                 IReadOnlyList<StyledSegment> highlighted = SyntaxHighlighter.Highlight (line, language);
                 List<InlineRun> converted = [];
 
-                converted.AddRange (highlighted.Select (segment => new InlineRun (segment.Text,
-                                                                                   segment.StyleRole,
-                                                                                   segment.Url,
-                                                                                   segment.ImageSource,
-                                                                                   segment.Attribute,
-                                                                                   segment.Role)));
+                converted.AddRange (highlighted.Select (InlineRun.FromStyledSegment));
 
                 runs = converted;
             }

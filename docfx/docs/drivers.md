@@ -21,7 +21,7 @@ Terminal.Gui provides three console driver implementations:
 | **Theme** | Default driver for Unix/macOS and a showcase driver for all platforms. Pure ANSI implementation. Ideal for testing/CI. Deterministic behavior with virtual time support. | Cross-platform managed .NET driver. Simplest implementation using `System.Console` API. Works with .NET BCL only. | High-performance Windows-only driver. Native Win32 Console API. Direct access to Windows-specific features. |
 | **Input Model** | Reads raw ANSI sequences, parses to Terminal.Gui events | Reads `ConsoleKeyInfo` from `System.Console`, converts to Terminal.Gui events | Reads `INPUT_RECORD` structures directly, converts to Terminal.Gui events |
 | **Unix Read APIs** | `poll(STDIN_FILENO, ...)`, `read(STDIN_FILENO, buffer, len)`, `tcgetattr()`/`tcsetattr()` for raw mode via `UnixRawModeHelper` | N/A (uses .NET `Console.ReadKey()` which internally delegates to platform APIs) reads `char` | N/A (Windows-only) |
-| **Windows Read APIs** | P/Invokes `ReadFile()` reads `char` | N/A (uses .NET `Console.ReadKey()` which internally delegates to platform APIs) | P/Invokes `ReadConsoleInputW()` reads `INPUT_RECORD`, `GetConsoleMode()`/`SetConsoleMode()` enables mouse input and raw mode |
+| **Windows Read APIs** | P/Invokes `ReadConsoleW()` reads UTF-16 `char` (VT input mode) | N/A (uses .NET `Console.ReadKey()` which internally delegates to platform APIs) | P/Invokes `ReadConsoleInputW()` reads `INPUT_RECORD`, `GetConsoleMode()`/`SetConsoleMode()` enables mouse input and raw mode |
 | **Output Model** | Pure ANSI escape sequences | Managed .NET + ANSI sequences (when VT mode enabled) | Direct character output via Win32 API with double buffering |
 | **Unix Write APIs** | `write()` syscall to stdout (fd 1) | N/A (uses .NET `Console.Write()` which internally delegates to platform APIs) | N/A (Windows-only) |
 | **Windows Write APIs** | P/Invokes `WriteFile()` | N/A (uses .NET `Console.Write()` which internally delegates to platform APIs) | P/Invokes `WriteConsoleW()`, `CreateConsoleScreenBuffer()`/`SetConsoleActiveScreenBuffer()` for double buffering, `SetConsoleTextAttribute()` |
@@ -224,7 +224,7 @@ Each driver is composed of specialized components, each with a single responsibi
 Reads raw console input events from the terminal on a dedicated input thread. The generic type `T` represents the platform-specific input record type:
 - `ConsoleKeyInfo` for DotNetDriver (from `Console.ReadKey()`)
 - `WindowsConsole.InputRecord` for WindowsDriver (from `ReadConsoleInputW()`)
-- `char` for AnsiDriver (raw bytes from `read()` syscall or `ReadFile()`)
+- `char` for AnsiDriver (UTF-8 decoded from the `read()` syscall on Unix, or UTF-16 code units from `ReadConsoleW()` on Windows)
 
 Input runs on a separate thread managed by `MainLoopCoordinator`, continuously reading from the console and queueing events into a thread-safe `ConcurrentQueue<T>` to avoid blocking the UI thread.
 
@@ -395,7 +395,7 @@ When `AppModel == Inline`, the ANSI driver changes behavior in several ways:
 | Cursor positioning | Absolute terminal coordinates | Offset by `App.Screen.Y` |
 | Shutdown | Emit `CSI ?1049l` (restore) | Move cursor below inline region |
 
-**Startup gate** (`AnsiStartupGate`): In inline mode, `AnsiSizeMonitor` sends a CPR query (`ESC[6n`) to discover the cursor row. The startup gate defers the first `LayoutAndDraw` until both the CPR response and terminal size query complete. If the terminal never responds, the gate times out and rendering proceeds from row 0.
+**Startup gate** (`AnsiStartupGate`): In inline mode, `AnsiSizeMonitor` sends a CPR query (`ESC[6n`) to discover the cursor row. The startup gate defers the first `LayoutAndDraw` until cursor position, any pending terminal size query, and startup capability probes are ready. A DA1 reply releases the kitty keyboard and default-color waits without cancelling those probes. If queries do not respond, their deadlines allow rendering to proceed; cursor position falls back to row 0.
 
 **`AnsiOutput` changes**: `SetCursorPositionImpl` adds `App.Screen.Y` to all row coordinates so output lands at the correct terminal rows. On init, `CSI ?1049h` and `CSI 2J` are skipped. On shutdown, `CSI ?1049l` is skipped and the cursor is positioned at the bottom of the inline region.
 
@@ -533,3 +533,9 @@ See [Input Injection](input-injection.md) for:
 - Virtual time control details
 - Injection modes (Direct vs Pipeline)
 - Troubleshooting guide
+
+## Output above a live inline region
+
+To print completed styled text above an inline UI, await `app.PrintAboveAsync(...)`.
+See [Printing above an inline application](inline-output.md) for ordering, cancellation,
+supported output, and partial-write behavior.

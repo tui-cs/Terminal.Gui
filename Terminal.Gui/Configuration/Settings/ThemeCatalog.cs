@@ -1,4 +1,5 @@
 using Microsoft.Extensions.Configuration;
+using System.Runtime.CompilerServices;
 
 namespace Terminal.Gui.Configuration;
 
@@ -9,11 +10,19 @@ namespace Terminal.Gui.Configuration;
 /// </summary>
 internal static class ThemeCatalog
 {
+    // Cache theme names per configuration instance to avoid repeated theme enumeration
+    private static readonly ConditionalWeakTable<IConfiguration, IReadOnlyList<string>> _nameCache = [];
+
     /// <summary>
     ///     Gets theme names from a nested <c>Themes</c> object, with <see cref="ThemeManager.DEFAULT_THEME_NAME"/> first.
     /// </summary>
     public static IReadOnlyList<string> GetNames (IConfiguration config)
     {
+        if (_nameCache.TryGetValue (config, out IReadOnlyList<string>? cached))
+        {
+            return cached;
+        }
+
         List<string> names = [];
 
         foreach (IConfigurationSection child in config.GetSection ("Themes").GetChildren ())
@@ -27,7 +36,10 @@ internal static class ThemeCatalog
         names.RemoveAll (n => string.Equals (n, ThemeManager.DEFAULT_THEME_NAME, StringComparison.OrdinalIgnoreCase));
         names.Insert (0, ThemeManager.DEFAULT_THEME_NAME);
 
-        return names;
+        IReadOnlyList<string> result = names.AsReadOnly ();
+        _nameCache.Add (config, result);
+
+        return result;
     }
 
     /// <summary>

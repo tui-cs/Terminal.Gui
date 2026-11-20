@@ -681,7 +681,7 @@ protected override bool OnIsRunningChanging (bool oldIsRunning, bool newIsRunnin
 
 ### Lifecycle Properties
 
-- **`IsRunning`** - True when on the `RunnableSessionStack`
+- **`IsRunning`** - True from `Begin` until `End` stops the session
 - **`IsModal`** - True when at the top of the stack (receiving all input)
 - **`Result`** - The typed result value (set before stopping)
 

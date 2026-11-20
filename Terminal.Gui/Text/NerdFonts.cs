@@ -1,4 +1,5 @@
 // This code is adapted from https://github.com/devblackops/Terminal-Icons (which also uses the MIT license).
+// Glyph mappings: https://github.com/ryanoasis/nerd-fonts/blob/v3.5.1/glyphnames.json
 // Nerd fonts can be installed by following the instructions on the Nerd Fonts repository: https://github.com/ryanoasis/nerd-fonts
 
 using System.IO.Abstractions;
@@ -7,9 +8,9 @@ namespace Terminal.Gui.Text;
 
 internal class NerdFonts
 {
-    private readonly char _nf_cod_file = '';
-    private readonly char _nf_cod_folder = '';
-    private readonly char _nf_cod_folder_opened = '';
+    private readonly Rune _nf_cod_file = new (0xEA7B);
+    private readonly Rune _nf_cod_folder = new (0xEA83);
+    private readonly Rune _nf_cod_folder_opened = new (0xEAF7);
 
     /// <summary>
     ///     If <see langword="true"/>, enables the use of Nerd unicode symbols. This requires specific font(s) to be
@@ -18,7 +19,8 @@ internal class NerdFonts
     public static bool Enable => NerdFontsSettings.Current.Enable;
 
     /// <summary>Mapping of file extension to <see cref="Glyphs"/> name.</summary>
-    public Dictionary<string, string> ExtensionToIcon { get; set; } = new ()
+    /// <remarks>Keys are case-insensitive by default. The longest matching extension takes precedence.</remarks>
+    public Dictionary<string, string> ExtensionToIcon { get; set; } = new (StringComparer.OrdinalIgnoreCase)
     {
         // Archive files
         { ".7z", "nf-oct-file_zip" },
@@ -37,26 +39,26 @@ internal class NerdFonts
         // Executable things
         { ".bat", "nf-custom-msdos" },
         { ".cmd", "nf-custom-msdos" },
-        { ".exe", "nf-mdi-application" },
+        { ".exe", "nf-md-application" },
         { ".pl", "nf-dev-perl" },
         { ".sh", "nf-oct-terminal" },
 
         // App Packages
-        { ".msi", "nf-mdi-package_variant" },
-        { ".msix", "nf-mdi-package_variant" },
-        { ".msixbundle", "nf-mdi-package_variant" },
-        { ".appx", "nf-mdi-package_variant" },
-        { ".AppxBundle", "nf-mdi-package_variant" },
-        { ".deb", "nf-mdi-package_variant" },
-        { ".rpm", "nf-mdi-package_variant" },
+        { ".msi", "nf-md-package_variant" },
+        { ".msix", "nf-md-package_variant" },
+        { ".msixbundle", "nf-md-package_variant" },
+        { ".appx", "nf-md-package_variant" },
+        { ".AppxBundle", "nf-md-package_variant" },
+        { ".deb", "nf-md-package_variant" },
+        { ".rpm", "nf-md-package_variant" },
 
         // PowerShell
-        { ".ps1", "nf-mdi-console_line" },
-        { ".psm1", "nf-mdi-console_line" },
-        { ".psd1", "nf-mdi-console_line" },
-        { ".ps1xml", "nf-mdi-console_line" },
-        { ".psc1", "nf-mdi-console_line" },
-        { ".pssc", "nf-mdi-console_line" },
+        { ".ps1", "nf-md-console_line" },
+        { ".psm1", "nf-md-console_line" },
+        { ".psd1", "nf-md-console_line" },
+        { ".ps1xml", "nf-md-console_line" },
+        { ".psc1", "nf-md-console_line" },
+        { ".pssc", "nf-md-console_line" },
 
         // Javascript
         { ".js", "nf-dev-javascript" },
@@ -66,11 +68,11 @@ internal class NerdFonts
         // Java
         { ".java", "nf-fae-java" },
         { ".jar", "nf-fae-java" },
-        { ".gradle", "nf-mdi-elephant" },
+        { ".gradle", "nf-md-elephant" },
 
         // Python
         { ".py", "nf-dev-python" },
-        { ".ipynb", "nf-mdi-notebook" },
+        { ".ipynb", "nf-md-notebook" },
 
         // React
         { ".jsx", "nf-dev-react" },
@@ -83,9 +85,9 @@ internal class NerdFonts
         { ".dll", "nf-fa-archive" },
 
         // Importable Data files
-        { ".clixml", "nf-dev-code_badge" },
-        { ".csv", "nf-mdi-file_excel" },
-        { ".tsv", "nf-mdi-file_excel" },
+        { ".clixml", "nf-md-code_tags" },
+        { ".csv", "nf-md-file_excel" },
+        { ".tsv", "nf-md-file_excel" },
 
         // Settings
         { ".ini", "nf-fa-gear" },
@@ -105,8 +107,8 @@ internal class NerdFonts
         { ".cfg", "nf-fa-gear" },
 
         // Source Files
-        { ".c", "nf-mdi-language_c" },
-        { ".cpp", "nf-mdi-language_cpp" },
+        { ".c", "nf-md-language_c" },
+        { ".cpp", "nf-md-language_cpp" },
         { ".go", "nf-dev-go" },
         { ".php", "nf-dev-php" },
 
@@ -124,14 +126,14 @@ internal class NerdFonts
         { ".vsxproj.filters", "nf-dev-visualstudio" },
 
         // CSharp
-        { ".cs", "nf-mdi-language_csharp" },
-        { ".csx", "nf-mdi-language_csharp" },
+        { ".cs", "nf-md-language_csharp" },
+        { ".csx", "nf-md-language_csharp" },
 
         // Haskell
         { ".hs", "nf-dev-haskell" },
 
         // XAML
-        { ".xaml", "nf-mdi-xaml" },
+        { ".xaml", "nf-md-language_xaml" },
 
         // Rust
         { ".rs", "nf-dev-rust" },
@@ -152,16 +154,16 @@ internal class NerdFonts
         { ".patch", "nf-dev-git" },
 
         // Project files
-        { ".user", "nf-mdi-visualstudio" },
-        { ".code-workspace", "nf-mdi-visualstudio" },
+        { ".user", "nf-md-microsoft_visual_studio" },
+        { ".code-workspace", "nf-md-microsoft_visual_studio" },
 
         // Text data files
         { ".log", "nf-fa-list" },
-        { ".txt", "nf-mdi-file_document" },
+        { ".txt", "nf-md-file_document" },
 
         // Subtitle files
-        { ".srt", "nf-mdi-file_document" },
-        { ".lrc", "nf-mdi-file_document" },
+        { ".srt", "nf-md-file_document" },
+        { ".lrc", "nf-md-file_document" },
         { ".ass", "nf-fa-eye" },
 
         // HTML/css
@@ -188,8 +190,8 @@ internal class NerdFonts
         { ".tsbuildinfo", "nf-seti-json" },
 
         // YAML
-        { ".yml", "nf-mdi-format_align_left" },
-        { ".yaml", "nf-mdi-format_align_left" },
+        { ".yml", "nf-md-format_align_left" },
+        { ".yaml", "nf-md-format_align_left" },
 
         // LUA
         { ".lua", "nf-seti-lua" },
@@ -203,7 +205,7 @@ internal class NerdFonts
         { ".groovy", "nf-dev-groovy" },
 
         // Vue
-        { ".vue", "nf-mdi-vuejs" },
+        { ".vue", "nf-md-vuejs" },
 
         // Dart
         { ".dart", "nf-dev-dart" },
@@ -224,43 +226,43 @@ internal class NerdFonts
         { ".applescript", "nf-dev-apple" },
 
         // XML
-        { ".xml", "nf-mdi-file_xml" },
-        { ".plist", "nf-mdi-file_xml" },
-        { ".xsd", "nf-mdi-file_xml" },
-        { ".dtd", "nf-mdi-file_xml" },
-        { ".xsl", "nf-mdi-file_xml" },
-        { ".xslt", "nf-mdi-file_xml" },
-        { ".resx", "nf-mdi-file_xml" },
-        { ".iml", "nf-mdi-file_xml" },
-        { ".xquery", "nf-mdi-file_xml" },
-        { ".tmLanguage", "nf-mdi-file_xml" },
-        { ".manifest", "nf-mdi-file_xml" },
-        { ".project", "nf-mdi-file_xml" },
+        { ".xml", "nf-md-xml" },
+        { ".plist", "nf-md-xml" },
+        { ".xsd", "nf-md-xml" },
+        { ".dtd", "nf-md-xml" },
+        { ".xsl", "nf-md-xml" },
+        { ".xslt", "nf-md-xml" },
+        { ".resx", "nf-md-xml" },
+        { ".iml", "nf-md-xml" },
+        { ".xquery", "nf-md-xml" },
+        { ".tmLanguage", "nf-md-xml" },
+        { ".manifest", "nf-md-xml" },
+        { ".project", "nf-md-xml" },
 
         // Documents
-        { ".chm", "nf-mdi-help_box" },
-        { ".pdf", "nf-mdi-file_pdf" },
+        { ".chm", "nf-md-help_box" },
+        { ".pdf", "nf-md-file_pdf_box" },
 
         // Excel
-        { ".xls", "nf-mdi-file_excel" },
-        { ".xlsx", "nf-mdi-file_excel" },
+        { ".xls", "nf-md-file_excel" },
+        { ".xlsx", "nf-md-file_excel" },
 
         // PowerPoint
-        { ".pptx", "nf-mdi-file_powerpoint" },
-        { ".ppt", "nf-mdi-file_powerpoint" },
-        { ".pptm", "nf-mdi-file_powerpoint" },
-        { ".potx", "nf-mdi-file_powerpoint" },
-        { ".potm", "nf-mdi-file_powerpoint" },
-        { ".ppsx", "nf-mdi-file_powerpoint" },
-        { ".ppsm", "nf-mdi-file_powerpoint" },
-        { ".pps", "nf-mdi-file_powerpoint" },
-        { ".ppam", "nf-mdi-file_powerpoint" },
-        { ".ppa", "nf-mdi-file_powerpoint" },
+        { ".pptx", "nf-md-file_powerpoint" },
+        { ".ppt", "nf-md-file_powerpoint" },
+        { ".pptm", "nf-md-file_powerpoint" },
+        { ".potx", "nf-md-file_powerpoint" },
+        { ".potm", "nf-md-file_powerpoint" },
+        { ".ppsx", "nf-md-file_powerpoint" },
+        { ".ppsm", "nf-md-file_powerpoint" },
+        { ".pps", "nf-md-file_powerpoint" },
+        { ".ppam", "nf-md-file_powerpoint" },
+        { ".ppa", "nf-md-file_powerpoint" },
 
         // Word
-        { ".doc", "nf-mdi-file_word" },
-        { ".docx", "nf-mdi-file_word" },
-        { ".rtf", "nf-mdi-file_word" },
+        { ".doc", "nf-md-file_word" },
+        { ".docx", "nf-md-file_word" },
+        { ".rtf", "nf-md-file_word" },
 
         // Audio
         { ".mp3", "nf-fa-file_audio_o" },
@@ -303,7 +305,7 @@ internal class NerdFonts
         { ".pic", "nf-fa-file_image_o" },
         { ".raw", "nf-fa-file_image_o" },
         { ".webp", "nf-fa-file_image_o" },
-        { ".svg", "nf-mdi-svg" },
+        { ".svg", "nf-md-svg" },
 
         // Video
         { ".webm", "nf-fa-file_video_o" },
@@ -389,24 +391,24 @@ internal class NerdFonts
         { ".lock", "nf-fa-lock" },
 
         // Terraform
-        { ".tf", "nf-dev-code_badge" },
-        { ".tfvars", "nf-dev-code_badge" },
-        { ".tf.json", "nf-dev-code_badge" },
-        { ".tfvars.json", "nf-dev-code_badge" },
-        { ".auto.tfvars", "nf-dev-code_badge" },
-        { ".auto.tfvars.json", "nf-dev-code_badge" },
+        { ".tf", "nf-md-code_tags" },
+        { ".tfvars", "nf-md-code_tags" },
+        { ".tf.json", "nf-md-code_tags" },
+        { ".tfvars.json", "nf-md-code_tags" },
+        { ".auto.tfvars", "nf-md-code_tags" },
+        { ".auto.tfvars.json", "nf-md-code_tags" },
 
         // Disk Image
-        { ".vmdk", "nf-mdi-harddisk" },
-        { ".vhd", "nf-mdi-harddisk" },
-        { ".vhdx", "nf-mdi-harddisk" },
+        { ".vmdk", "nf-md-harddisk" },
+        { ".vhd", "nf-md-harddisk" },
+        { ".vhdx", "nf-md-harddisk" },
         { ".img", "nf-fae-disco" },
         { ".iso", "nf-fae-disco" },
 
         // R language
-        { ".R", "nf-mdi-language_r" },
-        { ".Rmd", "nf-mdi-language_r" },
-        { ".Rproj", "nf-mdi-language_r" },
+        { ".R", "nf-md-language_r" },
+        { ".Rmd", "nf-md-language_r" },
+        { ".Rproj", "nf-md-language_r" },
 
         // Julia language
         { ".jl", "nf-seti-julia" },
@@ -420,65 +422,66 @@ internal class NerdFonts
     };
 
     /// <summary>Mapping of file name to <see cref="Glyphs"/> name.</summary>
-    public Dictionary<string, string> FilenameToIcon { get; set; } = new ()
+    /// <remarks>Keys are case-insensitive by default. File name matches take precedence over extension matches.</remarks>
+    public Dictionary<string, string> FilenameToIcon { get; set; } = new (StringComparer.OrdinalIgnoreCase)
     {
         { "docs", "nf-oct-repo" },
         { "documents", "nf-oct-repo" },
-        { "desktop", "nf-mdi-desktop_classic" },
-        { "benchmark", "nf-mdi-timer" },
+        { "desktop", "nf-md-desktop_classic" },
+        { "benchmark", "nf-md-timer" },
         { "demo", "nf-cod-preview" },
         { "samples", "nf-cod-preview" },
-        { "contacts", "nf-mdi-contacts" },
-        { "apps", "nf-mdi-apps" },
-        { "applications", "nf-mdi-apps" },
+        { "contacts", "nf-md-contacts" },
+        { "apps", "nf-md-apps" },
+        { "applications", "nf-md-apps" },
         { "artifacts", "nf-cod-package" },
         { "shortcuts", "nf-oct-file_symlink_directory" },
         { "links", "nf-oct-file_symlink_directory" },
         { "fonts", "nf-fa-font" },
-        { "images", "nf-mdi-folder_image" },
-        { "photos", "nf-mdi-folder_image" },
-        { "pictures", "nf-mdi-folder_image" },
-        { "videos", "nf-mdi-movie" },
-        { "movies", "nf-mdi-movie" },
-        { "media", "nf-dev-html5_multimedia" },
-        { "music", "nf-mdi-library_music" },
-        { "songs", "nf-mdi-library_music" },
-        { "onedrive", "nf-mdi-onedrive" },
-        { "downloads", "nf-mdi-folder_download" },
+        { "images", "nf-md-folder_image" },
+        { "photos", "nf-md-folder_image" },
+        { "pictures", "nf-md-folder_image" },
+        { "videos", "nf-md-movie" },
+        { "movies", "nf-md-movie" },
+        { "media", "nf-dev-html5" },
+        { "music", "nf-md-music_box_multiple" },
+        { "songs", "nf-md-music_box_multiple" },
+        { "onedrive", "nf-md-microsoft_onedrive" },
+        { "downloads", "nf-md-folder_download" },
         { "src", "nf-oct-terminal" },
         { "development", "nf-oct-terminal" },
         { "projects", "nf-seti-project" },
         { "bin", "nf-oct-file_binary" },
-        { "tests", "nf-mdi-test_tube" },
+        { "tests", "nf-md-test_tube" },
         { "windows", "nf-fa-windows" },
         { "users", "nf-fa-users" },
-        { "favorites", "nf-mdi-folder_star" },
+        { "favorites", "nf-md-folder_star" },
         { ".config", "nf-seti-config" },
-        { ".cache", "nf-mdi-cached" },
+        { ".cache", "nf-md-cached" },
         { ".vscode", "nf-custom-folder_config" },
         { ".vscode-insiders", "nf-custom-folder_config" },
         { ".git", "nf-custom-folder_git" },
         { ".github", "nf-custom-folder_github" },
         { "github", "nf-fa-github_alt" },
         { "node_modules", "nf-custom-folder_npm" },
-        { ".azure", "nf-mdi-azure" },
+        { ".azure", "nf-md-microsoft_azure" },
         { ".aws", "nf-dev-aws" },
-        { ".kube", "nf-mdi-ship_wheel" },
+        { ".kube", "nf-md-ship_wheel" },
         { ".docker", "nf-dev-docker" },
-        { "umbraco", "nf-mdi-umbraco" },
+        { "umbraco", "nf-md-umbraco" },
         { ".gitattributes", "nf-dev-git" },
         { ".gitconfig", "nf-dev-git" },
         { ".gitignore", "nf-dev-git" },
         { ".gitmodules", "nf-dev-git" },
         { ".gitkeep", "nf-dev-git" },
         { "git-history", "nf-dev-git" },
-        { "LICENSE", "nf-mdi-certificate" },
+        { "LICENSE", "nf-md-certificate" },
         { "CHANGELOG.md", "nf-fae-checklist_o" },
         { "CHANGELOG.txt", "nf-fae-checklist_o" },
         { "CHANGELOG", "nf-fae-checklist_o" },
-        { "README.md", "nf-mdi-library_books" },
-        { "README.txt", "nf-mdi-library_books" },
-        { "README", "nf-mdi-library_books" },
+        { "README.md", "nf-md-book_multiple" },
+        { "README.txt", "nf-md-book_multiple" },
+        { "README", "nf-md-book_multiple" },
         { ".DS_Store", "nf-fa-file_o" },
         { ".tsbuildinfo", "nf-seti-json" },
         { ".jscsrc", "nf-seti-json" },
@@ -489,7 +492,7 @@ internal class NerdFonts
         { ".jsbeautifyrc", "nf-seti-json" },
         { ".esformatter", "nf-seti-json" },
         { "cdp.pid", "nf-seti-json" },
-        { ".htaccess", "nf-mdi-file_xml" },
+        { ".htaccess", "nf-md-xml" },
         { ".jshintignore", "nf-fa-gear" },
         { ".buildignore", "nf-fa-gear" },
         { ".mrconfig", "nf-fa-gear" },
@@ -503,7 +506,7 @@ internal class NerdFonts
         { ".jenkinsfile", "nf-dev-jenkins" },
         { "bitbucket-pipelines.yml", "nf-dev-bitbucket" },
         { "bitbucket-pipelines.yaml", "nf-dev-bitbucket" },
-        { ".azure-pipelines.yml", "nf-mdi-azure" },
+        { ".azure-pipelines.yml", "nf-md-microsoft_azure" },
 
         // Firebase
         { "firebase.json", "nf-dev-firebase" },
@@ -531,8 +534,8 @@ internal class NerdFonts
         { "docker-compose.test.yml", "nf-dev-docker" },
 
         // Vue
-        { "vue.config.js", "nf-mdi-vuejs" },
-        { "vue.config.ts", "nf-mdi-vuejs" },
+        { "vue.config.js", "nf-md-vuejs" },
+        { "vue.config.ts", "nf-md-vuejs" },
 
         // Gulp
         { "gulpfile.js", "nf-dev-gulp" },
@@ -561,203 +564,206 @@ internal class NerdFonts
         { ".terraform.lock.hcl", "nf-fa-lock" },
 
         // Gradle
-        { "gradlew", "nf-mdi-elephant" }
+        { "gradlew", "nf-md-elephant" }
     };
 
     /// <summary>All nerd glyphs used by Terminal.Gui by name.</summary>
-    public Dictionary<string, char> Glyphs { get; set; } = new ()
+    public Dictionary<string, Rune> Glyphs { get; set; } = new ()
     {
-        { "nf-cod-package", '' },
-        { "nf-cod-preview", '' },
-        { "nf-custom-folder_config", '' },
-        { "nf-custom-folder_git", '' },
-        { "nf-custom-folder_git_branch", '' },
-        { "nf-custom-folder_github", '' },
-        { "nf-custom-folder_npm", '' },
-        { "nf-dev-aws", '' },
-        { "nf-dev-docker", '' },
-        { "nf-dev-html5_multimedia", '' },
-        { "nf-fa-font", '' },
-        { "nf-fa-font_awesome", '' },
-        { "nf-fa-fonticons", '' },
-        { "nf-fa-github_alt", '' },
-        { "nf-fa-users", '' },
-        { "nf-fa-windows", '' },
-        { "nf-mdi-apps", '' },
-        { "nf-mdi-azure", 'ﴃ' },
-        { "nf-mdi-cached", '' },
-        { "nf-mdi-contacts", '﯉' },
-        { "nf-mdi-desktop_classic", 'ﲾ' },
-        { "nf-mdi-folder_download", '' },
-        { "nf-mdi-folder_image", '' },
-        { "nf-mdi-folder_star", 'ﮛ' },
-        { "nf-mdi-library_music", '' },
-        { "nf-mdi-movie", '' },
-        { "nf-mdi-movie_roll", 'ﳜ' },
-        { "nf-mdi-onedrive", '' },
-        { "nf-mdi-ship_wheel", 'ﴱ' },
-        { "nf-mdi-test_tube", 'ﭧ' },
-        { "nf-mdi-timer", '祥' },
-        { "nf-mdi-timer_10", '福' },
-        { "nf-mdi-timer_3", '靖' },
-        { "nf-mdi-timer_off", '精' },
-        { "nf-mdi-timer_sand", '羽' },
-        { "nf-mdi-timer_sand_empty", 'ﮫ' },
-        { "nf-mdi-timer_sand_full", 'ﲊ' },
-        { "nf-mdi-umbraco", '煮' },
-        { "nf-oct-file_binary", '' },
-        { "nf-oct-file_symlink_directory", '' },
-        { "nf-oct-repo", '' },
-        { "nf-oct-repo_clone", '' },
-        { "nf-oct-repo_force_push", '' },
-        { "nf-oct-repo_forked", '' },
-        { "nf-oct-repo_pull", '' },
-        { "nf-oct-repo_push", '' },
-        { "nf-oct-terminal", '' },
-        { "nf-seti-config", '' },
-        { "nf-seti-project", '' },
-        { "nf-custom-elixir", '' },
-        { "nf-custom-elm", '' },
-        { "nf-custom-msdos", '' },
-        { "nf-custom-puppet", '' },
-        { "nf-custom-vim", '' },
-        { "nf-dev-apple", '' },
-        { "nf-dev-bitbucket", '' },
-        { "nf-dev-bower", '' },
-        { "nf-dev-clojure", '' },
-        { "nf-dev-clojure_alt", '' },
-        { "nf-dev-code_badge", '' },
-        { "nf-dev-css3", '' },
-        { "nf-dev-css3_full", '' },
-        { "nf-dev-dart", '' },
-        { "nf-dev-database", '' },
-        { "nf-dev-erlang", '' },
-        { "nf-dev-firebase", '' },
-        { "nf-dev-fsharp", '' },
-        { "nf-dev-git", '' },
-        { "nf-dev-git_branch", '' },
-        { "nf-dev-git_commit", '' },
-        { "nf-dev-git_compare", '' },
-        { "nf-dev-git_merge", '' },
-        { "nf-dev-git_pull_request", '' },
-        { "nf-dev-github", '' },
-        { "nf-dev-github_alt", '' },
-        { "nf-dev-github_badge", '' },
-        { "nf-dev-github_full", '' },
-        { "nf-dev-go", '' },
-        { "nf-dev-google_cloud_platform", '' },
-        { "nf-dev-google_drive", '' },
-        { "nf-dev-groovy", '' },
-        { "nf-dev-gulp", '' },
-        { "nf-dev-haskell", '' },
-        { "nf-dev-javascript", '' },
-        { "nf-dev-javascript_badge", '' },
-        { "nf-dev-javascript_shield", '' },
-        { "nf-dev-jenkins", '' },
-        { "nf-dev-less", '' },
-        { "nf-dev-markdown", '' },
-        { "nf-dev-nodejs_small", '' },
-        { "nf-dev-npm", '' },
-        { "nf-dev-perl", '' },
-        { "nf-dev-php", '' },
-        { "nf-dev-python", '' },
-        { "nf-dev-react", '' },
-        { "nf-dev-rust", '' },
-        { "nf-dev-sass", '' },
-        { "nf-dev-sublime", '' },
-        { "nf-dev-travis", '' },
-        { "nf-dev-visualstudio", '' },
-        { "nf-fa-archive", '' },
-        { "nf-fa-calendar", '' },
-        { "nf-fa-calendar_check_o", '' },
-        { "nf-fa-calendar_minus_o", '' },
-        { "nf-fa-calendar_o", '' },
-        { "nf-fa-calendar_plus_o", '' },
-        { "nf-fa-calendar_times_o", '' },
-        { "nf-fa-certificate", '' },
-        { "nf-fa-eye", '' },
-        { "nf-fa-eye_slash", '' },
-        { "nf-fa-eyedropper", '' },
-        { "nf-fa-file_audio_o", '' },
-        { "nf-fa-file_image_o", '' },
-        { "nf-fa-file_o", '' },
-        { "nf-fa-file_video_o", '' },
-        { "nf-fa-gear", '' },
-        { "nf-fa-gears", '' },
-        { "nf-fa-gitlab", '' },
-        { "nf-fa-handshake_o", '' },
-        { "nf-fa-key", '' },
-        { "nf-fa-keyboard_o", '' },
-        { "nf-fa-list", '' },
-        { "nf-fa-list_alt", '' },
-        { "nf-fa-list_ol", '' },
-        { "nf-fa-list_ul", '' },
-        { "nf-fa-lock", '' },
-        { "nf-fae-checklist_o", '' },
-        { "nf-fae-disco", '' },
-        { "nf-fae-java", '' },
-        { "nf-mdi-application", 'ﬓ' },
-        { "nf-mdi-certificate", '' },
-        { "nf-mdi-console_line", 'ﲵ' },
-        { "nf-mdi-elephant", 'ﳄ' },
-        { "nf-mdi-file_document", '' },
-        { "nf-mdi-file_document_box", '' },
-        { "nf-mdi-file_excel", '' },
-        { "nf-mdi-file_excel_box", '' },
-        { "nf-mdi-file_pdf", '' },
-        { "nf-mdi-file_pdf_box", '' },
-        { "nf-mdi-file_powerpoint", '' },
-        { "nf-mdi-file_powerpoint_box", '' },
-        { "nf-mdi-file_word", '' },
-        { "nf-mdi-file_word_box", '' },
-        { "nf-mdi-file_xml", '' },
-        { "nf-mdi-format_align_left", '' },
-        { "nf-mdi-harddisk", '' },
-        { "nf-mdi-help_box", 'ﲉ' },
-        { "nf-mdi-language_c", 'ﭰ' },
-        { "nf-mdi-language_cpp", 'ﭱ' },
-        { "nf-mdi-language_csharp", '' },
-        { "nf-mdi-language_css3", '' },
-        { "nf-mdi-language_r", 'ﳒ' },
-        { "nf-mdi-library_books", '' },
-        { "nf-mdi-notebook", 'ﴬ' },
-        { "nf-mdi-package_variant", '' },
-        { "nf-mdi-package_variant_closed", '' },
-        { "nf-mdi-svg", 'ﰟ' },
-        { "nf-mdi-visualstudio", '﬏' },
-        { "nf-mdi-vuejs", '﵂' },
-        { "nf-mdi-xaml", 'ﭲ' },
-        { "nf-oct-file_zip", '' },
-        { "nf-oct-person", '' },
-        { "nf-oct-ruby", '' },
-        { "nf-seti-favicon", '' },
-        { "nf-seti-grunt", '' },
-        { "nf-seti-html", '' },
-        { "nf-seti-json", '' },
-        { "nf-seti-julia", '' },
-        { "nf-seti-lua", '' },
-        { "nf-seti-mustache", '' },
-        { "nf-seti-typescript", '' }
+        { "nf-cod-package", new (0xEB29) },
+        { "nf-cod-preview", new (0xEB2F) },
+        { "nf-custom-folder_config", new (0xE5FC) },
+        { "nf-custom-folder_git", new (0xE5FB) },
+        { "nf-custom-folder_git_branch", new (0xE5FB) },
+        { "nf-custom-folder_github", new (0xE5FD) },
+        { "nf-custom-folder_npm", new (0xE5FA) },
+        { "nf-dev-aws", new (0xE7AD) },
+        { "nf-dev-docker", new (0xE7B0) },
+        { "nf-dev-html5", new (0xE736) },
+        { "nf-fa-font", new (0xF031) },
+        { "nf-fa-font_awesome", new (0xF2B4) },
+        { "nf-fa-fonticons", new (0xF280) },
+        { "nf-fa-github_alt", new (0xF113) },
+        { "nf-fa-users", new (0xF0C0) },
+        { "nf-fa-windows", new (0xF17A) },
+        { "nf-md-apps", new (0xF003B) },
+        { "nf-md-microsoft_azure", new (0xF0805) },
+        { "nf-md-cached", new (0xF00E8) },
+        { "nf-md-contacts", new (0xF06CB) },
+        { "nf-md-desktop_classic", new (0xF07C0) },
+        { "nf-md-folder_download", new (0xF024D) },
+        { "nf-md-folder_image", new (0xF024F) },
+        { "nf-md-folder_star", new (0xF069D) },
+        { "nf-md-music_box_multiple", new (0xF0333) },
+        { "nf-md-movie", new (0xF0381) },
+        { "nf-md-movie_roll", new (0xF07DE) },
+        { "nf-md-microsoft_onedrive", new (0xF03CA) },
+        { "nf-md-ship_wheel", new (0xF0833) },
+        { "nf-md-test_tube", new (0xF0668) },
+        { "nf-md-timer", new (0xF13AB) },
+        { "nf-md-timer_10", new (0xF051C) },
+        { "nf-md-timer_3", new (0xF051D) },
+        { "nf-md-timer_off", new (0xF13AC) },
+        { "nf-md-timer_sand", new (0xF051F) },
+        { "nf-md-timer_sand_empty", new (0xF06AD) },
+        { "nf-md-timer_sand_full", new (0xF078C) },
+        { "nf-md-umbraco", new (0xF0549) },
+        { "nf-oct-file_binary", new (0xF471) },
+        { "nf-oct-file_symlink_directory", new (0xF482) },
+        { "nf-oct-repo", new (0xF401) },
+        { "nf-oct-repo_clone", new (0xF43F) },
+        { "nf-cod-repo_force_push", new (0xEB3F) },
+        { "nf-oct-repo_forked", new (0xF402) },
+        { "nf-oct-repo_pull", new (0xF404) },
+        { "nf-oct-repo_push", new (0xF403) },
+        { "nf-oct-terminal", new (0xF489) },
+        { "nf-seti-config", new (0xE615) },
+        { "nf-seti-project", new (0xE601) },
+        { "nf-custom-elixir", new (0xE62D) },
+        { "nf-custom-elm", new (0xE62C) },
+        { "nf-custom-msdos", new (0xE629) },
+        { "nf-custom-puppet", new (0xE631) },
+        { "nf-custom-vim", new (0xE62B) },
+        { "nf-dev-apple", new (0xE711) },
+        { "nf-dev-bitbucket", new (0xE703) },
+        { "nf-dev-bower", new (0xE74D) },
+        { "nf-dev-clojure", new (0xE768) },
+        { "nf-dev-clojure_alt", new (0xE76A) },
+        { "nf-md-code_tags", new (0xF0174) },
+        { "nf-dev-css3", new (0xE749) },
+        { "nf-dev-css3_full", new (0xE74A) },
+        { "nf-dev-dart", new (0xE798) },
+        { "nf-dev-database", new (0xE706) },
+        { "nf-dev-erlang", new (0xE7B1) },
+        { "nf-dev-firebase", new (0xE787) },
+        { "nf-dev-fsharp", new (0xE7A7) },
+        { "nf-dev-git", new (0xE702) },
+        { "nf-dev-git_branch", new (0xE725) },
+        { "nf-dev-git_commit", new (0xE729) },
+        { "nf-dev-git_compare", new (0xE728) },
+        { "nf-dev-git_merge", new (0xE727) },
+        { "nf-dev-git_pull_request", new (0xE726) },
+        { "nf-dev-github", new (0xE709) },
+        { "nf-cod-github_alt", new (0xEB00) },
+        { "nf-dev-github_badge", new (0xE709) },
+        { "nf-dev-github_full", new (0xE717) },
+        { "nf-dev-go", new (0xE724) },
+        { "nf-dev-googlecloud", new (0xE7F1) },
+        { "nf-fa-google_drive", new (0xF2DF) },
+        { "nf-dev-groovy", new (0xE775) },
+        { "nf-dev-gulp", new (0xE763) },
+        { "nf-dev-haskell", new (0xE777) },
+        { "nf-dev-javascript", new (0xE781) },
+        { "nf-dev-javascript_badge", new (0xE781) },
+        { "nf-dev-javascript_alt", new (0xE74E) },
+        { "nf-dev-jenkins", new (0xE767) },
+        { "nf-dev-less", new (0xE758) },
+        { "nf-dev-markdown", new (0xE73E) },
+        { "nf-dev-nodejs_small", new (0xE718) },
+        { "nf-dev-npm", new (0xE71E) },
+        { "nf-dev-perl", new (0xE769) },
+        { "nf-dev-php", new (0xE73D) },
+        { "nf-dev-python", new (0xE73C) },
+        { "nf-dev-react", new (0xE7BA) },
+        { "nf-dev-rust", new (0xE7A8) },
+        { "nf-dev-sass", new (0xE74B) },
+        { "nf-dev-sublime", new (0xE7AA) },
+        { "nf-dev-travis", new (0xE77E) },
+        { "nf-dev-visualstudio", new (0xE70C) },
+        { "nf-fa-archive", new (0xF187) },
+        { "nf-fa-calendar", new (0xF073) },
+        { "nf-fa-calendar_check_o", new (0xF274) },
+        { "nf-fa-calendar_minus_o", new (0xF272) },
+        { "nf-fa-calendar_o", new (0xF133) },
+        { "nf-fa-calendar_plus_o", new (0xF271) },
+        { "nf-fa-calendar_times_o", new (0xF273) },
+        { "nf-fa-certificate", new (0xF0A3) },
+        { "nf-fa-eye", new (0xF06E) },
+        { "nf-fa-eye_slash", new (0xF070) },
+        { "nf-fa-eyedropper", new (0xF1FB) },
+        { "nf-fa-file_audio_o", new (0xF1C7) },
+        { "nf-fa-file_image_o", new (0xF1C5) },
+        { "nf-fa-file_o", new (0xF016) },
+        { "nf-fa-file_video_o", new (0xF1C8) },
+        { "nf-fa-gear", new (0xF013) },
+        { "nf-fa-gears", new (0xF085) },
+        { "nf-fa-gitlab", new (0xF296) },
+        { "nf-fa-handshake_o", new (0xF2B5) },
+        { "nf-fa-key", new (0xF084) },
+        { "nf-fa-keyboard_o", new (0xF11C) },
+        { "nf-fa-list", new (0xF03A) },
+        { "nf-fa-list_alt", new (0xF022) },
+        { "nf-fa-list_ol", new (0xF0CB) },
+        { "nf-fa-list_ul", new (0xF0CA) },
+        { "nf-fa-lock", new (0xF023) },
+        { "nf-fae-checklist_o", new (0xE29A) },
+        { "nf-fae-disco", new (0xE271) },
+        { "nf-fae-java", new (0xE256) },
+        { "nf-md-application", new (0xF08C6) },
+        { "nf-md-certificate", new (0xF0124) },
+        { "nf-md-console_line", new (0xF07B7) },
+        { "nf-md-elephant", new (0xF07C6) },
+        { "nf-md-file_document", new (0xF0219) },
+        { "nf-md-card_text", new (0xF0B77) },
+        { "nf-md-file_excel", new (0xF021B) },
+        { "nf-md-file_excel_box", new (0xF021C) },
+        { "nf-md-file_pdf_box", new (0xF0226) },
+        { "nf-md-file_powerpoint", new (0xF0227) },
+        { "nf-md-file_powerpoint_box", new (0xF0228) },
+        { "nf-md-file_word", new (0xF022C) },
+        { "nf-md-file_word_box", new (0xF022D) },
+        { "nf-md-xml", new (0xF05C0) },
+        { "nf-md-format_align_left", new (0xF0262) },
+        { "nf-md-harddisk", new (0xF02CA) },
+        { "nf-md-help_box", new (0xF078B) },
+        { "nf-md-language_c", new (0xF0671) },
+        { "nf-md-language_cpp", new (0xF0672) },
+        { "nf-md-language_csharp", new (0xF031B) },
+        { "nf-md-language_css3", new (0xF031C) },
+        { "nf-md-language_r", new (0xF07D4) },
+        { "nf-md-book_multiple", new (0xF00BB) },
+        { "nf-md-notebook", new (0xF082E) },
+        { "nf-md-package_variant", new (0xF03D6) },
+        { "nf-md-package_variant_closed", new (0xF03D7) },
+        { "nf-md-svg", new (0xF0721) },
+        { "nf-md-microsoft_visual_studio", new (0xF0610) },
+        { "nf-md-vuejs", new (0xF0844) },
+        { "nf-md-language_xaml", new (0xF0673) },
+        { "nf-oct-file_zip", new (0xF410) },
+        { "nf-oct-person", new (0xF415) },
+        { "nf-oct-ruby", new (0xF43B) },
+        { "nf-seti-favicon", new (0xE623) },
+        { "nf-seti-grunt", new (0xE611) },
+        { "nf-seti-html", new (0xE60E) },
+        { "nf-seti-json", new (0xE60B) },
+        { "nf-seti-julia", new (0xE624) },
+        { "nf-seti-lua", new (0xE620) },
+        { "nf-seti-mustache", new (0xE60F) },
+        { "nf-seti-typescript", new (0xE628) },
     };
 
-    public char GetNerdIcon (IFileSystemInfo? file, bool isOpen)
+    public Rune GetNerdIcon (IFileSystemInfo? file, bool isOpen)
     {
-        if (file == null)
+        ArgumentNullException.ThrowIfNull (file);
+
+        string filename = file.Name;
+
+        if (FilenameToIcon.TryGetValue (filename, out string? filenameIcon))
         {
-            throw new ArgumentNullException (nameof (file));
+            return Glyphs [filenameIcon];
         }
 
-        if (FilenameToIcon.ContainsKey (file.Name))
+        for (int suffixStart = filename.IndexOf ('.'); suffixStart >= 0; suffixStart = filename.IndexOf ('.', suffixStart + 1))
         {
-            return Glyphs [FilenameToIcon [file.Name]];
+            if (!ExtensionToIcon.TryGetValue (filename [suffixStart..], out string? extensionIcon))
+            {
+                continue;
+            }
+
+            return Glyphs [extensionIcon];
         }
 
-        if (ExtensionToIcon.ContainsKey (file.Extension))
-        {
-            return Glyphs [ExtensionToIcon [file.Extension]];
-        }
-
-        if (file is IDirectoryInfo d)
+        if (file is IDirectoryInfo)
         {
             return isOpen ? _nf_cod_folder_opened : _nf_cod_folder;
         }

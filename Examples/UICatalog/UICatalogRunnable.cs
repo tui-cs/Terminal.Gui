@@ -166,12 +166,12 @@ public sealed class UICatalogRunnable : Runnable
                                                         new MenuItem ("_Documentation",
                                                                       "API docs",
                                                                       () => Link.OpenUrl ("https://tui-cs.github.io/Terminal.Gui"),
-                                                                      Key.F1),
+                                                                      Key.F1) { BindKeyToApplication = true },
                                                         new MenuItem ("_README",
                                                                       "Project readme",
                                                                       () => Link.OpenUrl ("https://github.com/tui-cs/Terminal.Gui"),
-                                                                      Key.F2),
-                                                        new MenuItem ("_About...", "About UI Catalog", ShowAboutDialog, Key.A.WithCtrl)
+                                                                      Key.F2) { BindKeyToApplication = true },
+                                                        new MenuItem ("_About...", "About UI Catalog", ShowAboutDialog, Key.A.WithCtrl) { BindKeyToApplication = true }
                                                     ])
                                ]) { Title = "menuBar", Id = "menuBar" };
 
@@ -204,7 +204,7 @@ public sealed class UICatalogRunnable : Runnable
                 _themesSelector = new OptionSelector { CanFocus = true };
                 _themesSelector.ValueChanged += OnThemesSelectorOnValueChanged;
 
-                MenuItem menuItem = new () { CommandView = _themesSelector, HelpText = "Cycle Through Themes", Key = Key.T.WithCtrl };
+                MenuItem menuItem = new () { CommandView = _themesSelector, HelpText = "Cycle Through Themes", Key = Key.T.WithCtrl, BindKeyToApplication = true };
 
                 menuItems.Add (menuItem);
 
@@ -217,7 +217,7 @@ public sealed class UICatalogRunnable : Runnable
                 menuItem = new MenuItem
                 {
                     Title = "Scheme for Runnable",
-                    SubMenu = new Menu ([new MenuItem { CommandView = _topSchemesSelector, HelpText = "Cycle Through Schemes", Key = Key.S.WithCtrl }])
+                    SubMenu = new Menu ([new MenuItem { CommandView = _topSchemesSelector, HelpText = "Cycle Through Schemes", Key = Key.S.WithCtrl, BindKeyToApplication = true }])
                 };
                 menuItems.Add (menuItem);
 
@@ -289,7 +289,7 @@ public sealed class UICatalogRunnable : Runnable
                 Value = Enum.GetValues<LogLevel> ().ToList ().IndexOf (Enum.Parse<LogLevel> (UICatalog.Options.DebugLogLevel))
             };
 
-            MenuItem logMenu = new () { CommandView = _logLevelSelector, HelpText = "Cycle Through Log Levels", Key = Key.L.WithCtrl };
+            MenuItem logMenu = new () { CommandView = _logLevelSelector, HelpText = "Cycle Through Log Levels", Key = Key.L.WithCtrl, BindKeyToApplication = true };
 
             _logLevelSelector.ValueChanged += OnLogLevelSelectorOnValueChanged;
 
@@ -318,7 +318,7 @@ public sealed class UICatalogRunnable : Runnable
                                                         }
                                                     };
 
-            menuItems.Add (new MenuItem { CommandView = lifecycleTraceCheckBox, HelpText = "Toggle App & Driver lifecycle tracing", Key = Key.L.WithCtrl });
+            menuItems.Add (new MenuItem { CommandView = lifecycleTraceCheckBox, HelpText = "Toggle App & Driver lifecycle tracing", Key = Key.L.WithCtrl, BindKeyToApplication = true });
 
             // ReSharper disable once StringLiteralTypo
             CheckBox commandTraceCheckBox = new ()
@@ -340,7 +340,7 @@ public sealed class UICatalogRunnable : Runnable
                                                       }
                                                   };
 
-            menuItems.Add (new MenuItem { CommandView = commandTraceCheckBox, HelpText = "Toggle Command tracing", Key = Key.C.WithCtrl });
+            menuItems.Add (new MenuItem { CommandView = commandTraceCheckBox, HelpText = "Toggle Command tracing", Key = Key.C.WithCtrl, BindKeyToApplication = true });
 
             CheckBox mouseTraceCheckBox = new ()
             {
@@ -359,7 +359,7 @@ public sealed class UICatalogRunnable : Runnable
                                                     }
                                                 };
 
-            menuItems.Add (new MenuItem { CommandView = mouseTraceCheckBox, HelpText = "Toggle Mouse event tracing", Key = Key.U.WithCtrl });
+            menuItems.Add (new MenuItem { CommandView = mouseTraceCheckBox, HelpText = "Toggle Mouse event tracing", Key = Key.U.WithCtrl, BindKeyToApplication = true });
 
             CheckBox keyboardTraceCheckBox = new ()
             {
@@ -380,7 +380,7 @@ public sealed class UICatalogRunnable : Runnable
                                                        }
                                                    };
 
-            menuItems.Add (new MenuItem { CommandView = keyboardTraceCheckBox, HelpText = "Toggle Keyboard event tracing", Key = Key.K.WithCtrl });
+            menuItems.Add (new MenuItem { CommandView = keyboardTraceCheckBox, HelpText = "Toggle Keyboard event tracing", Key = Key.K.WithCtrl, BindKeyToApplication = true });
 
             CheckBox navTraceCheckBox = new ()
             {
@@ -404,7 +404,7 @@ public sealed class UICatalogRunnable : Runnable
             // TODO: Implement Trace.Navigation and enable this
             menuItems.Add (new MenuItem
             {
-                Enabled = false, CommandView = navTraceCheckBox, HelpText = "Toggle Focus & TabBehavior tracing", Key = Key.K.WithCtrl
+                Enabled = false, CommandView = navTraceCheckBox, HelpText = "Toggle Focus & TabBehavior tracing", Key = Key.K.WithCtrl, BindKeyToApplication = true
             });
 
             CheckBox configTraceCheckBox = new ()

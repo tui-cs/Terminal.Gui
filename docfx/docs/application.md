@@ -277,7 +277,7 @@ public class FileDialog : Runnable<string?>
 
 ### Lifecycle Properties
 
-- **<xref:Terminal.Gui.App.IRunnable.IsRunning>** - True when runnable is on <xref:Terminal.Gui.App.IApplication.SessionStack>
+- **<xref:Terminal.Gui.App.IRunnable.IsRunning>** - True from [Begin()](xref:Terminal.Gui.App.IApplication.Begin*) until [End()](xref:Terminal.Gui.App.IApplication.End*) stops the session
 - **<xref:Terminal.Gui.App.IRunnable.IsModal>** - True when runnable is at top of stack (capturing all input)
 - **`Result`** - Typed result value set before stopping
 
@@ -345,9 +345,9 @@ public interface IApplication
 **Stack Behavior:**
 
 - Push: [Begin()](xref:Terminal.Gui.App.IApplication.Begin*) adds to top of stack
-- Pop: [End()](xref:Terminal.Gui.App.IApplication.End*) removes from stack
+- Pop: [End()](xref:Terminal.Gui.App.IApplication.End*) removes from stack; a session ended beneath the top stays until the sessions above it end
 - Peek: <xref:Terminal.Gui.App.IApplication.TopRunnable> returns current modal runnable
-- All: <xref:Terminal.Gui.App.IApplication.SessionStack> enumerates all running sessions
+- All: <xref:Terminal.Gui.App.IApplication.SessionStack> enumerates session tokens; running ones have `token.Runnable is { IsRunning: true }`
 
 ## IApplication Interface
 
@@ -652,6 +652,8 @@ if (token != null)
 
 // TopRunnable restored to previous runnable (if any)
 ```
+
+`Begin` prepares and starts the session but does not start the event loop, and it does not change `SynchronizationContext.Current`. Use `Run` for interactive input and ongoing UI processing; `Run` installs the application's synchronization context while it executes and restores the caller's context when it returns. Without `Run`, nothing drains work posted from other threads. `Invoke` queues work for the UI thread, but that work still runs only when the UI thread iterates — an idle Begin-only session does not process it.
 
 ### Nested Sessions
 
@@ -986,7 +988,8 @@ All coordinate offsetting derives from `App.Screen`:
 Init()
   ├─ AnsiOutput: skip CSI ?1049h (stay in primary buffer)
   ├─ AnsiSizeMonitor: send ESC[6n (CPR) to discover cursor row
-  ├─ AnsiStartupGate: defer first render until CPR + size queries complete
+  ├─ AnsiStartupGate: defer first render for CPR and pending capability queries
+  ├─ DA1 reply: release optional kitty and color probe waits
   └─ OutputBufferImpl: cells start clean (IsDirty = false)
 
 Begin(view)  /  first LayoutAndDraw()
@@ -996,7 +999,7 @@ Begin(view)  /  first LayoutAndDraw()
   └─ Reserve vertical space with newlines + CSI {n}A
 ```
 
-The `AnsiStartupGate` ensures no drawing occurs before the terminal responds to the CPR query. If the terminal never responds, the gate times out and rendering proceeds from row 0.
+The `AnsiStartupGate` waits for cursor position and any pending terminal size query before the first draw. Kitty keyboard and default-color probes also join the gate, but a DA1 reply releases their first-draw wait if they have not answered. The probes continue to accept late replies; a late color reply requests a redraw. If cursor position never responds, its 500 ms timeout lets rendering proceed from row 0. If DA1 and the optional probes never respond, their one-second timeouts let rendering proceed.
 
 ### Dynamic Growth
 
@@ -1008,7 +1011,12 @@ When content is added at runtime (e.g. items appended to a `ListView`), `LayoutA
 
 ### Resize Handling
 
-On terminal resize the inline region resets: `App.Screen.Y` → 0, terminal cleared (`CSI H` + `CSI 2J`), and the next `LayoutAndDraw` re-performs initial sizing from scratch. This matches the behavior of Claude Code CLI.
+On terminal resize, the ANSI driver coalesces dimension changes until they have been quiet for
+500 ms, scrolls the previous viewport into history, and reserves a fresh live region at row zero.
+It does not clear the display/scrollback or use a cursor report to infer which old rows it may
+erase. Old live frames and blank rows can remain in history; completed messages are not replayed.
+Drawing, printing and caret updates pause during recovery; input and dispatch continue.
+See [Terminal resize](inline-output.md#terminal-resize) for recovery and failure details.
 
 ### Output Buffer
 
@@ -1051,3 +1059,9 @@ Color? result = app.Run (wrapper).Result;
 - [Mouse](mouse.md) - Mouse handling through View.App  
 - [Drivers](drivers.md) - Driver access through View.Driver
 - [Multitasking](multitasking.md) - Session management with SessionStack
+
+## Output above a live inline region
+
+To print completed styled text above an inline UI, await `app.PrintAboveAsync(...)`.
+See [Printing above an inline application](inline-output.md) for ordering, cancellation,
+supported output, and partial-write behavior.

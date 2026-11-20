@@ -51,7 +51,7 @@ The repository uses multiple GitHub Actions workflows. What runs and when:
 ### 4) Publish to NuGet (`.github/workflows/publish.yml`)
 
 - **Triggers**: push to `develop` and tags `v*` (ignores `**.md`)
-- Uses GitVersion to compute SemVer, builds Release, packs Terminal.Gui and Terminal.Gui.Interop.Spectre with symbols, and pushes both to NuGet.org using `NUGET_API_KEY`
+- Uses GitVersion to compute SemVer, builds Release, packs Terminal.Gui and Terminal.Gui.Interop.Spectre with symbols, and pushes both to NuGet.org. It prefers Trusted Publishing when `vars.NUGET_TRUSTED_PUBLISHING_USER` and a matching NuGet.org policy are configured; otherwise it falls back to the `NUGET_API_KEY` secret.
 - **Automatically triggered** when a `v*` tag is pushed — typically by the **Finalize Release** workflow after a release PR (from **Prepare Release**) is merged into `main`
 - **Additional actions on tag push** (`v*`):
   - Triggers Terminal.Gui.templates repository update via repository_dispatch (requires `TEMPLATE_REPO_TOKEN` secret)

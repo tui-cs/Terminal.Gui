@@ -113,7 +113,9 @@ public interface IApplication : IDisposable
     ///         Session tokens are pushed onto the stack when <see cref="Run(IRunnable, Func{Exception, bool})"/> is called and
     ///         popped when
     ///         <see cref="RequestStop(IRunnable)"/> completes. The stack grows during nested modal calls and
-    ///         shrinks as they complete.
+    ///         shrinks as they complete. A session that ends beneath the top keeps its token on the stack, with a
+    ///         <see langword="null"/> <see cref="SessionToken.Runnable"/>, until the sessions above it end; to find
+    ///         running sessions, check <c>token.Runnable is { IsRunning: true }</c>.
     ///     </para>
     ///     <para>
     ///         Only the top session (<see cref="TopRunnableView"/>) has exclusive keyboard/mouse input (
@@ -202,6 +204,11 @@ public interface IApplication : IDisposable
     ///         <see cref="SessionStack"/>, lays out the SubViews, focuses the first element, and draws the
     ///         runnable on the screen. This is usually followed by starting the main loop, and then the
     ///         <see cref="End(SessionToken)"/> method upon termination which will undo these changes.
+    ///         It does not start the continuous main loop; use <see cref="Run(IRunnable, Func{Exception, bool})"/>
+    ///         for ongoing input and UI processing.
+    ///         It also does not change <see cref="System.Threading.SynchronizationContext.Current"/>. Without
+    ///         <see cref="Run(IRunnable, Func{Exception, bool})"/>, nothing drains work posted from other threads,
+    ///         so use <see cref="Invoke(Action)"/> to reach the UI thread.
     ///     </para>
     ///     <para>
     ///         Raises the <see cref="IRunnable.IsRunningChanging"/>, <see cref="IRunnable.IsRunningChanged"/>,
@@ -229,6 +236,11 @@ public interface IApplication : IDisposable
     ///         Calling <see cref="Run(IRunnable, Func{Exception, bool})"/> is equivalent to calling
     ///         <see cref="Begin(IRunnable)"/>, followed by starting the main loop, and then calling
     ///         <see cref="End(SessionToken)"/>.
+    ///     </para>
+    ///     <para>
+    ///         Without <see cref="Run(IRunnable, Func{Exception, bool})"/>, nothing drains work posted from other threads.
+    ///         <see cref="Invoke(Action)"/> queues work for the UI thread, but that work still runs only when the UI thread
+    ///         iterates — an idle Begin-only session does not process it.
     ///     </para>
     ///     <para>
     ///         In RELEASE builds: When <paramref name="errorHandler"/> is <see langword="null"/> any exceptions will be
@@ -376,6 +388,7 @@ public interface IApplication : IDisposable
     /// <exception cref="NotInitializedException">
     ///     Thrown when <see cref="Init"/> has not been called or after <see cref="IDisposable.Dispose"/> has been called.
     /// </exception>
+    /// <seealso cref="ApplicationDispatchExtensions.InvokeAsync(IApplication, Action{IApplication}, CancellationToken)"/>
     void Invoke (Action<IApplication>? action);
 
     /// <summary>Runs <paramref name="action"/> on the main UI loop thread.</summary>
@@ -390,6 +403,7 @@ public interface IApplication : IDisposable
     /// <exception cref="NotInitializedException">
     ///     Thrown when <see cref="Init"/> has not been called or after <see cref="IDisposable.Dispose"/> has been called.
     /// </exception>
+    /// <seealso cref="ApplicationDispatchExtensions.InvokeAsync(IApplication, Action, CancellationToken)"/>
     void Invoke (Action action);
 
     #endregion Iteration & Invoke
@@ -448,11 +462,16 @@ public interface IApplication : IDisposable
     ///     <para>
     ///         This method removes the <see cref="IRunnable"/> from the <see cref="SessionStack"/>,
     ///         raises the lifecycle events, and clears <see cref="SessionToken.Runnable"/> on
-    ///         <paramref name="sessionToken"/>.
+    ///         <paramref name="sessionToken"/>. A token ended beneath the top stays on the stack until the sessions above
+    ///         it end.
     ///     </para>
     ///     <para>
     ///         Raises <see cref="IRunnable.IsRunningChanging"/>, <see cref="IRunnable.IsRunningChanged"/>,
-    ///         and <see cref="IRunnable.IsModalChanged"/> events.
+    ///         and <see cref="IRunnable.IsModalChanged"/> events. While a call is ending the session, including while
+    ///         its <see cref="IRunnable.IsRunningChanging"/> handlers run, other calls for the same token return
+    ///         without effect. If stopping is canceled, a later call can end the session. A session is torn down
+    ///         only once. Once stopping proceeds, every remaining event, including <see cref="SessionEnded"/>, is raised
+    ///         even if a handler throws; the first exception is then rethrown.
     ///     </para>
     /// </remarks>
     void End (SessionToken sessionToken);
@@ -790,11 +809,15 @@ public interface IApplication : IDisposable
     /// </remarks>
     object? AddTimeout (TimeSpan time, Func<bool> callback);
 
-    /// <summary>Removes a previously scheduled timeout.</summary>
+    /// <summary>Cancels all timeout occurrences associated with a previously returned token.</summary>
     /// <param name="token">The token returned by <see cref="AddTimeout"/>.</param>
+    /// <remarks>
+    ///     A matching callback that is already executing is not interrupted, but it will not be rescheduled if it returns
+    ///     <see langword="true"/>.
+    /// </remarks>
     /// <returns>
-    ///     <see langword="true"/> if the timeout is successfully removed; otherwise, <see langword="false"/>.
-    ///     This method also returns <see langword="false"/> if the timeout is not found.
+    ///     <see langword="true"/> if at least one queued occurrence was removed or a cancellation request was recorded for
+    ///     at least one active occurrence; otherwise, <see langword="false"/>.
     /// </returns>
     bool RemoveTimeout (object token);
 

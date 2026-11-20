@@ -345,14 +345,21 @@ public partial class ListView
         get;
         set
         {
+            // No source: only "no selection" is valid.
             if (Source is null)
             {
-                return;
+                if (value is null)
+                {
+                    // fall through and clear (or set field = null directly)
+                }
+                else
+                {
+                    return; // cannot select an index with no source
+                }
             }
-
-            if (value.HasValue && (value < 0 || value >= Source.Count))
+            else if (value.HasValue && (value < 0 || value >= Source.Count))
             {
-                throw new ArgumentException (@"SelectedItem must be greater than 0 or less than the number of items.");
+                throw new ArgumentException (@"SelectedItem must be greater than or equal to 0 and less than the number of items.");
             }
 
             int? oldValue = field;

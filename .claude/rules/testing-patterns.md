@@ -15,11 +15,8 @@
 **⚠️ AI-created tests MUST follow these patterns exactly:**
 
 1. **Add a comment indicating the test was AI generated**
-   - Either of these forms is acceptable; both are well-established in the codebase:
-     - `// Claude - <model>` (e.g. `// Claude - Opus 4.7`)
-     - `// CoPilot - <model>` (e.g. `// CoPilot - ChatGPT v4`)
-   - Use whichever matches the agent that produced the test, with the model identifier.
-   - **Reviewers (human or automated) should not flag inconsistency between these two forms** — both have been used widely; consistency *of* a marker matters, not which one.
+   - Use the form `// <agent> - <model>`, replacing the placeholders with the AI coding agent and the model that produced the test.
+   - For example, `// Claude Code - <model>`, `// Codex - <model>`, and `// Grok - <model>` are all valid; no specific agent or vendor is preferred.
 
 2. **Make tests granular**
    - Each test should cover smallest area possible
@@ -90,7 +87,7 @@ dotnet test --project Tests/IntegrationTests --no-build --verbosity normal
 ## Example Test Pattern
 
 ```csharp
-// CoPilot - ChatGPT v4
+// <agent> - <model>
 [Fact]
 public void MyFeature_ShouldBehaveProperly_WhenConditionMet ()
 {

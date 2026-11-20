@@ -18,6 +18,8 @@
   href: ansihandling.md
 - name: Application
   href: application.md
+- name: Printing Above an Inline Application
+  href: inline-output.md
 - name: Arrangement
   href: arrangement.md
 - name: Borders
@@ -50,6 +52,8 @@
   href: keyboard.md
 - name: Layout
   href: layout.md
+- name: Markdown Tables
+  href: markdown-tables.md
 - name: Logging
   href: logging.md
 - name: Menus

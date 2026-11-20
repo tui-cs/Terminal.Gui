@@ -148,10 +148,10 @@
       "meanNs": 53001245
     },
     {
-      "type": "ConfigurationManagerLoadBenchmark",
-      "method": "LoadAndApply",
+      "type": "TuiConfigurationBuilderBuildBenchmark",
+      "method": "BuildAndApply",
       "params": "",
-      "meanNs": 4329690
+      "meanNs": 5000000
     },
     {
       "type": "ThemeSwitchBenchmark",

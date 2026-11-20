@@ -1,5 +1,4 @@
 using Microsoft.Extensions.Logging;
-using UnitTests.Parallelizable;
 using Terminal.Gui.Tracing;
 using UnitTests;
 
@@ -635,6 +634,52 @@ public class MenuBarTests (ITestOutputHelper output)
         // Act — press MenuItem's HotKey ('I' for "Menu_Item") while menu is open
         app.InjectKey (Key.I);
         Assert.Equal (1, actionCount);
+    }
+
+    // Cursor - Grok 4.5
+    /// <summary>
+    ///     MenuItem.Key with BindKeyToApplication must invoke Action while the owning MenuBarItem's
+    ///     PopoverMenu is closed (not visible). Previously DefaultHotKeyHandler refused HotKey when
+    ///     CanBeVisible was false, so the shortcut only worked with that MenuBarItem's menu open.
+    /// </summary>
+    [Fact]
+    public void MenuItem_BindKeyToApplication_Fires_Action_When_Popover_Closed ()
+    {
+        VirtualTimeProvider time = new ();
+        using IApplication app = Application.Create (time);
+        app.Init (DriverRegistry.Names.ANSI);
+        IRunnable runnable = new Runnable ();
+
+        int actionCount = 0;
+        MenuItem menuItem = new ()
+        {
+            Id = "menuItem",
+            Title = "Save",
+            BindKeyToApplication = true,
+            Key = Key.S.WithCtrl,
+            Action = () => actionCount++
+        };
+        Menu menu = new ([menuItem]) { Id = "menu" };
+        MenuBarItem menuBarItem = new () { Id = "menuBarItem", Title = "_File" };
+        PopoverMenu menuBarItemPopover = new ();
+        menuBarItem.PopoverMenu = menuBarItemPopover;
+        menuBarItemPopover.Root = menu;
+
+        MenuBar menuBar = new () { Id = "menuBar" };
+        menuBar.Add (menuBarItem);
+
+        View hostView = new () { Id = "host", CanFocus = true, Width = Dim.Fill (), Height = Dim.Fill () };
+        hostView.Add (menuBar);
+
+        ((View)runnable).Add (hostView);
+        app.Begin (runnable);
+
+        Assert.False (menuBarItem.PopoverMenu!.Visible);
+
+        app.Keyboard.RaiseKeyDownEvent (Key.S.WithCtrl);
+
+        Assert.Equal (1, actionCount);
+        Assert.False (menuBarItem.PopoverMenu.Visible);
     }
 
     // Claude - Opus 4.6
@@ -2068,7 +2113,7 @@ public class MenuBarTests (ITestOutputHelper output)
                                  {
                                      menuBarActivatedCount++;
 
-                                     if (args?.Value?.Value is string title)
+                                     if (args.Value?.Value is string title)
                                      {
                                          lastActivatedValueText = title;
                                      }
@@ -2177,7 +2222,7 @@ public class MenuBarTests (ITestOutputHelper output)
                                  {
                                      menuBarActivatedCount++;
 
-                                     if (args?.Value?.Value is string title)
+                                     if (args.Value?.Value is string title)
                                      {
                                          lastActivatedValueText = title;
                                      }

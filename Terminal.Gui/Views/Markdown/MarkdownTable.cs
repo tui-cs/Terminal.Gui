@@ -8,14 +8,15 @@ namespace Terminal.Gui.Views;
 ///     <para>
 ///         When used inside a <see cref="Markdown"/>, instances are created automatically during
 ///         layout and positioned as SubViews at the correct content coordinate so that they scroll
-///         naturally with the parent's viewport.
+///         naturally with the SuperView's viewport.
 ///     </para>
 ///     <para>
 ///         Borders are rendered using <see cref="LineStyle.Single"/>.
 ///     </para>
 ///     <para>
 ///         Header cells are bold; body cells support inline Markdown formatting (bold, italic, code,
-///         links) via <see cref="MarkdownInlineParser"/>. Column alignment (left, center, right)
+///         links). Tables created by <see cref="Markdown"/> retain parsed inline segments; standalone
+///         text uses <see cref="MarkdownInlineParser"/>. Column alignment (left, center, right)
 ///         parsed from the Markdown separator row is respected. Cells that exceed their column width
 ///         are word-wrapped, and row heights expand to accommodate wrapped content.
 ///     </para>
@@ -26,24 +27,12 @@ namespace Terminal.Gui.Views;
 /// </remarks>
 public sealed class MarkdownTable : View, IDesignable
 {
-    private TableData _data = _emptyData;
-    private int [] _columnWidths = [];
-
-    // Pre-parsed inline segments for each cell
-    private List<StyledSegment> [] _headerSegments = [];
-    private List<StyledSegment> [] [] _rowSegments = [];
-
-    // Pre-computed wrapped line counts per row
-    private int _headerRowHeight;
-    private int [] _bodyRowHeights = [];
-
-    // Last width used for column computation — tracks when recalculation is needed
-    private int _lastComputedWidth;
-
-    // Link regions within the table, built after layout
-    private readonly List<TableLinkRegion> _linkRegions = [];
-    private int _activeLinkIndex = -1;
-
+    internal MarkdownTableContent Content { get; private set; } = new ([], []);
+    internal MarkdownTableLayout TableLayout { get; private set; } = new ();
+    internal int? LayoutConstraint { get; set; }
+    private MarkdownTableContent? _unhighlightedContent;
+    private int _lastComputedWidth = -1;
+    private IReadOnlyList<MarkdownTableLink> _linkRegions = [];
     private static readonly TableData _emptyData = new ([], [], []);
 
     /// <summary>Initializes a new empty <see cref="MarkdownTable"/>.</summary>
@@ -68,12 +57,30 @@ public sealed class MarkdownTable : View, IDesignable
     /// </summary>
     public event EventHandler<MarkdownLinkEventArgs>? LinkClicked;
 
+    private ISyntaxHighlighter? _syntaxHighlighter;
+
     /// <summary>
     ///     Gets or sets an optional syntax highlighter used to resolve theme-based attributes for
     ///     inline styling roles (emphasis, code spans, links, etc.). When set, the table queries
     ///     the highlighter for scope-derived colors before falling back to <see cref="TextStyle"/>-based defaults.
     /// </summary>
-    public ISyntaxHighlighter? SyntaxHighlighter { get; set; }
+    public ISyntaxHighlighter? SyntaxHighlighter
+    {
+        get => _syntaxHighlighter;
+        set
+        {
+            if (ReferenceEquals (_syntaxHighlighter, value))
+            {
+                return;
+            }
+
+            _syntaxHighlighter = value;
+            Content = _unhighlightedContent?.WithHighlighter (value) ?? Content;
+            _lastComputedWidth = -1;
+            SetNeedsLayout ();
+            SetNeedsDraw ();
+        }
+    }
 
     /// <summary>
     ///     Gets or sets whether the table uses the syntax highlighting theme's background color
@@ -110,38 +117,9 @@ public sealed class MarkdownTable : View, IDesignable
         TextFormatter.Text = string.Empty;
     }
 
-    private string BuildTableText ()
-    {
-        if (_data.ColumnCount == 0)
-        {
-            return string.Empty;
-        }
+    private string BuildTableText () => MarkdownTableSerializer.Serialize (Content);
 
-        // Reconstruct pipe-delimited table text
-        List<string> lines = [$"| {string.Join (" | ", _data.Headers)} |"];
-
-        // Separator row
-        string [] seps = new string [_data.ColumnCount];
-
-        for (var i = 0; i < _data.ColumnCount; i++)
-        {
-            seps [i] = _data.ColumnAlignments [i] switch
-                       {
-                           Alignment.Center => ":---:",
-                           Alignment.End => "---:",
-                           _ => "---"
-                       };
-        }
-
-        lines.Add ($"| {string.Join (" | ", seps)} |");
-
-        foreach (string [] row in _data.Rows)
-        {
-            lines.Add ($"| {string.Join (" | ", row)} |");
-        }
-
-        return string.Join ("\n", lines);
-    }
+    private TableData _data = _emptyData;
 
     /// <summary>
     ///     Gets or sets the <see cref="Views.TableData"/> that defines the table content. Setting this
@@ -150,27 +128,22 @@ public sealed class MarkdownTable : View, IDesignable
     public TableData TableData
     {
         get => _data;
-        set
-        {
-            _data = value;
-            _headerSegments = ParseCellSegments (value.Headers, MarkdownStyleRole.Heading);
-            _rowSegments = new List<StyledSegment> [value.Rows.Length] [];
+        set => SetContent (value, null, Frame.Width > 0 ? Frame.Width : 80);
+    }
 
-            for (var r = 0; r < value.Rows.Length; r++)
-            {
-                _rowSegments [r] = ParseCellSegments (value.Rows [r], MarkdownStyleRole.Normal);
-            }
+    internal void SetContent (TableData data, MarkdownTableContent? content, int width)
+    {
+        ArgumentNullException.ThrowIfNull (data);
+        _data = data;
+        _unhighlightedContent = content ?? MarkdownTableCellParser.CreateContent (data);
+        Content = _unhighlightedContent.WithHighlighter (SyntaxHighlighter);
 
-            // Keep Text in sync with TableData
-            SetTextDirect (BuildTableText ());
-
-            // Compute initial layout using current Frame width (or a default for standalone use)
-            int initialWidth = Frame.Width > 0 ? Frame.Width : 80;
-            _lastComputedWidth = -1;
-            Recalculate (initialWidth);
-            SetNeedsLayout ();
-            SetNeedsDraw ();
-        }
+        // Keep Text in sync without parsing or laying out discarded intermediate content.
+        SetTextDirect (BuildTableText ());
+        _lastComputedWidth = -1;
+        Recalculate (width);
+        SetNeedsLayout ();
+        SetNeedsDraw ();
     }
 
     /// <summary>Recalculates column widths and row heights for the given available width.</summary>
@@ -182,24 +155,15 @@ public sealed class MarkdownTable : View, IDesignable
         }
 
         _lastComputedWidth = maxWidth;
-        _columnWidths = ComputeColumnWidths (_data, maxWidth);
-
-        _headerRowHeight = ComputeRowHeight (_headerSegments, _columnWidths);
-
-        if (_bodyRowHeights.Length != _rowSegments.Length)
-        {
-            _bodyRowHeights = new int [_rowSegments.Length];
-        }
-
-        for (var r = 0; r < _rowSegments.Length; r++)
-        {
-            _bodyRowHeights [r] = ComputeRowHeight (_rowSegments [r], _columnWidths);
-        }
-
-        RenderedHeight = CalculateTableHeightWrapped (_headerRowHeight, _bodyRowHeights);
+        MarkdownTableLink? active = _activeLinkIndex >= 0 && _activeLinkIndex < _linkRegions.Count ? _linkRegions [_activeLinkIndex] : null;
+        TableLayout = MarkdownTableLayoutEngine.Build (Content, maxWidth);
+        RenderedHeight = TableLayout.Height;
         Height = RenderedHeight;
-
-        BuildLinkRegions ();
+        SetContentSize (new Size (TableLayout.Width, TableLayout.Height));
+        _linkRegions = TableLayout.Links;
+        _activeLinkIndex = active is null ? -1 : Enumerable.Range (0, _linkRegions.Count).FirstOrDefault (index => _linkRegions [index] == active, -1);
+        CanFocus = _linkRegions.Count > 0;
+        TabStop = CanFocus ? TabBehavior.TabStop : TabBehavior.NoStop;
     }
 
     /// <summary>
@@ -211,22 +175,51 @@ public sealed class MarkdownTable : View, IDesignable
     /// <summary>Gets whether this table contains any navigable link regions.</summary>
     internal bool HasLinks => _linkRegions.Count > 0;
 
+    private int _activeLinkIndex = -1;
+
+    internal int ActiveLinkIndex
+    {
+        get => _activeLinkIndex;
+        set
+        {
+            _activeLinkIndex = value >= 0 && value < _linkRegions.Count ? value : -1;
+            SetNeedsDraw ();
+        }
+    }
+
     /// <summary>Gets the total rendered height of this table in lines (simple estimate).</summary>
     /// <remarks>
     ///     This simple estimation assumes single-line rows. Used by external callers that don't have
     ///     wrapped row heights. For the actual rendered height, use the instance's <see cref="View.Height"/>.
     /// </remarks>
-    public static int CalculateTableHeight (TableData data) =>
+    public static int CalculateTableHeight (TableData data)
+    {
+        if (!data.IsStructured)
+        {
+            return data.Rows.Length + 4;
+        }
 
-        // top border + header + header separator + body rows + bottom border
-        data.Rows.Length + 4;
+        IReadOnlyList<TableRowData> rows = data.TableRows;
+
+        if (data.ColumnCount == 0 || rows.Count == 0)
+        {
+            return 0;
+        }
+
+        int separators = data.HasRowSeparators ? rows.Count - 1
+                                              : Enumerable.Range (1, rows.Count - 1).Count (row => rows [row - 1].IsHeader != rows [row].IsHeader);
+
+        int trailingHeaderSeparator = !data.HasRowSeparators && rows [^1].IsHeader ? 1 : 0;
+
+        return rows.Count + separators + trailingHeaderSeparator + 2;
+    }
 
     /// <inheritdoc/>
     protected override void OnSubViewLayout (LayoutEventArgs args)
     {
         base.OnSubViewLayout (args);
 
-        Recalculate (Frame.Width);
+        Recalculate (LayoutConstraint ?? Frame.Width);
     }
 
     /// <inheritdoc/>
@@ -284,6 +277,7 @@ public sealed class MarkdownTable : View, IDesignable
         {
             // First entry — select first or last link
             _activeLinkIndex = delta > 0 ? 0 : _linkRegions.Count - 1;
+            ScrollToActiveLink ();
             SetNeedsDraw ();
 
             return true;
@@ -301,9 +295,38 @@ public sealed class MarkdownTable : View, IDesignable
         }
 
         _activeLinkIndex = next;
+        ScrollToActiveLink ();
         SetNeedsDraw ();
 
         return true;
+    }
+
+    private void ScrollToActiveLink ()
+    {
+        MarkdownTableGlyph? glyph = TableLayout.Glyphs.FirstOrDefault (glyph => glyph.LinkIndex == _activeLinkIndex);
+
+        if (glyph is null)
+        {
+            return;
+        }
+
+        View scrollView = SuperView is Markdown ? SuperView : this;
+        int x = glyph.Position.X + (ReferenceEquals (scrollView, this) ? 0 : Frame.X);
+        int y = glyph.Position.Y + (ReferenceEquals (scrollView, this) ? 0 : Frame.Y);
+        int left = scrollView.Viewport.X;
+        int top = scrollView.Viewport.Y;
+
+        if (x < left || x + glyph.Width > left + scrollView.Viewport.Width)
+        {
+            left = x < left ? x : x + glyph.Width - scrollView.Viewport.Width;
+        }
+
+        if (y < top || y >= top + scrollView.Viewport.Height)
+        {
+            top = y < top ? y : y - scrollView.Viewport.Height + 1;
+        }
+
+        scrollView.Viewport = scrollView.Viewport with { X = Math.Max (0, left), Y = Math.Max (0, top) };
     }
 
     /// <inheritdoc/>
@@ -346,355 +369,100 @@ public sealed class MarkdownTable : View, IDesignable
     /// <summary>
     ///     Returns the link region index at the given viewport position, or -1 if none.
     /// </summary>
-    private int HitTestLinkIndex (int viewportX, int viewportY)
+    internal int HitTestLinkIndex (int viewportX, int viewportY)
     {
-        (string url, int rowIndex, int colIndex)? hit = HitTestLinkRegion (viewportX, viewportY);
-
-        if (hit is null)
+        if (viewportX < 0 || viewportY < 0 || viewportX >= Viewport.Width || viewportY >= Viewport.Height)
         {
             return -1;
         }
 
-        for (var i = 0; i < _linkRegions.Count; i++)
-        {
-            TableLinkRegion region = _linkRegions [i];
+        Point position = new (viewportX + Viewport.X, viewportY + Viewport.Y);
+        MarkdownTableGlyph? glyph = TableLayout.GetLine (position.Y).FirstOrDefault (glyph => position.X >= glyph.Position.X
+                                                                             && position.X < glyph.Position.X + glyph.Width);
 
-            if (region.RowIndex == hit.Value.rowIndex && region.ColIndex == hit.Value.colIndex && region.Url == hit.Value.url)
-            {
-                return i;
-            }
+        if (glyph is null || glyph.Position.X < Viewport.X || glyph.Position.X + glyph.Width > Viewport.Right)
+        {
+            return -1;
         }
 
-        return -1;
-    }
-
-    /// <summary>
-    ///     Returns the URL and cell position (row/col) of the link at the given viewport position,
-    ///     or <see langword="null"/> if no link segment occupies that position.
-    /// </summary>
-    private (string url, int rowIndex, int colIndex)? HitTestLinkRegion (int viewportX, int viewportY)
-    {
-        if (_columnWidths.Length == 0)
-        {
-            return null;
-        }
-
-        // Determine which row the click is in.
-        // Layout: row 0 = top border, rows 1..headerRowHeight = header,
-        //         headerRowHeight+1 = separator, then body rows, last row = bottom border.
-        int y = viewportY;
-        y--; // skip top border
-
-        if (y < 0)
-        {
-            return null;
-        }
-
-        List<StyledSegment> []? cellSegments = null;
-        int rowIndex = -1; // -1 = header
-
-        if (y < _headerRowHeight)
-        {
-            // Click in the header row
-            cellSegments = _headerSegments;
-            rowIndex = -1;
-        }
-        else
-        {
-            y -= _headerRowHeight;
-            y--; // skip separator line
-
-            if (y < 0)
-            {
-                return null;
-            }
-
-            // Walk body rows
-            for (var r = 0; r < _bodyRowHeights.Length; r++)
-            {
-                if (y < _bodyRowHeights [r])
-                {
-                    cellSegments = _rowSegments [r];
-                    rowIndex = r;
-
-                    break;
-                }
-
-                y -= _bodyRowHeights [r];
-            }
-        }
-
-        if (cellSegments is null)
-        {
-            return null;
-        }
-
-        // Determine which column the click is in.
-        int x = viewportX;
-        x--; // skip left border
-        int col = -1;
-
-        for (var c = 0; c < _columnWidths.Length; c++)
-        {
-            if (x < _columnWidths [c])
-            {
-                col = c;
-
-                break;
-            }
-
-            x -= _columnWidths [c] + 1; // column width + separator
-        }
-
-        if (col < 0 || col >= cellSegments.Length)
-        {
-            return null;
-        }
-
-        // Word-wrap the cell and find the segment at the click position within the line.
-        int innerWidth = _columnWidths [col] - 2;
-        List<List<StyledSegment>> wrappedLines = WrapSegments (cellSegments [col], innerWidth);
-
-        // 'y' is now the line-in-row offset (already computed above for multi-line rows)
-        if (y < 0 || y >= wrappedLines.Count)
-        {
-            return null;
-        }
-
-        List<StyledSegment> lineSegs = wrappedLines [y];
-
-        // Compute text width for alignment padding
-        var textWidth = 0;
-
-        foreach (StyledSegment seg in lineSegs)
-        {
-            textWidth += seg.Text.GetColumns ();
-        }
-
-        Alignment alignment = col < _data.ColumnAlignments.Length ? _data.ColumnAlignments [col] : Alignment.Start;
-        int padLeft = CalculateLeftPadding (_columnWidths [col], Math.Min (textWidth, innerWidth), alignment);
-
-        // x is relative to column start; subtract padding to get text-relative position.
-        int textX = x - padLeft;
-
-        if (textX < 0)
-        {
-            return null;
-        }
-
-        var runX = 0;
-
-        foreach (StyledSegment seg in lineSegs)
-        {
-            int segWidth = seg.Text.GetColumns ();
-
-            if (textX >= runX && textX < runX + segWidth && !string.IsNullOrWhiteSpace (seg.Url))
-            {
-                return (seg.Url, rowIndex, col);
-            }
-
-            runX += segWidth;
-        }
-
-        return null;
+        return glyph.LinkIndex;
     }
 
     /// <inheritdoc/>
     protected override bool OnDrawingContent (DrawContext? context)
     {
-        // Fill the entire viewport with theme background before drawing borders/cells.
-        // DrawWrappedRow only fills column widths, so trailing space (right of last column)
-        // on cell content rows would otherwise retain the ClearViewport bg (from the scheme).
-        if (UseThemeBackground && SyntaxHighlighter?.DefaultBackground is { } fillBg)
+        Attribute normal = GetAttributeForRole (VisualRole.Normal);
+        Color? themeBackground = UseThemeBackground ? SyntaxHighlighter?.DefaultBackground : null;
+
+        if (themeBackground is { } background)
         {
-            Attribute fillAttr = GetAttributeForRole (VisualRole.Normal) with { Background = fillBg };
-            SetAttribute (fillAttr);
-            FillRect (Viewport with { X = 0, Y = 0 }, (Rune)' ');
+            normal = normal with { Background = background };
         }
 
-        DrawBorders ();
-        DrawCellContents ();
+        SetAttribute (normal);
+        FillRect (new Rectangle (0, 0, Viewport.Width, Viewport.Height), (Rune)' ');
+
+        // Resolve each style once per draw so theme changes remain visible without per-glyph lookups.
+        Dictionary<(MarkdownStyleRole Style, VisualRole? Role, Attribute? Explicit, TextStyle Additional, string? Url), Attribute> attributes = [];
+
+        foreach (MarkdownTableGlyph glyph in TableLayout.Glyphs)
+        {
+            int x = glyph.Position.X - Viewport.X;
+            int y = glyph.Position.Y - Viewport.Y;
+
+            if (x < 0 || y < 0 || x + glyph.Width > Viewport.Width || y >= Viewport.Height)
+            {
+                continue;
+            }
+
+            StyledSegment segment = glyph.Segment;
+            (MarkdownStyleRole, VisualRole?, Attribute?, TextStyle, string?) key = (segment.StyleRole, segment.Role, segment.Attribute, segment.AdditionalStyle, segment.Url);
+
+            if (!attributes.TryGetValue (key, out Attribute attribute))
+            {
+                attribute = MarkdownAttributeHelper.GetAttributeForSegment (this, segment, SyntaxHighlighter, themeBackground);
+                attributes.Add (key, attribute);
+            }
+
+            if (glyph.IsHeader)
+            {
+                attribute = attribute with { Style = attribute.Style | TextStyle.Bold };
+            }
+
+            if (HasFocus && glyph.LinkIndex >= 0 && glyph.LinkIndex == _activeLinkIndex)
+            {
+                attribute = new (attribute.Background, attribute.Foreground, attribute.Style);
+            }
+
+            bool absolute = glyph.LinkIndex >= 0 && TableLayout.Links [glyph.LinkIndex].IsSafeAbsolute;
+
+            if (absolute && Driver is { })
+            {
+                Driver.CurrentUrl = glyph.Segment.Url;
+            }
+
+            try
+            {
+                SetAttribute (attribute);
+                AddStr (x, y, glyph.Text);
+            }
+            finally
+            {
+                if (absolute && Driver is { })
+                {
+                    Driver.CurrentUrl = null;
+                }
+            }
+        }
+
+        Point origin = ViewportToScreen (new Point (-Viewport.X, -Viewport.Y));
+
+        foreach ((Point start, int length, Orientation orientation) in TableLayout.Borders)
+        {
+            LineCanvas.AddLine (new (origin.X + start.X, origin.Y + start.Y), length, orientation, LineStyle.Single, normal);
+        }
 
         return true;
-    }
-
-    private void DrawCellContents ()
-    {
-        var y = 1; // Below top border
-
-        // Header row
-        DrawWrappedRow (_headerSegments, _data.ColumnAlignments, y, _headerRowHeight, true, -1);
-        y += _headerRowHeight;
-
-        // Skip header separator (1 line)
-        y++;
-
-        // Body rows
-        for (var r = 0; r < _rowSegments.Length; r++)
-        {
-            DrawWrappedRow (_rowSegments [r], _data.ColumnAlignments, y, _bodyRowHeights [r], false, r);
-            y += _bodyRowHeights [r];
-        }
-    }
-
-    private void DrawWrappedRow (List<StyledSegment> [] cellSegments, Alignment [] alignments, int startY, int rowHeight, bool isHeader, int rowIndex)
-    {
-        Attribute normal = GetAttributeForRole (VisualRole.Normal);
-        Color? themeBg = UseThemeBackground ? SyntaxHighlighter?.DefaultBackground : null;
-
-        if (themeBg is { } bg)
-        {
-            normal = normal with { Background = bg };
-        }
-
-        for (var lineInRow = 0; lineInRow < rowHeight; lineInRow++)
-        {
-            int y = startY + lineInRow;
-            var x = 1; // After left border
-
-            for (var col = 0; col < _columnWidths.Length; col++)
-            {
-                int colWidth = _columnWidths [col];
-                int innerWidth = colWidth - 2; // 1 space padding each side
-
-                List<StyledSegment> segments = col < cellSegments.Length ? cellSegments [col] : [];
-
-                // Word-wrap segments into lines for this cell
-                List<List<StyledSegment>> wrappedLines = WrapSegments (segments, innerWidth);
-
-                // Fill the cell area with spaces first
-                SetAttribute (normal);
-
-                for (var i = 0; i < colWidth; i++)
-                {
-                    AddStr (x + i, y, " ");
-                }
-
-                // Draw this line's content (if we have it)
-                if (lineInRow >= wrappedLines.Count)
-                {
-                    // Advance past column width + separator character
-                    x += colWidth + 1;
-
-                    continue;
-                }
-
-                List<StyledSegment> lineSegs = wrappedLines [lineInRow];
-
-                // Calculate text width for alignment
-                var textWidth = 0;
-
-                foreach (StyledSegment seg in lineSegs)
-                {
-                    textWidth += seg.Text.GetColumns ();
-                }
-
-                Alignment alignment = col < alignments.Length ? alignments [col] : Alignment.Start;
-                int padLeft = CalculateLeftPadding (colWidth, Math.Min (textWidth, innerWidth), alignment);
-
-                int drawX = x + padLeft;
-
-                foreach (StyledSegment seg in lineSegs)
-                {
-                    Attribute attr = MarkdownAttributeHelper.GetAttributeForSegment (this, seg, SyntaxHighlighter, themeBg);
-
-                    if (isHeader)
-                    {
-                        attr = attr with { Style = attr.Style | TextStyle.Bold };
-                    }
-
-                    bool hasUrl = !string.IsNullOrWhiteSpace (seg.Url);
-                    bool isAbsoluteUrl = hasUrl && MarkdownAttributeHelper.TryCreateSafeAbsoluteUri (seg.Url, out _);
-                    bool isActive = hasUrl && HasFocus && IsActiveLinkAt (rowIndex, col, seg.Url!);
-
-                    if (isActive)
-                    {
-                        attr = new Attribute (attr.Background, attr.Foreground, attr.Style);
-                    }
-
-                    // Set OSC8 URL for link segments (only absolute URIs)
-                    if (isAbsoluteUrl && Driver is { })
-                    {
-                        Driver.CurrentUrl = seg.Url;
-                    }
-
-                    try
-                    {
-                        SetAttribute (attr);
-
-                        foreach (string grapheme in GraphemeHelper.GetGraphemes (seg.Text))
-                        {
-                            int gw = Math.Max (grapheme.GetColumns (), 1);
-
-                            if (drawX - x >= colWidth - 1)
-                            {
-                                break;
-                            }
-
-                            AddStr (drawX, y, grapheme);
-                            drawX += gw;
-                        }
-                    }
-                    finally
-                    {
-                        if (isAbsoluteUrl && Driver is { })
-                        {
-                            Driver.CurrentUrl = null;
-                        }
-                    }
-                }
-
-                // Advance past column width + separator character
-                x += colWidth + 1;
-            }
-        }
-    }
-
-    /// <summary>
-    ///     Adds border lines to <see cref="View.LineCanvas"/> using screen coordinates so that the
-    ///     parent view can merge and render them via <see cref="View.SuperViewRendersLineCanvas"/>.
-    /// </summary>
-    private void DrawBorders ()
-    {
-        int tableWidth = Frame.Width;
-        int tableHeight = CalculateTableHeightWrapped (_headerRowHeight, _bodyRowHeights);
-
-        Point screenOrigin = ViewportToScreen (Viewport).Location;
-        Attribute borderAttr = GetAttributeForRole (VisualRole.Normal);
-
-        if (UseThemeBackground && SyntaxHighlighter?.DefaultBackground is { } themeBg)
-        {
-            borderAttr = borderAttr with { Background = themeBg };
-        }
-
-        // Top border (row 0)
-        LineCanvas.AddLine (screenOrigin, tableWidth, Orientation.Horizontal, LineStyle.Single, borderAttr);
-
-        // Header separator (below header rows)
-        int headerSepY = screenOrigin.Y + 1 + _headerRowHeight;
-        LineCanvas.AddLine (screenOrigin with { Y = headerSepY }, tableWidth, Orientation.Horizontal, LineStyle.Single, borderAttr);
-
-        // Bottom border (last row)
-        LineCanvas.AddLine (screenOrigin with { Y = screenOrigin.Y + tableHeight - 1 }, tableWidth, Orientation.Horizontal, LineStyle.Single, borderAttr);
-
-        // Left border (full height)
-        LineCanvas.AddLine (screenOrigin, tableHeight, Orientation.Vertical, LineStyle.Single, borderAttr);
-
-        // Right border (full height)
-        LineCanvas.AddLine (screenOrigin with { X = screenOrigin.X + tableWidth - 1 }, tableHeight, Orientation.Vertical, LineStyle.Single, borderAttr);
-
-        // Column separators (vertical lines between columns)
-        var xOffset = 0;
-
-        for (var col = 0; col < _columnWidths.Length; col++)
-        {
-            xOffset += _columnWidths [col] + 1; // column width + border char
-
-            if (col < _columnWidths.Length - 1)
-            {
-                LineCanvas.AddLine (screenOrigin with { X = screenOrigin.X + xOffset }, tableHeight, Orientation.Vertical, LineStyle.Single, borderAttr);
-            }
-        }
     }
 
     /// <summary>
@@ -710,74 +478,55 @@ public sealed class MarkdownTable : View, IDesignable
 
         List<List<StyledSegment>> lines = [];
         List<StyledSegment> currentLine = [];
+        List<StyledSegment> word = [];
         var currentWidth = 0;
 
         foreach (StyledSegment segment in segments)
         {
-            string remaining = segment.Text;
+            var start = 0;
 
-            while (remaining.Length > 0)
+            for (var index = 0; index < segment.Text.Length; index++)
             {
-                int spaceIdx = remaining.IndexOf (' ');
-                string word;
-                string trailing;
+                char character = segment.Text [index];
 
-                if (spaceIdx >= 0)
+                if (character is not (' ' or '\t' or '\n'))
                 {
-                    word = remaining [..spaceIdx];
-                    trailing = " ";
-                    remaining = remaining [(spaceIdx + 1)..];
-                }
-                else
-                {
-                    word = remaining;
-                    trailing = "";
-                    remaining = "";
+                    continue;
                 }
 
-                string chunk = word + trailing;
-                int chunkWidth = chunk.GetColumns ();
-
-                // If adding this word would exceed the line, wrap
-                if (currentWidth > 0 && currentWidth + chunkWidth > maxWidth)
+                if (index > start)
                 {
-                    lines.Add (currentLine);
-                    currentLine = [];
-                    currentWidth = 0;
+                    word.Add (segment.WithText (segment.Text [start..index]));
                 }
 
-                // If a single word is wider than maxWidth, hard-break it
-                if (chunkWidth > maxWidth && currentWidth == 0)
+                FlushWord ();
+                start = index + 1;
+
+                if (character == '\n')
                 {
-                    string hardChunk = TruncateToWidth (chunk, maxWidth);
-
-                    // If maxWidth is too narrow for even one grapheme, take the first grapheme
-                    // to guarantee forward progress and avoid an infinite loop.
-                    if (hardChunk.Length == 0)
-                    {
-                        string firstGrapheme = GraphemeHelper.GetGraphemes (chunk).FirstOrDefault () ?? chunk [..1];
-                        hardChunk = firstGrapheme;
-                    }
-
-                    currentLine.Add (new StyledSegment (hardChunk, segment.StyleRole, segment.Url, segment.ImageSource, segment.Attribute, segment.Role));
-                    lines.Add (currentLine);
-                    currentLine = [];
-                    currentWidth = 0;
-
-                    int usedChars = hardChunk.TrimEnd ().Length;
-                    remaining = chunk [usedChars..].TrimStart () + remaining;
+                    FlushLine ();
 
                     continue;
                 }
 
-                currentLine.Add (new StyledSegment (chunk, segment.StyleRole, segment.Url, segment.ImageSource, segment.Attribute, segment.Role));
-                currentWidth += chunkWidth;
+                if (currentWidth < maxWidth)
+                {
+                    currentLine.Add (segment.WithText (" "));
+                    currentWidth++;
+                }
+            }
+
+            if (start < segment.Text.Length)
+            {
+                word.Add (segment.WithText (segment.Text [start..]));
             }
         }
 
+        FlushWord ();
+
         if (currentLine.Count > 0)
         {
-            lines.Add (currentLine);
+            FlushLine ();
         }
 
         if (lines.Count == 0)
@@ -786,54 +535,66 @@ public sealed class MarkdownTable : View, IDesignable
         }
 
         return lines;
-    }
 
-    private static List<StyledSegment> [] ParseCellSegments (string [] cells, MarkdownStyleRole defaultRole)
-    {
-        List<StyledSegment> [] result = new List<StyledSegment> [cells.Length];
-
-        for (var i = 0; i < cells.Length; i++)
+        void FlushLine ()
         {
-            List<InlineRun> runs = MarkdownInlineParser.ParseInlines (cells [i], defaultRole);
-            result [i] = MarkdownAttributeHelper.ToStyledSegments (runs);
+            lines.Add (currentLine);
+            currentLine = [];
+            currentWidth = 0;
         }
 
-        return result;
-    }
-
-    /// <summary>Computes the row height needed for a row given word wrapping of cell contents.</summary>
-    private static int ComputeRowHeight (List<StyledSegment> [] cellSegments, int [] columnWidths)
-    {
-        var maxLines = 1;
-
-        for (var col = 0; col < columnWidths.Length && col < cellSegments.Length; col++)
+        void FlushWord ()
         {
-            int innerWidth = columnWidths [col] - 2;
-            List<List<StyledSegment>> wrapped = WrapSegments (cellSegments [col], innerWidth);
-            maxLines = Math.Max (maxLines, wrapped.Count);
+            if (word.Count == 0)
+            {
+                return;
+            }
+
+            int wordWidth = string.Concat (word.Select (part => part.Text)).GetColumns ();
+
+            if (currentWidth > 0 && currentWidth + wordWidth > maxWidth)
+            {
+                FlushLine ();
+            }
+
+            foreach (StyledSegment part in word)
+            {
+                string remaining = part.Text;
+
+                while (remaining.Length > 0)
+                {
+                    int remainingWidth = remaining.GetColumns ();
+                    string chunk = remainingWidth == 0 || remainingWidth <= maxWidth - currentWidth
+                                       ? remaining
+                                       : TruncateToWidth (remaining, maxWidth - currentWidth);
+
+                    if (chunk.Length == 0 && currentWidth > 0)
+                    {
+                        FlushLine ();
+
+                        continue;
+                    }
+
+                    // Keep a wide grapheme intact even when the column is narrower than it.
+                    if (chunk.Length == 0)
+                    {
+                        chunk = GraphemeHelper.GetGraphemes (remaining).First ();
+                    }
+
+                    currentLine.Add (part.WithText (chunk));
+                    currentWidth += chunk.GetColumns ();
+                    remaining = remaining [chunk.Length..];
+                }
+            }
+
+            word.Clear ();
         }
-
-        return maxLines;
-    }
-
-    /// <summary>Gets the total rendered height given pre-computed row heights.</summary>
-    private static int CalculateTableHeightWrapped (int headerHeight, int [] bodyRowHeights)
-    {
-        // top border (1) + header rows + header separator (1) + body rows + bottom border (1)
-        int total = 3 + headerHeight;
-
-        foreach (int h in bodyRowHeights)
-        {
-            total += h;
-        }
-
-        return total;
     }
 
     /// <summary>
     ///     Computes column widths using a Rich-style collapse algorithm:
     ///     <list type="number">
-    ///         <item>Measure each column's min (longest word + padding) and max (full content + padding) widths.</item>
+    ///         <item>Use each column's cached min (longest word + padding) and max (full content + padding) widths.</item>
     ///         <item>If total max fits within <paramref name="maxWidth"/>, use max widths.</item>
     ///         <item>
     ///             Otherwise, iteratively collapse the widest column toward the second-widest.
@@ -843,79 +604,8 @@ public sealed class MarkdownTable : View, IDesignable
     ///         <item>Last resort: reduce all columns evenly if still over budget.</item>
     ///     </list>
     /// </summary>
-    internal static int [] ComputeColumnWidths (TableData data, int maxWidth)
-    {
-        int cols = data.ColumnCount;
-        var maxWidths = new int [cols];
-        var minWidths = new int [cols];
-
-        // Measure max (full content) and min (longest word) for each column
-        for (var c = 0; c < cols; c++)
-        {
-            int headerMax = MeasureRenderedWidth (data.Headers [c]);
-            int headerMin = MeasureLongestWord (data.Headers [c]);
-            maxWidths [c] = headerMax;
-            minWidths [c] = headerMin;
-        }
-
-        foreach (string [] row in data.Rows)
-        {
-            for (var c = 0; c < cols && c < row.Length; c++)
-            {
-                int cellMax = MeasureRenderedWidth (row [c]);
-                int cellMin = MeasureLongestWord (row [c]);
-                maxWidths [c] = Math.Max (maxWidths [c], cellMax);
-                minWidths [c] = Math.Max (minWidths [c], cellMin);
-            }
-        }
-
-        // Add padding (1 space each side)
-        for (var c = 0; c < cols; c++)
-        {
-            maxWidths [c] = Math.Max (maxWidths [c] + 2, 3);
-            minWidths [c] = Math.Max (minWidths [c] + 2, 3);
-        }
-
-        // If total max fits, use max widths
-        var widths = (int [])maxWidths.Clone ();
-        int borderChars = cols + 1; // left border + separators + right border
-
-        if (widths.Sum () + borderChars <= maxWidth)
-        {
-            return widths;
-        }
-
-        // Iteratively collapse the widest column toward the second-widest (Rich-style).
-        // Left columns win ties: when multiple columns share the max width,
-        // we shrink the rightmost one first.
-        int available = maxWidth - borderChars;
-
-        if (available < cols * 3)
-        {
-            // Not enough room even for minimum columns — give each 3
-            for (var c = 0; c < cols; c++)
-            {
-                widths [c] = 3;
-            }
-
-            return widths;
-        }
-
-        CollapseWidths (widths, minWidths, available);
-
-        // Last resort: if still over budget, reduce all evenly
-        int total = widths.Sum ();
-
-        if (total <= available)
-        {
-            return widths;
-        }
-
-        int excess = total - available;
-        ReduceEvenly (widths, minWidths, excess);
-
-        return widths;
-    }
+    internal static int [] ComputeColumnWidths (MarkdownTableContent content, int maxWidth) =>
+        MarkdownTableLayoutEngine.AllocateWidths (content, maxWidth);
 
     /// <summary>
     ///     Iteratively collapses the widest wrappable column toward the second-widest.
@@ -991,105 +681,17 @@ public sealed class MarkdownTable : View, IDesignable
         }
     }
 
-    /// <summary>
-    ///     Reduces all columns evenly as a last resort, respecting minimum widths first,
-    ///     then going below minimum (floor at 3) if necessary.
-    /// </summary>
-    private static void ReduceEvenly (int [] widths, int [] minWidths, int excess)
+    /// <summary>Measure the display width of a cell's styled content.</summary>
+    internal static int MeasureRenderedWidth (IReadOnlyList<StyledSegment> segments) =>
+        Math.Max (string.Concat (segments.Select (segment => segment.Text)).Split ('\n').Max (line => line.GetColumns ()), 1);
+
+    /// <summary>Measure the longest displayed word across inline style boundaries.</summary>
+    internal static int MeasureLongestWord (IReadOnlyList<StyledSegment> segments)
     {
-        // First pass: reduce above min widths (right-to-left for left-wins)
-        while (excess > 0)
-        {
-            var reduced = false;
+        string text = string.Concat (segments.Select (segment => segment.Text));
+        string [] words = text.Split ([' ', '\n', '\t'], StringSplitOptions.RemoveEmptyEntries);
 
-            for (int c = widths.Length - 1; c >= 0 && excess > 0; c--)
-            {
-                if (widths [c] <= minWidths [c])
-                {
-                    continue;
-                }
-                widths [c]--;
-                excess--;
-                reduced = true;
-            }
-
-            if (!reduced)
-            {
-                break;
-            }
-        }
-
-        // Second pass: reduce below min (absolute last resort, floor at 3)
-        while (excess > 0)
-        {
-            var reduced = false;
-
-            for (int c = widths.Length - 1; c >= 0 && excess > 0; c--)
-            {
-                if (widths [c] <= 3)
-                {
-                    continue;
-                }
-                widths [c]--;
-                excess--;
-                reduced = true;
-            }
-
-            if (!reduced)
-            {
-                break;
-            }
-        }
-    }
-
-    /// <summary>Measures the display width of a cell's rendered text (stripping markdown formatting).</summary>
-    internal static int MeasureRenderedWidth (string cellText)
-    {
-        List<InlineRun> runs = MarkdownInlineParser.ParseInlines (cellText, MarkdownStyleRole.Normal);
-        var width = 0;
-
-        foreach (InlineRun run in runs)
-        {
-            width += run.Text.GetColumns ();
-        }
-
-        return Math.Max (width, 1);
-    }
-
-    /// <summary>
-    ///     Measures the display width of the longest single word in a cell's rendered text.
-    ///     This determines the minimum column width (below which words would be hard-broken).
-    /// </summary>
-    internal static int MeasureLongestWord (string cellText)
-    {
-        List<InlineRun> runs = MarkdownInlineParser.ParseInlines (cellText, MarkdownStyleRole.Normal);
-        var longest = 1;
-
-        foreach (InlineRun run in runs)
-        {
-            string [] words = run.Text.Split (' ', StringSplitOptions.RemoveEmptyEntries);
-
-            foreach (string word in words)
-            {
-                int w = word.GetColumns ();
-                longest = Math.Max (longest, w);
-            }
-        }
-
-        return longest;
-    }
-
-    private static int CalculateLeftPadding (int cellWidth, int textWidth, Alignment alignment)
-    {
-        int innerWidth = cellWidth - 2;
-        int usableTextWidth = Math.Min (textWidth, innerWidth);
-
-        return alignment switch
-        {
-            Alignment.Center => 1 + Math.Max ((innerWidth - usableTextWidth) / 2, 0),
-            Alignment.End => 1 + Math.Max (innerWidth - usableTextWidth, 0),
-            _ => 1
-        };
+        return words.Length == 0 ? 1 : Math.Max (words.Max (word => word.GetColumns ()), 1);
     }
 
     private static string TruncateToWidth (string text, int maxWidth)
@@ -1116,89 +718,6 @@ public sealed class MarkdownTable : View, IDesignable
         }
 
         return text [..charCount];
-    }
-
-    /// <summary>
-    ///     Returns <see langword="true"/> if the segment at the given row/col with the given URL is the currently active
-    ///     link.
-    /// </summary>
-    private bool IsActiveLinkAt (int rowIndex, int colIndex, string url)
-    {
-        if (_activeLinkIndex < 0 || _activeLinkIndex >= _linkRegions.Count)
-        {
-            return false;
-        }
-
-        TableLinkRegion active = _linkRegions [_activeLinkIndex];
-
-        return active.RowIndex == rowIndex && active.ColIndex == colIndex && active.Url == url;
-    }
-
-    /// <summary>
-    ///     Builds the list of navigable link regions by scanning all cell segments.
-    ///     Called after <see cref="Recalculate"/>.
-    /// </summary>
-    private void BuildLinkRegions ()
-    {
-        _linkRegions.Clear ();
-        _activeLinkIndex = -1;
-
-        ScanCellSegments (_headerSegments, -1);
-
-        for (var r = 0; r < _rowSegments.Length; r++)
-        {
-            ScanCellSegments (_rowSegments [r], r);
-        }
-
-        bool hasLinks = _linkRegions.Count > 0;
-
-        // For standalone usage (SuperView is NOT a Markdown), setting CanFocus here enables
-        // keyboard navigation to the table. When hosted inside MarkdownView, BuildRenderedLines
-        // explicitly overrides CanFocus=false before Add() so these lines have no lasting effect.
-        CanFocus = hasLinks;
-        TabStop = hasLinks ? TabBehavior.TabStop : TabBehavior.NoStop;
-
-        return;
-
-        void ScanCellSegments (List<StyledSegment> [] cellSegments, int rowIndex)
-        {
-            for (var col = 0; col < cellSegments.Length; col++)
-            {
-                string? lastUrlInCell = null;
-
-                foreach (StyledSegment seg in cellSegments [col])
-                {
-                    if (string.IsNullOrWhiteSpace (seg.Url))
-                    {
-                        lastUrlInCell = null;
-
-                        continue;
-                    }
-
-                    // Avoid duplicates from multi-segment rendering of the same link within one cell
-                    if (seg.Url == lastUrlInCell)
-                    {
-                        continue;
-                    }
-
-                    lastUrlInCell = seg.Url;
-                    _linkRegions.Add (new TableLinkRegion { Url = seg.Url!, RowIndex = rowIndex, ColIndex = col });
-                }
-            }
-        }
-    }
-
-    /// <summary>A navigable link within the table. Tracks URL and cell position for unique identification.</summary>
-    private sealed class TableLinkRegion
-    {
-        /// <summary>The target URL of the link.</summary>
-        public string Url { get; init; } = "";
-
-        /// <summary>Row index: -1 for header, 0..N for body rows.</summary>
-        public int RowIndex { get; init; }
-
-        /// <summary>Column index within the row.</summary>
-        public int ColIndex { get; init; }
     }
 
     /// <inheritdoc/>

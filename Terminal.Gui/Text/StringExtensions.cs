@@ -62,26 +62,19 @@ public static class StringExtensions
             return 0;
         }
 
+        // Fast path: renderers measure one cell at a time; avoid allocating a grapheme enumerator.
+        if (str.Length == 1 && !char.IsSurrogate (str [0]))
+        {
+            int width = new Rune (str [0]).GetColumns ();
+
+            return ignoreLessThanZero && width < 0 ? 0 : Math.Min (width, 2);
+        }
+
         var total = 0;
 
         foreach (string grapheme in GraphemeHelper.GetGraphemes (str))
         {
-            // Get the maximum rune width within this grapheme cluster
-            int clusterWidth = grapheme.EnumerateRunes ()
-                                       .Sum (r =>
-                                             {
-                                                 int w = r.GetColumns ();
-
-                                                 return ignoreLessThanZero && w < 0 ? 0 : w;
-                                             });
-
-            // Clamp to realistic max display width
-            if (clusterWidth > 2)
-            {
-                clusterWidth = 2;
-            }
-
-            total += clusterWidth;
+            total += GraphemeHelper.GetGraphemeColumns (grapheme.AsSpan (), ignoreLessThanZero);
         }
 
         return total;

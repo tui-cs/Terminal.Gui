@@ -462,12 +462,6 @@ public class MenuBar : Menu, IDesignable
     {
         base.EndInit ();
 
-        if (Border is { })
-        {
-            Border.Thickness = new Thickness (0);
-            Border.LineStyle = LineStyle.None;
-        }
-
         // TODO: This needs to be done whenever a menuitem in any MenuBarItem changes
         foreach (View sv in SubViews)
         {
@@ -1034,6 +1028,19 @@ public class MenuBar : Menu, IDesignable
         }
 
         menuBarItem.PopoverMenuOpen = true;
+    }
+
+    /// <summary>
+    ///     Opens the menu hierarchy so that <paramref name="item"/> is visible and focused.
+    /// </summary>
+    /// <returns>
+    ///     <see langword="true"/> if <paramref name="item"/> was activated; otherwise <see langword="false"/>.
+    /// </returns>
+    public bool OpenAndSelect (MenuItem item, bool ensureVisible = true)
+    {
+        ArgumentNullException.ThrowIfNull (item);
+
+        return item.OpenAndSelect (ensureVisible);
     }
 
     /// <inheritdoc/>

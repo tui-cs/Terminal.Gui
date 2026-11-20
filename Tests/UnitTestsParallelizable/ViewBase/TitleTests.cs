@@ -71,4 +71,28 @@ public class TitleTests
 
         Assert.Equal (Key.H, view.HotKey);
     }
+
+    [Fact]
+    public void Set_Null_Title_When_Empty_DoesNotRaise_TitleChanging ()
+    {
+        View view = new ();
+        int titleChangingCount = 0;
+        view.TitleChanging += (_, _) => titleChangingCount++;
+
+        view.Title = null!;
+
+        Assert.Equal (string.Empty, view.Title);
+        Assert.Equal (0, titleChangingCount);
+    }
+
+    [Fact]
+    public void Set_TitleChanging_NewValue_ToNull_SetsEmptyTitle ()
+    {
+        View view = new ();
+        view.TitleChanging += (_, args) => args.NewValue = null!;
+
+        view.Title = "title";
+
+        Assert.Equal (string.Empty, view.Title);
+    }
 }
