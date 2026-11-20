@@ -25,6 +25,8 @@ on:
       - 'Terminal.Gui/**'
       - 'Scripts/DocSnippetValidator/**'
       - '.github/workflows/validate-doc-snippets.yml'
+  merge_group:
+    types: [ checks_requested ]
 
 jobs:
   validate-doc-snippets:

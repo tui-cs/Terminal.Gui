@@ -9,6 +9,8 @@ on:
     branches: [ main, develop ]
     paths-ignore:
       - '**.md'
+  merge_group:
+    types: [ checks_requested ]
 
 # Only run on Linux to keep results comparable across runs.
 # Windows/macOS times vary too much to use as a performance baseline.
