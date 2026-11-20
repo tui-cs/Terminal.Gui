@@ -148,7 +148,7 @@ Agents can observe a running Terminal.Gui app — don't ship UI changes blind. U
 ## Testing
 
 - Add new tests to `UnitTestsParallelizable`; use `UnitTests.NonParallelizable` only when static state is unavoidable. Never add to `UnitTests.Legacy`.
-- Add a comment marking the test as AI-generated. Either form is acceptable: `// Claude - <model>` or `// CoPilot - <model>` — just include the agent and the model that produced the test (e.g., `// Claude - Opus 4.5` or `// CoPilot - ChatGPT v4`). Both forms are established in the codebase; which marker is used is not a style concern and reviewers should not flag inconsistency between them.
+- Add a comment marking the test as AI-generated in the form `// <agent> - <model>`, using the actual agent and model that produced it. Claude Code, Codex, Grok, and other agents are equally valid; no specific agent or vendor is preferred.
 - Never decrease coverage
 - Avoid `Application.Init` in tests
 
