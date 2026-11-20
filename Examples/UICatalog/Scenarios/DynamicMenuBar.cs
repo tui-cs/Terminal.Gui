@@ -93,15 +93,8 @@ public class DynamicMenuBar : Scenario
         private bool _hasParent;
         private bool _loadingDetails;
         private MenuItem? _menuItem;
-        private bool _menuTypeChangePosted;
         private Line? _separator;
         private bool _suppressSubMenuPrompts;
-
-        /// <summary>
-        ///     Raised after the user confirms a menu-type change (Separator / Has sub-menus) so the host can apply it
-        ///     immediately and refresh Menu Details.
-        /// </summary>
-        public Action? MenuTypeChanged { get; set; }
 
         public DynamicMenuBarDetails (MenuItem? menuItem = null, bool hasParent = false) : this ()
         {
@@ -301,7 +294,6 @@ public class DynamicMenuBar : Scenario
                                                  TextHotKey.Text = "";
                                                  TextShortcutKey.Text = "";
                                                  UpdateItemFieldsEnabled ();
-                                                 RaiseMenuTypeChanged ();
 
                                                  return;
                                              }
@@ -360,7 +352,6 @@ public class DynamicMenuBar : Scenario
 
                                            if (e.NewValue == CheckState.Checked)
                                            {
-                                               // Clear Separator without nested RaiseMenuTypeChanged; we raise once below.
                                                if (CkbSeparator.Value == CheckState.Checked)
                                                {
                                                    _loadingDetails = true;
@@ -389,16 +380,7 @@ public class DynamicMenuBar : Scenario
                                            }
 
                                            UpdateItemFieldsEnabled ();
-                                           RaiseMenuTypeChanged ();
                                        };
-
-            CkbNullCheck.ValueChanged += (_, e) =>
-                                         {
-                                             if (_menuItem?.CommandView is CheckBox checkBox)
-                                             {
-                                                 checkBox.AllowCheckStateNone = e.NewValue == CheckState.Checked;
-                                             }
-                                         };
         }
 
         public Button BtnClearShortcut { get; }
@@ -464,33 +446,6 @@ public class DynamicMenuBar : Scenario
         private bool CanUseSeparator () => _separator is { } || _hasParent;
 
         internal bool IsEditingSeparator (Line line) => ReferenceEquals (_separator, line);
-
-        private void RaiseMenuTypeChanged ()
-        {
-            if (MenuTypeChanged is null)
-            {
-                return;
-            }
-
-            if (_menuItem is null && _separator is null)
-            {
-                return;
-            }
-
-            // Defer until nested checkbox ValueChanging/ValueChanged finish so CreateDynamicMenuItem
-            // sees the final Separator / Has sub-menus values (Menu Details commit path).
-            if (_menuTypeChangePosted)
-            {
-                return;
-            }
-
-            _menuTypeChangePosted = true;
-            _app!.Invoke (() =>
-                          {
-                              _menuTypeChangePosted = false;
-                              MenuTypeChanged.Invoke ();
-                          });
-        }
 
         public Action CreateAction (MenuItem menuItem, DynamicMenuItem item)
         {
@@ -1110,10 +1065,6 @@ public class DynamicMenuBar : Scenario
             btnImportScript.Accepting += (_, _) => { ShowImportMenuScriptDialog (); };
             btnGenerateScript.Accepting += (_, _) => { ShowGeneratedMenuScriptDialog (); };
 
-            // Apply Separator / Has sub-menus as soon as the user Continues a type-change dialog.
-            // Type-change auto-apply; separator → item waits for Ok (Title "New" is only a suggestion).
-            frmMenuDetails.MenuTypeChanged = () => { CommitSelectedDetails (applySeparatorToItem: false); };
-
             btnPreviousParent.Accepting += (_, _) =>
                                            {
                                                if (_currentMenuBarItem is null)
@@ -1179,7 +1130,7 @@ public class DynamicMenuBar : Scenario
                                        return;
                                    }
 
-                                   CommitSelectedDetails (applySeparatorToItem: true);
+                                   CommitSelectedDetails ();
                                };
 
             btnAdd.Accepting += (_, _) =>
@@ -2242,7 +2193,7 @@ public class DynamicMenuBar : Scenario
             MenuItem CreateNewMenu (DynamicMenuItem item, MenuItem? parent = null) =>
                 (MenuItem)CreateNewMenuEntry (item, parent);
 
-            void CommitSelectedDetails (bool applySeparatorToItem = false)
+            void CommitSelectedDetails ()
             {
                 DynamicMenuItem details = frmMenuDetails.CreateDynamicMenuItem ();
 
@@ -2261,7 +2212,7 @@ public class DynamicMenuBar : Scenario
                         }
 
                         // Title "New" in Menu Details is only a suggestion until Ok.
-                        if (!applySeparatorToItem || string.IsNullOrEmpty (details.Title))
+                        if (string.IsNullOrEmpty (details.Title))
                         {
                             return;
                         }
