@@ -12,7 +12,7 @@ public class ApplicationDispatchTests
     [Fact]
     public void WorkerDispatch_CompletesOnlyAfterUiThreadRunsCallback ()
     {
-        IApplication app = Application.Create ().Init (DriverRegistry.Names.ANSI);
+        IApplication app = CreateApplication ().Init (DriverRegistry.Names.ANSI);
         Runnable runnable = new ();
         SessionToken owner = app.Begin (runnable)!;
 
@@ -41,7 +41,7 @@ public class ApplicationDispatchTests
     [Fact]
     public void RunLoop_DrainsQueuedDispatchOnUiThread ()
     {
-        IApplication app = Application.Create ().Init (DriverRegistry.Names.ANSI);
+        IApplication app = CreateApplication ().Init (DriverRegistry.Names.ANSI);
         Runnable runnable = new ();
         app.StopAfterFirstIteration = true;
         Task? dispatch = null;
@@ -74,7 +74,7 @@ public class ApplicationDispatchTests
     [Fact]
     public void ThrowingAddedHandler_DoesNotAffectDispatch ()
     {
-        IApplication app = Application.Create ().Init (DriverRegistry.Names.ANSI);
+        IApplication app = CreateApplication ().Init (DriverRegistry.Names.ANSI);
         Runnable runnable = new ();
         SessionToken owner = app.Begin (runnable)!;
         TimedEvents timedEvents = Assert.IsType<TimedEvents> (app.TimedEvents);
@@ -107,7 +107,7 @@ public class ApplicationDispatchTests
     [Fact]
     public void WorkerTimerPump_CannotRunQueuedDispatchOffUiThread ()
     {
-        IApplication app = Application.Create ().Init (DriverRegistry.Names.ANSI);
+        IApplication app = CreateApplication ().Init (DriverRegistry.Names.ANSI);
         Runnable runnable = new ();
         SessionToken owner = app.Begin (runnable)!;
 
@@ -142,7 +142,7 @@ public class ApplicationDispatchTests
     [Fact]
     public void WorkerTimerPump_CannotRunPostedCallbackOffUiThread ()
     {
-        IApplication app = Application.Create ().Init (DriverRegistry.Names.ANSI);
+        IApplication app = CreateApplication ().Init (DriverRegistry.Names.ANSI);
         SynchronizationContext context = ((ApplicationImpl)app).SynchronizationContext!;
         Runnable runnable = new ();
         SessionToken? owner = null;
@@ -187,7 +187,7 @@ public class ApplicationDispatchTests
     [Fact]
     public void RemovingOrStoppingTimers_DoesNotStrandQueuedDispatch ()
     {
-        IApplication app = Application.Create ().Init (DriverRegistry.Names.ANSI);
+        IApplication app = CreateApplication ().Init (DriverRegistry.Names.ANSI);
         Runnable runnable = new ();
         SessionToken owner = app.Begin (runnable)!;
 
@@ -230,7 +230,7 @@ public class ApplicationDispatchTests
     [Fact]
     public void UiThreadDispatch_CompletesImmediately ()
     {
-        IApplication app = Application.Create ().Init (DriverRegistry.Names.ANSI);
+        IApplication app = CreateApplication ().Init (DriverRegistry.Names.ANSI);
         Runnable runnable = new ();
         SessionToken owner = app.Begin (runnable)!;
 
@@ -257,7 +257,7 @@ public class ApplicationDispatchTests
     [Fact]
     public void UiThreadDispatch_AlsoRunsInlineForNonViewRunnable ()
     {
-        IApplication app = Application.Create ().Init (DriverRegistry.Names.ANSI);
+        IApplication app = CreateApplication ().Init (DriverRegistry.Names.ANSI);
         Mock<IRunnable> runnable = new ();
         runnable.SetupGet (instance => instance.IsRunning).Returns (true);
         app.SessionStack!.Push (new SessionToken (runnable.Object));
@@ -281,7 +281,7 @@ public class ApplicationDispatchTests
     [Fact]
     public void UiThreadDispatch_CanInvokeAsyncReentrantly ()
     {
-        IApplication app = Application.Create ().Init (DriverRegistry.Names.ANSI);
+        IApplication app = CreateApplication ().Init (DriverRegistry.Names.ANSI);
         Runnable runnable = new ();
         SessionToken owner = app.Begin (runnable)!;
 
@@ -310,7 +310,7 @@ public class ApplicationDispatchTests
     [Fact]
     public void DisposeInsideDispatch_CompletesStartedActionAndCancelsPendingAction ()
     {
-        IApplication app = Application.Create ().Init (DriverRegistry.Names.ANSI);
+        IApplication app = CreateApplication ().Init (DriverRegistry.Names.ANSI);
         Runnable runnable = new ();
         app.Begin (runnable);
 
@@ -334,7 +334,7 @@ public class ApplicationDispatchTests
     [Fact]
     public void CancellationBeforeQueue_DoesNotRunAction ()
     {
-        IApplication app = Application.Create ().Init (DriverRegistry.Names.ANSI);
+        IApplication app = CreateApplication ().Init (DriverRegistry.Names.ANSI);
         using CancellationTokenSource cancellation = new ();
         cancellation.Cancel ();
 
@@ -356,7 +356,7 @@ public class ApplicationDispatchTests
     [Fact]
     public void CancellationAfterQueue_RemovesCallback ()
     {
-        IApplication app = Application.Create ().Init (DriverRegistry.Names.ANSI);
+        IApplication app = CreateApplication ().Init (DriverRegistry.Names.ANSI);
         Runnable runnable = new ();
         SessionToken owner = app.Begin (runnable)!;
         using CancellationTokenSource cancellation = new ();
@@ -386,7 +386,7 @@ public class ApplicationDispatchTests
     [Fact]
     public void CancellationFromEarlierTimeout_PreventsQueuedAction ()
     {
-        IApplication app = Application.Create ().Init (DriverRegistry.Names.ANSI);
+        IApplication app = CreateApplication ().Init (DriverRegistry.Names.ANSI);
         Runnable runnable = new ();
         SessionToken owner = app.Begin (runnable)!;
         using CancellationTokenSource cancellation = new ();
@@ -419,7 +419,7 @@ public class ApplicationDispatchTests
     [Fact]
     public void CancellationAfterActionStarts_DoesNotReplaceItsResult ()
     {
-        IApplication app = Application.Create ().Init (DriverRegistry.Names.ANSI);
+        IApplication app = CreateApplication ().Init (DriverRegistry.Names.ANSI);
         Runnable runnable = new ();
         SessionToken owner = app.Begin (runnable)!;
         using CancellationTokenSource cancellation = new ();
@@ -441,7 +441,7 @@ public class ApplicationDispatchTests
     [Fact]
     public void EndingInnerSession_CancelsOnlyItsPendingDispatch ()
     {
-        IApplication app = Application.Create ().Init (DriverRegistry.Names.ANSI);
+        IApplication app = CreateApplication ().Init (DriverRegistry.Names.ANSI);
         Runnable outer = new ();
         Runnable inner = new ();
         SessionToken outerToken = app.Begin (outer)!;
@@ -474,7 +474,7 @@ public class ApplicationDispatchTests
     [Fact]
     public void EndingSession_CancelsOwnedDispatchBeforeStateChangedHandlersPumpTimers ()
     {
-        IApplication app = Application.Create ().Init (DriverRegistry.Names.ANSI);
+        IApplication app = CreateApplication ().Init (DriverRegistry.Names.ANSI);
         Runnable runnable = new ();
         SessionToken owner = app.Begin (runnable)!;
 
@@ -517,7 +517,7 @@ public class ApplicationDispatchTests
     [Fact]
     public void SessionBegunHandler_CanQueueOwnedDispatchBeforeRunnableIsRunning ()
     {
-        IApplication app = Application.Create ().Init (DriverRegistry.Names.ANSI);
+        IApplication app = CreateApplication ().Init (DriverRegistry.Names.ANSI);
         Runnable runnable = new ();
         Task? dispatch = null;
         bool wasRunningDuringEvent = true;
@@ -554,7 +554,7 @@ public class ApplicationDispatchTests
     [Fact]
     public void NestedSessionBegunHandler_DefersOwnedDispatchUntilOwnerIsRunning ()
     {
-        IApplication app = Application.Create ().Init (DriverRegistry.Names.ANSI);
+        IApplication app = CreateApplication ().Init (DriverRegistry.Names.ANSI);
         Runnable outer = new ();
         Runnable inner = new ();
         SessionToken outerToken = app.Begin (outer)!;
@@ -596,7 +596,7 @@ public class ApplicationDispatchTests
     [Fact]
     public void NestedSessionBegunHandler_OwnedDispatchCannotEndOwnerBeforeItRuns ()
     {
-        IApplication app = Application.Create ().Init (DriverRegistry.Names.ANSI);
+        IApplication app = CreateApplication ().Init (DriverRegistry.Names.ANSI);
         Runnable outer = new ();
         Runnable inner = new ();
         SessionToken outerToken = app.Begin (outer)!;
@@ -630,7 +630,7 @@ public class ApplicationDispatchTests
     [Fact]
     public void EndingFinalSession_CancelsApplicationDispatch ()
     {
-        IApplication app = Application.Create ().Init (DriverRegistry.Names.ANSI);
+        IApplication app = CreateApplication ().Init (DriverRegistry.Names.ANSI);
         Runnable runnable = new ();
         SessionToken owner = app.Begin (runnable)!;
 
@@ -660,7 +660,7 @@ public class ApplicationDispatchTests
     {
         for (int round = 0; round < 5; round++)
         {
-            IApplication app = Application.Create ().Init (DriverRegistry.Names.ANSI);
+            IApplication app = CreateApplication ().Init (DriverRegistry.Names.ANSI);
             Runnable runnable = new ();
             SessionToken owner = app.Begin (runnable)!;
             using CountdownEvent queued = new (40);
@@ -706,8 +706,10 @@ public class ApplicationDispatchTests
             }
             finally
             {
-                runnable.Dispose ();
+                // With the loop stopped, the await may resume on a worker. End application association before
+                // disposing its views; the enabled diagnostics variant deliberately enforces that distinction.
                 app.Dispose ();
+                runnable.Dispose ();
             }
         }
     }
@@ -719,7 +721,7 @@ public class ApplicationDispatchTests
     public async Task CallerCancellationBeforeFinalSessionEndOrDispose_ResumesUiAwaiter (bool dispose)
     {
         SynchronizationContext? previous = SynchronizationContext.Current;
-        IApplication app = Application.Create ().Init (DriverRegistry.Names.ANSI);
+        IApplication app = CreateApplication ().Init (DriverRegistry.Names.ANSI);
         Runnable runnable = new ();
         SessionToken owner = app.Begin (runnable)!;
         using CancellationTokenSource cts = new ();
@@ -756,8 +758,8 @@ public class ApplicationDispatchTests
         }
         finally
         {
-            runnable.Dispose ();
             app.Dispose ();
+            runnable.Dispose ();
         }
 
         static async Task AwaitOnUiContext (Task dispatch)
@@ -777,7 +779,7 @@ public class ApplicationDispatchTests
     [Fact]
     public void WorkerSendBeforeFinalSessionEnd_DoesNotBlockForever ()
     {
-        IApplication app = Application.Create ().Init (DriverRegistry.Names.ANSI);
+        IApplication app = CreateApplication ().Init (DriverRegistry.Names.ANSI);
         Runnable runnable = new ();
         SessionToken owner = app.Begin (runnable)!;
         SynchronizationContext context = ((ApplicationImpl)app).SynchronizationContext!;
@@ -808,7 +810,7 @@ public class ApplicationDispatchTests
     {
         for (int iteration = 0; iteration < 25; iteration++)
         {
-            IApplication app = Application.Create ().Init (DriverRegistry.Names.ANSI);
+            IApplication app = CreateApplication ().Init (DriverRegistry.Names.ANSI);
             Runnable runnable = new ();
             SessionToken owner = app.Begin (runnable)!;
             SynchronizationContext context = ((ApplicationImpl)app).SynchronizationContext!;
@@ -876,7 +878,7 @@ public class ApplicationDispatchTests
     [Fact]
     public void Send_PropagatesCallbackException ()
     {
-        IApplication app = Application.Create ().Init (DriverRegistry.Names.ANSI);
+        IApplication app = CreateApplication ().Init (DriverRegistry.Names.ANSI);
         Runnable runnable = new ();
         SessionToken owner = app.Begin (runnable)!;
         SynchronizationContext context = ((ApplicationImpl)app).SynchronizationContext!;
@@ -918,7 +920,7 @@ public class ApplicationDispatchTests
     [Fact]
     public void Send_DoesNotDeadlock_WhenRunLoopStops ()
     {
-        IApplication app = Application.Create ().Init (DriverRegistry.Names.ANSI);
+        IApplication app = CreateApplication ().Init (DriverRegistry.Names.ANSI);
         Runnable runnable = new ();
         SessionToken owner = app.Begin (runnable)!;
         SynchronizationContext context = ((ApplicationImpl)app).SynchronizationContext!;
@@ -975,7 +977,7 @@ public class ApplicationDispatchTests
     [Fact]
     public void FinalSessionStoppingDuringDrain_ReleasesUnstartedPostToThreadPool ()
     {
-        IApplication app = Application.Create ().Init (DriverRegistry.Names.ANSI);
+        IApplication app = CreateApplication ().Init (DriverRegistry.Names.ANSI);
         using ManualResetEventSlim endNow = new ();
         using ManualResetEventSlim stopPublished = new ();
         using ManualResetEventSlim finishStopping = new ();
@@ -1030,7 +1032,7 @@ public class ApplicationDispatchTests
     [Fact]
     public void NestedSessionStoppingDuringDrain_DoesNotStartItsOwnedDispatch ()
     {
-        IApplication app = Application.Create ().Init (DriverRegistry.Names.ANSI);
+        IApplication app = CreateApplication ().Init (DriverRegistry.Names.ANSI);
         using ManualResetEventSlim endNow = new ();
         using ManualResetEventSlim stopPublished = new ();
         using ManualResetEventSlim finishStopping = new ();
@@ -1077,7 +1079,7 @@ public class ApplicationDispatchTests
     [Fact]
     public void OuterOwnedDispatch_RemainsValidWithNoCachedTopRunnable ()
     {
-        IApplication app = Application.Create ().Init (DriverRegistry.Names.ANSI);
+        IApplication app = CreateApplication ().Init (DriverRegistry.Names.ANSI);
         Runnable outer = new ();
         Runnable inner = new ();
         SessionToken outerToken = app.Begin (outer)!;
@@ -1108,7 +1110,7 @@ public class ApplicationDispatchTests
     [Fact]
     public void StoppedCachedTop_DoesNotMoveOuterContinuationOffUiThread ()
     {
-        IApplication app = Application.Create ().Init (DriverRegistry.Names.ANSI);
+        IApplication app = CreateApplication ().Init (DriverRegistry.Names.ANSI);
         Runnable first = new ();
         app.End (app.Begin (first)!);
         first.Dispose ();
@@ -1154,7 +1156,7 @@ public class ApplicationDispatchTests
     [Fact]
     public void EndingNonTopSession_PreservesInnerOwnedDispatch ()
     {
-        IApplication app = Application.Create ().Init (DriverRegistry.Names.ANSI);
+        IApplication app = CreateApplication ().Init (DriverRegistry.Names.ANSI);
         Runnable outer = new ();
         Runnable inner = new ();
         SessionToken outerToken = app.Begin (outer)!;
@@ -1181,7 +1183,7 @@ public class ApplicationDispatchTests
     [Fact]
     public void EndingNonTopSession_StateChangedHandlerCannotStartOwnedDispatch ()
     {
-        IApplication app = Application.Create ().Init (DriverRegistry.Names.ANSI);
+        IApplication app = CreateApplication ().Init (DriverRegistry.Names.ANSI);
         Runnable outer = new ();
         Runnable inner = new ();
         SessionToken outerToken = app.Begin (outer)!;
@@ -1211,7 +1213,7 @@ public class ApplicationDispatchTests
     [Fact]
     public void ConcurrentSessionEnd_DoesNotRunUnstartedOwnedDispatches ()
     {
-        IApplication app = Application.Create ().Init (DriverRegistry.Names.ANSI);
+        IApplication app = CreateApplication ().Init (DriverRegistry.Names.ANSI);
         Runnable runnable = new ();
         SessionToken owner = app.Begin (runnable)!;
         const int count = 2_000;
@@ -1264,7 +1266,7 @@ public class ApplicationDispatchTests
     [Fact]
     public void EndingSession_CancelsPendingDispatchesWithoutTouchingOtherTimeouts ()
     {
-        IApplication app = Application.Create ().Init (DriverRegistry.Names.ANSI);
+        IApplication app = CreateApplication ().Init (DriverRegistry.Names.ANSI);
         Runnable runnable = new ();
         SessionToken owner = app.Begin (runnable)!;
 
@@ -1300,7 +1302,7 @@ public class ApplicationDispatchTests
     [Fact]
     public void ConcurrentCancellationDuringQueueing_LeavesNoQueuedDispatches ()
     {
-        IApplication app = Application.Create ().Init (DriverRegistry.Names.ANSI);
+        IApplication app = CreateApplication ().Init (DriverRegistry.Names.ANSI);
         Runnable runnable = new ();
         SessionToken owner = app.Begin (runnable)!;
         const int count = 5_000;
@@ -1360,7 +1362,7 @@ public class ApplicationDispatchTests
     [Fact]
     public void CanceledSessionEnd_DoesNotCancelOwnedDispatch ()
     {
-        IApplication app = Application.Create ().Init (DriverRegistry.Names.ANSI);
+        IApplication app = CreateApplication ().Init (DriverRegistry.Names.ANSI);
         Runnable runnable = new ();
         SessionToken owner = app.Begin (runnable)!;
 
@@ -1398,7 +1400,7 @@ public class ApplicationDispatchTests
     [Fact]
     public void NewSessionAfterEarlierEnd_AllowsDispatchAgain ()
     {
-        IApplication app = Application.Create ().Init (DriverRegistry.Names.ANSI);
+        IApplication app = CreateApplication ().Init (DriverRegistry.Names.ANSI);
         Runnable first = new ();
         Runnable second = new ();
         SessionToken firstToken = app.Begin (first)!;
@@ -1427,7 +1429,7 @@ public class ApplicationDispatchTests
     [Fact]
     public void DisposeBeforeFirstSession_CancelsQueuedDispatch ()
     {
-        IApplication app = Application.Create ().Init (DriverRegistry.Names.ANSI);
+        IApplication app = CreateApplication ().Init (DriverRegistry.Names.ANSI);
         bool ran = false;
         Task dispatch = QueueOnWorker (() => app.InvokeAsync (() => ran = true));
 
@@ -1440,7 +1442,7 @@ public class ApplicationDispatchTests
     [Fact]
     public void QueueBeforeFirstSession_RunsAfterItStarts ()
     {
-        IApplication app = Application.Create ().Init (DriverRegistry.Names.ANSI);
+        IApplication app = CreateApplication ().Init (DriverRegistry.Names.ANSI);
         Runnable runnable = new ();
 
         try
@@ -1468,7 +1470,7 @@ public class ApplicationDispatchTests
     [Fact]
     public void UiThreadCallbackException_FaultsReturnedTask ()
     {
-        IApplication app = Application.Create ().Init (DriverRegistry.Names.ANSI);
+        IApplication app = CreateApplication ().Init (DriverRegistry.Names.ANSI);
         Runnable runnable = new ();
         SessionToken owner = app.Begin (runnable)!;
 
@@ -1490,7 +1492,7 @@ public class ApplicationDispatchTests
     [Fact]
     public void CallbackException_FaultsTaskWithoutEscapingDispatchDrain ()
     {
-        IApplication app = Application.Create ().Init (DriverRegistry.Names.ANSI);
+        IApplication app = CreateApplication ().Init (DriverRegistry.Names.ANSI);
         Runnable runnable = new ();
         SessionToken owner = app.Begin (runnable)!;
 
@@ -1514,7 +1516,7 @@ public class ApplicationDispatchTests
     [Fact]
     public void CallbackCancellationWithItsCallerToken_CancelsTask ()
     {
-        IApplication app = Application.Create ().Init (DriverRegistry.Names.ANSI);
+        IApplication app = CreateApplication ().Init (DriverRegistry.Names.ANSI);
         Runnable runnable = new ();
         SessionToken owner = app.Begin (runnable)!;
         using CancellationTokenSource cancellation = new ();
@@ -1540,7 +1542,7 @@ public class ApplicationDispatchTests
     [Fact]
     public void CallbackCancellationWithoutMatchingCanceledToken_FaultsTask ()
     {
-        IApplication app = Application.Create ().Init (DriverRegistry.Names.ANSI);
+        IApplication app = CreateApplication ().Init (DriverRegistry.Names.ANSI);
         Runnable runnable = new ();
         SessionToken owner = app.Begin (runnable)!;
         using CancellationTokenSource cancellation = new ();
@@ -1565,8 +1567,8 @@ public class ApplicationDispatchTests
     [Fact]
     public void OwnerFromAnotherApplication_ReturnsCanceledTask ()
     {
-        IApplication first = Application.Create ().Init (DriverRegistry.Names.ANSI);
-        IApplication second = Application.Create ().Init (DriverRegistry.Names.ANSI);
+        IApplication first = CreateApplication ().Init (DriverRegistry.Names.ANSI);
+        IApplication second = CreateApplication ().Init (DriverRegistry.Names.ANSI);
         Runnable runnable = new ();
         SessionToken owner = first.Begin (runnable)!;
 
@@ -1586,7 +1588,7 @@ public class ApplicationDispatchTests
     [Fact]
     public void BeforeInitAndAfterDispose_ThrowNotInitialized ()
     {
-        IApplication app = Application.Create ();
+        IApplication app = CreateApplication ();
 
         Assert.Throws<NotInitializedException> (() => { _ = app.InvokeAsync (() => { }, TestContext.Current.CancellationToken); });
 
@@ -1599,7 +1601,7 @@ public class ApplicationDispatchTests
     [Fact]
     public void ShutdownTakesPrecedenceOverAlreadyCanceledToken ()
     {
-        IApplication app = Application.Create ().Init (DriverRegistry.Names.ANSI);
+        IApplication app = CreateApplication ().Init (DriverRegistry.Names.ANSI);
         using CancellationTokenSource cancellation = new ();
         cancellation.Cancel ();
         FieldInfo stoppingField = typeof (ApplicationImpl).GetField ("_dispatchStopping", BindingFlags.Instance | BindingFlags.NonPublic)!;
@@ -1703,7 +1705,7 @@ public class ApplicationDispatchTests
     [Fact]
     public void Post_AfterFinalSessionEnds_RunsOnThreadPool ()
     {
-        IApplication app = Application.Create ().Init (DriverRegistry.Names.ANSI);
+        IApplication app = CreateApplication ().Init (DriverRegistry.Names.ANSI);
         Runnable runnable = new ();
         SessionToken owner = app.Begin (runnable)!;
         SynchronizationContext context = ((ApplicationImpl)app).SynchronizationContext!;
@@ -1735,4 +1737,8 @@ public class ApplicationDispatchTests
             app.Dispose ();
         }
     }
+
+    // CoPilot - GPT-6.1 Sol
+    protected virtual IApplication CreateApplication () => Application.Create ();
+
 }

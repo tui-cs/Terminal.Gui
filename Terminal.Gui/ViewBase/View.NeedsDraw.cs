@@ -38,6 +38,8 @@ public partial class View
     /// </remarks>
     public void SetNeedsDraw ()
     {
+        VerifyAccessIfEnabled ();
+
         Rectangle viewport = Viewport;
 
         if (!Visible || (NeedsDrawRect != Rectangle.Empty && viewport.IsEmpty))
@@ -75,6 +77,8 @@ public partial class View
     /// <param name="viewPortRelativeRegion">The viewport-local region that needs to be redrawn.</param>
     public void SetNeedsDraw (Rectangle viewPortRelativeRegion)
     {
+        VerifyAccessIfEnabled ();
+
         // Invalidate the cached drawn region used for TransparentMouse hit-testing.
         // It will be repopulated on the next Draw() pass.
         CachedDrawnRegion = null;

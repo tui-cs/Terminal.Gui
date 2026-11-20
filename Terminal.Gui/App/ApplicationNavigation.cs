@@ -77,6 +77,8 @@ public class ApplicationNavigation
     /// </remarks>
     internal void SetFocused (View? value)
     {
+        App.VerifyAccessIfEnabled ();
+
         if (_focused == value)
         {
             return;
@@ -114,6 +116,8 @@ public class ApplicationNavigation
     /// </returns>
     public bool AdvanceFocus (NavigationDirection direction, TabBehavior? behavior)
     {
+        App.VerifyAccessIfEnabled ();
+
         if (App?.Popovers?.GetActivePopover () is { Visible: true } visiblePopover)
         {
             return visiblePopover.AdvanceFocus (direction, behavior);

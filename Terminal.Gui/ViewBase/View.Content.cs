@@ -37,6 +37,8 @@ public partial class View
     /// <seealso cref="SetContentSize"/>
     public void SetContentWidth (int? contentWidth)
     {
+        VerifyAccessIfEnabled ();
+
         if (contentWidth is < 0)
         {
             throw new ArgumentException (@"Content width cannot be negative.", nameof (contentWidth));
@@ -74,6 +76,8 @@ public partial class View
     /// <seealso cref="SetContentSize"/>
     public void SetContentHeight (int? contentHeight)
     {
+        VerifyAccessIfEnabled ();
+
         if (contentHeight is < 0)
         {
             throw new ArgumentException (@"Content height cannot be negative.", nameof (contentHeight));
@@ -116,6 +120,8 @@ public partial class View
     /// <seealso cref="SetContentHeight"/>
     public void SetContentSize (Size? contentSize)
     {
+        VerifyAccessIfEnabled ();
+
         if (contentSize is { } s && (s.Width < 0 || s.Height < 0))
         {
             throw new ArgumentException (@"ContentSize cannot be negative.", nameof (contentSize));
@@ -337,6 +343,8 @@ public partial class View
         get => _contentWidth is null && _contentHeight is null;
         set
         {
+            VerifyAccessIfEnabled ();
+
             if (!value)
             {
                 return;
@@ -438,6 +446,8 @@ public partial class View
         get;
         set
         {
+            VerifyAccessIfEnabled ();
+
             if (field == value)
             {
                 return;
@@ -516,6 +526,8 @@ public partial class View
 
     private void SetViewport (Rectangle viewport)
     {
+        VerifyAccessIfEnabled (nameof (Viewport));
+
         Rectangle oldViewport = new (_viewportLocation, Viewport.Size);
         ApplySettings (ref viewport);
 

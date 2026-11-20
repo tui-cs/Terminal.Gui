@@ -61,6 +61,8 @@ public partial class View // Layout APIs
         }
         set
         {
+            VerifyAccessIfEnabled ();
+
             // This will set _frame, call SetsNeedsLayout, and raise OnViewportChanged/ViewportChanged
             if (!SetFrame (value with { Width = Math.Max (value.Width, 0), Height = Math.Max (value.Height, 0) }))
             {
@@ -93,6 +95,8 @@ public partial class View // Layout APIs
     /// <returns><see langword="true"/> if the frame was changed.</returns>
     private bool SetFrame (in Rectangle frame)
     {
+        VerifyAccessIfEnabled ();
+
         if (_frame == frame)
         {
             return false;
@@ -280,6 +284,8 @@ public partial class View // Layout APIs
         get => _x;
         set
         {
+            VerifyAccessIfEnabled ();
+
             if (Equals (_x, value))
             {
                 return;
@@ -331,6 +337,8 @@ public partial class View // Layout APIs
         get => _y;
         set
         {
+            VerifyAccessIfEnabled ();
+
             if (Equals (_y, value))
             {
                 return;
@@ -395,6 +403,8 @@ public partial class View // Layout APIs
         get => _height;
         set
         {
+            VerifyAccessIfEnabled ();
+
             CWPPropertyHelper.ChangeProperty (this,
                                               ref _height,
                                               value,
@@ -496,6 +506,8 @@ public partial class View // Layout APIs
         get => _width;
         set
         {
+            VerifyAccessIfEnabled ();
+
             CWPPropertyHelper.ChangeProperty (this,
                                               ref _width,
                                               value,
@@ -602,6 +614,8 @@ public partial class View // Layout APIs
     /// <returns><see langword="false"/>If the view could not be laid out (typically because a dependency was not ready). </returns>
     public bool Layout (Size contentSize)
     {
+        VerifyAccessIfEnabled ();
+
         bool needsDrawAfterLayout = _needsDrawAfterLayout;
         _needsDrawAfterLayout = false;
         Rectangle originalFrame = Frame;
@@ -682,6 +696,8 @@ public partial class View // Layout APIs
     /// <returns><see langword="true"/> if successful. <see langword="false"/> means a dependent View still needs layout.</returns>
     public bool SetRelativeLayout (Size superviewContentSize)
     {
+        VerifyAccessIfEnabled ();
+
         Debug.Assert (_x is { });
         Debug.Assert (_y is { });
 
@@ -1015,6 +1031,8 @@ public partial class View // Layout APIs
     /// </remarks>
     public void SetNeedsLayout ()
     {
+        VerifyAccessIfEnabled ();
+
         if (!_suppressNeedsDrawAfterLayout)
         {
             _needsDrawAfterLayout = true;

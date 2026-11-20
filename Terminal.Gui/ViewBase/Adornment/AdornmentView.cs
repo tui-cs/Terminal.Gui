@@ -47,7 +47,18 @@ public class AdornmentView : View, IAdornmentView, IDesignable
     public virtual void OnParentFrameChanged (Rectangle newParentFrame) => throw new NotImplementedException ();
 
     /// <inheritdoc cref="IAdornmentView.Adornment"/>
-    public IAdornment? Adornment { get; set; }
+    public IAdornment? Adornment
+    {
+        get;
+        set
+        {
+            VerifyAssociationAccess (value?.Parent?.App, nameof (Adornment));
+            field?.Parent?.AdjustExplicitApplicationCount (-ExplicitApplicationCount);
+            field = value;
+            field?.Parent?.AdjustExplicitApplicationCount (ExplicitApplicationCount);
+            RefreshThreadAccessApplication ();
+        }
+    }
 
     #region View Overrides
 

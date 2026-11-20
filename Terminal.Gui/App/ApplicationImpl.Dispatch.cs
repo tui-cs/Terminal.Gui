@@ -94,6 +94,8 @@ internal partial class ApplicationImpl
 
     internal void DrainDispatches ()
     {
+        DrainLifecycleUiWork ();
+
         if (!CanStartUiWork)
         {
             return;

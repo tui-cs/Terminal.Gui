@@ -118,11 +118,14 @@ internal partial class ApplicationImpl
     public SessionToken? Begin (IRunnable runnable)
     {
         ArgumentNullException.ThrowIfNull (runnable);
+        this.VerifyAccessIfEnabled ();
 
         if (runnable.IsRunning)
         {
             throw new ArgumentException (@"The runnable is already running.", nameof (runnable));
         }
+
+        DrainLifecycleUiWork ();
 
         // Create session token
         SessionToken token = new (runnable);
@@ -296,12 +299,17 @@ internal partial class ApplicationImpl
         }
         finally
         {
-            // Restore the caller's context only if ours is still current, so a context installed on purpose
-            // during the run (for example by a handler) is not overwritten. For a nested Run, previousContext
-            // is already ours, so restoring it changes nothing; the outermost Run restores the caller's context.
-            if (ReferenceEquals (System.Threading.SynchronizationContext.Current, toolkitContext))
+            try
             {
-                System.Threading.SynchronizationContext.SetSynchronizationContext (previousContext);
+                DrainLifecycleUiWork ();
+            }
+            finally
+            {
+                // Restore even if a deferred cleanup notification throws.
+                if (ReferenceEquals (System.Threading.SynchronizationContext.Current, toolkitContext))
+                {
+                    System.Threading.SynchronizationContext.SetSynchronizationContext (previousContext);
+                }
             }
         }
     }
@@ -449,6 +457,7 @@ internal partial class ApplicationImpl
     public void End (SessionToken token)
     {
         ArgumentNullException.ThrowIfNull (token);
+        DrainLifecycleUiWork ();
 
         // Claim the session before the cancellable IsRunningChanging, so a concurrent or reentrant End returns instead
         // of raising it again or tearing down ahead of a veto. Once teardown starts, the claim is never released.
@@ -463,9 +472,21 @@ internal partial class ApplicationImpl
 
         try
         {
-            if (Popovers?.GetActivePopover () is { Visible: true } visiblePopover)
+            ApplicationPopover? popovers = Popovers;
+
+            if (popovers?.GetActivePopover () is { Visible: true } visiblePopover)
             {
-                ApplicationPopover.HideWithQuitCommand (visiblePopover);
+                RunLifecycleUiWork (this,
+                                    () =>
+                                    {
+                                        if (visiblePopover is View { IsDisposed: true }
+                                            || !ReferenceEquals (popovers.GetActivePopover (), visiblePopover))
+                                        {
+                                            return;
+                                        }
+
+                                        ApplicationPopover.HideWithQuitCommand (visiblePopover);
+                                    });
             }
 
             // Get old IsRunning value (safe - cached value)
@@ -558,7 +579,12 @@ internal partial class ApplicationImpl
             Notify (() => restoredRunnable.RaiseIsModalChangedEvent (true));
         }
 
-        Notify (Mouse.UngrabMouse);
+        // A pre-notification can dispose the application. Do not recreate its mouse service afterwards.
+        if (_mouse is { } mouse)
+        {
+            Action ungrabMouse = mouse is ApplicationMouse applicationMouse ? applicationMouse.CaptureUngrabMouse () : mouse.UngrabMouse;
+            Notify (() => RunLifecycleUiWork (this, ungrabMouse));
+        }
         Notify (() => runnable.RaiseIsRunningChangedEvent (false));
 
         token.Result = runnable.Result;
@@ -584,7 +610,7 @@ internal partial class ApplicationImpl
             }
             catch (Exception exception)
             {
-                failure ??= ExceptionDispatchInfo.Capture (exception);
+                CaptureCleanupFailure (ref failure, exception);
             }
         }
     }

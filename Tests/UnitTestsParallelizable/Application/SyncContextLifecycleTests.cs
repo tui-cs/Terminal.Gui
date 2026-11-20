@@ -23,7 +23,7 @@ public class SyncContextLifecycleTests
         {
             SynchronizationContext.SetSynchronizationContext (marker);
 
-            IApplication app = Application.Create ();
+            IApplication app = CreateApplication ();
             app.Init (DriverRegistry.Names.ANSI);
 
             Assert.Same (marker, SynchronizationContext.Current);
@@ -48,7 +48,7 @@ public class SyncContextLifecycleTests
         {
             SynchronizationContext.SetSynchronizationContext (marker);
 
-            IApplication app = Application.Create ();
+            IApplication app = CreateApplication ();
             app.Init (DriverRegistry.Names.ANSI);
 
             SynchronizationContext? duringRun = null;
@@ -91,7 +91,7 @@ public class SyncContextLifecycleTests
 
         try
         {
-            using IApplication app = Application.Create ();
+            using IApplication app = CreateApplication ();
             app.Init (DriverRegistry.Names.ANSI);
             SynchronizationContext appContext = ((ApplicationImpl)app).SynchronizationContext!;
             using Runnable runnable = new ();
@@ -142,7 +142,7 @@ public class SyncContextLifecycleTests
         {
             SynchronizationContext.SetSynchronizationContext (caller);
 
-            using IApplication app = Application.Create ();
+            using IApplication app = CreateApplication ();
             app.Init (DriverRegistry.Names.ANSI);
             SynchronizationContext appContext = ((ApplicationImpl)app).SynchronizationContext!;
             using Runnable runnable = new ();
@@ -180,7 +180,7 @@ public class SyncContextLifecycleTests
         {
             SynchronizationContext.SetSynchronizationContext (caller);
 
-            using IApplication app = Application.Create ();
+            using IApplication app = CreateApplication ();
             app.Init (DriverRegistry.Names.ANSI);
             using Runnable runnable = new ();
             InvalidOperationException failure = new ("iteration failed");
@@ -213,7 +213,7 @@ public class SyncContextLifecycleTests
         {
             SynchronizationContext.SetSynchronizationContext (caller);
 
-            using IApplication app = Application.Create ();
+            using IApplication app = CreateApplication ();
             app.Init (DriverRegistry.Names.ANSI);
             SynchronizationContext appContext = ((ApplicationImpl)app).SynchronizationContext!;
 
@@ -278,7 +278,7 @@ public class SyncContextLifecycleTests
         {
             SynchronizationContext.SetSynchronizationContext (caller);
 
-            using IApplication app = Application.Create ();
+            using IApplication app = CreateApplication ();
             app.Init (DriverRegistry.Names.ANSI);
             SynchronizationContext appContext = ((ApplicationImpl)app).SynchronizationContext!;
 
@@ -335,7 +335,7 @@ public class SyncContextLifecycleTests
         {
             SynchronizationContext.SetSynchronizationContext (marker);
 
-            IApplication app = Application.Create ();
+            IApplication app = CreateApplication ();
             app.Init (DriverRegistry.Names.ANSI);
             SynchronizationContext appContext = ((ApplicationImpl)app).SynchronizationContext!;
 
@@ -379,7 +379,7 @@ public class SyncContextLifecycleTests
         {
             SynchronizationContext.SetSynchronizationContext (marker);
 
-            IApplication app = Application.Create ();
+            IApplication app = CreateApplication ();
             app.Init (DriverRegistry.Names.ANSI);
             SynchronizationContext appContext = ((ApplicationImpl)app).SynchronizationContext!;
 
@@ -418,7 +418,7 @@ public class SyncContextLifecycleTests
         {
             SynchronizationContext.SetSynchronizationContext (marker);
 
-            IApplication app = Application.Create ();
+            IApplication app = CreateApplication ();
             app.Init (DriverRegistry.Names.ANSI);
             SynchronizationContext appContext = ((ApplicationImpl)app).SynchronizationContext!;
 
@@ -467,7 +467,7 @@ public class SyncContextLifecycleTests
         {
             SynchronizationContext.SetSynchronizationContext (marker);
 
-            IApplication app = Application.Create ();
+            IApplication app = CreateApplication ();
             app.Init (DriverRegistry.Names.ANSI);
 
             using Runnable outer = new ();
@@ -514,7 +514,7 @@ public class SyncContextLifecycleTests
         {
             SynchronizationContext.SetSynchronizationContext (marker);
 
-            IApplication app = Application.Create ();
+            IApplication app = CreateApplication ();
             app.Init (DriverRegistry.Names.ANSI);
             SynchronizationContext appContext = ((ApplicationImpl)app).SynchronizationContext!;
 
@@ -553,7 +553,7 @@ public class SyncContextLifecycleTests
         {
             SynchronizationContext.SetSynchronizationContext (marker);
 
-            IApplication app = Application.Create ();
+            IApplication app = CreateApplication ();
             app.Init (DriverRegistry.Names.ANSI);
             SynchronizationContext appContext = ((ApplicationImpl)app).SynchronizationContext!;
 
@@ -582,7 +582,7 @@ public class SyncContextLifecycleTests
     [Fact]
     public void Post_AfterSessionEnded_StillExecutesCallback ()
     {
-        IApplication app = Application.Create ();
+        IApplication app = CreateApplication ();
 
         try
         {
@@ -624,7 +624,7 @@ public class SyncContextLifecycleTests
     [Fact]
     public void Post_AfterDispose_StillExecutesCallback ()
     {
-        IApplication app = Application.Create ();
+        IApplication app = CreateApplication ();
         app.Init (DriverRegistry.Names.ANSI);
         SynchronizationContext context = ((ApplicationImpl)app).SynchronizationContext!;
         app.Dispose ();
@@ -637,4 +637,8 @@ public class SyncContextLifecycleTests
                      callbackCalled.Wait (TimeSpan.FromSeconds (10), TestContext.Current.CancellationToken),
                      "Post after Dispose must run on the thread pool.");
     }
+
+    // CoPilot - GPT-6.1 Sol
+    protected virtual IApplication CreateApplication () => Application.Create ();
+
 }
