@@ -32,6 +32,11 @@ jobs:
           PR_NUMBER: ${{ github.event.pull_request.number }}
           MERGE_GROUP_HEAD_REF: ${{ github.event.merge_group.head_ref }}
         run: |
+          if [ ! -f Scripts/check-release-lock.sh ]; then
+            echo "::notice::The trusted base revision predates the release-lock script. This introduction PR may proceed; subsequent runs execute the base-owned script."
+            exit 0
+          fi
+
           ALLOWED_BACKMERGE_NUMBER=""
 
           if [ -n "$PR_NUMBER" ]; then
