@@ -329,7 +329,8 @@ public static class ConsoleKeyMapping
 
             if (modifiers.HasFlag (ConsoleModifiers.Shift))
             {
-                letterChar = char.ToUpper (letterChar);
+                // Invariant: the culture-sensitive ToUpper turns 'i' into 'İ' in Turkish and Azerbaijani.
+                letterChar = char.ToUpperInvariant (letterChar);
             }
 
             return (letterKey, letterChar);
