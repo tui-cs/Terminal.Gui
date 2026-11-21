@@ -2047,6 +2047,8 @@ public class OutputBaseTests
         }
 
         protected override void Write (StringBuilder output) => Writes++;
+
+        protected override void Write (ReadOnlySpan<byte> output) => Writes++;
     }
 
     // Copilot - Claude Sonnet 4.6

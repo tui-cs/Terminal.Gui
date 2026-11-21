@@ -3,6 +3,10 @@ using System.IO.Abstractions;
 namespace Terminal.Gui.FileServices;
 
 /// <summary>Determines which symbol to use to represent files and directories.</summary>
+/// <remarks>
+///     To supply custom icons, derive from this class and override <see cref="GetIcon"/> or
+///     <see cref="GetIconWithOptionalSpace"/>. Assign the provider to <see cref="FileDialogStyle.IconProvider"/>.
+/// </remarks>
 public class FileSystemIconProvider
 {
     private readonly NerdFonts _nerd = new ();
@@ -12,12 +16,12 @@ public class FileSystemIconProvider
     ///     should be used.
     /// </summary>
     /// <param name="fileSystemInfo">The file or directory requiring an icon.</param>
-    /// <returns></returns>
-    public Rune GetIcon (IFileSystemInfo? fileSystemInfo)
+    /// <returns>The icon, or a space if no icon should be used.</returns>
+    public virtual Rune GetIcon (IFileSystemInfo? fileSystemInfo)
     {
         if (UseNerdIcons)
         {
-            return new Rune (_nerd.GetNerdIcon (fileSystemInfo, fileSystemInfo is IDirectoryInfo dir && IsOpenGetter (dir)));
+            return _nerd.GetNerdIcon (fileSystemInfo, fileSystemInfo is IDirectoryInfo dir && IsOpenGetter (dir));
         }
 
         if (fileSystemInfo is IDirectoryInfo)
@@ -32,22 +36,26 @@ public class FileSystemIconProvider
     ///     Returns <see cref="GetIcon(IFileSystemInfo)"/> with an extra space on the end if icon is likely to overlap
     ///     adjacent cells.
     /// </summary>
-    public string GetIconWithOptionalSpace (IFileSystemInfo? fileSystemInfo)
+    /// <param name="fileSystemInfo">The file or directory requiring an icon.</param>
+    /// <returns>The icon text, including any spacing.</returns>
+    /// <remarks>To supply multiple characters, custom spacing, or no icon, override this method.</remarks>
+    public virtual string GetIconWithOptionalSpace (IFileSystemInfo? fileSystemInfo)
     {
         string space = UseNerdIcons ? " " : "";
 
-        return GetIcon (fileSystemInfo!) + space;
+        return GetIcon (fileSystemInfo) + space;
     }
 
     /// <summary>
     ///     Gets or sets the delegate to be used to determine opened state of directories when resolving
     ///     <see cref="GetIcon(IFileSystemInfo)"/>.  Defaults to always false.
     /// </summary>
-    public Func<IDirectoryInfo, bool> IsOpenGetter { get; set; } = d => false;
+    public Func<IDirectoryInfo, bool> IsOpenGetter { get; set; } = _ => false;
 
     /// <summary>
     ///     <para>
-    ///         Gets or sets a flag indicating whether to use Nerd Font icons. Defaults to <see cref="NerdFonts.Enable"/>
+    ///         Gets or sets a flag indicating whether to use Nerd Fonts v3 icons. The terminal must use a compatible
+    ///         Nerd Font. Defaults to <see cref="NerdFonts.Enable"/>
     ///         which can be configured by end users from their <c>./.tui/config.json</c> via
     ///         <see cref="TuiConfigurationBuilder"/>.
     ///     </para>

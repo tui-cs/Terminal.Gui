@@ -60,21 +60,19 @@ public interface IRunnable
     void SetApp (IApplication app);
 
     /// <summary>
-    ///     Gets whether this runnable session is currently running (i.e., on the
-    ///     <see cref="IApplication.SessionStack"/>).
+    ///     Gets whether this runnable session is currently running (between <see cref="IApplication.Begin(IRunnable)"/>
+    ///     and <see cref="IApplication.End(SessionToken)"/>).
     /// </summary>
     /// <remarks>
     ///     <para>
-    ///         This property returns a cached value that is updated atomically when the runnable is added to or
-    ///         removed from the session stack. The cached state ensures thread-safe access without race conditions.
+    ///         This property returns a cached value that is updated atomically with the
+    ///         <see cref="IApplication.SessionStack"/>. The cached state ensures thread-safe access without race conditions.
     ///     </para>
     ///     <para>
-    ///         Returns <see langword="true"/> if this runnable is currently on the <see cref="IApplication.SessionStack"/>,
-    ///         <see langword="false"/> otherwise.
-    ///     </para>
-    ///     <para>
-    ///         Runnables are added to the stack during <see cref="IApplication.Begin(IRunnable)"/> and removed in
-    ///         <see cref="IApplication.End(SessionToken)"/>.
+    ///         <see cref="IApplication.Begin(IRunnable)"/> pushes the runnable's token onto the stack and sets this to
+    ///         <see langword="true"/>. <see cref="IApplication.End(SessionToken)"/> sets it to <see langword="false"/> and
+    ///         removes the token, except that a token ended beneath the top stays on the stack until the sessions above
+    ///         it end. To find running sessions on the stack, check this property rather than stack membership.
     ///     </para>
     /// </remarks>
     bool IsRunning { get; }
@@ -137,15 +135,16 @@ public interface IRunnable
     void RaiseIsRunningChangedEvent (bool newIsRunning);
 
     /// <summary>
-    ///     Raised after <see cref="IsRunning"/> has changed (after the runnable has been added to or removed from the
-    ///     <see cref="IApplication.SessionStack"/>).
+    ///     Raised after <see cref="IsRunning"/> has changed (after <see cref="IApplication.Begin(IRunnable)"/> or
+    ///     <see cref="IApplication.End(SessionToken)"/> has updated the <see cref="IApplication.SessionStack"/>).
     /// </summary>
     /// <remarks>
     ///     <para>
     ///         Subscribe to this event to perform post-state-change logic. When <see cref="EventArgs{T}.Value"/> is
     ///         <see langword="true"/>,
-    ///         the runnable has started and is on the stack. When <see langword="false"/>, the runnable has stopped and been
-    ///         removed from the stack.
+    ///         the runnable has started and is on the stack. When <see langword="false"/>, the runnable has stopped; its
+    ///         token has been removed from the stack, unless it ended beneath the top, in which case the token stays on
+    ///         the stack until the sessions above it end.
     ///     </para>
     ///     <para>
     ///         This event follows the Terminal.Gui Cancellable Work Pattern (CWP).

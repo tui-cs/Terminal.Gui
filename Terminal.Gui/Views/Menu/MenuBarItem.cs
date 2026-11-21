@@ -39,6 +39,13 @@ namespace Terminal.Gui.Views;
 ///         menu opening when switching between <see cref="MenuBarItem"/>s via HotKey.
 ///     </para>
 ///     <para>
+///         <b>Application-scoped MenuItem shortcuts:</b> <see cref="EndInit"/> assigns
+///         <see cref="View.App"/> on the <see cref="PopoverMenu"/> (or inline <see cref="MenuItem.SubMenu"/>)
+///         and re-registers any SubView <see cref="Shortcut"/> with
+///         <see cref="Shortcut.BindKeyToApplication"/> set, so <see cref="Shortcut.Key"/> bindings created
+///         before App was available still register on <see cref="IKeyboard.KeyBindings"/>.
+///     </para>
+///     <para>
 ///         See <see href="https://tui-cs.github.io/Terminal.Gui/docs/shortcut.html">Shortcut Deep Dive</see> for
 ///         details on the underlying command routing and BubbleDown pattern.
 ///     </para>
@@ -238,11 +245,16 @@ public class MenuBarItem : MenuItem, IMenuBarEntry, IDesignable
                 SubMenu = inlineMenu;
             }
 
-            if (SubMenu is { IsInitialized: false })
+            if (SubMenu is { })
             {
                 SubMenu.App ??= App;
-                SubMenu.BeginInit ();
-                SubMenu.EndInit ();
+                EnsureApplicationKeyBindings (SubMenu, App);
+
+                if (!SubMenu.IsInitialized)
+                {
+                    SubMenu.BeginInit ();
+                    SubMenu.EndInit ();
+                }
             }
 
             SetupSubMenuNavigation ();
@@ -250,12 +262,21 @@ public class MenuBarItem : MenuItem, IMenuBarEntry, IDesignable
             return;
         }
 
-        if (PopoverMenu is null || PopoverMenu.IsInitialized)
+        if (PopoverMenu is null)
         {
             return;
         }
 
         PopoverMenu.App ??= App;
+
+        // MenuItems may have set BindKeyToApplication + Key before App was available on the popover.
+        EnsureApplicationKeyBindings (PopoverMenu, App);
+
+        if (PopoverMenu.IsInitialized)
+        {
+            return;
+        }
+
         PopoverMenu.BeginInit ();
         PopoverMenu.EndInit ();
     }

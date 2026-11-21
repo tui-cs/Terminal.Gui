@@ -47,6 +47,18 @@ public static class GraphemeHelper
         }
     }
 
+    // Match StringExtensions.GetColumns for one already segmented grapheme without allocating a string.
+    internal static int GetGraphemeColumns (ReadOnlySpan<char> grapheme, bool ignoreLessThanZero = true)
+    {
+        var columns = 0;
+        foreach (Rune rune in grapheme.EnumerateRunes ())
+        {
+            int width = rune.GetColumns ();
+            columns = checked(columns + (ignoreLessThanZero && width < 0 ? 0 : width));
+        }
+        return Math.Min (columns, 2);
+    }
+
     /// <summary>
     ///     Counts the number of grapheme clusters in a string without allocating intermediate collections.
     /// </summary>

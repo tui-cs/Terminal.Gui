@@ -75,16 +75,29 @@ internal partial class ApplicationImpl
 
         CreateDriver (_driverName);
 
-        Initialized = true;
+        lock (_dispatchLock)
+        {
+            _inlineOutputGeneration++;
+            _inlineOutputUnits = 0;
+            _inlineOutputOutstanding = 0;
+            _inlineOutputFailure = null;
+            _inlineScreenSized = false;
+            _inlineResize = null;
+            _inlineScreenHasValidOwnership = false;
+            _inlineOriginEstablished = false;
+            _screen = null;
+            Volatile.Write (ref _dispatchStopping, false);
+
+            // Created here; installed as the thread's ambient context only while Run is executing
+            // (see Run). Begin and End leave the caller's context alone: a Begin-only session has no loop
+            // to drain continuations, so installing it there strands them (#5680). Installing at Init time
+            // would also strand an await between Init and Run (#5636).
+            SynchronizationContext = new MainLoopSyncContext (this);
+            Initialized = true;
+        }
 
         RaiseInitializedChanged (this, new EventArgs<bool> (true));
         SubscribeDriverEvents ();
-
-        // Created here; installed as the thread's ambient context only while a session is running
-        // (see Begin/Run). Installing it at Init time would make an await between Init and Run
-        // capture a context whose continuations only execute once the main loop is pumping —
-        // stranding the continuation that was going to start the loop (#5636).
-        SynchronizationContext = new MainLoopSyncContext (this);
 
         _result = null;
 
@@ -158,6 +171,10 @@ internal partial class ApplicationImpl
     /// </summary>
     private void DisposeCore ()
     {
+        // Publish shutdown and cancel pending dispatches before stopping the loop. Canceled awaiters
+        // can then resume without posting their continuations to a loop that will no longer pump.
+        StopDispatching ();
+
         // Stop the coordinator if running
         Coordinator?.Stop ();
 
@@ -226,6 +243,8 @@ internal partial class ApplicationImpl
         // e.g. see Issue #537
 
         Trace.Lifecycle (MainThreadId?.ToString (), "Shutdown");
+
+        StopDispatching ();
 
         // === 0. Stop all timers ===
         TimedEvents.StopAll ();
@@ -308,16 +327,7 @@ internal partial class ApplicationImpl
         MainThreadId = null;
         ResetHasEndedSession ();
 
-        // === 9. Reset synchronization context ===
-        // If this app's context is still the thread's ambient context, clear it so later
-        // async/await does not capture a context that no longer processes callbacks (#1084).
-        // A foreign ambient context (the caller's own) is left untouched.
-        if (SynchronizationContext is { } ownContext && System.Threading.SynchronizationContext.Current == ownContext)
-        {
-            System.Threading.SynchronizationContext.SetSynchronizationContext (null);
-        }
-
-        // === 10. Unsubscribe from Application static property change events ===
+        // === 9. Unsubscribe from Application static property change events ===
         UnsubscribeApplicationEvents ();
     }
 

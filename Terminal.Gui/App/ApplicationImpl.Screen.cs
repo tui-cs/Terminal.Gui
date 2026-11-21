@@ -5,6 +5,8 @@ namespace Terminal.Gui.App;
 
 internal partial class ApplicationImpl
 {
+    private bool _inlineScreenHasValidOwnership;
+
     /// <inheritdoc/>
     public event EventHandler<EventArgs<Rectangle>>? ScreenChanged;
 
@@ -25,6 +27,13 @@ internal partial class ApplicationImpl
                 // Inline mode: store the sub-rectangle independently.
                 // Resize the output buffer to match the inline region dimensions.
                 _screen = value;
+                _inlineScreenHasValidOwnership = Driver is { } owner && value.X == 0 && value.Width == owner.Screen.Width
+                                                && value.Y >= 0 && value.Height >= 0 && (long)value.Y + value.Height <= owner.Screen.Height;
+                if (_inlineScreenHasValidOwnership && value.Height > 0 && Driver is DriverImpl inlineDriver
+                    && inlineDriver.GetOutput () is AnsiOutput output)
+                {
+                    output.InlineSizeTrackingEnabled = true;
+                }
                 (Driver as DriverImpl)?.ResizeOutputBuffer (value.Width, value.Height);
 
                 RaiseScreenChangedEvent (value);
@@ -62,11 +71,25 @@ internal partial class ApplicationImpl
     /// <param name="screen">The new screen size and position.</param>
     private void RaiseScreenChangedEvent (Rectangle screen)
     {
-        //Screen = new (Point.Empty, screen.Size);
+        if (AppModel == AppModel.Inline && _inlineResize is null && _inlineScreenHasValidOwnership && screen.Height > 0
+            && Driver is DriverImpl driver && driver.GetOutput () is AnsiOutput
+            { IsInlineOutputAvailable: true, InlineCursorRow: null, HasPendingOutputRecovery: false } output
+            && !InlinePlacementLost)
+        {
+            if (!WriteInlineMovement (EscSeqUtils.CSI_SetCursorPosition (screen.Y + 1, 1)))
+            {
+                return;
+            }
+            output.InlineCursorRow = screen.Y;
+        }
 
         ScreenChanged?.Invoke (this, new EventArgs<Rectangle> (screen));
 
-        foreach (SessionToken t in SessionStack!)
+        if (SessionStack is null || !Initialized || _dispatchStopping)
+        {
+            return;
+        }
+        foreach (SessionToken t in SessionStack)
         {
             if (t.Runnable is View runnableView)
             {
@@ -82,33 +105,82 @@ internal partial class ApplicationImpl
 
     private void Driver_SizeChanged (object? sender, SizeChangedEventArgs e)
     {
+        if (InlinePlacementLost)
+        {
+            return;
+        }
         Size newSize = e.Size ?? Size.Empty;
 
         if (AppModel == AppModel.Inline && _screen is { } screen)
         {
-            // On resize in inline mode, reset to row 0 and clear the screen.
-            // The next LayoutAndDraw will re-size the inline region from scratch.
-            _inlineScreenSized = false;
-
-            if (Driver is { } driver)
-            {
-                driver.InlinePosition = Point.Empty;
-
-                // Clear the entire terminal
-                driver.WriteRaw ($"{EscSeqUtils.CSI}H{EscSeqUtils.CSI}2J");
-            }
-
-            Screen = new Rectangle (0, 0, newSize.Width, screen.Height);
-            ClearScreenNextIteration = true;
+            BeginInlineResize (screen, newSize);
+            return;
         }
-        else
-        {
-            RaiseScreenChangedEvent (new Rectangle (new Point (0, 0), newSize));
-        }
+        RaiseScreenChangedEvent (new Rectangle (new Point (0, 0), newSize));
     }
 
     /// <inheritdoc/>
     public void LayoutAndDraw (bool forceRedraw = false)
+    {
+        if (Coordinator is IInlineRenderCoordinator coordinator)
+        {
+            coordinator.WithRenderGate (() => LayoutAndDrawGuarded (forceRedraw));
+            return;
+        }
+        LayoutAndDrawGuarded (forceRedraw);
+    }
+
+    private void LayoutAndDrawGuarded (bool forceRedraw)
+    {
+        if (InlinePlacementLost)
+        {
+            return;
+        }
+        SessionToken? session = SessionStack?.TryPeek (out SessionToken? top) == true ? top : null;
+        if (_layoutAndDrawActive && (session is null || _activeLayoutSessions.Contains (session)))
+        {
+            return;
+        }
+        if (AppModel == AppModel.Inline && Driver is { } inlineDriver)
+        {
+            if (inlineDriver.Screen.Width <= 0 || inlineDriver.Screen.Height <= 0
+                || inlineDriver.AnsiStartupGate is { IsReady: false } && !ForceInlinePosition.HasValue)
+            {
+                return;
+            }
+            if (!_inlineOriginEstablished)
+            {
+                _inlineOriginEstablished = true;
+                inlineDriver.InlinePosition = ForceInlinePosition ?? new Point (0, (Coordinator as IInlineRenderCoordinator)?.InitialCursorRow ?? 0);
+            }
+        }
+        bool previousLayoutAndDrawActive = _layoutAndDrawActive;
+        _layoutAndDrawActive = true;
+        if (session is not null)
+        {
+            _activeLayoutSessions.Add (session);
+        }
+        // A nested modal may draw, but it must not drain another request from the outer pass.
+        InlineOutputOperation? candidate = previousLayoutAndDrawActive ? null : CaptureInlineOutput ();
+        try
+        {
+            if (!CompleteInlineResize ())
+            {
+                return;
+            }
+            LayoutAndDrawCore (forceRedraw, candidate);
+        }
+        finally
+        {
+            if (session is not null)
+            {
+                _activeLayoutSessions.Remove (session);
+            }
+            _layoutAndDrawActive = previousLayoutAndDrawActive;
+        }
+    }
+
+    private void LayoutAndDrawCore (bool forceRedraw, InlineOutputOperation? candidate)
     {
         Tracing.Trace.Draw ("ApplicationImpl", "Start", $"forceRedraw={forceRedraw}, Screen={Screen}, _inlineScreenSized={_inlineScreenSized}");
 
@@ -128,7 +200,13 @@ internal partial class ApplicationImpl
             return;
         }
 
-        List<View?> views = [.. SessionStack.Select (r => r.Runnable! as View)!];
+        IDriver? passDriver = Driver;
+        long passGeneration = _inlineOutputGeneration;
+        bool PassIsValid () => Initialized && !_dispatchStopping && Driver == passDriver && passGeneration == _inlineOutputGeneration
+                              && !InlinePlacementLost && _inlineResize is null && HasRunningSession;
+
+        // A session ended beneath the top stays on the stack without a runnable until the sessions above it end.
+        List<View?> views = [.. SessionStack.Select (r => r.Runnable).OfType<View> ()];
 
         if (Popovers?.GetActivePopover () is View { Visible: true, NeedsLayout: true } visiblePopoverNeedingLayout)
         {
@@ -144,6 +222,10 @@ internal partial class ApplicationImpl
         {
             // First layout pass uses full terminal to determine the view's desired height.
             View.Layout (views.ToArray ().Reverse ()!, Screen.Size);
+            if (!PassIsValid ())
+            {
+                return;
+            }
 
             View? topView = views.LastOrDefault (v => v is { });
             int viewHeight = topView?.Frame.Height ?? 0;
@@ -159,8 +241,10 @@ internal partial class ApplicationImpl
 
                 if (overflow > 0)
                 {
-                    Driver.WriteRaw (new string ('\n', overflow));
-                    Driver.WriteRaw ($"{EscSeqUtils.CSI}{overflow}A");
+                    if (!WriteInlineMovement (new string ('\n', overflow) + $"{EscSeqUtils.CSI}{overflow}A"))
+                    {
+                        return;
+                    }
                     cursorRow = Math.Max (0, cursorRow - overflow);
                 }
 
@@ -173,9 +257,14 @@ internal partial class ApplicationImpl
                 // Set App.Screen to the inline sub-rectangle. This resizes the output buffer
                 // to the inline region dimensions and stores the Y offset for cursor positioning.
                 Screen = new Rectangle (0, cursorRow, termWidth, availableHeight);
+                if (!PassIsValid ())
+                {
+                    return;
+                }
             }
 
-            _inlineScreenSized = true;
+            // A zero-height runnable has no owned terminal region; retry sizing after it grows.
+            _inlineScreenSized = availableHeight > 0;
         }
 
         // Inline mode: after initial setup, handle dynamic growth. If the view's desired height
@@ -185,11 +274,20 @@ internal partial class ApplicationImpl
         {
             // Layout with current Screen to get desired heights from Dim.Auto views.
             View.Layout (views.ToArray ().Reverse ()!, Screen.Size);
+            if (!PassIsValid ())
+            {
+                return;
+            }
 
-            View? topView = views.LastOrDefault (v => v is { });
-
-            // Cap the view height at the terminal height — the inline region can never exceed it.
-            int viewHeight = Math.Min (topView?.Frame.Height ?? 0, Driver.Screen.Height);
+            // Reserve every visible active runnable's frame bottom, but at least its height: bottom-anchored
+            // views can extend above the current reservation while waiting for it to grow.
+            // Cap the reservation at the terminal height — the inline region can never exceed it.
+            int viewHeight = 0;
+            foreach (View runnable in SessionStack.Select (token => token.Runnable).OfType<View> ().Where (view => view.Visible))
+            {
+                long requiredHeight = GetRequiredInlineHeight (runnable);
+                viewHeight = Math.Max (viewHeight, (int)Math.Clamp (requiredHeight, 0, Driver.Screen.Height));
+            }
 
             if (viewHeight > Screen.Height)
             {
@@ -200,11 +298,15 @@ internal partial class ApplicationImpl
                 int bottomEdge = Screen.Y + Screen.Height;
                 int canGrowDown = Math.Min (extraRows, termHeight - bottomEdge);
 
-                // Reserve the new rows by scrolling them into existence.
-                if (canGrowDown > 0)
+                // Start at the last owned row, not at the live caret. A zero-height region has no last row;
+                // its new rows are already available below the origin and need no cursor movement.
+                if (canGrowDown > 0 && Screen.Height > 0)
                 {
-                    Driver.WriteRaw (new string ('\n', canGrowDown));
-                    Driver.WriteRaw ($"{EscSeqUtils.CSI}{canGrowDown}A");
+                    if (!WriteInlineMovement (EscSeqUtils.CSI_SetCursorPosition (bottomEdge, 1) + new string ('\n', canGrowDown)
+                                              + $"{EscSeqUtils.CSI}{canGrowDown}A"))
+                    {
+                        return;
+                    }
                 }
 
                 int remaining = extraRows - canGrowDown;
@@ -217,8 +319,11 @@ internal partial class ApplicationImpl
 
                     if (canScrollUp > 0)
                     {
-                        Driver.WriteRaw (new string ('\n', canScrollUp));
-                        Driver.WriteRaw ($"{EscSeqUtils.CSI}{canScrollUp}A");
+                        if (!WriteInlineMovement (EscSeqUtils.CSI_SetCursorPosition (termHeight, 1) + new string ('\n', canScrollUp)
+                                                  + $"{EscSeqUtils.CSI}{canScrollUp}A"))
+                        {
+                            return;
+                        }
                     }
 
                     newY -= canScrollUp;
@@ -229,7 +334,12 @@ internal partial class ApplicationImpl
 
                 if (newHeight != Screen.Height)
                 {
+                    Driver.InlinePosition = new Point (0, newY);
                     Screen = new Rectangle (0, newY, Screen.Width, newHeight);
+                    if (!PassIsValid ())
+                    {
+                        return;
+                    }
 
                     // Terminal scrolling moved existing content — the output buffer's
                     // cached positions are stale. Force a full redraw so LineCanvas
@@ -240,8 +350,38 @@ internal partial class ApplicationImpl
             }
         }
 
+        if (AppModel == AppModel.Inline && TryShrinkInlineRegion ())
+        {
+            forceRedraw = true;
+        }
+        if (!PassIsValid ())
+        {
+            return;
+        }
+
+        if (DrainInlineOutput (candidate))
+        {
+            forceRedraw = true;
+            // ScreenChanged may end sessions, dispose, open a modal, or change geometry.
+            views = [.. SessionStack?.Select (token => token.Runnable).OfType<View> () ?? []];
+        }
+        if (!PassIsValid ())
+        {
+            return;
+        }
+
+        views = [.. SessionStack!.Select (token => token.Runnable).OfType<View> ()];
+        if (Popovers?.GetActivePopover () is View { Visible: true, NeedsLayout: true } currentPopover)
+        {
+            views.Insert (0, currentPopover);
+        }
+
         // Final layout with the definitive Screen.Size — all inline adjustments are done.
         bool neededLayout = View.Layout (views.ToArray ().Reverse ()!, Screen.Size);
+        if (!PassIsValid ())
+        {
+            return;
+        }
 
         // Draw
         bool needsDraw = forceRedraw || views.Any (v => v is { NeedsDraw: true } or { SubViewNeedsDraw: true });
@@ -288,6 +428,10 @@ internal partial class ApplicationImpl
             // changes) so the SuperView can be invalidated precisely instead of force-redrawing
             // the whole tree.
             View.Draw (views.ToArray ().Cast<View> (), forceRedraw);
+            if (!PassIsValid ())
+            {
+                return;
+            }
 
             // Release raster graphics (Sixel/Kitty) whose owning view is no longer rendered — hidden,
             // removed from the hierarchy, or on a runnable that has ended. They are emitted out-of-band
@@ -307,6 +451,13 @@ internal partial class ApplicationImpl
 
             // Cause the driver to flush any pending updates to the terminal
             Driver?.Refresh ();
+        }
+
+        // A failed physical frame leaves output dirty after View.Draw has cleared NeedsDraw.
+        // Retry those cells without forcing a full repaint (which would erase inline content).
+        if (!neededLayout && !needsDraw && Driver is DriverImpl { IsOutputRetryDue: true } retryDriver)
+        {
+            retryDriver.Refresh ();
         }
 
         if (neededLayout || needsDraw)

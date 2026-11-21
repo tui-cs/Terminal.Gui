@@ -76,7 +76,9 @@ public interface IOutput : IDisposable
 
     /// <summary>
     ///     Gets a string containing the ANSI escape sequences and content most recently written
-    ///     to the terminal via <see cref="Write(IOutputBuffer)"/>
+    ///     to the terminal via <see cref="Write(IOutputBuffer)"/>. Terminal-attached
+    ///     <see cref="OutputBase"/> implementations capture only after
+    ///     <see cref="OutputBase.CaptureOutput"/> is enabled; headless outputs capture by default.
     /// </summary>
     string GetLastOutput ();
 

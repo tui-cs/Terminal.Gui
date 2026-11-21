@@ -15,7 +15,7 @@ namespace Terminal.Gui.App;
 ///     <para>This class is designed to be managed by <see cref="ApplicationImpl"/></para>
 /// </summary>
 /// <typeparam name="TInputRecord">Type of raw input events, e.g. <see cref="ConsoleKeyInfo"/> for .NET driver</typeparam>
-internal class MainLoopCoordinator<TInputRecord> : IMainLoopCoordinator where TInputRecord : struct
+internal class MainLoopCoordinator<TInputRecord> : IMainLoopCoordinator, IInlineRenderCoordinator, IMouseReportingCoordinator where TInputRecord : struct
 {
     /// <summary>
     ///     Creates a new coordinator that will manage the main UI loop and input thread.
@@ -92,38 +92,86 @@ internal class MainLoopCoordinator<TInputRecord> : IMainLoopCoordinator where TI
     {
         lock (_oLockInitialization)
         {
+            if (_stopCalled)
+            {
+                return;
+            }
             _loop.Iteration ();
+        }
+    }
+
+    int IInlineRenderCoordinator.InitialCursorRow => _loop.SizeMonitor.InitialCursorRow;
+
+    void IMouseReportingCoordinator.SetMouseDisabled (bool disabled)
+    {
+        lock (_oLockInitialization)
+        {
+            if (_stopCalled || _output is not AnsiOutput output)
+            {
+                return;
+            }
+
+            bool previous = output.IsMouseDisabled;
+            output.SetMouseDisabled (disabled);
+
+            try
+            {
+                (_input as AnsiInput)?.SetMouseDisabled (disabled);
+            }
+            catch
+            {
+                try
+                {
+                    output.SetMouseDisabled (previous);
+                }
+                catch (Exception rollbackError)
+                {
+                    // Keep the original failure; the rollback failure is secondary.
+                    Logging.Error ($"Failed to restore mouse reporting after a failed change: {rollbackError}");
+                }
+
+                throw;
+            }
+        }
+    }
+
+    void IInlineRenderCoordinator.WithRenderGate (Action action)
+    {
+        lock (_oLockInitialization)
+        {
+            if (_stopCalled)
+            {
+                return;
+            }
+            action ();
         }
     }
 
     /// <inheritdoc/>
     public void Stop ()
     {
-        // Ignore repeated calls to Stop - happens if user spams Application.Shutdown().
-        if (_stopCalled)
+        lock (_oLockInitialization)
         {
-            return;
-        }
-
-        _stopCalled = true;
-
-        // Restore terminal kitty keyboard mode before shutting down output resources.
-
-        try
-        {
-            if (_driver is { KittyKeyboardCapabilities.IsSupported: true })
+            if (_stopCalled)
             {
-                KittyKeyboardProtocolDetector kittyKeyboardDetector = new (_driver);
-                kittyKeyboardDetector.Disable ();
+                return;
             }
+            _stopCalled = true;
+            try
+            {
+                if (_driver is { KittyKeyboardCapabilities.IsSupported: true })
+                {
+                    KittyKeyboardProtocolDetector kittyKeyboardDetector = new (_driver);
+                    kittyKeyboardDetector.Disable ();
+                }
+            }
+            catch (Exception ex)
+            {
+                Logging.Warning ($"Kitty keyboard protocol disable failed: {ex.Message}");
+            }
+            _runCancellationTokenSource.Cancel ();
+            _output?.Dispose ();
         }
-        catch (Exception ex)
-        {
-            Logging.Warning ($"Kitty keyboard protocol disable failed: {ex.Message}");
-        }
-
-        _runCancellationTokenSource.Cancel ();
-        _output?.Dispose ();
 
         // Wait for input infinite loop to exit
         _inputTask?.Wait ();
@@ -204,6 +252,7 @@ internal class MainLoopCoordinator<TInputRecord> : IMainLoopCoordinator where TI
                                           Logging.Trace ($"app: SetDefaultAttribute ({attribute})");
 
                                           _driver.SetDefaultAttribute (attribute);
+                                          app?.TopRunnableView?.SetNeedsDraw ();
                                       });
             }
             catch (Exception ex)
@@ -241,9 +290,9 @@ internal class MainLoopCoordinator<TInputRecord> : IMainLoopCoordinator where TI
             Logging.Warning ($"Kitty keyboard protocol detection failed: {ex.Message}");
         }
 
-        if (startupGate is { })
+        if (startupGate is { } && !_driver.IsLegacyConsole)
         {
-            QueueDeviceAttributesProbe (startupGate);
+            QueueDeviceAttributesProbe (_driver, startupGate);
         }
 
         // Detect sixel support via DAR query.
@@ -286,21 +335,23 @@ internal class MainLoopCoordinator<TInputRecord> : IMainLoopCoordinator where TI
         Trace.Lifecycle (app?.MainThreadId.ToString (), "Driver", $"_input: {_input}, _output: {_output}");
     }
 
-    private void QueueDeviceAttributesProbe (IAnsiStartupGate startupGate)
+    internal static void QueueDeviceAttributesProbe (IDriver driver, IAnsiStartupGate startupGate)
     {
-        IDisposable deviceAttributesQueryCompletionHandle = startupGate.RegisterQuery (AnsiStartupQuery.DeviceAttributesPrimary,
-                                                                                       TimeSpan.FromSeconds (1));
-
         AnsiEscapeSequenceRequest request = new ()
         {
             Request = EscSeqUtils.CSI_SendDeviceAttributes.Request,
             Value = EscSeqUtils.CSI_SendDeviceAttributes.Value,
             Terminator = EscSeqUtils.CSI_SendDeviceAttributes.Terminator,
-            ResponseReceived = _ => deviceAttributesQueryCompletionHandle.Dispose (),
-            Abandoned = deviceAttributesQueryCompletionHandle.Dispose
+            ResponseReceived = _ =>
+                               {
+                                   // DA1 follows the initial kitty and foreground-color queries.
+                                   // Release their render gate; late color replies can still update the scheme.
+                                   startupGate.MarkComplete (AnsiStartupQuery.KittyKeyboard);
+                                   startupGate.MarkComplete (AnsiStartupQuery.TerminalColors);
+                               }
         };
 
-        _driver?.QueueAnsiRequest (request);
+        driver.QueueAnsiRequest (request);
     }
 
     /// <summary>

@@ -24,27 +24,25 @@ internal sealed class MainLoopSyncContext : SynchronizationContext
     {
         ArgumentNullException.ThrowIfNull (d);
 
-        // With no main loop pumping (after Shutdown/Dispose, or after a session ended with none
-        // running), run the callback on the thread pool instead of stranding it — and any awaiter —
-        // forever (#5636). Posts made between Init and the first Run stay queued for that Run.
-        if (!CanPump)
+        // ApplicationImpl runs the callback on the main loop, or on the thread pool if the loop is not pumping
+        // or stops before running it, so an awaiter is never stranded (#5636). Posts made between Init and the
+        // first Run stay queued for that Run.
+        if (_app is ApplicationImpl app)
         {
-            ThreadPool.QueueUserWorkItem (
-                                          static s =>
-                                          {
-                                              (SendOrPostCallback callback, object? callbackState) = ((SendOrPostCallback, object?))s!;
-                                              callback (callbackState);
-                                          },
-                                          (d, state));
+            app.PostToMainLoop (d, state);
 
             return;
         }
 
-        // Queue the task using the modern architecture
-        _app.Invoke (() => d (state));
+        ApplicationImpl.RunOnThreadPool (d, state);
     }
 
     /// <inheritdoc/>
+    /// <remarks>
+    ///     A call from outside the main-loop thread blocks until the main loop executes the callback, or until the
+    ///     thread pool executes it if the loop stops first. As with other synchronous UI dispatch APIs, this can
+    ///     deadlock if the main-loop thread is waiting for the calling thread.
+    /// </remarks>
     public override void Send (SendOrPostCallback d, object? state)
     {
         ArgumentNullException.ThrowIfNull (d);
@@ -61,7 +59,7 @@ internal sealed class MainLoopSyncContext : SynchronizationContext
         bool wasExecuted = false;
         Exception? error = null;
 
-        _app.Invoke (() =>
+        Post (_ =>
         {
             try
             {
@@ -79,7 +77,7 @@ internal sealed class MainLoopSyncContext : SynchronizationContext
                     Monitor.Pulse (gate);
                 }
             }
-        });
+        }, null);
 
         lock (gate)
         {

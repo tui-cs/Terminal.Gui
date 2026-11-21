@@ -29,6 +29,8 @@ public class AnsiComponentFactory : ComponentFactoryImpl<char>
     private readonly ISizeMonitor? _injectedSizeMonitor;
     private readonly Func<Size?>? _nativeSizeQuery;
 
+    internal bool IsMouseDisabled { get; set; }
+
     /// <summary>
     ///     Creates a new ANSIComponentFactory with optional output capture.
     /// </summary>
@@ -97,8 +99,10 @@ public class AnsiComponentFactory : ComponentFactoryImpl<char>
 
     /// <summary>
     ///     Returns a delegate that queries the real terminal size from the OS.
-    ///     On Windows this uses <see cref="Console.WindowWidth"/> / <see cref="Console.WindowHeight"/>;
-    ///     on Unix/macOS it uses <c>ioctl(TIOCGWINSZ)</c> via <see cref="UnixIOHelper.TryGetTerminalSize"/>.
+    ///     On Windows this uses <see cref="Console.WindowWidth"/> / <see cref="Console.WindowHeight"/>, and returns
+    ///     <see langword="null"/> when the <c>DisableRealDriverIO</c> environment variable is <c>1</c>.
+    ///     On Unix/macOS it uses <c>ioctl(TIOCGWINSZ)</c> via <see cref="UnixIOHelper.TryGetTerminalSize"/>, and returns
+    ///     <see langword="null"/> when <see cref="TerminalDevice.OutputFd"/> is <c>-1</c> (no terminal attached).
     /// </summary>
     internal static Func<Size?> CreateNativeSizeQuery ()
     {
@@ -106,6 +110,12 @@ public class AnsiComponentFactory : ComponentFactoryImpl<char>
         {
             return () =>
                    {
+                       // Tests must not see the real terminal size (e.g. VS Code doesn't throw on Console.WindowWidth).
+                       if (string.Equals (Environment.GetEnvironmentVariable ("DisableRealDriverIO"), "1", StringComparison.Ordinal))
+                       {
+                           return null;
+                       }
+
                        try
                        {
                            int w = Console.WindowWidth;
@@ -126,7 +136,17 @@ public class AnsiComponentFactory : ComponentFactoryImpl<char>
     }
 
     /// <inheritdoc/>
-    public override IInput<char> CreateInput () => _input ?? new AnsiInput ();
+    public override IInput<char> CreateInput ()
+    {
+        if (_input is null)
+        {
+            return new AnsiInput (IsMouseDisabled);
+        }
+
+        _input.SetMouseDisabled (IsMouseDisabled);
+
+        return _input;
+    }
 
     /// <inheritdoc/>
     public override IInputProcessor CreateInputProcessor (ConcurrentQueue<char> inputBuffer, ITimeProvider? timeProvider = null) =>
@@ -135,7 +155,12 @@ public class AnsiComponentFactory : ComponentFactoryImpl<char>
     /// <inheritdoc/>
     public override IOutput CreateOutput ()
     {
-        IOutput output = _output ?? new AnsiOutput (AppModel);
+        IOutput output = _output ?? new AnsiOutput (AppModel, IsMouseDisabled);
+
+        if (output is AnsiOutput ansiMouseOutput)
+        {
+            ansiMouseOutput.SetMouseDisabled (IsMouseDisabled);
+        }
 
         if (Driver.SizeDetection == SizeDetectionMode.Polling
             && output is AnsiOutput { NativeSizeQuery: null } ansiOutput)

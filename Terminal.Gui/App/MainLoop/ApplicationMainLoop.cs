@@ -150,6 +150,7 @@ public class ApplicationMainLoop<TInputRecord> : IApplicationMainLoop<TInputReco
 
                 var swStartupCallbacks = Stopwatch.StartNew ();
                 TimedEvents.RunTimers ();
+                (App as ApplicationImpl)?.DrainDispatches ();
                 Logging.IterationInvokesAndTimeouts.Record (swStartupCallbacks.Elapsed.Milliseconds);
 
                 return;
@@ -189,6 +190,7 @@ public class ApplicationMainLoop<TInputRecord> : IApplicationMainLoop<TInputReco
 
         // Run any timeout callbacks that are due
         TimedEvents.RunTimers ();
+        (App as ApplicationImpl)?.DrainDispatches ();
 
         Logging.IterationInvokesAndTimeouts.Record (swCallbacks.Elapsed.Milliseconds);
     }

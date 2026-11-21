@@ -138,7 +138,7 @@ public class PopoverMenu : Popover<Menu, MenuItem>
 
         bool? MoveRight (ICommandContext? ctx)
         {
-            if (MostFocused is not MenuItem { SubMenu.Visible: true } focused)
+            if (MostFocused is not MenuItem { SubMenu: { } } focused)
             {
                 if (!TryGetTarget (out View? targetView))
                 {
@@ -147,6 +147,12 @@ public class PopoverMenu : Popover<Menu, MenuItem>
 
                 // HACK: If our owner is a MenuBarItem, we want to allow right key to propagate to the MenuBar so it can move focus to the next MenuBarItem.
                 return targetView is not MenuBarItem;
+            }
+            // A keyboard wrap can select the owner without opening its submenu. An explicit
+            // Right must open it before entering, rather than switch top-level menu entries.
+            if (!focused.SubMenu.Visible)
+            {
+                ShowMenuItemSubMenu (focused);
             }
             focused.SubMenu.SetFocus ();
 
@@ -171,7 +177,10 @@ public class PopoverMenu : Popover<Menu, MenuItem>
         }
 
         // For non-HotKey activations, hide the popover (the menu item was selected)
-        if (args.Context?.Command != Command.HotKey)
+        // A MenuItem with a SubMenu only opens its SubMenu (see OnActivated); the popover must stay open.
+        bool sourceHasSubMenu = args.Context?.Source?.TryGetTarget (out View? source) == true && source is MenuItem { SubMenu: { } };
+
+        if (args.Context?.Command != Command.HotKey && !sourceHasSubMenu)
         {
             Trace.Command (this, args.Context, "HideOnNonHotKey", "Setting Visible=false");
             Visible = false;
@@ -219,6 +228,9 @@ public class PopoverMenu : Popover<Menu, MenuItem>
         {
             // MenuItem with SubMenu — show the submenu
             ShowMenuItemSubMenu (menuItemWithSubMenu);
+
+            // Move focus into the SubMenu so the next hotkey/arrow key applies to it
+            menuItemWithSubMenu.SubMenu!.SubViews.OfType<MenuItem> ().FirstOrDefault (mi => mi is { Visible: true, Enabled: true, CanFocus: true })?.SetFocus ();
         }
     }
 

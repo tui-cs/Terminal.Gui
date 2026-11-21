@@ -58,6 +58,237 @@ public class TreeViewTests (ITestOutputHelper output) : TestDriverBase
                                               driver);
     }
 
+    // CoPilot - Grok 4.6
+    [Theory]
+    [InlineData ("file-\U0001F600.txt", "\U0001F600", false, "└─file-")] // The emoji is on the right edge of the cell and cannot be displayed.
+    [InlineData ("e\u0301", "e\u0301", true, "└─é")]
+    [InlineData ("\U0001F600ABC", "\U0001F600", true, "└─😀ABC")]
+    [InlineData ("ABC\U0001F468\u200D\U0001F469\u200D\U0001F467", "\U0001F468\u200D\U0001F469\u200D\U0001F467", true, "└─ABC👨‍👩‍👧")]
+    [InlineData ("\U0001F34E\U0001F9AE\U0001F468\u200D\U0001F469\u200D\U0001F467", "\U0001F34E", true, "└─🍎🦮👨‍👩‍👧")]
+    public void Draw_Preserves_Unicode_Grapheme_Clusters (
+        string text,
+        string expectedGrapheme,
+        bool expectedFound,
+        string expectedOutput
+    )
+    {
+        // Arrange
+        IDriver driver = CreateTestDriver ();
+
+        TreeView<string> tree = new (new DelegateTreeBuilder<string> (_ => [], _ => false))
+        {
+            Driver = driver,
+            Frame = new Rectangle (0, 0, 8, 2) // 2 ensure at least one row is drawn
+        };
+        tree.AddObject (text);
+
+        // Act
+        // Drawing must not throw for supplementary-plane characters
+        // or grapheme clusters containing combining marks.
+        tree.Draw ();
+
+        // The expected grapheme must remain intact in a single cell.
+        bool found = false;
+        string normalizedGrapheme = expectedGrapheme.Normalize ();
+
+        for (int x = 0; x < driver.Contents!.GetLength (1); x++)
+        {
+            if (normalizedGrapheme == driver.Contents [0, x].Grapheme)
+            {
+                found = true;
+
+                break;
+            }
+        }
+
+        // Assert
+        // The expected grapheme must be preserved in a single cell if not truncated.
+        Assert.Equal (expectedFound, found);
+
+        DriverAssert.AssertDriverContentsWithFrameAre (expectedOutput, output, driver);
+
+        tree.Dispose ();
+    }
+
+    // CoPilot - Grok 4.6
+    [Fact]
+    public void Draw_RightEdge_Wide_Grapheme_Leaves_Blank_Column ()
+    {
+        IDriver driver = CreateTestDriver ();
+
+        TreeView<string> tree = new (new DelegateTreeBuilder<string> (_ => [], _ => false))
+        {
+            Driver = driver,
+            Frame = new Rectangle (0, 0, 8, 2)
+        };
+        tree.AddObject ("file-\U0001F600.txt");
+        tree.Draw ();
+
+        // └─file- uses columns 0-6; the emoji needs 2 columns so column 7 is padded.
+        Assert.Equal (" ", driver.Contents! [0, 7].Grapheme);
+
+        tree.Dispose ();
+    }
+
+    // CoPilot - Grok 4.6
+    [Theory]
+    [InlineData ("\U0001F600ABC", 1, "─😀ABC\n─ABCDEFGHI")]
+    [InlineData ("\U0001F600ABC", 2, "😀ABC\nABCDEFGHIJ")]
+    [InlineData ("\U0001F600ABC", 3, " ABC\nBCDEFGHIJK")]
+    [InlineData ("\U0001F600ABC", 4, "ABC\nCDEFGHIJKL")]
+    [InlineData ("\U0000754CABC", 1, "─界ABC\n─ABCDEFGHI")]
+    [InlineData ("\U0000754CABC", 2, "界ABC\nABCDEFGHIJ")]
+    [InlineData ("\U0000754CABC", 3, " ABC\nBCDEFGHIJK")]
+    [InlineData ("\U0000754CABC", 4, "ABC\nCDEFGHIJKL")]
+    [InlineData ("\U0001F468\u200D\U0001F469\u200D\U0001F467ABC", 1, "─👨‍👩‍👧ABC\n─ABCDEFGHI")]
+    [InlineData ("\U0001F468\u200D\U0001F469\u200D\U0001F467ABC", 2, "👨‍👩‍👧ABC\nABCDEFGHIJ")]
+    [InlineData ("\U0001F468\u200D\U0001F469\u200D\U0001F467ABC", 3, " ABC\nBCDEFGHIJK")]
+    [InlineData ("\U0001F468\u200D\U0001F469\u200D\U0001F467ABC", 4, "ABC\nCDEFGHIJKL")]
+    [InlineData ("\U0001F34E\U0001F600ABC", 1, "─🍎😀ABC\n─ABCDEFGHI")]
+    [InlineData ("\U0001F34E\U0001F600ABC", 2, "🍎😀ABC\nABCDEFGHIJ")]
+    [InlineData ("\U0001F34E\U0001F600ABC", 3, " 😀ABC\nBCDEFGHIJK")]
+    [InlineData ("\U0001F34E\U0001F600ABC", 4, "😀ABC\nCDEFGHIJKL")]
+    [InlineData ("\U0000754B\U0000754CABC", 1, "─畋界ABC\n─ABCDEFGHI")]
+    [InlineData ("\U0000754B\U0000754CABC", 2, "畋界ABC\nABCDEFGHIJ")]
+    [InlineData ("\U0000754B\U0000754CABC", 3, " 界ABC\nBCDEFGHIJK")]
+    [InlineData ("\U0000754B\U0000754CABC", 4, "界ABC\nCDEFGHIJKL")]
+    [InlineData ("\U0001F468\u200D\U0001F692\U0001F468\u200D\U0001F469\u200D\U0001F467ABC", 1, "─👨‍🚒👨‍👩‍👧ABC\n─ABCDEFGHI")]
+    [InlineData ("\U0001F468\u200D\U0001F692\U0001F468\u200D\U0001F469\u200D\U0001F467ABC", 2, "👨‍🚒👨‍👩‍👧ABC\nABCDEFGHIJ")]
+    [InlineData ("\U0001F468\u200D\U0001F692\U0001F468\u200D\U0001F469\u200D\U0001F467ABC", 3, " 👨‍👩‍👧ABC\nBCDEFGHIJK")]
+    [InlineData ("\U0001F468\u200D\U0001F692\U0001F468\u200D\U0001F469\u200D\U0001F467ABC", 4, "👨‍👩‍👧ABC\nCDEFGHIJKL")]
+    [InlineData ("\u00AD\u0192\u00FF\u00C7", 1, "─\u00ADƒÿÇ\n─ABCDEFGHI")] // Soft Hyphen (SHY) should normally be invisible unless used for line breaking.
+    [InlineData ("\u00AD\u0192\u00FF\u00C7", 2, "\u00ADƒÿÇ\nABCDEFGHIJ")] // Some terminals render it as '-' instead, so this also tests terminal compatibility.
+    [InlineData ("\u00AD\u0192\u00FF\u00C7", 3, "ƒÿÇ\nBCDEFGHIJK")]
+    [InlineData ("\u00AD\u0192\u00FF\u00C7", 4, "ÿÇ\nCDEFGHIJKL")]
+    public void Draw_HorizontalScroll_Preserves_Wide_Grapheme_Boundaries (
+        string text,
+        int scrollOffsetHorizontal,
+        string expectedOutput
+    )
+    {
+        // Arrange
+        IDriver driver = CreateTestDriver ();
+
+        TreeView<string> tree = new (new DelegateTreeBuilder<string> (_ => [], _ => false))
+        {
+            Driver = driver,
+            Frame = new Rectangle (0, 0, 10, 3)
+        };
+
+        tree.AddObject (text);
+        tree.AddObject ("ABCDEFGHIJKLMNOPQRSTUVWXYZ");
+
+        tree.ScrollOffsetHorizontal = scrollOffsetHorizontal;
+
+        // Act
+        tree.Draw ();
+
+        // Assert
+        // WithFrameAre keeps first-line fill spaces when a longer row sets the frame width.
+        DriverAssert.AssertDriverContentsWithFrameAre (expectedOutput, output, driver);
+
+        tree.Dispose ();
+    }
+
+    // CoPilot - Grok 4.6
+    [Theory]
+    [InlineData ("\U0001F600ABC", 0, "├─☐ 😀ABC\n└─☐ ABCDEF")]
+    [InlineData ("\U0001F600ABC", 1, "─☐ 😀ABC\n─☐ ABCDEFG")]
+    [InlineData ("\U0001F600ABC", 2, "☐ 😀ABC\n☐ ABCDEFGH")]
+    [InlineData ("\U0001F600ABC", 3, " 😀ABC\n ABCDEFGHI")]
+    [InlineData ("\U0001F600ABC", 4, "😀ABC\nABCDEFGHIJ")]
+    [InlineData ("\U0001F600ABC", 5, " ABC\nBCDEFGHIJK")]
+    [InlineData ("\U0001F600ABC", 6, "ABC\nCDEFGHIJKL")]
+    [InlineData ("\U0000754CABC", 0, "├─☐ 界ABC\n└─☐ ABCDEF")]
+    [InlineData ("\U0000754CABC", 4, "界ABC\nABCDEFGHIJ")]
+    [InlineData ("\U0000754CABC", 5, " ABC\nBCDEFGHIJK")]
+    [InlineData ("ABC\U0001F468\u200D\U0001F469\u200D\U0001F467", 4, "ABC👨‍👩‍👧\nABCDEFGHIJ")]
+    [InlineData ("ABC\U0001F468\u200D\U0001F469\u200D\U0001F467", 7, "👨‍👩‍👧\nDEFGHIJKLM")]
+    [InlineData ("ABC\U0001F468\u200D\U0001F469\u200D\U0001F467", 8, "EFGHIJKLMN")]
+    public void Draw_HorizontalScroll_CheckboxMode_Preserves_Wide_Grapheme_Boundaries (
+        string text,
+        int scrollOffsetHorizontal,
+        string expectedOutput
+    )
+    {
+        IDriver driver = CreateTestDriver ();
+
+        TreeView<string> tree = new (new DelegateTreeBuilder<string> (_ => [], _ => false))
+        {
+            Driver = driver,
+            Frame = new Rectangle (0, 0, 10, 3),
+            CheckboxMode = true
+        };
+
+        tree.AddObject (text);
+        tree.AddObject ("ABCDEFGHIJKLMNOPQRSTUVWXYZ");
+        tree.ScrollOffsetHorizontal = scrollOffsetHorizontal;
+        tree.Draw ();
+
+        string expected = expectedOutput.Replace ("☐", Glyphs.CheckStateUnChecked.ToString ());
+        DriverAssert.AssertDriverContentsWithFrameAre (expected, output, driver);
+
+        tree.Dispose ();
+    }
+
+    // CoPilot - Grok 4.6
+    [Fact]
+    public void Draw_CheckboxMode_RightEdge_Wide_Grapheme_Leaves_Blank_Column ()
+    {
+        IDriver driver = CreateTestDriver ();
+
+        TreeView<string> tree = new (new DelegateTreeBuilder<string> (_ => [], _ => false))
+        {
+            Driver = driver,
+            Frame = new Rectangle (0, 0, 10, 2),
+            CheckboxMode = true
+        };
+
+        // └─☐ file- uses columns 0-8; the emoji needs 2 columns so column 9 is padded.
+        tree.AddObject ("file-\U0001F600.txt");
+        tree.Draw ();
+
+        Assert.Equal (" ", driver.Contents! [0, 9].Grapheme);
+        Assert.Equal (Glyphs.CheckStateUnChecked.ToString (), driver.Contents! [0, 2].Grapheme);
+
+        tree.Dispose ();
+    }
+
+    // CoPilot - Grok 4.6
+    [Fact]
+    public void Draw_HorizontalScroll_Preserves_ZeroWidth_Grapheme_At_Skip_Boundary ()
+    {
+        IDriver driver = CreateTestDriver ();
+
+        TreeView<string> tree = new (new DelegateTreeBuilder<string> (_ => [], _ => false))
+        {
+            Driver = driver,
+            Frame = new Rectangle (0, 0, 10, 2)
+        };
+
+        // Prefix └─ (2 columns) then 'X' (1). Scroll 3 lands on the ZWSP before ABC.
+        // Extra letters keep content wider than the viewport so the offset is not clamped.
+        tree.AddObject ("X\u200BABCDEFGHIJKLMN");
+        tree.ScrollOffsetHorizontal = 3;
+        tree.Draw ();
+
+        bool foundZwsp = false;
+
+        for (int x = 0; x < driver.Contents!.GetLength (1); x++)
+        {
+            if (driver.Contents [0, x].Grapheme == "\u200B")
+            {
+                foundZwsp = true;
+
+                break;
+            }
+        }
+
+        Assert.True (foundZwsp);
+        Assert.Equal ("A", driver.Contents! [0, 1].Grapheme);
+
+        tree.Dispose ();
+    }
 
     [Fact]
     public void Draw_EnableForDesign_Size_Auto_Draws_Correctly ()

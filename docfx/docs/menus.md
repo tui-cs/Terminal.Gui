@@ -11,6 +11,7 @@ Terminal.Gui provides a comprehensive, hierarchical menu system built on top of 
 - [Command Routing](#command-routing)
 - [Interactions](#interactions)
 - [Usage Examples](#usage-examples)
+- [Programmatically Opening a Menu Item](#programmatically-opening-a-menu-item)
 - [Keyboard Navigation](#keyboard-navigation)
 - [Event Flow](#event-flow)
 
@@ -85,6 +86,7 @@ Shortcut shortcut = new ()
 {
     Title = "_Save",           // CommandView text with hotkey
     HelpText = "Save the file",
+    BindKeyToApplication = true, // App-wide Key (works when not focused / not visible)
     Key = Key.S.WithCtrl,
     Action = () => SaveFile ()
 };
@@ -94,7 +96,7 @@ Shortcut shortcut = new ()
 
 Key features:
 - Supports `Action` for direct invocation
-- `BindKeyToApplication` enables application-wide key bindings
+- To make `Key` application-wide (including while a menu popover is closed), set `BindKeyToApplication = true`
 - `AlignmentModes` controls element ordering (start-to-end or end-to-start)
 - `CommandView` can be replaced with custom views (e.g., <xref:Terminal.Gui.Views.CheckBox>)
 - Uses relay dispatch (`ConsumeDispatch=false`): commands dispatched to `CommandView` complete normally, then <xref:Terminal.Gui.Views.Shortcut> is notified via a deferred callback
@@ -130,6 +132,7 @@ MenuItem menuItem = new ()
 {
     Title = "_Open...",
     HelpText = "Open a file",
+    BindKeyToApplication = true, // Required for Ctrl+O while the PopoverMenu is closed
     Key = Key.O.WithCtrl,
     Action = () => OpenFile ()
 };
@@ -143,7 +146,13 @@ Key features:
 - `TargetView` and `Command` enable command binding to other views
 - Automatically gets focus on mouse enter
 - Displays right-arrow glyph when it has a submenu
+- To fire `Key` while the owning <xref:Terminal.Gui.Views.MenuBarItem>'s <xref:Terminal.Gui.Views.PopoverMenu> is closed, set `BindKeyToApplication = true` (without it, `Key` uses view-local HotKeyBindings and typically only works while that menu is open)
 - When `SubMenu` is set, a `CommandBridge` connects the SubMenu back to this MenuItem (bridging <xref:Terminal.Gui.Input.Command.Activate> and <xref:Terminal.Gui.Input.Command.Accept> commands across the non-containment boundary)
+- `OpenAndSelect(bool ensureVisible = true)` opens every ancestor menu (and the
+  owning `MenuBar` / `PopoverMenu` when present) and focuses this item. Returns
+  `false` if the item is not attached to a menu hierarchy. Useful after a modal
+  closes or after items are moved between submenus (see
+  [Programmatically Opening a Menu Item](#programmatically-opening-a-menu-item)).
 
 ### Menu
 
@@ -151,13 +160,16 @@ Key features:
 
 ```csharp
 Menu fileMenu = new ([
-    new MenuItem ("_New", Key.N.WithCtrl, () => NewFile ()),
-    new MenuItem ("_Open...", Key.O.WithCtrl, () => OpenFile ()),
+    new MenuItem ("_New", Key.N.WithCtrl, () => NewFile ()) { BindKeyToApplication = true },
+    new MenuItem ("_Open...", Key.O.WithCtrl, () => OpenFile ()) { BindKeyToApplication = true },
     new Line (),  // Separator
-    new MenuItem ("_Save", Key.S.WithCtrl, () => SaveFile ()),
+    new MenuItem ("_Save", Key.S.WithCtrl, () => SaveFile ()) { BindKeyToApplication = true },
     new MenuItem ("Save _As...", () => SaveAs ())
 ]);
 ```
+
+> [!NOTE]
+> The `MenuItem(string, Key, Action)` helper sets `Key` but leaves `BindKeyToApplication` as `false`. To make those keys work while the menu is closed, set `BindKeyToApplication = true` as above.
 
 Key features:
 - Vertical orientation by default
@@ -229,6 +241,8 @@ Key features:
 - Uses consume dispatch (`ConsumeDispatch=true`, `GetDispatchTarget => Focused`) — the MenuBar owns activation state for its MenuBarItems
 - Blocks activation when `!Visible || !Enabled`
 - Registers custom command handlers for <xref:Terminal.Gui.Input.Command.HotKey>, `Command.Quit`, `Command.Right`, and `Command.Left`
+- `OpenAndSelect(MenuItem item, bool ensureVisible = true)` is a convenience
+  wrapper that calls `item.OpenAndSelect(ensureVisible)`.
 
 ### PopoverMenu
 
@@ -428,6 +442,15 @@ The `_isSwitchingItem` guard prevents premature deactivation during the brief in
 4. `Menu.SelectedMenuItemChanged` event fires
 5. When inside a <xref:Terminal.Gui.Views.PopoverMenu>, the subscriber adjusts SubMenu positioning for screen boundaries
 
+### Hotkey on a MenuItem with a SubMenu
+
+Pressing the hotkey (e.g., `Alt+E`) of a <xref:Terminal.Gui.Views.MenuItem> that has a `SubMenu`:
+
+1. Opens the `SubMenu` and moves focus to its first visible, enabled, focusable <xref:Terminal.Gui.Views.MenuItem>
+2. Keeps the owning <xref:Terminal.Gui.Views.PopoverMenu> open, so the next hotkey is resolved against the `SubMenu`. Only leaf <xref:Terminal.Gui.Views.MenuItem>s close the popover.
+
+Hotkeys are resolved per <xref:Terminal.Gui.Views.Menu>, so a <xref:Terminal.Gui.Views.MenuItem> and an item in its `SubMenu` can share the same hotkey. The first press activates the outer item; the second activates the one in the `SubMenu`.
+
 ### MenuItem Acceptance Flow
 
 When a user presses Enter or clicks a <xref:Terminal.Gui.Views.MenuItem>:
@@ -578,6 +601,78 @@ editor.MouseClick += (_, e) =>
     }
 };
 ```
+
+---
+
+## Programmatically Opening a Menu Item
+
+Menus are normally opened by keyboard or mouse. Tools such as designers, or any
+code that must restore selection after a modal, need a way to reopen the full
+path to a specific <xref:Terminal.Gui.Views.MenuItem>.
+
+Use <xref:Terminal.Gui.Views.MenuItem.OpenAndSelect*>:
+
+```csharp
+// After a modal closes or an item was moved between submenus
+bool ok = targetMenuItem.OpenAndSelect ();
+
+if (ok)
+{
+    // Hierarchy is open and targetMenuItem has focus
+}
+```
+
+Or, when you already hold the bar:
+```csharp
+menuBar.OpenAndSelect (targetMenuItem);
+```
+
+### Behavior
+
+1. Walks from the item up through `Menu` / `SuperMenuItem` to the root.
+2. Resolves the owning <xref:Terminal.Gui.Views.MenuBarItem> and
+   <xref:Terminal.Gui.Views.MenuBar> (inline `SubMenu` or `PopoverMenu`).
+3. Sets `MenuBar.Active` and opens the root entry
+   (`PopoverMenuOpen` or `IMenuBarEntry.IsMenuOpen`).
+4. Opens each submenu along the path (`ShowMenu`) and focuses the target.
+
+Returns `false` if the item is detached (`SuperView` is not a `Menu`). Calling
+again while the path is already open is safe (idempotent).
+
+### Designer / inline menus
+
+TerminalGuiDesigner and similar hosts often use
+`MenuBarItem.UsePopoverMenu = false` so dropdowns are non-modal inline
+`SubMenu`s. `OpenAndSelect` supports both inline and default popover modes.
+
+```csharp
+var editMe = new MenuItem { Title = "_Edit Me" };
+
+var fileEntry = new MenuBarItem
+{
+    Title = "_File",
+    UsePopoverMenu = false,
+    SubMenu = new Menu ([
+        editMe,
+        new MenuItem { Title = "_Quit" }
+    ])
+};
+
+var menuBar = new MenuBar ([fileEntry]);
+window.Add (menuBar);
+
+// Later, after a modal dismissed the menus:
+editMe.OpenAndSelect ();
+```
+
+### When to use
+
+| Scenario | Approach |
+|----------|----------|
+| Restore selection after a modal (e.g. shortcut editor) | `item.OpenAndSelect()` |
+| Item moved between submenus | Same, after the move |
+| Caller only has a `MenuBar` reference | `menuBar.OpenAndSelect(item)` |
+| Item not in any menu | Returns `false`; no-op |
 
 ---
 

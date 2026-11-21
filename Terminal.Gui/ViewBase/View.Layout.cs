@@ -519,7 +519,7 @@ public partial class View // Layout APIs
 
     private void NeedsClearScreenNextIteration ()
     {
-        if (App?.SessionStack?.Select (r => r.Runnable as View).Count () == 1)
+        if (App?.SessionStack?.Count (r => r.Runnable is View) == 1)
         {
             // this is the root IRunnable; we need to redraw the screen
             App?.ClearScreenNextIteration = true;
@@ -1408,9 +1408,10 @@ public partial class View // Layout APIs
         // Traverse all visible runnables, topmost first (reverse stack order)
         if (App?.SessionStack!.Count > 0)
         {
-            foreach (View? runnable in App.SessionStack!.Select (r => r.Runnable as View))
+            // A session ended beneath the top stays on the stack without a runnable until the sessions above it end.
+            foreach (View runnable in App.SessionStack!.Select (r => r.Runnable).OfType<View> ())
             {
-                if (runnable!.Visible && runnable.Contains (screenLocation))
+                if (runnable.Visible && runnable.Contains (screenLocation))
                 {
                     List<View?> result = GetViewsUnderLocation (runnable, screenLocation, excludeViewportSettingsFlags);
 

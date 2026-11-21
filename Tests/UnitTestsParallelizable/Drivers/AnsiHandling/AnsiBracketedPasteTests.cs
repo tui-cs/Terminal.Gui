@@ -312,4 +312,30 @@ public class AnsiBracketedPasteTests
         Assert.Single (captured);
         Assert.Equal (AnsiResponseParserState.Normal, _parser.State);
     }
+
+    // Claude - Opus 5.5
+    [Fact]
+    public void Paste_ContainingNonBmpCharacters_PreservesSurrogatePairs ()
+    {
+        string? captured = null;
+        _parser.Paste += (_, text) => captured = text;
+
+        _parser.ProcessInput ($"{EscSeqUtils.CSI_BracketedPasteStart}a\U0001F642b\U0001F1FA\U0001F1F8{EscSeqUtils.CSI_BracketedPasteEnd}");
+
+        Assert.Equal ("a\U0001F642b\U0001F1FA\U0001F1F8", captured);
+    }
+
+    // Claude - Opus 5.5
+    [Fact]
+    public void Paste_SurrogatePairSplitAcrossProcessInputCalls_PreservesCharacter ()
+    {
+        string? captured = null;
+        _parser.Paste += (_, text) => captured = text;
+
+        // A UTF-16 console read (ReadConsoleW) may end between the high and low surrogate.
+        _parser.ProcessInput ($"{EscSeqUtils.CSI_BracketedPasteStart}a\uD83D");
+        _parser.ProcessInput ($"\uDE42b{EscSeqUtils.CSI_BracketedPasteEnd}");
+
+        Assert.Equal ("a\U0001F642b", captured);
+    }
 }

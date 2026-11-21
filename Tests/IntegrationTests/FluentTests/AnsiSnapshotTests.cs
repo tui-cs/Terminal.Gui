@@ -3,6 +3,7 @@ using Terminal.Gui.Drivers;
 
 namespace IntegrationTests;
 
+// CoPilot - GitHub Copilot
 /// <summary>
 ///     Demonstrates <see cref="AppTestHelper.AssertAnsiSnapshot" />: render a screen, capture it
 ///     as pure ANSI into a golden, compare byte-for-byte thereafter. The recorded
@@ -29,7 +30,6 @@ public class AnsiSnapshotTests (ITestOutputHelper outputHelper)
                                     .Stop ();
     }
 
-    // Copilot
     [Fact]
     public void AssertAnsiSnapshot_Mismatch_Stops_App_Before_Throwing ()
     {

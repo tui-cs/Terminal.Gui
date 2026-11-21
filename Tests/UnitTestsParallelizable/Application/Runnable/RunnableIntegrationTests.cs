@@ -207,6 +207,39 @@ public class ApplicationRunnableIntegrationTests
         Assert.Null (token!.Runnable);
     }
 
+    // Claude - Opus 5.5
+    [Fact]
+    public void End_WhenStateChangedHandlerThrows_CompletesSessionTeardown ()
+    {
+        SynchronizationContext? originalContext = SynchronizationContext.Current;
+        IApplication app = CreateAndInitApp ();
+        Runnable<int> runnable = new ();
+        SessionToken token = app.Begin (runnable)!;
+        SessionToken? endedToken = null;
+        app.SessionEnded += OnSessionEnded;
+        runnable.IsRunningChanged += (_, _) => throw new InvalidOperationException ("handler failed");
+
+        try
+        {
+            Assert.Throws<InvalidOperationException> (() => app.End (token));
+
+            Assert.Null (token.Runnable);
+            Assert.Same (token, endedToken);
+            Assert.Empty (app.SessionStack!);
+            Assert.Same (originalContext, SynchronizationContext.Current);
+
+            app.End (token);
+        }
+        finally
+        {
+            app.SessionEnded -= OnSessionEnded;
+            SynchronizationContext.SetSynchronizationContext (originalContext);
+            app.Dispose ();
+        }
+
+        void OnSessionEnded (object? sender, SessionTokenEventArgs e) => endedToken = e.State;
+    }
+
     [Fact]
     public void End_RaisesIsRunningChangedEvent ()
     {
@@ -391,6 +424,32 @@ public class ApplicationRunnableIntegrationTests
 
         // Cleanup
         app.End (token1);
+    }
+
+    // Claude - Opus 5.5
+    [Fact]
+    public void NestedEnd_AfterNonTopSessionEnds_RestoresNearestRunningSession ()
+    {
+        IApplication app = CreateAndInitApp ();
+        Runnable<int> runnableA = new () { Id = "A" };
+        Runnable<int> runnableB = new () { Id = "B" };
+        Runnable<int> runnableC = new () { Id = "C" };
+        SessionToken tokenA = app.Begin (runnableA)!;
+        SessionToken tokenB = app.Begin (runnableB)!;
+        SessionToken tokenC = app.Begin (runnableC)!;
+
+        app.End (tokenB);
+        app.End (tokenC);
+
+        Assert.Same (runnableA, app.TopRunnable);
+        Assert.True (runnableA.IsModal);
+        Assert.True (runnableA.IsRunning);
+        Assert.Single (app.SessionStack!);
+
+        app.End (tokenA);
+
+        Assert.Null (app.TopRunnable);
+        Assert.Empty (app.SessionStack!);
     }
 
     [Fact]

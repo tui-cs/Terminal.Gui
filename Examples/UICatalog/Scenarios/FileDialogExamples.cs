@@ -1,4 +1,5 @@
 using System.IO.Abstractions;
+using System.Text;
 
 // ReSharper disable AccessToDisposedClosure
 
@@ -87,13 +88,13 @@ public class FileDialogExamples : Scenario
         win.Add (new Label { X = x++, Y = y++, Text = "Icons" });
 
         _osIcons = new OptionSelector { X = x, Y = y };
-        _osIcons.Labels = ["_None", "_Unicode", "Nerd_*"];
+        _osIcons.Labels = ["_None", "_Unicode", "Nerd_*", "Custom"];
         _osIcons.Value = 0;
         win.Add (_osIcons);
 
         Label label = new () { Y = Pos.AnchorEnd (), Text = "* Requires installing Nerd fonts:" };
         win.Add (label);
-        Link link = new () { Y = Pos.Top (label), X = Pos.Right (label) + 1, Url = "https://github.com/devblackops/Terminal-Icons" };
+        Link link = new () { Y = Pos.Top (label), X = Pos.Right (label) + 1, Url = "https://www.nerdfonts.com" };
         app.ToolTips!.SetToolTip (link, () => link.Url);
         win.Add (link);
 
@@ -119,7 +120,7 @@ public class FileDialogExamples : Scenario
         win.Add (new Label { X = x, Y = y++, Text = "_Cancel Text:" });
         _tbCancelButton = new TextField { X = x, Y = y, Width = 12 };
         win.Add (_tbCancelButton);
-        var btn = new Button { X = 1, Y = 9, IsDefault = true, Text = "Run Dialog" };
+        Button btn = new () { X = 1, Y = 9, IsDefault = true, Text = "Run Dialog" };
 
         win.CommandsToBubbleUp = [Command.Accept];
 
@@ -197,6 +198,11 @@ public class FileDialogExamples : Scenario
         fd.Style.IconProvider.UseUnicodeCharacters = _osIcons.Value == 1;
         fd.Style.IconProvider.UseNerdIcons = _osIcons.Value == 2;
 
+        if (_osIcons.Value == 3)
+        {
+            fd.Style.IconProvider = new CustomIconProvider ();
+        }
+
         if (_cbCaseSensitive.Value == CheckState.Checked)
         {
             fd.SearchMatcher = new CaseSensitiveSearchMatcher ();
@@ -259,6 +265,15 @@ public class FileDialogExamples : Scenario
             MessageBox.Query (app, "Chosen!", "You chose:" + Environment.NewLine + path, Strings.btnOk);
         }
     }
+
+#nullable enable
+    private sealed class CustomIconProvider : FileSystemIconProvider
+    {
+        public override Rune GetIcon (IFileSystemInfo? fileSystemInfo) => new (fileSystemInfo is IDirectoryInfo ? 'D' : 'F');
+
+        public override string GetIconWithOptionalSpace (IFileSystemInfo? fileSystemInfo) => $"[{GetIcon (fileSystemInfo)}] ";
+    }
+#nullable restore
 
     private class CaseSensitiveSearchMatcher : ISearchMatcher
     {

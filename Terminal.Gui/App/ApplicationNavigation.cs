@@ -137,6 +137,20 @@ public class ApplicationNavigation
             return;
         }
 
+        ApplyCursor ();
+
+        // Clear the flag only when this SetCursor call reached the terminal. An output can return without writing
+        // (inline placement unknown, resize pending) or swallow an IOException; the flag then stays set and the
+        // next iteration retries. Comparing the cached cursor is not enough: after Refresh it often already equals
+        // the cursor requested here.
+        if (App?.Driver is not ICursorApplyReporter { LastSetCursorApplied: false })
+        {
+            App?.Driver?.SetCursorNeedsUpdate (false);
+        }
+    }
+
+    private void ApplyCursor ()
+    {
         View? mostFocused = App?.TopRunnableView?.MostFocused;
 
         if (mostFocused is null || !mostFocused.Cursor.IsVisible)

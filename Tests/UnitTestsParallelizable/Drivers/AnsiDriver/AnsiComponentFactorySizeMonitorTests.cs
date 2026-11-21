@@ -236,6 +236,22 @@ public class AnsiComponentFactorySizeMonitorTests
         Assert.Null (ex);
     }
 
+    // CoPilot - GPT-5
+    /// <summary>
+    ///     Verifies that the native size query returns <see langword="null"/> when real driver I/O is disabled
+    ///     (the test harness sets <c>DisableRealDriverIO=1</c>), so the real terminal size (e.g. in VS Code on
+    ///     Windows) never leaks into tests.
+    /// </summary>
+    [Fact]
+    public void CreateNativeSizeQuery_ReturnsNull_WhenRealDriverIODisabled ()
+    {
+        Assert.Equal ("1", Environment.GetEnvironmentVariable ("DisableRealDriverIO"));
+
+        Func<Size?> query = AnsiComponentFactory.CreateNativeSizeQuery ();
+
+        Assert.Null (query ());
+    }
+
     /// <summary>
     ///     Validates the full pipeline: in <see cref="SizeDetectionMode.Polling"/> mode,
     ///     the <see cref="SizeMonitorImpl"/> wrapping the <see cref="AnsiOutput"/> fires

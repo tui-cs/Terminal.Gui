@@ -11,22 +11,27 @@ namespace ApplicationTests.Timeout;
 [Collection ("Application Timer Tests")]
 public class TimeoutTests
 {
+    // Grok - 4.7
     [Fact]
     public void AddTimeout_Callback_Can_Add_New_Timeout ()
     {
         using IApplication app = Application.Create ();
         app.Init (DriverRegistry.Names.ANSI);
 
-        var firstFired = false;
-        var secondFired = false;
+        bool firstFired = false;
+        bool secondFired = false;
 
-        app.AddTimeout (TimeSpan.FromMilliseconds (50),
+        // TimeSpan.Zero is already due. A timeout added from this callback waits for the next
+        // RunTimers pass (TimedEvents.RunTimersImpl; RunTimers_Defers_Repeating_Zero_Timeout_Until_Next_Pass).
+        // Millisecond delays lose to the iteration guard when the loop is effectively unthrottled:
+        // ApplicationMainLoop.Iteration sleeps for 1000 / MaximumIterationsPerSecond ms, and
+        // AppTestHelper sets that static to ushort.MaxValue, so 1000 / 65535 is 0.
+        app.AddTimeout (TimeSpan.Zero,
                         () =>
                         {
                             firstFired = true;
 
-                            // Add another timeout from within callback
-                            app.AddTimeout (TimeSpan.FromMilliseconds (50),
+                            app.AddTimeout (TimeSpan.Zero,
                                             () =>
                                             {
                                                 secondFired = true;
@@ -38,8 +43,7 @@ public class TimeoutTests
                             return false;
                         });
 
-        // Defensive: use iteration counter instead of time-based safety timeout
-        var iterations = 0;
+        int iterations = 0;
         app.Iteration += IterationHandler;
 
         try
@@ -60,8 +64,8 @@ public class TimeoutTests
         {
             iterations++;
 
-            // Stop if test objectives met or safety limit reached
-            if ((firstFired && secondFired) || iterations > 1000)
+            // Hang guard only. The second timeout stops the run. Tripping this fails the assertions.
+            if (iterations > 100)
             {
                 app.RequestStop ();
             }
@@ -424,35 +428,55 @@ public class TimeoutTests
         }
     }
 
+    // Grok - 4.7
     [Fact]
     public void AddTimeout_Nested_Run_Parent_Timeout_Fires ()
     {
         using IApplication app = Application.Create ();
         app.Init (DriverRegistry.Names.ANSI);
 
-        var parentTimeoutFired = false;
-        var childTimeoutFired = false;
-        var nestedRunCompleted = false;
+        bool parentFiredDuringNestedRun = false;
+        bool childTimeoutFired = false;
+        bool nestedRunCompleted = false;
+        Runnable? nestedRunnable = null;
 
-        // Parent timeout - fires after child modal opens
-        app.AddTimeout (TimeSpan.FromMilliseconds (200),
+        // Registered before the nested run and repeated until that runnable is top.
+        // TimeSpan.Zero stays deterministic when the loop is effectively unthrottled.
+        // ApplicationMainLoop.Iteration sleeps for 1000 / MaximumIterationsPerSecond ms.
+        // AppTestHelper sets that static to ushort.MaxValue, and 1000 / 65535 is 0, so the sleep is skipped.
+        // A repeating zero timeout is deferred to the next RunTimers pass
+        // (TimedEvents.RunTimersImpl; RunTimers_Defers_Repeating_Zero_Timeout_Until_Next_Pass).
+        // Delayed timeouts across a nested run stay in NestedRunTimeoutTests
+        // (Timeout_Scheduled_Before_Nested_Run_Fires_During_Nested_Run).
+        app.AddTimeout (TimeSpan.Zero,
                         () =>
                         {
-                            parentTimeoutFired = true;
+                            if (nestedRunnable is null || !ReferenceEquals (app.TopRunnableView, nestedRunnable))
+                            {
+                                return true;
+                            }
+
+                            parentFiredDuringNestedRun = true;
 
                             return false;
                         });
 
-        // After 100ms, open nested modal
-        app.AddTimeout (TimeSpan.FromMilliseconds (100),
+        app.AddTimeout (TimeSpan.Zero,
                         () =>
                         {
-                            var childRunnable = new Runnable ();
+                            Runnable childRunnable = new ();
+                            nestedRunnable = childRunnable;
 
-                            // Child timeout
-                            app.AddTimeout (TimeSpan.FromMilliseconds (50),
+                            // Wait until the parent timeout has observed this run, then stop it.
+                            // A miss repeats on the next pass, so callback order in one pass does not matter.
+                            app.AddTimeout (TimeSpan.Zero,
                                             () =>
                                             {
+                                                if (!parentFiredDuringNestedRun)
+                                                {
+                                                    return true;
+                                                }
+
                                                 childTimeoutFired = true;
                                                 app.RequestStop (childRunnable);
 
@@ -463,11 +487,13 @@ public class TimeoutTests
                             nestedRunCompleted = true;
                             childRunnable.Dispose ();
 
+                            // Run returns after End pops this session, so this stops the outer runnable.
+                            app.RequestStop ();
+
                             return false;
                         });
 
-        // Use iteration counter instead of time-based safety
-        var iterations = 0;
+        int iterations = 0;
         app.Iteration += IterationHandler;
 
         try
@@ -475,7 +501,7 @@ public class TimeoutTests
             app.Run<Runnable> ();
 
             Assert.True (childTimeoutFired, "Child timeout should fire during nested Run");
-            Assert.True (parentTimeoutFired, "Parent timeout should continue firing during nested Run");
+            Assert.True (parentFiredDuringNestedRun, "Parent timeout registered before the nested run should fire while that run is active");
             Assert.True (nestedRunCompleted, "Nested run should have completed");
         }
         finally
@@ -489,8 +515,10 @@ public class TimeoutTests
         {
             iterations++;
 
-            // Stop when objectives met or safety limit
-            if ((parentTimeoutFired && nestedRunCompleted) || iterations > 2000)
+            // Nested iterations count too. RequestStop () stops only TopRunnableView, so a trip
+            // during the nested run stops the child. The callback above then stops the outer run.
+            // The assertions fail instead of the test hanging.
+            if (iterations > 100)
             {
                 app.RequestStop ();
             }

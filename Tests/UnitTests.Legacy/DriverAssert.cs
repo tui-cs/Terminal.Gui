@@ -395,7 +395,7 @@ public partial class DriverAssert
             }
         }
 
-        // Remove trailing whitespace on each line
+        // Remove trailing whitespace on each line (but keep spaces that fill the frame width)
         foreach (List<string> row in lines)
         {
             for (int c = row.Count - 1; c >= 0; c--)
@@ -428,16 +428,17 @@ public partial class DriverAssert
 
         var actualLook = sb.ToString ();
 
+        // Early exit when already identical (including any trailing spaces the caller already supplied)
         if (string.Equals (expectedLook, actualLook))
         {
             return new Rectangle (x > -1 ? x : 0, y > -1 ? y : 0, w > -1 ? w : 0, h > -1 ? h : 0);
         }
 
-        // standardize line endings for the comparison
+        // Standardize line endings
         expectedLook = expectedLook.ReplaceLineEndings ();
         actualLook = actualLook.ReplaceLineEndings ();
 
-        // Remove the first and the last line ending from the expectedLook
+        // Strip a single leading / trailing blank line that often appears with raw string literals
         if (expectedLook.StartsWith (Environment.NewLine))
         {
             expectedLook = expectedLook [Environment.NewLine.Length..];
@@ -446,6 +447,15 @@ public partial class DriverAssert
         if (expectedLook.EndsWith (Environment.NewLine))
         {
             expectedLook = expectedLook [..^Environment.NewLine.Length];
+        }
+
+        // NEW: pad every line of the expectation to the discovered frame width.
+        // Lines that are already long enough (or longer) are left untouched.
+        // This makes the tedious right-padding unnecessary while preserving
+        // any tests that already contain the spaces.
+        if (w > 0)
+        {
+            expectedLook = PadLinesToWidth (expectedLook, w);
         }
 
         // If test is about to fail show user what things looked like
@@ -458,6 +468,40 @@ public partial class DriverAssert
         Assert.Equal (expectedLook, actualLook);
 
         return new Rectangle (x > -1 ? x : 0, y > -1 ? y : 0, w > -1 ? w : 0, h > -1 ? h : 0);
+    }
+
+    /// <summary>
+    /// Pads each line of <paramref name="text"/> on the right with spaces so that
+    /// its display width (via <see cref="StringExtensions.GetColumns"/>) equals
+    /// <paramref name="width"/>. Lines that are already ≥ width are unchanged.
+    /// </summary>
+    private static string PadLinesToWidth (string text, int width)
+    {
+        // Work with \n so we don't care which line-ending style arrived
+        string normalized = text.Replace ("\r\n", "\n").Replace ('\r', '\n');
+        string [] lines = normalized.Split ('\n');
+
+        var sb = new StringBuilder ();
+
+        for (int i = 0; i < lines.Length; i++)
+        {
+            string line = lines [i];
+            int pad = width - line.GetColumns ();
+
+            if (pad > 0)
+            {
+                line += new string (' ', pad);
+            }
+
+            if (i > 0)
+            {
+                sb.Append (Environment.NewLine);
+            }
+
+            sb.Append (line);
+        }
+
+        return sb.ToString ();
     }
 
     /// <summary>

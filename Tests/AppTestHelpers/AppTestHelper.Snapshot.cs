@@ -101,7 +101,16 @@ public partial class AppTestHelper
             return overrideDir;
         }
 
-        string? sourceDir = Path.GetDirectoryName (callerFile);
+        string callerPath = callerFile;
+
+        // On Linux, Visual Studio WSL testing can supply a Windows-style caller path.
+        // Windows accepts both '\\' and '/' in drive-qualified paths, so keep both.
+        if (OperatingSystem.IsLinux () && IsWindowsStylePath (callerFile))
+        {
+            callerPath = ToWslPath (callerFile);
+        }
+
+        string? sourceDir = Path.GetDirectoryName (callerPath);
 
         if (string.IsNullOrEmpty (sourceDir))
         {
@@ -110,6 +119,19 @@ public partial class AppTestHelper
         }
 
         return Path.Combine (sourceDir, "__snapshots__");
+    }
+
+    internal static bool IsWindowsStylePath (string path)
+    {
+        return path.Length >= 3
+               && char.IsAsciiLetter (path [0])
+               && path [1] == ':'
+               && (path [2] == '\\' || path [2] == '/');
+    }
+
+    internal static string ToWslPath (string windowsPath)
+    {
+        return $"/mnt/{char.ToLowerInvariant (windowsPath [0])}/{windowsPath [3..].Replace ('\\', '/')}";
     }
 
     private static string NormalizeAnsiLineEndings (string ansi) => ansi.Replace ("\r\n", "\n").Replace ("\r", "\n");

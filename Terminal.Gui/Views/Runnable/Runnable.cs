@@ -177,7 +177,7 @@ public class Runnable : View, IRunnable
 
             // Set focus to self if becoming modal
             SetFocus ();
-            App?.Navigation?.SetFocused (Focused);
+            App?.Navigation?.SetFocused (MostFocused);
         }
         else
         {

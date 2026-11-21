@@ -328,9 +328,33 @@ public class Threading : Scenario
         _itemsList.Source = null;
         LogJob ("Loading task method");
         ObservableCollection<string> items = ["One", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight", "Nine", "Ten"];
-        await Task.Delay (3000);
-        LogJob ("Returning from task method");
-        await _itemsList.SetSourceAsync (items);
-        _itemsList.SetNeedsDraw ();
+        SessionToken owner = _app.SessionStack?.FirstOrDefault (token => ReferenceEquals (token.Runnable, _app.TopRunnable));
+
+        if (owner is null)
+        {
+            return;
+        }
+
+        try
+        {
+            await Task.Run (async () =>
+            {
+                await Task.Delay (3000).ConfigureAwait (false);
+                await _app.InvokeAsync (owner, () =>
+                {
+                    LogJob ("Returning from task method");
+                    _itemsList.SetSource (items);
+                    _itemsList.SetNeedsDraw ();
+                }).ConfigureAwait (false);
+            });
+        }
+        catch (OperationCanceledException)
+        {
+            // The runnable ended before the background result reached the UI.
+        }
+        catch (NotInitializedException)
+        {
+            // The application was disposed while the background request was still running.
+        }
     }
 }

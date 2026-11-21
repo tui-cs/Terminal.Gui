@@ -365,7 +365,7 @@ public partial class View // SuperView/SubView hierarchy management (SuperView, 
     {
         // If auto-hotkey assignment is enabled, assign a hotkey to the new subview
         // This must happen BEFORE the CWP events so observers see the assigned hotkey
-        if (AssignHotKeys)
+        if (AssignHotKeys == true)
         {
             AssignHotKeyToView (view);
         }
@@ -505,11 +505,7 @@ public partial class View // SuperView/SubView hierarchy management (SuperView, 
 
     internal void RaiseSubViewRemoved (View view)
     {
-        // If auto-hotkey assignment is enabled, remove the subview's hotkey from UsedHotKeys
-        if (AssignHotKeys && view.HotKey != Key.Empty)
-        {
-            UsedHotKeys.Remove (view.HotKey);
-        }
+        ReleaseAutoAssignedHotKey (view);
 
         OnSubViewRemoved (view);
         SubViewRemoved?.Invoke (this, new SuperViewChangedEventArgs (this, view));
