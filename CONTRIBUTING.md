@@ -336,17 +336,17 @@ foreach (Rune rune in text.EnumerateRunes ())
 
 ### Automated Release Workflow
 
-Releases use [Release](.github/workflows/release.yml) and [Release Lock Gate](.github/workflows/release-lock-gate.yml). A maintainer starts the release workflow manually; it calculates a stable version from the full `develop` history with GitVersion, creates a direct `develop` → `main` PR, and enables squash auto-merge. The separate lock-gate workflow checks pull requests and merge-group candidates targeting `develop`.
+Releases use [Release](.github/workflows/release.yml) and [Release Lock Gate](.github/workflows/release-lock-gate.yml). A maintainer starts the release workflow manually and selects a beta, RC, or stable release. The workflow waits for the `develop` merge queue to drain, refreshes the snapshot, calculates the version from full history with GitVersion, and creates a direct `develop` → `main` PR. The maintainer reviews the PR and merges it with a merge commit; auto-merge is intentionally disabled.
 
 1. **Navigate to Actions tab** in the GitHub repository
 2. **Select "Release" workflow** from the left sidebar
 3. **Click "Run workflow"** button
-4. **Optionally set a stable version override** (for example, `2.6.0`). Leave it blank to let GitVersion calculate the version, honoring `+semver:` commit-message directives.
+4. **Choose the release type** (`beta`, `rc`, or `stable`) and optionally set a version override (for example, `2.6.0`). Leave the override blank to let GitVersion calculate the version, honoring `+semver:` commit-message directives.
 5. **Click "Run workflow"** to create the release PR
 
-The release PR promotes `develop` directly into `main`; the resulting tag is always stable (`vX.Y.Z`). The `Release` workflow finalizes only after that PR is merged, verifies the source snapshot, and opens a `backmerge/vX.Y.Z-<short-merge-sha>` PR to `develop`. It creates the annotated tag and GitHub Release only after source/version checks pass and the back-merge has no conflicts. The back-merge is never forced or auto-merged; resolve conflicts manually, merge with the standard Squash and merge process, and rerun the failed release job.
+The release PR promotes the recorded `develop` snapshot directly into `main`. The required `release-snapshot-gate` check fails if its head changes before merge. After the PR is merged with a merge commit, the `Release` workflow validates the snapshot, creates or verifies the annotated tag and GitHub Release, and then opens a `backmerge/<tag>-<short-merge-sha>` PR to `develop`. Beta and RC releases are marked as prereleases. The back-merge is never forced or auto-merged; resolve conflicts manually and merge with a merge commit through the merge queue. Rerunning the failed finalization job resumes safely after the back-merge has merged.
 
-Repository administrators must enable the `develop` merge queue, set its maximum group size to one, and require `release-lock-gate` and all applicable CI checks for merge-group runs as well as pull requests. After the back-merge completes, re-run blocked develop PR checks. Keep `RELEASE_PAT` configured with permission to create PRs, push tags, and create GitHub Releases.
+Repository administrators must enable the `develop` merge queue with the **MERGE** method, set its maximum group size to one, and require `release-lock-gate` and all applicable CI checks for merge-group runs as well as pull requests. Require `release-snapshot-gate` for promotion PRs targeting `main`. Checks required by the queue must not use pull-request path filters. After the back-merge completes, re-run blocked develop PR checks. Keep `RELEASE_PAT` configured with permission to create PRs, push tags, and create GitHub Releases. To unlock a closed back-merge, reopen it and merge it with a merge commit; do not replace its branch or marker.
 
 ## What NOT to Do
 

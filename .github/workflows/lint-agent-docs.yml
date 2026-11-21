@@ -23,20 +23,6 @@ on:
       - 'Scripts/lint-agent-docs.ps1'
       - '.github/workflows/lint-agent-docs.yml'
   pull_request:
-    paths:
-      - 'CLAUDE.md'
-      - 'AGENTS.md'
-      - 'CONTRIBUTING.md'
-      - 'ai-v2-primer.md'
-      - 'llms.txt'
-      - '.cursorrules'
-      - '.windsurfrules'
-      - '.aider.md'
-      - '.github/copilot-instructions.md'
-      - '.claude/**'
-      - 'global.json'
-      - 'Scripts/lint-agent-docs.ps1'
-      - '.github/workflows/lint-agent-docs.yml'
   merge_group:
     types: [ checks_requested ]
 

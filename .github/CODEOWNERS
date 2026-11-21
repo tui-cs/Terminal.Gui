@@ -4,6 +4,10 @@
 # review when someone opens a pull request.
 * @tig
 
+/.github/workflows/ @tig
+/Scripts/check-release-lock.sh @tig
+/Scripts/test-check-release-lock.sh @tig
+
 /docs/ @tig @bdisp @tznind
 
 # Order is important; the last matching pattern takes the most

@@ -50,13 +50,15 @@ The repository uses multiple GitHub Actions workflows. What runs and when:
 
 ### 4) Release and Release Lock Gate
 
-- [Release](.github/workflows/release.yml) is triggered by manual dispatch to prepare a release and closed pull requests targeting `main` to finalize a merged release PR.
-- [Release Lock Gate](.github/workflows/release-lock-gate.yml) handles `pull_request` and `merge_group` events targeting `develop` so routine PRs do not show skipped release orchestration jobs.
-- Calculates a stable `MAJOR.MINOR.PATCH` version from `develop` with GitVersion and full history, honoring `+semver:` commit-message directives; an optional version override is available.
-- Opens a direct `develop` → `main` PR and enables squash auto-merge. The `develop` branch merge queue runs required checks on its merge-group candidate.
-- After that PR is merged, validates the recorded develop commit and opens a `backmerge/vX.Y.Z-<short-merge-sha>` PR to `develop`. It creates the stable `vX.Y.Z` tag and GitHub Release only after the source/version checks pass and the back-merge has no conflicts.
-- Back-merge PRs are not auto-merged. Conflicts halt finalization before tagging and leave the PR open for manual resolution; rerun the failed release job after resolving the PR.
-- Require the `release-lock-gate` status check for both `develop` pull requests and merge-group runs; configure all other required checks to run on merge groups as well. Set the develop merge queue's maximum group size to one so the back-merge exception cannot include unrelated PRs. After the back-merge completes, re-run blocked develop PR checks.
+- [Release](release.yml) is triggered by manual dispatch to prepare a stable, beta, or RC release and by pull requests targeting `main` to verify and finalize a release.
+- [Release Lock Gate](release-lock-gate.yml) handles `pull_request` and `merge_group` events targeting `develop` so routine PRs do not show skipped release orchestration jobs. It checks out the trusted base revision before running the lock script.
+- The prepare job waits for the `develop` merge queue to drain, refreshes the source snapshot, and calculates the version from GitVersion and full history. A `release-snapshot-gate` check blocks the promotion PR if its head no longer matches the recorded snapshot.
+- The workflow opens a direct `develop` → `main` PR for maintainer review. Merge the promotion with a merge commit; auto-merge is intentionally disabled.
+- After the PR is merged, finalization validates the snapshot, configures a Git identity, and creates or verifies the tag and GitHub Release. Pre-release tags set the GitHub Release prerelease flag.
+- Finalization then creates or reuses the `backmerge/<tag>-<short-merge-sha>` PR. Conflicts remain open for manual resolution. Merge the back-merge with a merge commit through the `develop` merge queue; rerunning finalization resumes safely from a merged back-merge PR.
+- Require `release-lock-gate` for both `develop` pull requests and merge-group runs, and require `release-snapshot-gate` for release PRs targeting `main`. Configure the `develop` merge queue to use **MERGE**, set its maximum group size to one, and require all applicable checks for both pull requests and merge groups. Checks required for the queue must not use path filters on pull-request events.
+- The trusted-base checkout prevents a PR from changing the lock script and executing its modified copy in that PR's check. CODEOWNERS protects the release workflows and lock scripts, but a reviewer must still treat edits to the gate workflow itself as security-sensitive because pull-request workflow logic comes from the candidate commit.
+- To unlock after a back-merge PR is closed without merging, reopen that PR and merge it with a merge commit. Do not change the branch name or release marker.
 
 ### 5) Publish to NuGet (`.github/workflows/publish.yml`)
 
