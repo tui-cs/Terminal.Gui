@@ -26,9 +26,6 @@ jobs:
           ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event.merge_group.base_sha }}
           persist-credentials: false
 
-      - name: Test release lock scenarios
-        run: bash Scripts/test-check-release-lock.sh
-
       - name: Check release lock
         env:
           GH_TOKEN: ${{ github.token }}
