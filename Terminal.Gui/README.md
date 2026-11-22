@@ -48,61 +48,35 @@ Releases follow [Semantic Versioning](https://semver.org/): **MAJOR** for breaki
 
 ### Automated Release Workflow (Preferred)
 
-Two workflows handle the release lifecycle:
+The release lifecycle uses a release workflow and a separate lock-gate workflow. Publishing starts automatically after the workflow creates the release tag. Promotion and back-merge PRs use merge commits so `main` and `develop` retain ancestry:
 
-**Step 1 — [Prepare Release](../.github/workflows/prepare-release.yml)** (manual trigger):
-1. Go to **Actions → Prepare Release → Run workflow**.
-2. Pick the release type (`beta`, `rc`, `stable`) and optionally override the version.
-3. The workflow creates a `release/<tag>` branch from `develop` — where `<tag>` is the full version tag, e.g. `release/v2.0.0` or `release/v2.0.0-beta.1` — updates the `GitVersion.yml` label, and opens a PR into `main`.
-4. Review the PR — CI runs, branch protections apply.
+**Step 1 — [Release](../.github/workflows/release.yml)** (manual trigger):
+1. Go to **Actions → Release → Run workflow** on the `develop` branch.
+2. Choose `beta`, `rc`, or `stable`. Optionally enter a version override (e.g., `2.6.0`); otherwise GitVersion computes it from full history and commit-message increments.
+3. The workflow waits for the `develop` merge queue to drain, records the refreshed source SHA, and opens a direct PR from `develop` to `main` for maintainer review.
+4. Verify that `release-snapshot-gate` passes, then merge the promotion PR with a merge commit.
 
-**Step 2 — [Finalize Release](../.github/workflows/finalize-release.yml)** (automatic on PR merge):
+**Step 2 — Finalize after the PR merges** (automatic):
 When the release PR is merged into `main`:
-1. Creates an annotated tag (`vX.Y.Z` or `vX.Y.Z-beta`)
-2. Creates a GitHub Release with auto-generated notes
-3. [Publish](../.github/workflows/publish.yml) fires automatically → NuGet package published
-4. Opens a back-merge PR (`main` → `develop`) to keep branches in sync
+1. Verifies the source snapshot, then creates or verifies the annotated tag and GitHub Release. Beta and RC releases are marked as GitHub prereleases.
+2. Opens or reuses the back-merge PR (`main` → `develop`) to keep branch ancestry intact.
+3. The maintainer resolves any conflicts and merges the back-merge with a merge commit through the `develop` merge queue.
+4. [Publish](../.github/workflows/publish.yml) fires automatically from the tag → NuGet package published.
 
-### Manual Release Steps
+Repository administrators must enable the `develop` merge queue with the **MERGE** method, set its maximum group size to one, and require `release-lock-gate` and all applicable CI checks for merge-group runs as well as pull requests. Require `release-snapshot-gate` for promotion PRs targeting `main`. Checks required for the queue must not use pull-request path filters. After the back-merge completes, re-run blocked develop PR checks.
 
-If you need to release manually:
+### Manual Release Recovery
 
-1. **Ensure `develop` is ready**: all changes committed, CI passing.
+To recover from a conflicted back-merge, resolve and merge the PR, then rerun the failed finalization job. A rerun recognizes the merged PR even after GitHub deletes its branch. To unlock after a back-merge PR is closed without merging, reopen and merge it; do not replace its branch or release marker.
 
-2. **Merge `develop` into `main`**:
-   ```powershell
-   git checkout main
-   git pull upstream main
-   git checkout develop
-   git pull upstream develop
-   git checkout main
-   git merge develop
-   # Fix any merge conflicts
-   ```
+For break-glass recovery when automation is unavailable, prepare a clean clone and preserve merge ancestry:
 
-3. **Update the pre-release label** in `GitVersion.yml` if changing stages (e.g., `beta` → `rc` → `''`).
+1. Fetch and fast-forward both `main` and `develop`.
+2. On `main`, run `git merge --no-ff develop`, create the annotated release tag, and then push the commit and tag atomically with `git push --atomic origin main vX.Y.Z`.
+3. Create the GitHub Release and publish packages through the normal `publish.yml` path.
+4. On `develop`, run `git merge --no-ff main`, resolve any conflicts, and push through a protected back-merge PR rather than directly to `develop`.
 
-4. **Tag the release on `main`**:
-   ```powershell
-   git tag vX.Y.Z -a -m "Release vX.Y.Z"
-   ```
-
-5. **Push atomically**:
-   ```powershell
-   git push --atomic upstream main vX.Y.Z
-   ```
-
-6. **Monitor CI**: the [Publish workflow](https://github.com/tui-cs/Terminal.Gui/actions) builds and pushes to [NuGet](https://www.nuget.org/packages/Terminal.Gui). It also triggers an update to [Terminal.Gui.templates](https://github.com/tui-cs/Terminal.Gui.templates) for stable releases.
-
-7. **Create a GitHub Release** at [Releases](https://github.com/tui-cs/Terminal.Gui/releases) with auto-generated release notes.
-
-8. **Merge `main` back into `develop`**:
-   ```powershell
-   git checkout develop
-   git pull upstream develop
-   git merge main
-   git push upstream develop
-   ```
+Do not use force pushes or squash merges during break-glass recovery.
 
 ## CI/CD Workflows
 
@@ -110,8 +84,8 @@ All workflows are in [`.github/workflows/`](../.github/workflows/):
 
 | Workflow | Trigger | Purpose |
 |----------|---------|---------|
-| **[prepare-release.yml](../.github/workflows/prepare-release.yml)** | Manual dispatch | Creates a release PR from `develop` → `main` with label updates |
-| **[finalize-release.yml](../.github/workflows/finalize-release.yml)** | Release PR merged to `main` | Creates tag, GitHub Release, back-merge PR to `develop` |
+| **[release.yml](../.github/workflows/release.yml)** | Manual dispatch and pull requests targeting `main` | Promotes `develop` to `main`, creates a stable or prerelease, and opens a back-merge PR |
+| **[release-lock-gate.yml](../.github/workflows/release-lock-gate.yml)** | PR and merge-group events targeting `develop` | Blocks unrelated `develop` merges while a release is in progress |
 | **[publish.yml](../.github/workflows/publish.yml)** | Push to `develop`, or `v*` tags | Builds Release config, packs, and publishes to NuGet.org |
 | **[build-validation.yml](../.github/workflows/build-validation.yml)** | Push/PR to `main` or `develop` | Builds all configurations to validate compilation |
 | **[unit-tests.yml](../.github/workflows/unit-tests.yml)** | Push/PR to `main` or `develop` | Runs all unit tests |

@@ -48,15 +48,27 @@ The repository uses multiple GitHub Actions workflows. What runs and when:
 3. Runs IntegrationTests with diagnostic output
 4. Uploads logs per-OS
 
-### 4) Publish to NuGet (`.github/workflows/publish.yml`)
+### 4) Release and Release Lock Gate
+
+- [Release](release.yml) is triggered by manual dispatch to prepare a stable, beta, or RC release and by pull requests targeting `main` to verify and finalize a release.
+- [Release Lock Gate](release-lock-gate.yml) handles `pull_request` and `merge_group` events targeting `develop` so routine PRs do not show skipped release orchestration jobs. It checks out the trusted base revision before running the lock script.
+- The prepare job waits for the `develop` merge queue to drain, refreshes the source snapshot, and calculates the version from GitVersion and full history. A `release-snapshot-gate` check blocks the promotion PR if its head no longer matches the recorded snapshot.
+- The workflow opens a direct `develop` → `main` PR for maintainer review. Merge the promotion with a merge commit; auto-merge is intentionally disabled.
+- After the PR is merged, finalization validates the snapshot, configures a Git identity, and creates or verifies the tag and GitHub Release. Pre-release tags set the GitHub Release prerelease flag.
+- Finalization then creates or reuses the `backmerge/<tag>-<short-merge-sha>` PR. Conflicts remain open for manual resolution. Merge the back-merge with a merge commit through the `develop` merge queue; rerunning finalization resumes safely from a merged back-merge PR.
+- Require `release-lock-gate` for both `develop` pull requests and merge-group runs, and require `release-snapshot-gate` for release PRs targeting `main`. Configure the `develop` merge queue to use **MERGE**, set its maximum group size to one, and require all applicable checks for both pull requests and merge groups. Checks required for the queue must not use path filters on pull-request events.
+- The trusted-base checkout prevents a PR from changing the lock script and executing its modified copy in that PR's check. CODEOWNERS protects the release workflows and lock scripts, but a reviewer must still treat edits to the gate workflow itself as security-sensitive because pull-request workflow logic comes from the candidate commit.
+- To unlock after a back-merge PR is closed without merging, reopen that PR and merge it with a merge commit. Do not change the branch name or release marker.
+
+### 5) Publish to NuGet (`.github/workflows/publish.yml`)
 
 - **Triggers**: push to `develop` and tags `v*` (ignores `**.md`)
 - Uses GitVersion to compute SemVer, builds Release, packs Terminal.Gui and Terminal.Gui.Interop.Spectre with symbols, and pushes both to NuGet.org. It prefers Trusted Publishing when `vars.NUGET_TRUSTED_PUBLISHING_USER` and a matching NuGet.org policy are configured; otherwise it falls back to the `NUGET_API_KEY` secret.
-- **Automatically triggered** when a `v*` tag is pushed — typically by the **Finalize Release** workflow after a release PR (from **Prepare Release**) is merged into `main`
+- **Automatically triggered** when a stable `v*` tag is pushed by the **Release** workflow after the `develop` → `main` promotion PR is merged
 - **Additional actions on tag push** (`v*`):
   - Triggers Terminal.Gui.templates repository update via repository_dispatch (requires `TEMPLATE_REPO_TOKEN` secret)
 
-### 5) Build and publish API docs (`.github/workflows/api-docs.yml`)
+### 6) Build and publish API docs (`.github/workflows/api-docs.yml`)
 
 - **Triggers**: push to `develop`, and `workflow_dispatch`
 - Builds DocFX site on Windows and deploys to GitHub Pages

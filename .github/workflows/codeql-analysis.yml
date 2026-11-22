@@ -13,12 +13,8 @@ on:
       - docfx
   pull_request:
     branches: [main]
-    paths-ignore:
-      - '**/*.md'
-      - '**/*.txt'
-      - '**/*.html'
-      - docs
-      - docfx
+  merge_group:
+    types: [ checks_requested ]
   # Scan every Monday
   schedule:
     - cron: '20 14 * * 1'      

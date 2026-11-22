@@ -17,14 +17,8 @@ on:
       - 'Scripts/DocSnippetValidator/**'
       - '.github/workflows/validate-doc-snippets.yml'
   pull_request:
-    paths:
-      - 'ai-v2-primer.md'
-      - '.claude/tasks/build-app.md'
-      - '.claude/cookbook/common-patterns.md'
-      - 'llms.txt'
-      - 'Terminal.Gui/**'
-      - 'Scripts/DocSnippetValidator/**'
-      - '.github/workflows/validate-doc-snippets.yml'
+  merge_group:
+    types: [ checks_requested ]
 
 jobs:
   validate-doc-snippets:

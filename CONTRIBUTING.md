@@ -336,21 +336,17 @@ foreach (Rune rune in text.EnumerateRunes ())
 
 ### Automated Release Workflow
 
-Releases are automated using GitHub Actions to prevent manual errors. The flow is PR-based: **Prepare Release** opens a release PR from `develop` → `main`, and merging it runs **Finalize Release**. To create a release:
+Releases use [Release](.github/workflows/release.yml) and [Release Lock Gate](.github/workflows/release-lock-gate.yml). A maintainer starts the release workflow manually and selects a beta, RC, or stable release. The workflow waits for the `develop` merge queue to drain, refreshes the snapshot, calculates the version from full history with GitVersion, and creates a direct `develop` → `main` PR. The maintainer reviews the PR and merges it with a merge commit; auto-merge is intentionally disabled.
 
 1. **Navigate to Actions tab** in the GitHub repository
-2. **Select "Prepare Release" workflow** from the left sidebar
+2. **Select "Release" workflow** from the left sidebar
 3. **Click "Run workflow"** button
-4. **Configure release parameters:**
-   - **Release type:** Choose from `beta`, `rc`, or `stable`
-   - **Version override:** (Optional) Specify exact version (e.g., `2.0.0`), otherwise GitVersion calculates it automatically
+4. **Choose the release type** (`beta`, `rc`, or `stable`) and optionally set a version override (for example, `2.6.0`). Leave the override blank to let GitVersion calculate the version, honoring `+semver:` commit-message directives.
 5. **Click "Run workflow"** to create the release PR
 
-Prepare Release creates a `release/<tag>` branch — where `<tag>` is the full version tag, e.g. `release/v2.0.0` for a stable release or `release/v2.0.0-beta.1` for a pre-release — with the GitVersion label updated for the release type, and opens a PR into `main`. After CI passes, **review and merge that PR**. Merging triggers **Finalize Release**, which:
-- Creates an annotated git tag (e.g., `v2.0.0-beta.1` or `v2.0.0`)
-- Creates a GitHub Release with auto-generated notes
-- Opens a back-merge PR from `main` → `develop`
-- Triggers the publish workflow (via the `v*` tag) to push the package to NuGet.org
+The release PR promotes the recorded `develop` snapshot directly into `main`. The required `release-snapshot-gate` check fails if its head changes before merge. After the PR is merged with a merge commit, the `Release` workflow validates the snapshot, creates or verifies the annotated tag and GitHub Release, and then opens a `backmerge/<tag>-<short-merge-sha>` PR to `develop`. Beta and RC releases are marked as prereleases. The back-merge is never forced or auto-merged; resolve conflicts manually and merge with a merge commit through the merge queue. Rerunning the failed finalization job resumes safely after the back-merge has merged.
+
+Repository administrators must enable the `develop` merge queue with the **MERGE** method, set its maximum group size to one, and require `release-lock-gate` and all applicable CI checks for merge-group runs as well as pull requests. Require `release-snapshot-gate` for promotion PRs targeting `main`. Checks required by the queue must not use pull-request path filters. After the back-merge completes, re-run blocked develop PR checks. Keep `RELEASE_PAT` configured with permission to create PRs, push tags, and create GitHub Releases. To unlock a closed back-merge, reopen it and merge it with a merge commit; do not replace its branch or marker.
 
 ## What NOT to Do
 
