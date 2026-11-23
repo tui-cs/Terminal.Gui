@@ -496,14 +496,14 @@ public class ListViewWithMultiLine : Scenario
 
         if (_listView.ShowMarks && _listView.Source?.IsMarked (e.Row) == true)
         {
-            e.RowAttribute = new Attribute (Color.BrightRed, Color.BrightYellow);
+            e.RowAttribute = _listView.GetAttributeForRole (VisualRole.HotFocus);
 
             return;
         }
 
         e.RowAttribute = e.Row % 2 == 0
-                             ? new Attribute (Color.Green, Color.Magenta)
-                             : new Attribute (Color.Magenta, Color.Green);
+                             ? _listView.GetAttributeForRole (VisualRole.Active)
+                             : _listView.GetAttributeForRole (VisualRole.Normal);
     }
 
     private sealed class ScenarioColumn
