@@ -242,6 +242,38 @@ public partial class ColorClassTests
                      $"Dimming #{color.R:x2}{color.G:x2}{color.B:x2} by {dimAmount} made no progress: #{dimmed.R:x2}{dimmed.G:x2}{dimmed.B:x2}");
     }
 
+    [Theory]
+    [InlineData (0.1, true)]
+    [InlineData (0.2, true)]
+    [InlineData (0.5, true)]
+    [InlineData (0.9, true)]
+    [InlineData (0.1, false)]
+    [InlineData (0.2, false)]
+    [InlineData (0.5, false)]
+    [InlineData (0.9, false)]
+    public void GetDimmerColor_PreservesLightnessOrder (double dimAmount, bool isDarkBackground)
+    {
+        // Grok - 4.6
+        // Scale remaining room: L' = L*(1-a) toward black, L' = 1-(1-L)*(1-a) toward white.
+        // Both are non-decreasing in L, so a lighter input cannot dim darker than its neighbour.
+        double previous = double.NegativeInfinity;
+
+        for (int i = 0; i <= 100; i++)
+        {
+            double lightness = i / 100.0;
+            byte channel = (byte)Math.Clamp ((int)Math.Round (lightness * 255.0), 0, 255);
+            Color input = new (channel, channel, channel);
+            Color dimmed = input.GetDimmerColor (dimAmount, isDarkBackground);
+            double dimmedLuminance = RelativeLuminance (dimmed);
+
+            Assert.True (
+                         dimmedLuminance >= previous,
+                         $"Amount {dimAmount}, dark={isDarkBackground}: L={lightness:0.00} dimmed to #{dimmed.R:x2}{dimmed.G:x2}{dimmed.B:x2}, darker than the previous step");
+
+            previous = dimmedLuminance;
+        }
+    }
+
     [Fact]
     public void GetDimmerColor_WithNullBackground_ReducesLightness ()
     {

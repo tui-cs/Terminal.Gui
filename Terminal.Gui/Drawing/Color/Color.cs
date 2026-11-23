@@ -317,21 +317,22 @@ public readonly partial record struct Color : ISpanParsable<Color>, IUtf8SpanPar
     /// </summary>
     /// <remarks>
     ///     <para>
-    ///         The algorithm works in HSL color space and adjusts the lightness channel.
-    ///         ColorHelper's HSL uses L in range 0-100; the step itself is applied in 0-1:
+    ///         The algorithm works in HSL color space and scales the lightness channel toward the
+    ///         end of the range. ColorHelper's HSL uses L in range 0-100; the scale is applied in 0-1.
+    ///         <paramref name="dimAmount"/> is clamped to <c>[0, 1]</c>:
     ///         <list type="bullet">
     ///             <item>
     ///                 <description>
-    ///                     Lightness is shifted by <paramref name="dimAmount"/> in the chosen direction when that
-    ///                     step fits in the remaining range.
+    ///                     Remaining room is multiplied by <c>(1 - dimAmount)</c>. On a dark background
+    ///                     that is <c>L' = L * (1 - dimAmount)</c>. On a light background that is
+    ///                     <c>L' = 1 - (1 - L) * (1 - dimAmount)</c>.
     ///                 </description>
     ///             </item>
     ///             <item>
     ///                 <description>
-    ///                     If the full step would pass the end of the range, a partial step is applied: the color
-    ///                     moves by <c>remaining * dimAmount</c> toward black or white. That still darkens (or washes
-    ///                     out) colors that have room, including mid-grays under a large step such as a transparent
-    ///                     shadow, without flattening two nearby colors onto the same endpoint.
+    ///                     The mapping is continuous and non-decreasing in L, so a lighter color cannot
+    ///                     come out darker than a slightly darker neighbour (and the reverse toward white).
+    ///                     Nearby colors keep their order instead of jumping at <c>L == dimAmount</c>.
     ///                 </description>
     ///             </item>
     ///             <item>
@@ -342,8 +343,9 @@ public readonly partial record struct Color : ISpanParsable<Color>, IUtf8SpanPar
     ///             </item>
     ///             <item>
     ///                 <description>
-    ///                     If the adjustment resulted in a color too close to the original, a larger adjustment is
-    ///                     made, provided that larger step does not land on the end of the range.
+    ///                     A mid-gray under a large step, such as a transparent shadow at 0.9, still
+    ///                     darkens, because remaining room is scaled rather than skipped or clamped to
+    ///                     the endpoint.
     ///                 </description>
     ///             </item>
     ///         </list>
@@ -363,50 +365,24 @@ public readonly partial record struct Color : ISpanParsable<Color>, IUtf8SpanPar
 
         // Determine direction: on dark bg (or null/default), reduce L; on light bg, increase L
         bool shouldDecrease = isDarkBackground ?? true;
+        double amount = Math.Clamp (dimAmount, 0.0, 1.0);
         double remaining = shouldDecrease ? lNorm : 1.0 - lNorm;
 
-        if (remaining <= 0.0)
+        if (remaining <= 0.0 || amount <= 0.0)
         {
             return this;
         }
 
-        double newL = StepLightness (lNorm, remaining, dimAmount, shouldDecrease);
-
-        if (Math.Abs (newL - lNorm) < 0.1)
-        {
-            double furtherL = StepLightness (lNorm, remaining, 2 * dimAmount, shouldDecrease);
-
-            // Only take the bigger step if it still leaves the color short of the end of the
-            // range. Landing on 0 or 1 is how two nearby colors become the same color, which
-            // is how text under a shadow disappears.
-            if (furtherL > 0.0 && furtherL < 1.0)
-            {
-                newL = furtherL;
-            }
-        }
+        // Scale remaining room rather than subtracting a fixed step. Subtracting amount
+        // until it no longer fits, then switching to remaining * amount, is not monotonic:
+        // L=0.20 at amount 0.2 stayed near 0.12, and L=0.21 dropped to 0.01.
+        double newRemaining = remaining * (1.0 - amount);
+        double newL = shouldDecrease ? newRemaining : 1.0 - newRemaining;
 
         HSL newHsl = new (hsl.H, hsl.S, (byte)(newL * 100));
         RGB rgb = ColorConverter.HslToRgb (newHsl);
 
         return new Color (rgb.R, rgb.G, rgb.B);
-
-        static double StepLightness (double lightness, double remainingRoom, double amount, bool decrease)
-        {
-            double step = amount;
-
-            if (step >= remainingRoom)
-            {
-                // The full step does not fit. Take a portion of the remaining room proportional
-                // to the requested amount so we still move, but two distinct colors do not both
-                // land on the endpoint.
-                double fraction = Math.Min (Math.Max (amount, 0.0), 1.0);
-                step = remainingRoom * fraction;
-            }
-
-            double result = decrease ? lightness - step : lightness + step;
-
-            return Math.Clamp (result, 0.0, 1.0);
-        }
     }
 
     /// <summary>
