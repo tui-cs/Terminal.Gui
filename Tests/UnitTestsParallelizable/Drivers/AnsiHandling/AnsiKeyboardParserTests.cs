@@ -160,4 +160,21 @@ public class AnsiKeyboardParserTests
         // Assert
         Assert.Equal (expectedKey, result); // Verify the returned key matches the expected one
     }
+
+    // Claude Code - Claude Opus 5.5
+    [Theory]
+    [InlineData ("\u001b[999~")]
+    [InlineData ("\u001b[201~")]
+    public void GetKey_Unmapped_Csi_Tilde_Sequence_Returns_Null (string input)
+    {
+        // Arrange
+        CsiKeyPattern pattern = new ();
+
+        // Act
+        Key? result = pattern.GetKey (input);
+
+        // Assert
+        Assert.True (pattern.IsMatch (input));
+        Assert.Null (result);
+    }
 }

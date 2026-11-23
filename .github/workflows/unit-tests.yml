@@ -7,8 +7,8 @@ on:
       - '**.md'
   pull_request:
     branches: [ main, develop ]
-    paths-ignore:
-      - '**.md'
+  merge_group:
+    types: [ checks_requested ]
 
 jobs:
   non_parallel_unittests:

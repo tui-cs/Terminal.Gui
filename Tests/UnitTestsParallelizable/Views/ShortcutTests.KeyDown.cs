@@ -66,6 +66,44 @@ public partial class ShortcutTests
         Assert.Equal (1, action); // Should not have incremented; old app binding must be gone
     }
 
+    // CoPilot - GPT-5.6
+    [Fact]
+    public void Dispose_Removes_Owned_AppLevel_KeyBinding ()
+    {
+        IApplication app = Application.Create ();
+        Shortcut shortcut = new ()
+        {
+            App = app,
+            Key = Key.F10,
+            BindKeyToApplication = true
+        };
+
+        shortcut.Dispose ();
+
+        Assert.False (app.Keyboard.KeyBindings.TryGet (Key.F10, out _));
+    }
+
+    // CoPilot - GPT-5.6
+    [Fact]
+    public void Dispose_Does_Not_Remove_Replaced_AppLevel_KeyBinding ()
+    {
+        IApplication app = Application.Create ();
+        Shortcut shortcut = new ()
+        {
+            App = app,
+            Key = Key.F10,
+            BindKeyToApplication = true
+        };
+        View replacement = new ();
+        app.Keyboard.KeyBindings.Remove (Key.F10);
+        app.Keyboard.KeyBindings.AddApp (Key.F10, replacement, Command.HotKey);
+
+        shortcut.Dispose ();
+
+        Assert.True (app.Keyboard.KeyBindings.TryGet (Key.F10, out KeyBinding binding));
+        Assert.Same (replacement, binding.Target);
+    }
+
     // Claude - Opus 4.6
     /// <summary>
     ///     Verifies that pressing various keys invokes the <see cref="Shortcut.Action"/> delegate.

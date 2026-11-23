@@ -858,6 +858,17 @@ public class Shortcut : View, IOrientation, IDesignable
         }
     }
 
+    private void RemoveApplicationKeyBinding (Key key)
+    {
+        if (App?.Keyboard.KeyBindings.TryGet (key, out KeyBinding binding) != true
+            || !ReferenceEquals (binding.Target, this))
+        {
+            return;
+        }
+
+        App.Keyboard.KeyBindings.Remove (key);
+    }
+
     /// <inheritdoc/>
     protected override void OnSuperViewChanged (ValueChangedEventArgs<View?> args)
     {
@@ -968,6 +979,11 @@ public class Shortcut : View, IOrientation, IDesignable
     {
         if (disposing)
         {
+            if (BindKeyToApplication)
+            {
+                RemoveApplicationKeyBinding (Key);
+            }
+
             TitleChanged -= Shortcut_TitleChanged;
 
             if (_commandView?.SuperView is null)

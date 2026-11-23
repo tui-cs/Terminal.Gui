@@ -1,0 +1,20 @@
+name: Release Lock Script Tests
+
+on:
+  pull_request:
+  merge_group:
+    types: [ checks_requested ]
+
+permissions:
+  contents: read
+
+jobs:
+  release-lock-tests:
+    name: Release Lock Script Tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out candidate revision
+        uses: actions/checkout@v7
+
+      - name: Test release lock scenarios
+        run: bash Scripts/test-check-release-lock.sh

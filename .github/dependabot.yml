@@ -13,5 +13,20 @@ updates:
     open-pull-requests-limit: 10
     schedule:
       interval: "daily"
+    ignore:
+      # Deferred upgrades. Remove each rule when its issue is done.
+      # https://github.com/tui-cs/Terminal.Gui/issues/5803
+      - dependency-name: "CsvHelper"
+        update-types: ["version-update:semver-major"]
+      # https://github.com/tui-cs/Terminal.Gui/issues/5804
+      - dependency-name: "Markdig"
+        versions: [">=1.5.0"]
+      # https://github.com/tui-cs/Terminal.Gui/issues/5805
+      - dependency-name: "GitVersion.MsBuild"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "GitVersion.Tool"
+        update-types: ["version-update:semver-major"]
+      # https://github.com/tui-cs/Terminal.Gui/issues/5806
+      - dependency-name: "SixLabors.ImageSharp"
 
 # Built with ❤ by [Pipeline Foundation](https://pipeline.foundation)
