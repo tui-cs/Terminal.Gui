@@ -274,6 +274,60 @@ public partial class ColorClassTests
         }
     }
 
+    [Theory]
+    [InlineData (16, 16, 20, true)]
+    [InlineData (128, 128, 128, true)]
+    [InlineData (200, 200, 200, true)]
+    [InlineData (16, 16, 20, false)]
+    [InlineData (128, 128, 128, false)]
+    [InlineData (200, 200, 200, false)]
+    public void GetDimmerColor_PreservesAmountOrder (byte r, byte g, byte b, bool isDarkBackground)
+    {
+        // Grok - 4.6
+        // A larger dimAmount must not reverse the move: toward dark, more dimming is never
+        // lighter; toward light, more dimming is never darker.
+        Color input = new (r, g, b);
+        double previous = isDarkBackground ? double.PositiveInfinity : double.NegativeInfinity;
+
+        for (int i = 0; i <= 100; i++)
+        {
+            double amount = i / 100.0;
+            Color dimmed = input.GetDimmerColor (amount, isDarkBackground);
+            double dimmedLuminance = RelativeLuminance (dimmed);
+
+            if (isDarkBackground)
+            {
+                Assert.True (
+                             dimmedLuminance <= previous,
+                             $"Dark dim of #{input.R:x2}{input.G:x2}{input.B:x2} at {amount:0.00} was #{dimmed.R:x2}{dimmed.G:x2}{dimmed.B:x2}, lighter than a smaller amount");
+                previous = dimmedLuminance;
+
+                continue;
+            }
+
+            Assert.True (
+                         dimmedLuminance >= previous,
+                         $"Light dim of #{input.R:x2}{input.G:x2}{input.B:x2} at {amount:0.00} was #{dimmed.R:x2}{dimmed.G:x2}{dimmed.B:x2}, darker than a smaller amount");
+            previous = dimmedLuminance;
+        }
+    }
+
+    [Fact]
+    public void GetDimmerColor_NearBlackInputs_DoNotCollapseToBlack ()
+    {
+        // Grok - 4.6
+        // Truncating L through a 0-100 byte crushed #030303 and #101010 onto black.
+        Color text = new (3, 3, 3);
+        Color ground = new (16, 16, 16);
+        Color dimmedText = text.GetDimmerColor (0.2, true);
+        Color dimmedGround = ground.GetDimmerColor (0.9, true);
+        Color black = new (0, 0, 0);
+
+        Assert.NotEqual (black, dimmedText);
+        Assert.NotEqual (black, dimmedGround);
+        Assert.NotEqual (text.GetDimmerColor (0.2, true), ground.GetDimmerColor (0.2, true));
+    }
+
     [Fact]
     public void GetDimmerColor_WithNullBackground_ReducesLightness ()
     {

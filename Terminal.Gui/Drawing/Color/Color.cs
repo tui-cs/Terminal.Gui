@@ -290,9 +290,7 @@ public readonly partial record struct Color : ISpanParsable<Color>, IUtf8SpanPar
     /// </param>
     public Color GetBrighterColor (double brightenAmount = 0.2, bool? isDarkBackground = null)
     {
-        HSL hsl = ColorConverter.RgbToHsl (new RGB (R, G, B));
-
-        double lNorm = hsl.L / 100.0;
+        GetHsl (out double hue, out double saturation, out double lNorm);
 
         // Determine direction: on dark bg, brighten (increase L); on light bg, darken (decrease L)
         bool shouldIncrease = isDarkBackground ?? lNorm < 0.5;
@@ -304,10 +302,7 @@ public readonly partial record struct Color : ISpanParsable<Color>, IUtf8SpanPar
             newL = shouldIncrease ? Math.Min (1.0, lNorm + 2 * brightenAmount) : Math.Max (0.0, lNorm - 2 * brightenAmount);
         }
 
-        HSL newHsl = new (hsl.H, hsl.S, (byte)(newL * 100));
-        RGB rgb = ColorConverter.HslToRgb (newHsl);
-
-        return new Color (rgb.R, rgb.G, rgb.B);
+        return FromHsl (hue, saturation, newL);
     }
 
     /// <summary>
@@ -318,8 +313,9 @@ public readonly partial record struct Color : ISpanParsable<Color>, IUtf8SpanPar
     /// <remarks>
     ///     <para>
     ///         The algorithm works in HSL color space and scales the lightness channel toward the
-    ///         end of the range. ColorHelper's HSL uses L in range 0-100; the scale is applied in 0-1.
-    ///         <paramref name="dimAmount"/> is clamped to <c>[0, 1]</c>:
+    ///         end of the range. Lightness is computed from RGB in 0-1 and converted back by rounding
+    ///         8-bit channels, not through a 0-100 byte L. <paramref name="dimAmount"/> is clamped to
+    ///         <c>[0, 1]</c>:
     ///         <list type="bullet">
     ///             <item>
     ///                 <description>
@@ -359,9 +355,7 @@ public readonly partial record struct Color : ISpanParsable<Color>, IUtf8SpanPar
     /// </param>
     public Color GetDimmerColor (double dimAmount = 0.2, bool? isDarkBackground = null)
     {
-        HSL hsl = ColorConverter.RgbToHsl (new RGB (R, G, B));
-
-        double lNorm = hsl.L / 100.0;
+        GetHsl (out double hue, out double saturation, out double lNorm);
 
         // Determine direction: on dark bg (or null/default), reduce L; on light bg, increase L
         bool shouldDecrease = isDarkBackground ?? true;
@@ -379,11 +373,98 @@ public readonly partial record struct Color : ISpanParsable<Color>, IUtf8SpanPar
         double newRemaining = remaining * (1.0 - amount);
         double newL = shouldDecrease ? newRemaining : 1.0 - newRemaining;
 
-        HSL newHsl = new (hsl.H, hsl.S, (byte)(newL * 100));
-        RGB rgb = ColorConverter.HslToRgb (newHsl);
-
-        return new Color (rgb.R, rgb.G, rgb.B);
+        return FromHsl (hue, saturation, newL);
     }
+
+    private void GetHsl (out double hue, out double saturation, out double lightness)
+    {
+        double r = R / 255.0;
+        double g = G / 255.0;
+        double b = B / 255.0;
+        double max = Math.Max (r, Math.Max (g, b));
+        double min = Math.Min (r, Math.Min (g, b));
+        lightness = (max + min) / 2.0;
+
+        if (max == min)
+        {
+            hue = 0.0;
+            saturation = 0.0;
+
+            return;
+        }
+
+        double delta = max - min;
+        saturation = lightness > 0.5 ? delta / (2.0 - max - min) : delta / (max + min);
+
+        if (max == r)
+        {
+            hue = (g - b) / delta + (g < b ? 6.0 : 0.0);
+        }
+        else if (max == g)
+        {
+            hue = (b - r) / delta + 2.0;
+        }
+        else
+        {
+            hue = (r - g) / delta + 4.0;
+        }
+
+        hue *= 60.0;
+    }
+
+    private static Color FromHsl (double hue, double saturation, double lightness)
+    {
+        lightness = Math.Clamp (lightness, 0.0, 1.0);
+        saturation = Math.Clamp (saturation, 0.0, 1.0);
+
+        if (saturation <= 0.0)
+        {
+            byte gray = ChannelToByte (lightness);
+
+            return new Color (gray, gray, gray);
+        }
+
+        double q = lightness < 0.5 ? lightness * (1.0 + saturation) : lightness + saturation - lightness * saturation;
+        double p = 2.0 * lightness - q;
+        double hk = hue / 360.0;
+
+        return new Color (
+                          ChannelToByte (HueToRgb (p, q, hk + 1.0 / 3.0)),
+                          ChannelToByte (HueToRgb (p, q, hk)),
+                          ChannelToByte (HueToRgb (p, q, hk - 1.0 / 3.0)));
+
+        static double HueToRgb (double p, double q, double t)
+        {
+            if (t < 0.0)
+            {
+                t += 1.0;
+            }
+
+            if (t > 1.0)
+            {
+                t -= 1.0;
+            }
+
+            if (t < 1.0 / 6.0)
+            {
+                return p + (q - p) * 6.0 * t;
+            }
+
+            if (t < 0.5)
+            {
+                return q;
+            }
+
+            if (t < 2.0 / 3.0)
+            {
+                return p + (q - p) * (2.0 / 3.0 - t) * 6.0;
+            }
+
+            return p;
+        }
+    }
+
+    private static byte ChannelToByte (double channel) => (byte)Math.Clamp ((int)Math.Round (channel * 255.0), 0, 255);
 
     /// <summary>
     ///     Returns <see langword="true"/> if this color is "dark" (HSL lightness &lt; 0.5).
