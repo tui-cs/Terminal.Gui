@@ -526,9 +526,10 @@ public class ShadowTests (ITestOutputHelper output)
         string output1 = app.Driver.GetOutput ().GetLastOutput ();
         output.WriteLine (output1);
 
-        // Printed with bright black (dark gray) text on bright black (dark gray) background making it invisible
+        // The cell under the shadow keeps its glyph on a darkened ground: the shadow dims
+        // what it covers rather than hiding it. Black FG no longer becomes DarkGray.
         DriverAssert.AssertDriverOutputIs ("""
-                                           \x1b[30m\x1b[107m*\x1b[93m\x1b[100mB
+                                           \x1b[30m\x1b[107m*\x1b[93m\x1b[40mB
                                            """,
                                            output,
                                            app.Driver);
@@ -572,7 +573,118 @@ public class ShadowTests (ITestOutputHelper output)
         output.WriteLine (output1);
 
         DriverAssert.AssertDriverOutputIs ("""
-                                           \x1b[30m\x1b[107m*\x1b[90m\x1b[40m \x1b[97m\x1b[40m \x1b[93m\x1b[100m \x1b[97m\x1b[40m🍎
+                                           \x1b[30m\x1b[107m*\x1b[30m\x1b[40m \x1b[97m\x1b[40m \x1b[93m\x1b[40m \x1b[97m\x1b[40m🍎
+                                           """,
+                                           output,
+                                           app.Driver);
+    }
+
+    [Theory]
+    [InlineData (16, 16, 20, 180, 180, 190)]
+    [InlineData (128, 128, 128, 240, 240, 240)]
+    [InlineData (255, 255, 255, 0, 0, 0)]
+    public void TransparentShadow_Darkens_Ground_And_Keeps_Covered_Glyph (
+        byte bgR,
+        byte bgG,
+        byte bgB,
+        byte fgR,
+        byte fgG,
+        byte fgB)
+    {
+        // Grok - 4.6
+        Color ground = new (bgR, bgG, bgB);
+        Color text = new (fgR, fgG, fgB);
+        Color dimmedFg = text.GetDimmerColor ();
+        Color dimmedBg = ground.GetDimmerColor (0.9);
+
+        Assert.True (
+                     dimmedBg.R + dimmedBg.G + dimmedBg.B <= ground.R + ground.G + ground.B,
+                     $"Shadow step left #{ground.R:x2}{ground.G:x2}{ground.B:x2} unchanged or brighter: #{dimmedBg.R:x2}{dimmedBg.G:x2}{dimmedBg.B:x2}");
+        Assert.NotEqual (dimmedFg, dimmedBg);
+
+        using IApplication app = Application.Create ();
+        app.Init (DriverRegistry.Names.ANSI);
+        app.Driver!.SetScreenSize (2, 1);
+
+        using Runnable superView = new ();
+        superView.CanFocus = false;
+        superView.Width = Dim.Fill ();
+        superView.Height = Dim.Fill ();
+        superView.Text = "AB";
+        superView.TextFormatter.WordWrap = true;
+        superView.SetScheme (new Scheme (new Attribute (text, ground)));
+
+        View viewWithShadow = new () { Width = Dim.Auto (), Height = Dim.Auto (), Text = "*", ShadowStyle = ShadowStyles.Transparent };
+        viewWithShadow.Margin.Thickness = new Thickness (0, 0, 1, 0);
+        viewWithShadow.SetScheme (new Scheme (new Attribute (text, ground)));
+        superView.Add (viewWithShadow);
+
+        app.Begin (superView);
+        app.LayoutAndDraw ();
+        app.Driver.Refresh ();
+
+        output.WriteLine ("Actual driver contents:");
+        output.WriteLine (app.Driver.ToString ());
+        output.WriteLine ("\nActual driver output:");
+        string ansi = app.Driver.GetOutput ().GetLastOutput ();
+        output.WriteLine (ansi);
+
+        Cell [,] contents = app.Driver.Contents!;
+        Cell shadowed = contents [0, 1];
+        Assert.Equal ("B", shadowed.Grapheme);
+
+        Attribute shadowedAttr = shadowed.Attribute!.Value;
+        Assert.Equal (dimmedFg, shadowedAttr.Foreground);
+        Assert.Equal (dimmedBg, shadowedAttr.Background);
+        Assert.NotEqual (shadowedAttr.Foreground, shadowedAttr.Background);
+
+        Cell unshadowed = contents [0, 0];
+        Attribute unshadowedAttr = unshadowed.Attribute!.Value;
+        Assert.Equal ("*", unshadowed.Grapheme);
+        Assert.Equal (text, unshadowedAttr.Foreground);
+        Assert.Equal (ground, unshadowedAttr.Background);
+
+        // Driver output encoding depends on Force16Colors, which other parallel tests can
+        // flip via the static facade. The cell buffer holds the true RGB either way.
+        Assert.Contains ('B', ansi);
+        Assert.Contains ('*', ansi);
+    }
+
+    [Fact]
+    public void TransparentShadow_MidGray_Force16Colors_Darkens_At_Driver_Output ()
+    {
+        // Grok - 4.6
+        using IApplication app = Application.Create ();
+        app.Init (DriverRegistry.Names.ANSI);
+        app.Driver!.SetScreenSize (2, 1);
+        app.Driver.Force16Colors = true;
+
+        Color ground = new (128, 128, 128);
+        Color text = new (240, 240, 240);
+
+        using Runnable superView = new ();
+        superView.CanFocus = false;
+        superView.Width = Dim.Fill ();
+        superView.Height = Dim.Fill ();
+        superView.Text = "AB";
+        superView.TextFormatter.WordWrap = true;
+        superView.SetScheme (new Scheme (new Attribute (text, ground)));
+
+        View viewWithShadow = new () { Width = Dim.Auto (), Height = Dim.Auto (), Text = "*", ShadowStyle = ShadowStyles.Transparent };
+        viewWithShadow.Margin.Thickness = new Thickness (0, 0, 1, 0);
+        viewWithShadow.SetScheme (new Scheme (new Attribute (text, ground)));
+        superView.Add (viewWithShadow);
+
+        app.Begin (superView);
+        app.LayoutAndDraw ();
+        app.Driver.Refresh ();
+
+        output.WriteLine (app.Driver.GetOutput ().GetLastOutput ());
+
+        // Mid-gray ground maps to ANSI white (47); the shadow step darkens it to black (40)
+        // and the covered glyph stays a distinct color on that ground.
+        DriverAssert.AssertDriverOutputIs ("""
+                                           \x1b[97m\x1b[47m*\x1b[93m\x1b[40mB
                                            """,
                                            output,
                                            app.Driver);

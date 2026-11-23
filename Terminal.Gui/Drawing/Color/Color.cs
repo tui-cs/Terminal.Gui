@@ -317,22 +317,33 @@ public readonly partial record struct Color : ISpanParsable<Color>, IUtf8SpanPar
     /// </summary>
     /// <remarks>
     ///     <para>
-    ///         The algorithm works in HSL color space and adjusts the lightness channel:
+    ///         The algorithm works in HSL color space and adjusts the lightness channel.
+    ///         ColorHelper's HSL uses L in range 0-100; the step itself is applied in 0-1:
     ///         <list type="bullet">
     ///             <item>
     ///                 <description>
-    ///                     If the color is already at the extreme for the given direction, returns a context-appropriate
-    ///                     gray (<see cref="ColorName16.DarkGray"/> for dark backgrounds,
-    ///                     <see cref="ColorName16.Gray"/> for light backgrounds).
+    ///                     Lightness is shifted by <paramref name="dimAmount"/> in the chosen direction when that
+    ///                     step fits in the remaining range.
     ///                 </description>
     ///             </item>
     ///             <item>
-    ///                 <description>Otherwise, adjusts lightness by the specified amount in the appropriate direction.</description>
+    ///                 <description>
+    ///                     If the full step would pass the end of the range, a partial step is applied: the color
+    ///                     moves by <c>remaining * dimAmount</c> toward black or white. That still darkens (or washes
+    ///                     out) colors that have room, including mid-grays under a large step such as a transparent
+    ///                     shadow, without flattening two nearby colors onto the same endpoint.
+    ///                 </description>
+    ///             </item>
+    ///             <item>
+    ///                 <description>
+    ///                     If the color is already at the end of the range, it is returned unchanged.
+    ///                     Dimming never moves a color the other way and never substitutes a named gray.
+    ///                 </description>
     ///             </item>
     ///             <item>
     ///                 <description>
     ///                     If the adjustment resulted in a color too close to the original, a larger adjustment is
-    ///                     made.
+    ///                     made, provided that larger step does not land on the end of the range.
     ///                 </description>
     ///             </item>
     ///         </list>
@@ -352,31 +363,50 @@ public readonly partial record struct Color : ISpanParsable<Color>, IUtf8SpanPar
 
         // Determine direction: on dark bg (or null/default), reduce L; on light bg, increase L
         bool shouldDecrease = isDarkBackground ?? true;
+        double remaining = shouldDecrease ? lNorm : 1.0 - lNorm;
 
-        // If the color is already at the extreme for the given direction, return a context-appropriate gray.
-        // Note: ColorHelper's HSL uses L in range 0-100.
-        if (shouldDecrease && hsl.L <= 10)
+        if (remaining <= 0.0)
         {
-            return new Color (ColorName16.DarkGray);
+            return this;
         }
 
-        if (!shouldDecrease && hsl.L >= 90)
-        {
-            return new Color (ColorName16.Gray);
-        }
+        double newL = StepLightness (lNorm, remaining, dimAmount, shouldDecrease);
 
-        double newL = shouldDecrease ? Math.Max (0.0, lNorm - dimAmount) : Math.Min (1.0, lNorm + dimAmount);
-
-        // If the new lightness is too close to the original, force a bigger change
         if (Math.Abs (newL - lNorm) < 0.1)
         {
-            newL = shouldDecrease ? Math.Max (0.0, lNorm - 2 * dimAmount) : Math.Min (1.0, lNorm + 2 * dimAmount);
+            double furtherL = StepLightness (lNorm, remaining, 2 * dimAmount, shouldDecrease);
+
+            // Only take the bigger step if it still leaves the color short of the end of the
+            // range. Landing on 0 or 1 is how two nearby colors become the same color, which
+            // is how text under a shadow disappears.
+            if (furtherL > 0.0 && furtherL < 1.0)
+            {
+                newL = furtherL;
+            }
         }
 
         HSL newHsl = new (hsl.H, hsl.S, (byte)(newL * 100));
         RGB rgb = ColorConverter.HslToRgb (newHsl);
 
         return new Color (rgb.R, rgb.G, rgb.B);
+
+        static double StepLightness (double lightness, double remainingRoom, double amount, bool decrease)
+        {
+            double step = amount;
+
+            if (step >= remainingRoom)
+            {
+                // The full step does not fit. Take a portion of the remaining room proportional
+                // to the requested amount so we still move, but two distinct colors do not both
+                // land on the endpoint.
+                double fraction = Math.Min (Math.Max (amount, 0.0), 1.0);
+                step = remainingRoom * fraction;
+            }
+
+            double result = decrease ? lightness - step : lightness + step;
+
+            return Math.Clamp (result, 0.0, 1.0);
+        }
     }
 
     /// <summary>

@@ -232,7 +232,12 @@ public record Scheme : IEqualityOperators<Scheme, Scheme, bool>
         Color resolvedBg = ResolveNone (baseScheme.Normal.Background, defaultTerminalColors);
         Color resolvedFg = ResolveNone (baseScheme.Normal.Foreground, defaultTerminalColors, true);
         bool isDark = resolvedBg.IsDarkColor ();
-        Color accentBg = isDark ? resolvedBg.GetBrighterColor (0.1, isDark) : resolvedBg.GetDimmerColor (0.1, isDark);
+
+        // Shift the accent away from the base: brighter on a dark background, darker on a
+        // light one. GetBrighterColor takes that direction from isDark. GetDimmerColor on a
+        // light background would wash toward white instead, and previously only looked darker
+        // because its named-gray fallback caught near-white colors.
+        Color accentBg = resolvedBg.GetBrighterColor (0.1, isDark);
 
         // Force opaque
         accentBg = new Color (accentBg.R, accentBg.G, accentBg.B, 255);

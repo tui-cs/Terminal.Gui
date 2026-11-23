@@ -105,6 +105,9 @@ public class SchemeTests
         // Background should be dimmed (darker than original 240)
         Assert.Equal (255, accent.Normal.Background.A);
         Assert.True (accent.Normal.Background.R < 240 || accent.Normal.Background.G < 240 || accent.Normal.Background.B < 240);
+
+        // Grok - 4.6: must not depend on GetDimmerColor's old named-gray fallback (#808080).
+        Assert.NotEqual (new Color (ColorName16.Gray), accent.Normal.Background);
     }
 
     // Copilot

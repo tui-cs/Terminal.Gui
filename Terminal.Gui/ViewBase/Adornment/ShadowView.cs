@@ -181,26 +181,16 @@ internal class ShadowView : View
         {
             return Attribute.Default;
         }
+
         Attribute attr = attribute.Value;
 
-        var newAttribute = new Attribute (ShadowStyle == ShadowStyles.Opaque ? Color.Black : attr.Foreground.GetDimmerColor (),
-                                          ShadowStyle == ShadowStyles.Opaque ? attr.Background : attr.Background.GetDimmerColor (0.9),
-                                          attr.Style);
-
-        // If the BG is DarkGray, GetDimmerColor gave up. Instead of using the attribute in the Driver under the shadow,
-        // use the Normal attribute from the View under the shadow.
-        if (newAttribute.Background != Color.DarkGray)
+        if (ShadowStyle == ShadowStyles.Opaque)
         {
-            return newAttribute;
+            return new Attribute (Color.Black, attr.Background, attr.Style);
         }
-        List<View?> currentViewsUnderMouse = GetViewsUnderLocation (location, ViewportSettingsFlags.Transparent);
-        View? underView = currentViewsUnderMouse.LastOrDefault ();
-        attr = underView?.GetAttributeForRole (VisualRole.Normal) ?? Attribute.Default;
 
-        newAttribute = new Attribute (ShadowStyle == ShadowStyles.Opaque ? Color.Black : attr.Background.GetDimmerColor (),
-                                      ShadowStyle == ShadowStyles.Opaque ? attr.Background : attr.Foreground.GetDimmerColor (0.9),
-                                      attr.Style);
-
-        return newAttribute;
+        return new Attribute (attr.Foreground.GetDimmerColor (),
+                              attr.Background.GetDimmerColor (0.9),
+                              attr.Style);
     }
 }

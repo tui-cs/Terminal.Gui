@@ -120,25 +120,126 @@ public partial class ColorClassTests
     }
 
     [Fact]
-    public void GetDimmerColor_VeryDarkInput_DarkBackground_ReturnsDarkGray ()
+    public void GetDimmerColor_VeryDarkInput_DarkBackground_DoesNotReturnDarkGray ()
     {
+        // Grok - 4.6
         Color veryDark = new (10, 10, 10);
         Color dimmed = veryDark.GetDimmerColor (0.2, true);
 
-        // Very dark color on dark bg should fall back to DarkGray
-        Color darkGray = new (ColorName16.DarkGray);
-        Assert.Equal (darkGray, dimmed);
+        Assert.NotEqual (new Color (ColorName16.DarkGray), dimmed);
+        Assert.True (RelativeLuminance (dimmed) <= RelativeLuminance (veryDark));
     }
 
     [Fact]
-    public void GetDimmerColor_VeryLightInput_LightBackground_ReturnsGray ()
+    public void GetDimmerColor_VeryLightInput_LightBackground_DoesNotReturnGray ()
     {
+        // Grok - 4.6
         Color veryLight = new (240, 240, 240);
         Color dimmed = veryLight.GetDimmerColor (0.2, false);
 
-        // Very light color on light bg should fall back to Gray
-        Color gray = new (ColorName16.Gray);
-        Assert.Equal (gray, dimmed);
+        Assert.NotEqual (new Color (ColorName16.Gray), dimmed);
+        Assert.True (RelativeLuminance (dimmed) >= RelativeLuminance (veryLight));
+    }
+
+    [Fact]
+    public void GetDimmerColor_Black_StaysBlack ()
+    {
+        // Grok - 4.6
+        Color black = new (0, 0, 0);
+        Color dimmed = black.GetDimmerColor (0.2, true);
+
+        Assert.Equal (black, dimmed);
+    }
+
+    [Fact]
+    public void GetDimmerColor_White_OnLightBackground_StaysWhite ()
+    {
+        // Grok - 4.6
+        Color white = new (255, 255, 255);
+        Color dimmed = white.GetDimmerColor (0.2, false);
+
+        Assert.Equal (white, dimmed);
+    }
+
+    [Fact]
+    public void GetDimmerColor_MidGray_ShadowStep_StillDarkens ()
+    {
+        // Grok - 4.6
+        // ShadowView dims the ground with 0.9. A mid-gray has room to go darker; returning
+        // it unchanged (because 0.9 would pass black) is how a transparent shadow stops
+        // darkening its background.
+        Color midGray = new (128, 128, 128);
+        Color dimmed = midGray.GetDimmerColor (0.9, true);
+
+        Assert.True (
+                     RelativeLuminance (dimmed) < RelativeLuminance (midGray),
+                     $"Dimming #{midGray.R:x2}{midGray.G:x2}{midGray.B:x2} by 0.9 returned #{dimmed.R:x2}{dimmed.G:x2}{dimmed.B:x2}");
+    }
+
+    [Fact]
+    public void GetDimmerColor_DarkBackground_KeepsDarkTextOffItsGround ()
+    {
+        // Grok - 4.6
+        Color ground = new (16, 16, 20);
+        Color text = new (47, 47, 54);
+
+        Assert.NotEqual (ground.GetDimmerColor (0.2, true), text.GetDimmerColor (0.2, true));
+        Assert.NotEqual (ground.GetDimmerColor (0.9, true), text.GetDimmerColor (0.9, true));
+    }
+
+    [Theory]
+    [InlineData (0, 0, 0)]
+    [InlineData (16, 16, 20)]
+    [InlineData (26, 26, 26)]
+    [InlineData (47, 47, 54)]
+    [InlineData (128, 128, 128)]
+    [InlineData (150, 150, 150)]
+    [InlineData (255, 255, 255)]
+    [InlineData (10, 20, 40)]
+    public void GetDimmerColor_DarkBackground_NeverBrightens (byte r, byte g, byte b)
+    {
+        // Grok - 4.6
+        Color color = new (r, g, b);
+        Color dimmed = color.GetDimmerColor (0.2, true);
+
+        Assert.True (
+                     RelativeLuminance (dimmed) <= RelativeLuminance (color),
+                     $"Dimming #{color.R:x2}{color.G:x2}{color.B:x2} returned the brighter #{dimmed.R:x2}{dimmed.G:x2}{dimmed.B:x2}");
+    }
+
+    [Theory]
+    [InlineData (255, 255, 255)]
+    [InlineData (240, 240, 240)]
+    [InlineData (128, 128, 128)]
+    [InlineData (100, 100, 100)]
+    [InlineData (0, 0, 0)]
+    [InlineData (10, 20, 40)]
+    public void GetDimmerColor_LightBackground_NeverDarkens (byte r, byte g, byte b)
+    {
+        // Grok - 4.6
+        Color color = new (r, g, b);
+        Color dimmed = color.GetDimmerColor (0.2, false);
+
+        Assert.True (
+                     RelativeLuminance (dimmed) >= RelativeLuminance (color),
+                     $"Dimming #{color.R:x2}{color.G:x2}{color.B:x2} returned the darker #{dimmed.R:x2}{dimmed.G:x2}{dimmed.B:x2}");
+    }
+
+    [Theory]
+    [InlineData (16, 16, 20, 0.9)]
+    [InlineData (128, 128, 128, 0.9)]
+    [InlineData (200, 200, 200, 0.9)]
+    [InlineData (16, 16, 20, 0.2)]
+    [InlineData (47, 47, 54, 0.2)]
+    public void GetDimmerColor_DarkBackground_MakesProgressWhenThereIsRoom (byte r, byte g, byte b, double dimAmount)
+    {
+        // Grok - 4.6
+        Color color = new (r, g, b);
+        Color dimmed = color.GetDimmerColor (dimAmount, true);
+
+        Assert.True (
+                     RelativeLuminance (dimmed) < RelativeLuminance (color),
+                     $"Dimming #{color.R:x2}{color.G:x2}{color.B:x2} by {dimAmount} made no progress: #{dimmed.R:x2}{dimmed.G:x2}{dimmed.B:x2}");
     }
 
     [Fact]
@@ -164,4 +265,6 @@ public partial class ColorClassTests
     }
 
     #endregion
+
+    private static double RelativeLuminance (Color color) => 0.2126 * color.R + 0.7152 * color.G + 0.0722 * color.B;
 }
