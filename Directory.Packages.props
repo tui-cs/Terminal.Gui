@@ -28,7 +28,7 @@
     <PackageVersion Include="xunit.runner.visualstudio" Version="4.0.1" />
     <PackageVersion Include="xunit.v3" Version="4.0.3" />
     <PackageVersion Include="Xunit.Combinatorial" Version="2.1.43" />
-    <PackageVersion Include="System.IO.Abstractions" Version="23.0.1" />
+    <PackageVersion Include="System.IO.Abstractions" Version="23.1.0" />
     <PackageVersion Include="System.CommandLine" Version="3.0.0" />
     <PackageVersion Include="Wcwidth" Version="5.0.2" />
     <PackageVersion Include="Terminal.Gui.Editor" Version="2.5.7" />
