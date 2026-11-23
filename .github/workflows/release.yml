@@ -123,13 +123,13 @@ jobs:
           persist-credentials: false
 
       - name: Install GitVersion
-        uses: gittools/actions/gitversion/setup@v4.7.0
+        uses: gittools/actions/gitversion/setup@v5.0.0
         with:
           versionSpec: '6.x'
 
       - name: Calculate release version
         id: gitversion
-        uses: gittools/actions/gitversion/execute@v4.7.0
+        uses: gittools/actions/gitversion/execute@v5.0.0
         with:
           useConfigFile: true
 
