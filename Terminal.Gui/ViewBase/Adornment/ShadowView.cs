@@ -189,8 +189,12 @@ internal class ShadowView : View
             return new Attribute (Color.Black, attr.Background, attr.Style);
         }
 
-        return new Attribute (attr.Foreground.GetDimmerColor (),
-                              attr.Background.GetDimmerColor (0.9),
-                              attr.Style);
+        // Dim independently, then rescue the foreground so covered text stays
+        // readable at WCAG 4.5:1. GetDimmerColor stays monotonic. Glyphs are
+        // still copied from ScreenContents. Only the attribute is adjusted.
+        Color dimmedBackground = attr.Background.GetDimmerColor (0.9);
+        Color dimmedForeground = attr.Foreground.GetDimmerColor ().EnsureContrastAgainst (dimmedBackground);
+
+        return new Attribute (dimmedForeground, dimmedBackground, attr.Style);
     }
 }

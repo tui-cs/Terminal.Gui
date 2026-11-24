@@ -573,7 +573,7 @@ public class ShadowTests (ITestOutputHelper output)
         output.WriteLine (output1);
 
         DriverAssert.AssertDriverOutputIs ("""
-                                           \x1b[30m\x1b[107m*\x1b[30m\x1b[40m \x1b[97m\x1b[40m \x1b[93m\x1b[40m \x1b[97m\x1b[40m🍎
+                                           \x1b[30m\x1b[107m*\x1b[37m\x1b[40m \x1b[97m\x1b[40m \x1b[93m\x1b[40m \x1b[97m\x1b[40m🍎
                                            """,
                                            output,
                                            app.Driver);
@@ -634,9 +634,13 @@ public class ShadowTests (ITestOutputHelper output)
         Assert.Equal ("B", shadowed.Grapheme);
 
         Attribute shadowedAttr = shadowed.Attribute!.Value;
-        Assert.Equal (dimmedFg, shadowedAttr.Foreground);
         Assert.Equal (dimmedBg, shadowedAttr.Background);
-        Assert.NotEqual (shadowedAttr.Foreground, shadowedAttr.Background);
+        Assert.True (
+                     shadowedAttr.Background.GetRelativeLuminance () <= ground.GetRelativeLuminance (),
+                     $"Shadowed bg #{shadowedAttr.Background.R:x2}{shadowedAttr.Background.G:x2}{shadowedAttr.Background.B:x2} was not darker than #{ground.R:x2}{ground.G:x2}{ground.B:x2}");
+        Assert.True (
+                     shadowedAttr.Foreground.GetContrastRatio (shadowedAttr.Background) >= Color.MinimumReadableContrastRatio,
+                     $"Shadowed #{shadowedAttr.Foreground.R:x2}{shadowedAttr.Foreground.G:x2}{shadowedAttr.Foreground.B:x2} on #{shadowedAttr.Background.R:x2}{shadowedAttr.Background.G:x2}{shadowedAttr.Background.B:x2} contrast {shadowedAttr.Foreground.GetContrastRatio (shadowedAttr.Background):0.00} was under 4.5:1");
 
         Cell unshadowed = contents [0, 0];
         Attribute unshadowedAttr = unshadowed.Attribute!.Value;
@@ -688,6 +692,62 @@ public class ShadowTests (ITestOutputHelper output)
                                            """,
                                            output,
                                            app.Driver);
+    }
+
+    [Theory]
+    [InlineData (240, 240, 240, 26, 26, 26)]
+    [InlineData (128, 128, 128, 240, 240, 240)]
+    [InlineData (16, 16, 20, 180, 180, 190)]
+    [InlineData (16, 16, 20, 47, 47, 54)]
+    public void TransparentShadow_KeepsReadableContrast_OnLightMidAndDark (
+        byte bgR,
+        byte bgG,
+        byte bgB,
+        byte fgR,
+        byte fgG,
+        byte fgB)
+    {
+        // Grok - 4.6
+        Color ground = new (bgR, bgG, bgB);
+        Color text = new (fgR, fgG, fgB);
+        Color dimmedBg = ground.GetDimmerColor (0.9);
+        Color namedDarkGray = new (ColorName16.DarkGray);
+
+        using IApplication app = Application.Create ();
+        app.Init (DriverRegistry.Names.ANSI);
+        app.Driver!.SetScreenSize (2, 1);
+
+        using Runnable superView = new ();
+        superView.CanFocus = false;
+        superView.Width = Dim.Fill ();
+        superView.Height = Dim.Fill ();
+        superView.Text = "AB";
+        superView.TextFormatter.WordWrap = true;
+        superView.SetScheme (new Scheme (new Attribute (text, ground)));
+
+        View viewWithShadow = new () { Width = Dim.Auto (), Height = Dim.Auto (), Text = "*", ShadowStyle = ShadowStyles.Transparent };
+        viewWithShadow.Margin.Thickness = new Thickness (0, 0, 1, 0);
+        viewWithShadow.SetScheme (new Scheme (new Attribute (text, ground)));
+        superView.Add (viewWithShadow);
+
+        app.Begin (superView);
+        app.LayoutAndDraw ();
+        app.Driver.Refresh ();
+
+        Cell [,] contents = app.Driver.Contents!;
+        Cell shadowed = contents [0, 1];
+        Assert.Equal ("B", shadowed.Grapheme);
+
+        Attribute shadowedAttr = shadowed.Attribute!.Value;
+        Assert.Equal (dimmedBg, shadowedAttr.Background);
+        Assert.True (
+                     shadowedAttr.Background.GetRelativeLuminance () < ground.GetRelativeLuminance ()
+                     || ground.GetRelativeLuminance () == 0.0,
+                     $"Shadowed bg #{shadowedAttr.Background.R:x2}{shadowedAttr.Background.G:x2}{shadowedAttr.Background.B:x2} was not darker than #{ground.R:x2}{ground.G:x2}{ground.B:x2}");
+        Assert.True (
+                     shadowedAttr.Foreground.GetContrastRatio (shadowedAttr.Background) >= Color.MinimumReadableContrastRatio,
+                     $"Shadowed #{shadowedAttr.Foreground.R:x2}{shadowedAttr.Foreground.G:x2}{shadowedAttr.Foreground.B:x2} on #{shadowedAttr.Background.R:x2}{shadowedAttr.Background.G:x2}{shadowedAttr.Background.B:x2} contrast {shadowedAttr.Foreground.GetContrastRatio (shadowedAttr.Background):0.00} was under 4.5:1");
+        Assert.NotEqual (namedDarkGray, shadowedAttr.Background);
     }
 
     /// <summary>
