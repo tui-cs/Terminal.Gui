@@ -789,17 +789,20 @@ public class TextValidateField_Regex_Provider_Tests : TestDriverBase
     }
 
     // CoPilot - GPT-5
+    // Codex - GPT-6.1
     [Fact]
-    public void Draw_FocusedCursor_PreservesEditableColors_AndAddsUnderline ()
+    public void Draw_FocusedCursor_UsesActiveAttribute ()
     {
         using IApplication app = Application.Create ();
         app.Init (DriverRegistry.Names.ANSI);
         app.Driver!.SetScreenSize (4, 1);
 
         Attribute editableAttribute = new (Color.BrightGreen, Color.Blue, TextStyle.Bold);
+        Attribute activeAttribute = new (Color.Cyan, Color.Yellow, TextStyle.Italic);
         Scheme scheme = new ()
         {
             Editable = editableAttribute,
+            Active = activeAttribute,
             Focus = new (Color.BrightRed, Color.Magenta)
         };
 
@@ -827,8 +830,7 @@ public class TextValidateField_Regex_Provider_Tests : TestDriverBase
         Attribute cursorAttribute = Assert.IsType<Attribute> (cursorCell.Attribute);
 
         Assert.Equal ("1", cursorCell.Grapheme);
-        Assert.Equal (editableAttribute.Foreground, cursorAttribute.Foreground);
-        Assert.Equal (editableAttribute.Background, cursorAttribute.Background);
-        Assert.Equal (editableAttribute.Style | TextStyle.Underline, cursorAttribute.Style);
+        Assert.Equal (activeAttribute, cursorAttribute);
+        Assert.Equal (editableAttribute, app.Driver.Contents [0, 1].Attribute);
     }
 }

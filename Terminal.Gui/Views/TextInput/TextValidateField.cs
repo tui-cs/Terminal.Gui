@@ -2,6 +2,7 @@ namespace Terminal.Gui.Views;
 
 /// <summary>Masked text editor that validates input through a <see cref="ITextValidateProvider"/>.</summary>
 /// <remarks>
+///     <para>The focused insertion point uses the scheme's <see cref="VisualRole.Active"/> attribute.</para>
 /// <img src="../images/views/TextValidateField.gif" alt="TextValidateField demo"/>
 ///     <para>Default key bindings:</para>
 ///     <list type="table">
@@ -448,7 +449,7 @@ public class TextValidateField : View, IDesignable, IValue<string>
             return true;
         }
 
-        SetAttribute (textColor with { Style = textColor.Style | TextStyle.Underline });
+        SetAttributeForRole (VisualRole.Active);
         Move (InsertionPoint + marginLeft, 0);
         AddRune ((Rune)_provider.DisplayText [InsertionPoint]);
 
