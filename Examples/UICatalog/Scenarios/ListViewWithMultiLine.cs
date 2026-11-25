@@ -17,18 +17,23 @@ public class ListViewWithMultiLine : Scenario
         "Typed columns",
         "String array columns",
         "Empty list",
-        "Headers only"
+        "Headers only",
+        "Column wrap"
     ];
 
     private IApplication? _app;
     private ListView? _listView;
     private TextField? _itemHeightField;
+    private TextField? _headerHeightField;
     private Label? _modeLabel;
     private Label? _headerAlignLabel;
+    private Label? _headerVerticalAlignLabel;
     private Label? _itemHorizontalAlignLabel;
     private Label? _itemVerticalAlignLabel;
+    private CheckBox? _showHeaders;
     private int _mode;
     private bool _updatingHeight;
+    private bool _updatingHeaderHeight;
     private ObservableCollection<Scenario>? _scenarios;
 
     /// <inheritdoc/>
@@ -64,13 +69,13 @@ public class ListViewWithMultiLine : Scenario
         };
         appWindow.Add (_modeLabel);
 
-        CheckBox showHeaders = new ()
+        _showHeaders = new CheckBox
         {
             X = 0,
             Y = Pos.Bottom (nextMode),
             Text = "Show _headers"
         };
-        showHeaders.ValueChanging += (_, e) =>
+        _showHeaders.ValueChanging += (_, e) =>
                                      {
                                          if (_listView is null)
                                          {
@@ -79,12 +84,12 @@ public class ListViewWithMultiLine : Scenario
 
                                          _listView.ShowColumnHeaders = e.NewValue == CheckState.Checked;
                                      };
-        appWindow.Add (showHeaders);
+        appWindow.Add (_showHeaders);
 
         CheckBox showMarks = new ()
         {
-            X = Pos.Right (showHeaders) + 1,
-            Y = Pos.Top (showHeaders),
+            X = Pos.Right (_showHeaders) + 1,
+            Y = Pos.Top (_showHeaders),
             Text = "Show mar_ks"
         };
         showMarks.ValueChanging += (_, e) =>
@@ -166,7 +171,7 @@ public class ListViewWithMultiLine : Scenario
         Label heightLabel = new ()
         {
             X = 0,
-            Y = Pos.Bottom (showHeaders),
+            Y = Pos.Bottom (_showHeaders),
             Text = "Item _height:"
         };
         appWindow.Add (heightLabel);
@@ -181,31 +186,9 @@ public class ListViewWithMultiLine : Scenario
         _itemHeightField.TextChanged += (_, _) => OnItemHeightChanged ();
         appWindow.Add (_itemHeightField);
 
-        Button headerAlign = new ()
-        {
-            X = Pos.Right (_itemHeightField) + 2,
-            Y = Pos.Top (heightLabel),
-            Text = "Header _align"
-        };
-        headerAlign.Accepting += (_, e) =>
-                                 {
-                                     e.Handled = true;
-                                     CycleAlignment (header: true);
-                                 };
-        appWindow.Add (headerAlign);
-
-        _headerAlignLabel = new Label
-        {
-            X = Pos.Right (headerAlign) + 1,
-            Y = Pos.Top (heightLabel),
-            Width = 6,
-            Text = nameof (Alignment.Center)
-        };
-        appWindow.Add (_headerAlignLabel);
-
         Button itemHorizontalAlign = new ()
         {
-            X = Pos.Right (_headerAlignLabel) + 1,
+            X = Pos.Right (_itemHeightField) + 2,
             Y = Pos.Top (heightLabel),
             Text = "Item _H align"
         };
@@ -247,10 +230,72 @@ public class ListViewWithMultiLine : Scenario
         };
         appWindow.Add (_itemVerticalAlignLabel);
 
-        _listView = new ListView
+        Label headerHeightLabel = new ()
         {
             X = 0,
             Y = Pos.Bottom (heightLabel),
+            Text = "Header hei_ght:"
+        };
+        appWindow.Add (headerHeightLabel);
+
+        _headerHeightField = new TextField
+        {
+            X = Pos.Right (headerHeightLabel) + 1,
+            Y = Pos.Top (headerHeightLabel),
+            Width = 4,
+            Text = "1"
+        };
+        _headerHeightField.TextChanged += (_, _) => OnHeaderHeightChanged ();
+        appWindow.Add (_headerHeightField);
+
+        Button headerAlign = new ()
+        {
+            X = Pos.Right (_headerHeightField) + 2,
+            Y = Pos.Top (headerHeightLabel),
+            Text = "Header _H align"
+        };
+        headerAlign.Accepting += (_, e) =>
+                                 {
+                                     e.Handled = true;
+                                     CycleAlignment (header: true);
+                                 };
+        appWindow.Add (headerAlign);
+
+        _headerAlignLabel = new Label
+        {
+            X = Pos.Right (headerAlign) + 1,
+            Y = Pos.Top (headerHeightLabel),
+            Width = 6,
+            Text = nameof (Alignment.Center)
+        };
+        appWindow.Add (_headerAlignLabel);
+
+        Button headerVerticalAlign = new ()
+        {
+            X = Pos.Right (_headerAlignLabel) + 1,
+            Y = Pos.Top (headerHeightLabel),
+            Text = "Header _V align"
+        };
+        headerVerticalAlign.Accepting += (_, e) =>
+                                         {
+                                             e.Handled = true;
+                                             CycleHeaderVerticalAlignment ();
+                                         };
+        appWindow.Add (headerVerticalAlign);
+
+        _headerVerticalAlignLabel = new Label
+        {
+            X = Pos.Right (headerVerticalAlign) + 1,
+            Y = Pos.Top (headerHeightLabel),
+            Width = 6,
+            Text = nameof (Alignment.Start)
+        };
+        appWindow.Add (_headerVerticalAlignLabel);
+
+        _listView = new ListView
+        {
+            X = 0,
+            Y = Pos.Bottom (headerHeightLabel),
             Width = Dim.Fill (),
             Height = Dim.Fill ()
         };
@@ -281,6 +326,7 @@ public class ListViewWithMultiLine : Scenario
                     colLines.Add ($"{scenario.GetName ()}\n{scenario.GetDescription ()}");
                 }
 
+                _showHeaders?.Value = CheckState.UnChecked;
                 _listView.ItemHeight = 2;
                 _listView.ColumnHeaders = null;
                 _listView.SetSource (colLines);
@@ -288,6 +334,7 @@ public class ListViewWithMultiLine : Scenario
                 break;
 
             case 1:
+                _showHeaders?.Value = CheckState.UnChecked;
                 _listView.ItemHeight = 1;
                 _listView.ColumnHeaders = null;
                 _listView.SetSource (_scenarios);
@@ -302,11 +349,12 @@ public class ListViewWithMultiLine : Scenario
                     lines.Add (new ScenarioLine { Name = scenario.GetName (), Description = scenario.GetDescription () });
                 }
 
+                _showHeaders?.Value = CheckState.Checked;
                 _listView.ItemHeight = 2;
                 _listView.ColumnHeaders =
                 [
-                    new ListView.ColumnHeader { HeaderName = "Scenario", MemberName = "Name" },
-                    new ListView.ColumnHeader { MemberName = "Description" }
+                    new ListView.ColumnHeader { HeaderName = "Scenario\nName", MemberName = "Name" },
+                    new ListView.ColumnHeader { HeaderName = "Description\nText", MemberName = "Description" }
                 ];
                 _listView.SetSource (lines);
 
@@ -328,26 +376,27 @@ public class ListViewWithMultiLine : Scenario
                     });
                 }
 
+                _showHeaders?.Value = CheckState.Checked;
                 _listView.ItemHeight = 1;
                 _listView.ColumnHeaders =
                 [
                     new ListView.ColumnHeader { MemberName = "Item" },
-                    new ListView.ColumnHeader { MemberName = "IntValue", MemberType = typeof (int), MemberAlignment = Alignment.End },
+                    new ListView.ColumnHeader { MemberName = "IntValue", MemberType = typeof (int), MemberHorizontalAlignment = Alignment.End },
                     new ListView.ColumnHeader
                     {
-                        MemberName = "FloatValue", MemberType = typeof (float), MemberFormat = "{0:F3}", MemberAlignment = Alignment.End
+                        MemberName = "FloatValue", MemberType = typeof (float), MemberFormat = "{0:F3}", MemberHorizontalAlignment = Alignment.End
                     },
                     new ListView.ColumnHeader
                     {
-                        MemberName = "DoubleValue", MemberType = typeof (double), MemberFormat = "{0:N4}", MemberAlignment = Alignment.End
+                        MemberName = "DoubleValue", MemberType = typeof (double), MemberFormat = "{0:N4}", MemberHorizontalAlignment = Alignment.End
                     },
                     new ListView.ColumnHeader
                     {
-                        MemberName = "DecimalValue", MemberType = typeof (decimal), MemberFormat = "{0:N2}", MemberAlignment = Alignment.End
+                        MemberName = "DecimalValue", MemberType = typeof (decimal), MemberFormat = "{0:N2}", MemberHorizontalAlignment = Alignment.End
                     },
                     new ListView.ColumnHeader
                     {
-                        MemberName = "CurrencyValue", MemberType = typeof (decimal), MemberFormat = "{0:C2}", MemberAlignment = Alignment.End
+                        MemberName = "CurrencyValue", MemberType = typeof (decimal), MemberFormat = "{0:C2}", MemberHorizontalAlignment = Alignment.End
                     }
                 ];
                 _listView.SetSource (numbers);
@@ -364,39 +413,95 @@ public class ListViewWithMultiLine : Scenario
                     index++;
                 }
 
+                _showHeaders?.Value = CheckState.Checked;
                 _listView.ItemHeight = 1;
                 _listView.ColumnHeaders =
                 [
                     new ListView.ColumnHeader
                     {
-                        HeaderName = "Index",
-                        HeaderAlignment = Alignment.Center,
-                        MemberAlignment = Alignment.Center,
+                        HeaderName = "Index\nNo",
+                        HeaderHorizontalAlignment = Alignment.Center,
+                        MemberHorizontalAlignment = Alignment.Center,
                         MemberType = typeof (int),
                         MemberFormat = "{0:00}"
                     },
-                    new ListView.ColumnHeader { HeaderName = "Scenario", HeaderAlignment = Alignment.Center },
-                    new ListView.ColumnHeader { HeaderName = "Description", HeaderAlignment = Alignment.Center }
+                    new ListView.ColumnHeader { HeaderName = "Scenario\nName", HeaderHorizontalAlignment = Alignment.Center },
+                    new ListView.ColumnHeader { HeaderName = "Description\nText", HeaderHorizontalAlignment = Alignment.Center }
                 ];
                 _listView.SetSource (strings);
 
                 break;
 
             case 5:
+                _showHeaders?.Value = CheckState.UnChecked;
                 _listView.ItemHeight = 1;
                 _listView.ColumnHeaders = null;
                 _listView.SetSource<string> (null);
 
                 break;
 
-            default:
+            case 6:
+                _showHeaders?.Value = CheckState.Checked;
                 _listView.ItemHeight = 1;
                 _listView.ColumnHeaders =
                 [
-                    new ListView.ColumnHeader { HeaderName = "Name", HeaderAlignment = Alignment.Center },
-                    new ListView.ColumnHeader { HeaderName = "Description", HeaderAlignment = Alignment.Center }
+                    new ListView.ColumnHeader { HeaderName = "Name\nCol", HeaderHorizontalAlignment = Alignment.Center },
+                    new ListView.ColumnHeader { HeaderName = "Description\nText", HeaderHorizontalAlignment = Alignment.Center }
                 ];
                 _listView.SetSource<string> (null);
+
+                break;
+
+            case 7:
+                ObservableCollection<string []> wrapped = [];
+                int wrappedIndex = 0;
+
+                foreach (Scenario scenario in _scenarios)
+                {
+                    wrapped.Add ([$"{wrappedIndex}", scenario.GetName (), scenario.GetDescription ()]);
+                    wrappedIndex++;
+                }
+
+                // Width is narrower than HeaderName, and Height is 2, so each title wraps.
+                _listView.ItemHeight = 2;
+                _showHeaders?.Value = CheckState.Checked;
+                _listView.ColumnHeaders =
+                [
+                    new ListView.ColumnHeader
+                    {
+                        HeaderName = "Index number",
+                        Width = 6,
+                        Height = 2,
+                        HeaderHorizontalAlignment = Alignment.Center,
+                        MemberHorizontalAlignment = Alignment.Center,
+                        MemberType = typeof (int),
+                        MemberFormat = "{0:00}"
+                    },
+                    new ListView.ColumnHeader
+                    {
+                        HeaderName = "Scenario name",
+                        Width = 10,
+                        Height = 2,
+                        HeaderHorizontalAlignment = Alignment.Start
+                    },
+                    new ListView.ColumnHeader
+                    {
+                        HeaderName = "Long description text",
+                        Width = 16,
+                        Height = 2,
+                        HeaderHorizontalAlignment = Alignment.Start
+                    }
+                ];
+                _listView.SetSource (wrapped);
+
+                if (_headerHeightField is not null)
+                {
+                    _updatingHeaderHeight = true;
+                    _headerHeightField.Text = "2";
+                    _updatingHeaderHeight = false;
+                }
+
+                _showHeaders?.Value = CheckState.Checked;
 
                 break;
         }
@@ -404,8 +509,26 @@ public class ListViewWithMultiLine : Scenario
         _updatingHeight = true;
         _itemHeightField.Text = _listView.ItemHeight.ToString ();
         _updatingHeight = false;
+        ApplyHeaderHeightFromField ();
         AdoptColumnAlignment ();
         ShowAlignment ();
+    }
+
+    private void ApplyHeaderHeightFromField ()
+    {
+        if (_listView is null || _headerHeightField is null || !int.TryParse (_headerHeightField.Text, out int height))
+        {
+            return;
+        }
+
+        try
+        {
+            ApplyHeaderHeight (height);
+        }
+        catch (ArgumentOutOfRangeException)
+        {
+            // OnHeaderHeightChanged reports a height typed while the scenario is running.
+        }
     }
 
     private void AdoptColumnAlignment ()
@@ -415,8 +538,10 @@ public class ListViewWithMultiLine : Scenario
             return;
         }
 
-        _listView.HeadersAlignment = headers [0].HeaderAlignment;
-        _listView.ItemsHorizontalAlignment = headers [0].MemberAlignment;
+        _listView.HeadersAlignment = headers [0].HeaderHorizontalAlignment;
+        _listView.HeadersVerticalAlignment = headers [0].HeaderVerticalAlignment;
+        _listView.ItemsHorizontalAlignment = headers [0].MemberHorizontalAlignment;
+        _listView.ItemsVerticalAlignment = headers [0].MemberVerticalAlignment;
     }
 
     private void CycleAlignment (bool header)
@@ -448,11 +573,11 @@ public class ListViewWithMultiLine : Scenario
         {
             if (header)
             {
-                columnHeader.HeaderAlignment = _listView.HeadersAlignment;
+                columnHeader.HeaderHorizontalAlignment = _listView.HeadersAlignment;
             }
             else
             {
-                columnHeader.MemberAlignment = _listView.ItemsHorizontalAlignment;
+                columnHeader.MemberHorizontalAlignment = _listView.ItemsHorizontalAlignment;
             }
         }
 
@@ -467,7 +592,63 @@ public class ListViewWithMultiLine : Scenario
         }
 
         _listView.ItemsVerticalAlignment = Next (_listView.ItemsVerticalAlignment);
+        ApplyMemberVerticalAlignment ();
         ShowAlignment ();
+    }
+
+    private void CycleHeaderVerticalAlignment ()
+    {
+        if (_listView is null)
+        {
+            return;
+        }
+
+        _listView.HeadersVerticalAlignment = Next (_listView.HeadersVerticalAlignment);
+        ApplyHeaderVerticalAlignment ();
+        ShowAlignment ();
+    }
+
+    private void ApplyMemberVerticalAlignment ()
+    {
+        if (_listView is null)
+        {
+            return;
+        }
+
+        if (_listView.ColumnHeaders is not { } headers)
+        {
+            _listView.SetNeedsDraw ();
+
+            return;
+        }
+
+        foreach (ListView.ColumnHeader columnHeader in headers)
+        {
+            columnHeader.MemberVerticalAlignment = _listView.ItemsVerticalAlignment;
+        }
+
+        _listView.SetNeedsDraw ();
+    }
+
+    private void ApplyHeaderVerticalAlignment ()
+    {
+        if (_listView is null)
+        {
+            return;
+        }
+
+        if (_listView.ColumnHeaders is not { } headers)
+        {
+            _listView.SetNeedsDraw ();
+
+            return;
+        }
+
+        foreach (ListView.ColumnHeader columnHeader in headers)
+        {
+            columnHeader.HeaderVerticalAlignment = _listView.HeadersVerticalAlignment;
+        }
+
         _listView.SetNeedsDraw ();
     }
 
@@ -483,8 +664,8 @@ public class ListViewWithMultiLine : Scenario
             _headerAlignLabel.Text = _listView.HeadersAlignment.ToString ();
         }
 
+        _headerVerticalAlignLabel?.Text = _listView.HeadersVerticalAlignment.ToString ();
         _itemHorizontalAlignLabel?.Text = _listView.ItemsHorizontalAlignment.ToString ();
-
         _itemVerticalAlignLabel?.Text = _listView.ItemsVerticalAlignment.ToString ();
     }
 
@@ -519,6 +700,56 @@ public class ListViewWithMultiLine : Scenario
             _itemHeightField.Text = _listView.ItemHeight.ToString ();
             _updatingHeight = false;
         }
+    }
+
+    private void OnHeaderHeightChanged ()
+    {
+        if (_updatingHeaderHeight || _listView is null || _headerHeightField is null || _app is null)
+        {
+            return;
+        }
+
+        if (!int.TryParse (_headerHeightField.Text, out int height))
+        {
+            return;
+        }
+
+        try
+        {
+            ApplyHeaderHeight (height);
+        }
+        catch (ArgumentOutOfRangeException ex)
+        {
+            MessageBox.ErrorQuery (_app, "Error", ex.Message, "Ok");
+            _updatingHeaderHeight = true;
+            _headerHeightField.Text = CurrentHeaderHeight ().ToString ();
+            _updatingHeaderHeight = false;
+        }
+    }
+
+    private void ApplyHeaderHeight (int height)
+    {
+        if (_listView?.ColumnHeaders is not { Count: > 0 } headers)
+        {
+            ArgumentOutOfRangeException.ThrowIfLessThan (height, 1);
+
+            return;
+        }
+
+        foreach (ListView.ColumnHeader columnHeader in headers)
+        {
+            columnHeader.Height = height;
+        }
+    }
+
+    private int CurrentHeaderHeight ()
+    {
+        if (_listView?.ColumnHeaders is { Count: > 0 } headers)
+        {
+            return headers [0].Height;
+        }
+
+        return 1;
     }
 
     private void OnRowRender (object? sender, ListViewRowEventArgs e)

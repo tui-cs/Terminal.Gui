@@ -48,7 +48,10 @@ namespace Terminal.Gui.Views;
 ///         A line break inside a column stays in that column. Columns stay side by side.
 ///         A list or array item places element <c>i</c> in column <c>i</c>.
 ///         Set <see cref="ColumnHeaders"/> to name those columns, including properties of arbitrary item types.
-///         <see cref="ShowColumnHeaders"/> pins a header row above the items.
+///         <see cref="ShowColumnHeaders"/> pins a header band above the items. <see cref="ColumnHeader.Height"/> sets
+///         how many rows that column's header uses, and the band is as tall as the tallest header. A line break in a
+///         header starts another row of that header. A line wider than the column wraps when that header is taller
+///         than one row. <see cref="ColumnHeader.HeaderVerticalAlignment"/> places those lines inside the header.
 ///     </para>
 ///     <para>Default key bindings:</para>
 ///     <list type="table">
@@ -123,6 +126,11 @@ public partial class ListView : View, IDesignable, IValue<int?>
     /// <inheritdoc/>
     protected override void Dispose (bool disposing)
     {
+        if (disposing)
+        {
+            DetachColumnHeaders ();
+        }
+
         Source?.Dispose ();
         base.Dispose (disposing);
     }
@@ -417,12 +425,26 @@ public partial class ListView : View, IDesignable, IValue<int?>
         }
     } = 2;
 
-    /// <summary>Gets or sets the header alignment used when a <see cref="ColumnHeader"/> does not set one.</summary>
+    /// <summary>
+    ///     Gets or sets the horizontal header alignment used when a <see cref="ColumnHeader"/> is not set.
+    /// </summary>
     public Alignment HeadersAlignment { get; set; } = Alignment.Start;
 
     /// <summary>
-    ///     Gets or sets the horizontal cell alignment used when a <see cref="ColumnHeader"/> does not set one.
+    ///     Gets or sets how header lines are placed when a <see cref="ColumnHeader"/> is not set.
     /// </summary>
+    /// <remarks>
+    ///     Placement matches <see cref="ItemsVerticalAlignment"/>. A header band with no <see cref="ColumnHeaders"/> is
+    ///     one row tall and shows <c>Col0</c>.
+    /// </remarks>
+    public Alignment HeadersVerticalAlignment { get; set; } = Alignment.Start;
+
+    /// <summary>
+    ///     Gets or sets the horizontal cell alignment used when a <see cref="ColumnHeader"/> is not set.
+    /// </summary>
+    /// <remarks>
+    ///     When a <see cref="ColumnHeader"/> is set, <see cref="ColumnHeader.MemberHorizontalAlignment"/> is used instead.
+    /// </remarks>
     public Alignment ItemsHorizontalAlignment { get; set; } = Alignment.Start;
 
     /// <summary>Gets or sets how a cell's lines are placed inside <see cref="ItemHeight"/>.</summary>
@@ -434,7 +456,10 @@ public partial class ListView : View, IDesignable, IValue<int?>
     ///         <see cref="Alignment.Fill"/> spreads the lines across the item and leaves the extra rows between them.
     ///         A single line stays at the top. Any remainder after an even split is placed in the later gaps.
     ///     </para>
-    ///     <para>The alignment applies when <see cref="ItemHeight"/> is greater than one. Each column uses its own lines.</para>
+    ///     <para>
+    ///         The alignment applies when <see cref="ItemHeight"/> is greater than one. Each column uses its own lines.
+    ///         When a <see cref="ColumnHeader"/> is set, <see cref="ColumnHeader.MemberVerticalAlignment"/> is used instead.
+    ///     </para>
     /// </remarks>
     public Alignment ItemsVerticalAlignment { get; set; } = Alignment.Start;
 
@@ -448,9 +473,71 @@ public partial class ListView : View, IDesignable, IValue<int?>
         get;
         set
         {
+            DetachColumnHeaders ();
             field = value;
+            AttachColumnHeaders ();
+            UpdateContentSize ();
             SetNeedsDraw ();
         }
+    }
+
+    /// <summary>Rows occupied by the pinned header band. Zero when headers are hidden.</summary>
+    internal int HeaderRowCount
+    {
+        get
+        {
+            if (!ShowColumnHeaders)
+            {
+                return 0;
+            }
+
+            if (ColumnHeaders is not { Count: > 0 } headers)
+            {
+                return 1;
+            }
+
+            int height = 1;
+
+            foreach (ColumnHeader header in headers)
+            {
+                height = Math.Max (height, header.Height);
+            }
+
+            return height;
+        }
+    }
+
+    private void AttachColumnHeaders ()
+    {
+        if (ColumnHeaders is not { } headers)
+        {
+            return;
+        }
+
+        foreach (ColumnHeader header in headers)
+        {
+            header.HeightChanged += OnColumnHeaderHeightChanged;
+        }
+    }
+
+    private void DetachColumnHeaders ()
+    {
+        if (ColumnHeaders is not { } headers)
+        {
+            return;
+        }
+
+        foreach (ColumnHeader header in headers)
+        {
+            header.HeightChanged -= OnColumnHeaderHeightChanged;
+        }
+    }
+
+    private void OnColumnHeaderHeightChanged (object? sender, EventArgs args)
+    {
+        UpdateContentSize ();
+        EnsureSelectedItemVisible ();
+        SetNeedsDraw ();
     }
 
     #endregion Item height and columns
@@ -474,7 +561,7 @@ public partial class ListView : View, IDesignable, IValue<int?>
     {
         get
         {
-            int rows = Math.Max (0, Viewport.Height - (ShowColumnHeaders ? 1 : 0));
+            int rows = Math.Max (0, Viewport.Height - HeaderRowCount);
 
             if (ItemHeight <= 1)
             {

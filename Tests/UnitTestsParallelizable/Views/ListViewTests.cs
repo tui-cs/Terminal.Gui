@@ -3623,16 +3623,16 @@ Five ",
                 {
                     HeaderName = "Scenario",
                     MemberName = "Left",
-                    HeaderAlignment = Alignment.Start,
-                    MemberAlignment = Alignment.Start,
+                    HeaderHorizontalAlignment = Alignment.Start,
+                    MemberHorizontalAlignment = Alignment.Start,
                     Width = 8
                 },
                 new ListView.ColumnHeader
                 {
                     HeaderName = "Description",
                     MemberName = "Right",
-                    HeaderAlignment = Alignment.Start,
-                    MemberAlignment = Alignment.Start,
+                    HeaderHorizontalAlignment = Alignment.Start,
+                    MemberHorizontalAlignment = Alignment.Start,
                     Width = 11
                 }
             ],
@@ -3712,16 +3712,16 @@ Five ",
                 {
                     HeaderName = "Name",
                     MemberName = "Left",
-                    HeaderAlignment = Alignment.Start,
-                    MemberAlignment = Alignment.Start,
+                    HeaderHorizontalAlignment = Alignment.Start,
+                    MemberHorizontalAlignment = Alignment.Start,
                     Width = 6
                 },
                 new ListView.ColumnHeader
                 {
                     HeaderName = "About",
                     MemberName = "Right",
-                    HeaderAlignment = Alignment.Start,
-                    MemberAlignment = Alignment.Start,
+                    HeaderHorizontalAlignment = Alignment.Start,
+                    MemberHorizontalAlignment = Alignment.Start,
                     Width = 13
                 }
             ],
@@ -3757,15 +3757,15 @@ Five ",
                 {
                     HeaderName = "Scenario",
                     MemberName = "Left",
-                    HeaderAlignment = Alignment.Start,
-                    MemberAlignment = Alignment.Start
+                    HeaderHorizontalAlignment = Alignment.Start,
+                    MemberHorizontalAlignment = Alignment.Start
                 },
                 new ListView.ColumnHeader
                 {
                     HeaderName = "Description",
                     MemberName = "Right",
-                    HeaderAlignment = Alignment.Start,
-                    MemberAlignment = Alignment.Start
+                    HeaderHorizontalAlignment = Alignment.Start,
+                    MemberHorizontalAlignment = Alignment.Start
                 }
             ],
             Source = new ListWrapper<TwoColumnRow> ([new () { Left = "Name", Right = "A sentence has words." }])
@@ -3801,7 +3801,7 @@ Five ",
                     MemberName = "Qty",
                     MemberType = typeof (int),
                     MemberFormat = "{0:00}",
-                    MemberAlignment = Alignment.End
+                    MemberHorizontalAlignment = Alignment.End
                 }
             ],
             Source = new ListWrapper<QuantityRow> (source)
@@ -3826,15 +3826,19 @@ Five ",
         Assert.False (listView.ShowColumnHeaders);
         Assert.Equal (2, listView.ColumnMargin);
         Assert.Equal (Alignment.Start, listView.HeadersAlignment);
+        Assert.Equal (Alignment.Start, listView.HeadersVerticalAlignment);
         Assert.Equal (Alignment.Start, listView.ItemsHorizontalAlignment);
         Assert.Equal (Alignment.Start, listView.ItemsVerticalAlignment);
         Assert.Null (listView.ColumnHeaders);
         Assert.Null (header.HeaderName);
-        Assert.Equal (Alignment.Center, header.HeaderAlignment);
+        Assert.Equal (Alignment.Center, header.HeaderHorizontalAlignment);
+        Assert.Equal (Alignment.Start, header.HeaderVerticalAlignment);
+        Assert.Equal (1, header.Height);
         Assert.Equal (0, header.Width);
         Assert.Null (header.MemberName);
         Assert.Equal (typeof (string), header.MemberType);
-        Assert.Equal (Alignment.Start, header.MemberAlignment);
+        Assert.Equal (Alignment.Start, header.MemberHorizontalAlignment);
+        Assert.Equal (Alignment.Start, header.MemberVerticalAlignment);
         Assert.Null (header.MemberFormat);
     }
 
@@ -3942,7 +3946,7 @@ Five ",
         {
             Width = 12,
             Height = 3,
-            ColumnHeaders = [new ListView.ColumnHeader { HeaderName = "Name", HeaderAlignment = Alignment.Start, MemberName = "Name" }],
+            ColumnHeaders = [new ListView.ColumnHeader { HeaderName = "Name", HeaderHorizontalAlignment = Alignment.Start, MemberName = "Name" }],
             Source = new ListWrapper<QuantityRow> ([new () { Name = "Apples", Qty = 1 }])
         };
 
@@ -3995,8 +3999,8 @@ Five ",
             ColumnMargin = 2,
             ColumnHeaders =
             [
-                new ListView.ColumnHeader { HeaderName = "Name", HeaderAlignment = Alignment.Start },
-                new ListView.ColumnHeader { HeaderName = "Description", HeaderAlignment = Alignment.Start }
+                new ListView.ColumnHeader { HeaderName = "Name", HeaderHorizontalAlignment = Alignment.Start },
+                new ListView.ColumnHeader { HeaderName = "Description", HeaderHorizontalAlignment = Alignment.Start }
             ]
         };
 
@@ -4019,8 +4023,8 @@ Five ",
             ColumnMargin = 2,
             ColumnHeaders =
             [
-                new ListView.ColumnHeader { HeaderName = "Name", HeaderAlignment = Alignment.Center },
-                new ListView.ColumnHeader { HeaderName = "Description", HeaderAlignment = Alignment.Center }
+                new ListView.ColumnHeader { HeaderName = "Name", HeaderHorizontalAlignment = Alignment.Center },
+                new ListView.ColumnHeader { HeaderName = "Description", HeaderHorizontalAlignment = Alignment.Center }
             ],
             Source = new ListWrapper<string []> ([["0", "Scenario"]])
         };
@@ -4076,8 +4080,8 @@ Five ",
                 new ListView.ColumnHeader
                 {
                     HeaderName = "Keep",
-                    HeaderAlignment = Alignment.Start,
-                    MemberAlignment = Alignment.Start,
+                    HeaderHorizontalAlignment = Alignment.Start,
+                    MemberHorizontalAlignment = Alignment.Start,
                     MemberName = "Left",
                     Width = 4
                 },
@@ -4090,8 +4094,8 @@ Five ",
                 new ListView.ColumnHeader
                 {
                     HeaderName = "Tail",
-                    HeaderAlignment = Alignment.Start,
-                    MemberAlignment = Alignment.Start,
+                    HeaderHorizontalAlignment = Alignment.Start,
+                    MemberHorizontalAlignment = Alignment.Start,
                     MemberName = "Right",
                     Width = 4
                 }
@@ -4130,17 +4134,17 @@ Five ",
                 new ListView.ColumnHeader
                 {
                     HeaderName = "Left",
-                    HeaderAlignment = alignment,
+                    HeaderHorizontalAlignment = alignment,
                     MemberName = "Left",
-                    MemberAlignment = alignment,
+                    MemberHorizontalAlignment = alignment,
                     Width = 8
                 },
                 new ListView.ColumnHeader
                 {
                     HeaderName = "Right",
-                    HeaderAlignment = alignment,
+                    HeaderHorizontalAlignment = alignment,
                     MemberName = "Right",
-                    MemberAlignment = alignment,
+                    MemberHorizontalAlignment = alignment,
                     Width = 6
                 }
             ],
@@ -4165,17 +4169,17 @@ Five ",
                 new ListView.ColumnHeader
                 {
                     HeaderName = "Cc",
-                    HeaderAlignment = Alignment.Fill,
+                    HeaderHorizontalAlignment = Alignment.Fill,
                     MemberName = "Left",
-                    MemberAlignment = Alignment.Fill,
+                    MemberHorizontalAlignment = Alignment.Fill,
                     Width = 8
                 },
                 new ListView.ColumnHeader
                 {
                     HeaderName = "Dd",
-                    HeaderAlignment = Alignment.Fill,
+                    HeaderHorizontalAlignment = Alignment.Fill,
                     MemberName = "Right",
-                    MemberAlignment = Alignment.Fill,
+                    MemberHorizontalAlignment = Alignment.Fill,
                     Width = 4
                 }
             ],
@@ -4249,14 +4253,14 @@ Five ",
                 new ListView.ColumnHeader
                 {
                     HeaderName = "Name",
-                    HeaderAlignment = Alignment.Start,
-                    MemberAlignment = Alignment.Start
+                    HeaderHorizontalAlignment = Alignment.Start,
+                    MemberHorizontalAlignment = Alignment.Start
                 },
                 new ListView.ColumnHeader
                 {
                     HeaderName = "Extra",
-                    HeaderAlignment = Alignment.Start,
-                    MemberAlignment = Alignment.Start
+                    HeaderHorizontalAlignment = Alignment.Start,
+                    MemberHorizontalAlignment = Alignment.Start
                 }
             ],
             Source = new ListWrapper<string> (["One\nTwo"])
@@ -4401,8 +4405,8 @@ Five ",
                 new ListView.ColumnHeader
                 {
                     HeaderName = "Index",
-                    HeaderAlignment = Alignment.Start,
-                    MemberAlignment = Alignment.Start,
+                    HeaderHorizontalAlignment = Alignment.Start,
+                    MemberHorizontalAlignment = Alignment.Start,
                     Width = 5,
                     MemberType = typeof (int),
                     MemberFormat = "{0:00}"
@@ -4410,8 +4414,8 @@ Five ",
                 new ListView.ColumnHeader
                 {
                     HeaderName = "Name",
-                    HeaderAlignment = Alignment.Start,
-                    MemberAlignment = Alignment.Start,
+                    HeaderHorizontalAlignment = Alignment.Start,
+                    MemberHorizontalAlignment = Alignment.Start,
                     Width = 5
                 }
             ],
@@ -4444,14 +4448,14 @@ Five ",
                 new ListView.ColumnHeader
                 {
                     HeaderName = "Left",
-                    HeaderAlignment = Alignment.Start,
-                    MemberAlignment = Alignment.Start
+                    HeaderHorizontalAlignment = Alignment.Start,
+                    MemberHorizontalAlignment = Alignment.Start
                 },
                 new ListView.ColumnHeader
                 {
                     HeaderName = "Right",
-                    HeaderAlignment = Alignment.Start,
-                    MemberAlignment = Alignment.Start
+                    HeaderHorizontalAlignment = Alignment.Start,
+                    MemberHorizontalAlignment = Alignment.Start
                 }
             ],
             Source = new ListWrapper<string []> ([["One\nTwo", "Right"]])
@@ -4466,6 +4470,912 @@ Five ",
                       One   Right
                       Two
                       """);
+    }
+
+    // Grok - Grok 4.7
+    [Fact]
+    public void ColumnHeader_Height_Rejects_Values_Below_One ()
+    {
+        ListView.ColumnHeader header = new ();
+
+        Assert.Throws<ArgumentOutOfRangeException> (() => header.Height = 0);
+        Assert.Equal (1, header.Height);
+    }
+
+    // Grok - Grok 4.7
+    [Fact]
+    public void HeaderHeight_One_Shows_Only_The_First_Header_Line ()
+    {
+        ListView listView = new ()
+        {
+            Width = 4,
+            Height = 2,
+            ShowColumnHeaders = true,
+            ColumnHeaders =
+            [
+                new ListView.ColumnHeader
+                {
+                    HeaderName = "Hi\nYo",
+                    HeaderHorizontalAlignment = Alignment.Start
+                }
+            ],
+            Source = new ListWrapper<string> (["Go"])
+        };
+
+        AssertDriver (
+                      listView,
+                      4,
+                      2,
+                      """
+                      Hi
+                      Go
+                      """);
+    }
+
+    // Grok - Grok 4.7
+    [Fact]
+    public void HeaderHeight_Splits_HeaderName_On_Newlines ()
+    {
+        ListView listView = new ()
+        {
+            Width = 4,
+            Height = 3,
+            ShowColumnHeaders = true,
+            ColumnHeaders =
+            [
+                new ListView.ColumnHeader
+                {
+                    HeaderName = "Hi\nYo",
+                    HeaderHorizontalAlignment = Alignment.Start,
+                    Height = 2
+                }
+            ],
+            Source = new ListWrapper<string> (["Go"])
+        };
+
+        AssertDriver (
+                      listView,
+                      4,
+                      3,
+                      """
+                      Hi
+                      Yo
+                      Go
+                      """);
+    }
+
+    // Grok - Grok 4.7
+    [Fact]
+    public void HeaderHeight_Wraps_When_The_Column_Is_Narrower_Than_The_Text ()
+    {
+        ListView listView = new ()
+        {
+            Width = 5,
+            Height = 3,
+            ShowColumnHeaders = true,
+            ColumnHeaders =
+            [
+                new ListView.ColumnHeader
+                {
+                    HeaderName = "Hello World",
+                    HeaderHorizontalAlignment = Alignment.Start,
+                    HeaderVerticalAlignment = Alignment.Start,
+                    Height = 2,
+                    Width = 5
+                }
+            ],
+            Source = new ListWrapper<string> (["Go"])
+        };
+
+        AssertDriver (
+                      listView,
+                      5,
+                      3,
+                      """
+                      Hello
+                      World
+                      Go
+                      """);
+    }
+
+    // Grok - Grok 4.7
+    [Fact]
+    public void HeaderHeight_One_Clips_Instead_Of_Wrapping ()
+    {
+        ListView listView = new ()
+        {
+            Width = 5,
+            Height = 2,
+            ShowColumnHeaders = true,
+            ColumnHeaders =
+            [
+                new ListView.ColumnHeader
+                {
+                    HeaderName = "Hello World",
+                    HeaderHorizontalAlignment = Alignment.Start,
+                    Height = 1,
+                    Width = 5
+                }
+            ],
+            Source = new ListWrapper<string> (["Go"])
+        };
+
+        AssertDriver (
+                      listView,
+                      5,
+                      2,
+                      """
+                      Hello
+                      Go
+                      """);
+    }
+
+    // Grok - Grok 4.7
+    [Fact]
+    public void HeaderHeight_Does_Not_Wrap_When_The_Text_Fits ()
+    {
+        ListView listView = new ()
+        {
+            Width = 5,
+            Height = 3,
+            ShowColumnHeaders = true,
+            ColumnHeaders =
+            [
+                new ListView.ColumnHeader
+                {
+                    HeaderName = "Hello",
+                    HeaderHorizontalAlignment = Alignment.Start,
+                    Height = 2,
+                    Width = 5
+                }
+            ],
+            Source = new ListWrapper<string> (["Go"])
+        };
+
+        AssertDriver (
+                      listView,
+                      5,
+                      3,
+                      """
+                      Hello
+
+                      Go
+                      """);
+    }
+
+    // Grok - Grok 4.7
+    [Fact]
+    public void HeaderHeight_Wraps_A_Word_Wider_Than_The_Column ()
+    {
+        ListView listView = new ()
+        {
+            Width = 5,
+            Height = 3,
+            ShowColumnHeaders = true,
+            ColumnHeaders =
+            [
+                new ListView.ColumnHeader
+                {
+                    HeaderName = "HelloWorld",
+                    HeaderHorizontalAlignment = Alignment.Start,
+                    Height = 2,
+                    Width = 5
+                }
+            ],
+            Source = new ListWrapper<string> (["Go"])
+        };
+
+        AssertDriver (
+                      listView,
+                      5,
+                      3,
+                      """
+                      Hello
+                      World
+                      Go
+                      """);
+    }
+
+    // Grok - Grok 4.7
+    [Fact]
+    public void HeaderHeight_Wraps_A_Line_After_A_Newline ()
+    {
+        ListView listView = new ()
+        {
+            Width = 5,
+            Height = 4,
+            ShowColumnHeaders = true,
+            ColumnHeaders =
+            [
+                new ListView.ColumnHeader
+                {
+                    HeaderName = "Hello World\nYo",
+                    HeaderHorizontalAlignment = Alignment.Start,
+                    Height = 3,
+                    Width = 5
+                }
+            ],
+            Source = new ListWrapper<string> (["Go"])
+        };
+
+        AssertDriver (
+                      listView,
+                      5,
+                      4,
+                      """
+                      Hello
+                      World
+                      Yo
+                      Go
+                      """);
+    }
+
+    // Grok - Grok 4.7
+    [Fact]
+    public void HeaderHeight_Wraps_Inside_Its_Column ()
+    {
+        ListView listView = new ()
+        {
+            Width = 8,
+            Height = 3,
+            ShowColumnHeaders = true,
+            ColumnMargin = 2,
+            ColumnHeaders =
+            [
+                new ListView.ColumnHeader
+                {
+                    HeaderName = "Hello World",
+                    HeaderHorizontalAlignment = Alignment.Start,
+                    Height = 2,
+                    Width = 5
+                },
+                new ListView.ColumnHeader
+                {
+                    HeaderName = "R",
+                    HeaderHorizontalAlignment = Alignment.Start,
+                    Height = 2,
+                    Width = 1
+                }
+            ],
+            Source = new ListWrapper<string []> ([["Go", "Y"]])
+        };
+
+        AssertDriver (
+                      listView,
+                      8,
+                      3,
+                      """
+                      Hello  R
+                      World
+                      Go     Y
+                      """);
+    }
+
+    // Grok - Grok 4.7
+    [Fact]
+    public void HeaderHorizontalAlignment_Applies_To_Each_Wrapped_Line ()
+    {
+        ListView listView = new ()
+        {
+            Width = 8,
+            Height = 3,
+            ShowColumnHeaders = true,
+            ColumnHeaders =
+            [
+                new ListView.ColumnHeader
+                {
+                    HeaderName = "Hello World",
+                    HeaderHorizontalAlignment = Alignment.End,
+                    Height = 2,
+                    Width = 8
+                }
+            ],
+            Source = new ListWrapper<string> (["Go"])
+        };
+
+        AssertDriver (
+                      listView,
+                      8,
+                      3,
+                      """
+                         Hello
+                         World
+                      Go
+                      """);
+    }
+
+    // Grok - Grok 4.7
+    [Fact]
+    public void HeaderHeight_Start_Keeps_The_First_Wrapped_Lines ()
+    {
+        ListView listView = NarrowHeader (Alignment.Start);
+
+        AssertDriver (
+                      listView,
+                      3,
+                      3,
+                      """
+                      One
+                      Two
+                      X
+                      """);
+    }
+
+    // Grok - Grok 4.7
+    [Fact]
+    public void HeaderHeight_End_Clips_Wrapped_Lines_From_The_Top ()
+    {
+        ListView listView = NarrowHeader (Alignment.End);
+
+        AssertDriver (
+                      listView,
+                      3,
+                      3,
+                      """
+                      Thr
+                      ee
+                      X
+                      """);
+    }
+
+    // Grok - Grok 4.7
+    [Fact]
+    public void HeaderVerticalAlignment_End_Places_Wrapped_Lines_At_The_Bottom ()
+    {
+        ListView listView = new ()
+        {
+            Width = 8,
+            Height = 4,
+            ShowColumnHeaders = true,
+            ColumnMargin = 2,
+            ColumnHeaders =
+            [
+                new ListView.ColumnHeader
+                {
+                    HeaderName = "Hello World",
+                    HeaderHorizontalAlignment = Alignment.Start,
+                    HeaderVerticalAlignment = Alignment.End,
+                    Height = 3,
+                    Width = 5
+                },
+                new ListView.ColumnHeader
+                {
+                    HeaderName = "1\n2\n3",
+                    HeaderHorizontalAlignment = Alignment.Start,
+                    HeaderVerticalAlignment = Alignment.Start,
+                    Height = 3,
+                    Width = 1
+                }
+            ],
+            Source = new ListWrapper<string []> ([["X", "Y"]])
+        };
+
+        AssertDriver (
+                      listView,
+                      8,
+                      4,
+                      """
+                             1
+                      Hello  2
+                      World  3
+                      X      Y
+                      """);
+    }
+
+    // Grok - Grok 4.7
+    [Fact]
+    public void HeaderVerticalAlignment_Fill_Spreads_Wrapped_Lines ()
+    {
+        ListView listView = new ()
+        {
+            Width = 3,
+            Height = 5,
+            ShowColumnHeaders = true,
+            ColumnHeaders =
+            [
+                new ListView.ColumnHeader
+                {
+                    HeaderName = "One Two",
+                    HeaderHorizontalAlignment = Alignment.Start,
+                    HeaderVerticalAlignment = Alignment.Fill,
+                    Height = 4,
+                    Width = 3
+                }
+            ],
+            Source = new ListWrapper<string> (["Go"])
+        };
+
+        AssertDriver (
+                      listView,
+                      3,
+                      5,
+                      """
+                      One
+
+
+                      Two
+                      Go
+                      """);
+    }
+
+    // Grok - Grok 4.7
+    [Fact]
+    public void HeaderHeight_Wraps_When_Source_Is_Null ()
+    {
+        ListView listView = new ()
+        {
+            Width = 5,
+            Height = 2,
+            ShowColumnHeaders = true,
+            ColumnHeaders =
+            [
+                new ListView.ColumnHeader
+                {
+                    HeaderName = "Hello World",
+                    HeaderHorizontalAlignment = Alignment.Start,
+                    Height = 2,
+                    Width = 5
+                }
+            ]
+        };
+
+        AssertDriver (
+                      listView,
+                      5,
+                      2,
+                      """
+                      Hello
+                      World
+                      """);
+    }
+
+    // Grok - Grok 4.7
+    [Fact]
+    public void HeaderHorizontalAlignment_Applies_To_Each_Split_Line ()
+    {
+        ListView listView = new ()
+        {
+            Width = 4,
+            Height = 3,
+            ShowColumnHeaders = true,
+            ColumnHeaders =
+            [
+                new ListView.ColumnHeader
+                {
+                    HeaderName = "Hi\nYo",
+                    HeaderHorizontalAlignment = Alignment.End,
+                    Height = 2,
+                    Width = 4
+                }
+            ],
+            Source = new ListWrapper<string> (["Go"])
+        };
+
+        AssertDriver (
+                      listView,
+                      4,
+                      3,
+                      """
+                        Hi
+                        Yo
+                      Go
+                      """);
+    }
+
+    // Grok - Grok 4.7
+    [Fact]
+    public void HeaderVerticalAlignment_End_Clips_Lines_That_Do_Not_Fit_From_The_Top ()
+    {
+        ListView listView = new ()
+        {
+            Width = 1,
+            Height = 3,
+            ShowColumnHeaders = true,
+            ColumnHeaders =
+            [
+                new ListView.ColumnHeader
+                {
+                    HeaderName = "A\nB\nC\nD",
+                    HeaderHorizontalAlignment = Alignment.Start,
+                    HeaderVerticalAlignment = Alignment.End,
+                    Height = 2,
+                    Width = 1
+                }
+            ],
+            Source = new ListWrapper<string> (["X"])
+        };
+
+        AssertDriver (
+                      listView,
+                      1,
+                      3,
+                      """
+                      C
+                      D
+                      X
+                      """);
+    }
+
+    // Grok - Grok 4.7
+    [Fact]
+    public void HeaderVerticalAlignment_Center_Keeps_The_First_Lines_When_They_Do_Not_Fit ()
+    {
+        ListView listView = new ()
+        {
+            Width = 1,
+            Height = 3,
+            ShowColumnHeaders = true,
+            ColumnHeaders =
+            [
+                new ListView.ColumnHeader
+                {
+                    HeaderName = "A\nB\nC\nD",
+                    HeaderHorizontalAlignment = Alignment.Start,
+                    HeaderVerticalAlignment = Alignment.Center,
+                    Height = 2,
+                    Width = 1
+                }
+            ],
+            Source = new ListWrapper<string> (["X"])
+        };
+
+        AssertDriver (
+                      listView,
+                      1,
+                      3,
+                      """
+                      A
+                      B
+                      X
+                      """);
+    }
+
+    // Grok - Grok 4.7
+    [Fact]
+    public void HeaderVerticalAlignment_Places_Lines_Inside_The_Column_Height ()
+    {
+        ListView listView = HeaderBand (
+                                         leftHeader: "A\nB",
+                                         leftHeight: 3,
+                                         leftVertical: Alignment.End,
+                                         rightHeader: "1\n2\n3",
+                                         rightHeight: 3,
+                                         rightVertical: Alignment.Start,
+                                         leftItem: "X",
+                                         rightItem: "Y");
+
+        AssertDriver (
+                      listView,
+                      4,
+                      4,
+                      """
+                         1
+                      A  2
+                      B  3
+                      X  Y
+                      """);
+    }
+
+    // Grok - Grok 4.7
+    [Fact]
+    public void HeaderVerticalAlignment_Center_Keeps_A_Single_Line_In_The_Middle ()
+    {
+        ListView listView = HeaderBand (
+                                         leftHeader: "A",
+                                         leftHeight: 3,
+                                         leftVertical: Alignment.Center,
+                                         rightHeader: "1\n2\n3",
+                                         rightHeight: 3,
+                                         rightVertical: Alignment.Start,
+                                         leftItem: "X",
+                                         rightItem: "Y");
+
+        AssertDriver (
+                      listView,
+                      4,
+                      4,
+                      """
+                         1
+                      A  2
+                         3
+                      X  Y
+                      """);
+    }
+
+    // Grok - Grok 4.7
+    [Fact]
+    public void HeaderVerticalAlignment_Fill_Leaves_Extra_Rows_Between_Lines ()
+    {
+        ListView listView = HeaderBand (
+                                         leftHeader: "A\nB",
+                                         leftHeight: 3,
+                                         leftVertical: Alignment.Fill,
+                                         rightHeader: "1\n2\n3",
+                                         rightHeight: 3,
+                                         rightVertical: Alignment.Start,
+                                         leftItem: "X",
+                                         rightItem: "Y");
+
+        AssertDriver (
+                      listView,
+                      4,
+                      4,
+                      """
+                      A  1
+                         2
+                      B  3
+                      X  Y
+                      """);
+    }
+
+    // Grok - Grok 4.7
+    [Fact]
+    public void HeaderHeight_Leaves_Rows_Below_A_Shorter_Column_Blank ()
+    {
+        ListView listView = HeaderBand (
+                                         leftHeader: "A\nB",
+                                         leftHeight: 1,
+                                         leftVertical: Alignment.Start,
+                                         rightHeader: "1\n2\n3",
+                                         rightHeight: 3,
+                                         rightVertical: Alignment.Start,
+                                         leftItem: "X",
+                                         rightItem: "Y");
+
+        AssertDriver (
+                      listView,
+                      4,
+                      4,
+                      """
+                      A  1
+                         2
+                         3
+                      X  Y
+                      """);
+    }
+
+    // Grok - Grok 4.7
+    [Fact]
+    public void ShowColumnHeaders_Draws_Split_Headers_When_Source_Is_Null ()
+    {
+        ListView listView = new ()
+        {
+            Width = 4,
+            Height = 2,
+            ShowColumnHeaders = true,
+            ColumnHeaders =
+            [
+                new ListView.ColumnHeader
+                {
+                    HeaderName = "Hi\nYo",
+                    HeaderHorizontalAlignment = Alignment.Start,
+                    Height = 2
+                }
+            ]
+        };
+
+        AssertDriver (
+                      listView,
+                      4,
+                      2,
+                      """
+                      Hi
+                      Yo
+                      """);
+    }
+
+    // Grok - Grok 4.7
+    [Fact]
+    public void MemberVerticalAlignment_Overrides_The_List_Alignment ()
+    {
+        ListView listView = new ()
+        {
+            Width = 4,
+            Height = 4,
+            ShowColumnHeaders = true,
+            ItemHeight = 3,
+            ColumnMargin = 2,
+            ItemsVerticalAlignment = Alignment.End,
+            ColumnHeaders =
+            [
+                new ListView.ColumnHeader
+                {
+                    HeaderName = "L",
+                    HeaderHorizontalAlignment = Alignment.Start,
+                    MemberHorizontalAlignment = Alignment.Start,
+                    MemberName = nameof (TwoColumnRow.Left),
+                    Width = 1
+                },
+                new ListView.ColumnHeader
+                {
+                    HeaderName = "R",
+                    HeaderHorizontalAlignment = Alignment.Start,
+                    MemberHorizontalAlignment = Alignment.Start,
+                    MemberName = nameof (TwoColumnRow.Right),
+                    Width = 1
+                }
+            ],
+            Source = new ListWrapper<TwoColumnRow> ([new () { Left = "A", Right = "1\n2\n3" }])
+        };
+
+        AssertDriver (
+                      listView,
+                      4,
+                      4,
+                      """
+                      L  R
+                      A  1
+                         2
+                         3
+                      """);
+    }
+
+    // Grok - Grok 4.7
+    [Fact]
+    public void MemberVerticalAlignment_Places_One_Column ()
+    {
+        ListView listView = new ()
+        {
+            Width = 4,
+            Height = 4,
+            ShowColumnHeaders = true,
+            ItemHeight = 3,
+            ColumnMargin = 2,
+            ItemsVerticalAlignment = Alignment.Start,
+            ColumnHeaders =
+            [
+                new ListView.ColumnHeader
+                {
+                    HeaderName = "L",
+                    HeaderHorizontalAlignment = Alignment.Start,
+                    MemberHorizontalAlignment = Alignment.Start,
+                    MemberVerticalAlignment = Alignment.End,
+                    MemberName = nameof (TwoColumnRow.Left),
+                    Width = 1
+                },
+                new ListView.ColumnHeader
+                {
+                    HeaderName = "R",
+                    HeaderHorizontalAlignment = Alignment.Start,
+                    MemberHorizontalAlignment = Alignment.Start,
+                    MemberName = nameof (TwoColumnRow.Right),
+                    Width = 1
+                }
+            ],
+            Source = new ListWrapper<TwoColumnRow> ([new () { Left = "A", Right = "1\n2\n3" }])
+        };
+
+        AssertDriver (
+                      listView,
+                      4,
+                      4,
+                      """
+                      L  R
+                         1
+                         2
+                      A  3
+                      """);
+    }
+
+    // Grok - Grok 4.7
+    [Fact]
+    public void MemberHorizontalAlignment_Overrides_The_List_Alignment ()
+    {
+        ListView listView = new ()
+        {
+            Width = 4,
+            Height = 2,
+            ShowColumnHeaders = true,
+            ColumnMargin = 0,
+            ItemsHorizontalAlignment = Alignment.End,
+            ColumnHeaders =
+            [
+                new ListView.ColumnHeader
+                {
+                    HeaderName = "L",
+                    HeaderHorizontalAlignment = Alignment.Start,
+                    MemberHorizontalAlignment = Alignment.Start,
+                    MemberName = nameof (TwoColumnRow.Left),
+                    Width = 3
+                },
+                new ListView.ColumnHeader
+                {
+                    HeaderName = "R",
+                    HeaderHorizontalAlignment = Alignment.Start,
+                    MemberHorizontalAlignment = Alignment.Start,
+                    MemberName = nameof (TwoColumnRow.Right),
+                    Width = 1
+                }
+            ],
+            Source = new ListWrapper<TwoColumnRow> ([new () { Left = "A", Right = "B" }])
+        };
+
+        AssertDriver (
+                      listView,
+                      4,
+                      2,
+                      """
+                      L  R
+                      A  B
+                      """);
+    }
+
+    // Grok - Grok 4.7
+    [Fact]
+    public void HeaderHeight_Shrinks_The_Visible_Items ()
+    {
+        ListView listView = new ()
+        {
+            Width = 10,
+            Height = 6,
+            Source = new ListWrapper<string> (["a", "b", "c", "d", "e", "f", "g"])
+        };
+        UseList (listView, 10, 6, _ =>
+        {
+            listView.ColumnHeaders = [new ListView.ColumnHeader { HeaderName = "Item", Height = 2 }];
+            listView.ShowColumnHeaders = true;
+            Assert.Equal (4, listView.VisibleItems);
+            Assert.Equal (9, listView.GetContentSize ().Height);
+
+            listView.ColumnHeaders [0].Height = 3;
+            Assert.Equal (3, listView.VisibleItems);
+            Assert.Equal (10, listView.GetContentSize ().Height);
+
+            listView.ItemHeight = 2;
+            Assert.Equal (1, listView.VisibleItems);
+        });
+    }
+
+    // Grok - Grok 4.7
+    [Fact]
+    public void MovePageDown_Skips_A_Tall_Header ()
+    {
+        ObservableCollection<string> source = [];
+
+        for (int i = 0; i < 10; i++)
+        {
+            source.Add ($"Item{i}");
+        }
+
+        ListView listView = new ()
+        {
+            Width = 10,
+            Height = 6,
+            ShowColumnHeaders = true,
+            ColumnHeaders = [new ListView.ColumnHeader { HeaderName = "Item", Height = 2 }],
+            Source = new ListWrapper<string> (source)
+        };
+        UseList (listView, 10, 6, _ =>
+        {
+            Assert.True (listView.MovePageDown ());
+            Assert.Equal (4, listView.SelectedItem);
+        });
+    }
+
+    // Grok - Grok 4.7
+    [Fact]
+    public void Mouse_Click_Skips_A_Tall_Header ()
+    {
+        ListView listView = new ()
+        {
+            Width = 10,
+            Height = 6,
+            ShowColumnHeaders = true,
+            ColumnHeaders = [new ListView.ColumnHeader { HeaderName = "A\nB", Height = 2 }],
+            Source = new ListWrapper<string> (["One", "Two", "Three"])
+        };
+        UseList (listView, 10, 6, app =>
+        {
+            app.Mouse.RaiseMouseEvent (new Mouse { ScreenPosition = new Point (0, 0), Flags = MouseFlags.LeftButtonClicked });
+            app.Mouse.RaiseMouseEvent (new Mouse { ScreenPosition = new Point (0, 1), Flags = MouseFlags.LeftButtonClicked });
+            Assert.Null (listView.SelectedItem);
+
+            app.Mouse.RaiseMouseEvent (new Mouse { ScreenPosition = new Point (0, 2), Flags = MouseFlags.LeftButtonClicked });
+            Assert.Equal (0, listView.SelectedItem);
+
+            app.Mouse.RaiseMouseEvent (new Mouse { ScreenPosition = new Point (0, 3), Flags = MouseFlags.LeftButtonClicked });
+            Assert.Equal (1, listView.SelectedItem);
+        });
     }
 
     private void AssertDriver (ListView listView, int width, int height, string expected)
@@ -4512,22 +5422,22 @@ Five ",
                 {
                     HeaderName = ab,
                     MemberName = nameof (MarginCells.AB),
-                    HeaderAlignment = Alignment.Start,
-                    MemberAlignment = Alignment.Start
+                    HeaderHorizontalAlignment = Alignment.Start,
+                    MemberHorizontalAlignment = Alignment.Start
                 },
                 new ListView.ColumnHeader
                 {
                     HeaderName = cde,
                     MemberName = nameof (MarginCells.CDE),
-                    HeaderAlignment = Alignment.Start,
-                    MemberAlignment = Alignment.Start
+                    HeaderHorizontalAlignment = Alignment.Start,
+                    MemberHorizontalAlignment = Alignment.Start
                 },
                 new ListView.ColumnHeader
                 {
                     HeaderName = f,
                     MemberName = nameof (MarginCells.F),
-                    HeaderAlignment = Alignment.Start,
-                    MemberAlignment = Alignment.Start
+                    HeaderHorizontalAlignment = Alignment.Start,
+                    MemberHorizontalAlignment = Alignment.Start
                 }
             ],
             Source = new ListWrapper<MarginCells> ([new () { AB = ab, CDE = cde, F = f }])
@@ -4549,21 +5459,89 @@ Five ",
                 new ListView.ColumnHeader
                 {
                     HeaderName = "L",
-                    HeaderAlignment = Alignment.Start,
-                    MemberAlignment = Alignment.Start,
+                    HeaderHorizontalAlignment = Alignment.Start,
+                    MemberHorizontalAlignment = Alignment.Start,
+                    MemberVerticalAlignment = alignment,
                     MemberName = nameof (TwoColumnRow.Left),
                     Width = 1
                 },
                 new ListView.ColumnHeader
                 {
                     HeaderName = "R",
-                    HeaderAlignment = Alignment.Start,
-                    MemberAlignment = Alignment.Start,
+                    HeaderHorizontalAlignment = Alignment.Start,
+                    MemberHorizontalAlignment = Alignment.Start,
+                    MemberVerticalAlignment = alignment,
                     MemberName = nameof (TwoColumnRow.Right),
                     Width = 1
                 }
             ],
             Source = new ListWrapper<TwoColumnRow> ([new () { Left = left, Right = right }])
+        };
+    }
+
+    private static ListView NarrowHeader (Alignment vertical)
+    {
+        return new ListView
+        {
+            Width = 3,
+            Height = 3,
+            ShowColumnHeaders = true,
+            ColumnHeaders =
+            [
+                new ListView.ColumnHeader
+                {
+                    HeaderName = "One Two Three",
+                    HeaderHorizontalAlignment = Alignment.Start,
+                    HeaderVerticalAlignment = vertical,
+                    Height = 2,
+                    Width = 3
+                }
+            ],
+            Source = new ListWrapper<string> (["X"])
+        };
+    }
+
+    private static ListView HeaderBand (
+        string leftHeader,
+        int leftHeight,
+        Alignment leftVertical,
+        string rightHeader,
+        int rightHeight,
+        Alignment rightVertical,
+        string leftItem,
+        string rightItem
+    )
+    {
+        return new ListView
+        {
+            Width = 4,
+            Height = 4,
+            ShowColumnHeaders = true,
+            ColumnMargin = 2,
+            ColumnHeaders =
+            [
+                new ListView.ColumnHeader
+                {
+                    HeaderName = leftHeader,
+                    HeaderHorizontalAlignment = Alignment.Start,
+                    HeaderVerticalAlignment = leftVertical,
+                    Height = leftHeight,
+                    MemberHorizontalAlignment = Alignment.Start,
+                    MemberName = nameof (TwoColumnRow.Left),
+                    Width = 1
+                },
+                new ListView.ColumnHeader
+                {
+                    HeaderName = rightHeader,
+                    HeaderHorizontalAlignment = Alignment.Start,
+                    HeaderVerticalAlignment = rightVertical,
+                    Height = rightHeight,
+                    MemberHorizontalAlignment = Alignment.Start,
+                    MemberName = nameof (TwoColumnRow.Right),
+                    Width = 1
+                }
+            ],
+            Source = new ListWrapper<TwoColumnRow> ([new () { Left = leftItem, Right = rightItem }])
         };
     }
 
@@ -4582,15 +5560,15 @@ Five ",
                 {
                     HeaderName = "Left",
                     MemberName = nameof (TwoColumnRow.Left),
-                    HeaderAlignment = Alignment.Start,
-                    MemberAlignment = Alignment.Start
+                    HeaderHorizontalAlignment = Alignment.Start,
+                    MemberHorizontalAlignment = Alignment.Start
                 },
                 new ListView.ColumnHeader
                 {
                     HeaderName = "Right",
                     MemberName = nameof (TwoColumnRow.Right),
-                    HeaderAlignment = Alignment.Start,
-                    MemberAlignment = Alignment.Start
+                    HeaderHorizontalAlignment = Alignment.Start,
+                    MemberHorizontalAlignment = Alignment.Start
                 }
             ],
             Source = new ListWrapper<TwoColumnRow> ([new () { Left = "One\nTwo", Right = "Right" }])

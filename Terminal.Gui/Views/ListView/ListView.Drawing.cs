@@ -28,7 +28,7 @@ public partial class ListView
         if (ShowColumnHeaders && Viewport.Height > 0)
         {
             current = DrawColumnHeader (current);
-            row = 1;
+            row = HeaderRowCount;
         }
 
         if (Source is null)
@@ -204,12 +204,16 @@ public partial class ListView
             current = headerAttribute;
         }
 
-        Move (0, 0);
+        int band = HeaderRowCount;
 
         if (ShowMarks)
         {
-            AddRune ((Rune)' ');
-            AddRune ((Rune)' ');
+            for (int r = 0; r < band && r < Viewport.Height; r++)
+            {
+                Move (0, r);
+                AddRune ((Rune)' ');
+                AddRune ((Rune)' ');
+            }
         }
 
         int contentCol = MarkWidth;
@@ -233,15 +237,25 @@ public partial class ListView
     /// </summary>
     private void WriteDetachedHeader (int col, int width, int viewportX)
     {
-        string text = FormatDetachedHeader (width);
-        Move (Math.Max (col - viewportX, 0), 0);
-        WriteHeaderText (text, width, viewportX);
+        int band = HeaderRowCount;
+
+        for (int r = 0; r < band && r < Viewport.Height; r++)
+        {
+            string text = FormatDetachedHeader (width, r);
+            Move (Math.Max (col - viewportX, 0), r);
+            WriteHeaderText (text, width, viewportX);
+        }
     }
 
-    private string FormatDetachedHeader (int width)
+    private string FormatDetachedHeader (int width, int row)
     {
         if (ColumnHeaders is not { Count: > 0 } headers)
         {
+            if (row > 0)
+            {
+                return string.Empty;
+            }
+
             return AlignHeaderText ("Col0", Math.Max (width, 0), HeadersAlignment);
         }
 
@@ -263,7 +277,7 @@ public partial class ListView
                 continue;
             }
 
-            int contentWidth = DetachedHeaderTitle (header, c).GetColumns ();
+            int contentWidth = TextFormatter.GetWidestLineLength (DetachedHeaderTitle (header, c));
             int columnWidth;
             int remaining = Math.Max (0, width - used);
 
@@ -317,7 +331,13 @@ public partial class ListView
 
             int gap = c < columnCount - 1 ? margin : 0;
             int contentWidth = Math.Max (0, widths [c] - gap);
-            rowText += AlignHeaderText (DetachedHeaderTitle (headers [c], c), contentWidth, headers [c].HeaderAlignment);
+            string line = ListWrapper<string>.HeaderTextLine (
+                                                               DetachedHeaderTitle (headers [c], c),
+                                                               row,
+                                                               Math.Max (1, headers [c].Height),
+                                                               contentWidth,
+                                                               headers [c].HeaderVerticalAlignment);
+            rowText += AlignHeaderText (line, contentWidth, headers [c].HeaderHorizontalAlignment);
 
             if (gap > 0)
             {

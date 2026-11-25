@@ -360,11 +360,11 @@ public class ListWrapper<T> : IListDataSource, IListViewLayout
             int contentWidth = Math.Max (0, columnWidth - gap);
             ListView.ColumnHeader? columnHeader = HeaderAt (listView, c);
             string text = header
-                              ? HeaderTitle (columnHeader, c)
+                              ? HeaderLine (listView, columnHeader, c, row, contentWidth)
                               : CellText (listView, value, c, row, contentWidth);
             Alignment alignment = header
-                                      ? columnHeader?.HeaderAlignment ?? listView.HeadersAlignment
-                                      : columnHeader?.MemberAlignment ?? listView.ItemsHorizontalAlignment;
+                                      ? columnHeader?.HeaderHorizontalAlignment ?? listView.HeadersAlignment
+                                      : columnHeader?.MemberHorizontalAlignment ?? listView.ItemsHorizontalAlignment;
             builder.Append (Align (text, contentWidth, alignment));
 
             if (gap > 0)
@@ -406,6 +406,58 @@ public class ListWrapper<T> : IListDataSource, IListViewLayout
         }
 
         List<string> lines = WrapLines (text, width);
+        int index = ContentLineIndex (lines.Count, height, row, verticalAlignment);
+
+        if (index < 0 || index >= lines.Count)
+        {
+            return string.Empty;
+        }
+
+        return lines [index];
+    }
+
+    /// <summary>
+    ///     One header row. A height greater than one wraps a line that is wider than <paramref name="width"/>. A height of
+    ///     one keeps the first line.
+    /// </summary>
+    internal static string HeaderTextLine (string? text, int row, int height, int width, Alignment verticalAlignment)
+    {
+        if (height > 1 && width > 0)
+        {
+            return AlignedWrappedLine (text, width, row, height, verticalAlignment);
+        }
+
+        return PlainLine (text, row, height, verticalAlignment);
+    }
+
+    /// <summary>
+    ///     One hard-broken row of <paramref name="text"/> after <paramref name="verticalAlignment"/>. Newlines split the
+    ///     text. A height of one keeps the first line.
+    /// </summary>
+    internal static string PlainLine (string? text, int row, int height, Alignment verticalAlignment)
+    {
+        if (row < 0 || height <= 0)
+        {
+            return string.Empty;
+        }
+
+        List<string> lines = TextFormatter.SplitNewLine (text ?? string.Empty);
+
+        if (lines.Count == 0)
+        {
+            return string.Empty;
+        }
+
+        if (height <= 1)
+        {
+            if (row > 0)
+            {
+                return string.Empty;
+            }
+
+            return lines [0];
+        }
+
         int index = ContentLineIndex (lines.Count, height, row, verticalAlignment);
 
         if (index < 0 || index >= lines.Count)
@@ -526,7 +578,11 @@ public class ListWrapper<T> : IListDataSource, IListViewLayout
     {
         if (listView.ItemHeight > 1 && TryGetColumnText (listView, value, column, out string columnText))
         {
-            return AlignedWrappedLine (columnText, width, line, listView.ItemHeight, listView.ItemsVerticalAlignment);
+            Alignment vertical = HeaderAt (listView, column) is { } header
+                                     ? header.MemberVerticalAlignment
+                                     : listView.ItemsVerticalAlignment;
+
+            return AlignedWrappedLine (columnText, width, line, listView.ItemHeight, vertical);
         }
 
         return CellLine (listView, value, column, line);
@@ -698,6 +754,18 @@ public class ListWrapper<T> : IListDataSource, IListViewLayout
         return $"Col{index}";
     }
 
+    /// <summary>
+    ///     Header text for one row inside <see cref="ListView.ColumnHeader.Height"/>. A line wider than
+    ///     <paramref name="width"/> wraps when the header is taller than one row. Later rows of a taller band are blank.
+    /// </summary>
+    private static string HeaderLine (ListView listView, ListView.ColumnHeader? columnHeader, int column, int row, int width)
+    {
+        int height = Math.Max (1, columnHeader?.Height ?? 1);
+        Alignment vertical = columnHeader?.HeaderVerticalAlignment ?? listView.HeadersVerticalAlignment;
+
+        return HeaderTextLine (HeaderTitle (columnHeader, column), row, height, width, vertical);
+    }
+
     private void MeasureColumns (ListView listView, int width)
     {
         int height = Math.Max (1, listView.ItemHeight);
@@ -774,7 +842,7 @@ public class ListWrapper<T> : IListDataSource, IListViewLayout
 
         if (header is not null)
         {
-            max = HeaderTitle (header, column).GetColumns ();
+            max = TextFormatter.GetWidestLineLength (HeaderTitle (header, column));
         }
 
         if (_source is null)
@@ -800,11 +868,23 @@ public class ListWrapper<T> : IListDataSource, IListViewLayout
             MeasureColumns (container, Math.Max (width, 0));
         }
 
-        string text = container.ColumnHeaders is not { Count: > 0 }
-                          ? Align ("Col0", Math.Max (width, 0), container.HeadersAlignment)
-                          : BuildRowText (container, null, 0, true, width);
-        container.Move (Math.Max (col - viewportX, 0), line);
-        RenderString (container, text, width, viewportX);
+        int band = container.HeaderRowCount;
+
+        for (int r = 0; r < band; r++)
+        {
+            if (line + r >= container.Viewport.Height)
+            {
+                break;
+            }
+
+            string text = container.ColumnHeaders is not { Count: > 0 }
+                              ? r == 0
+                                    ? Align ("Col0", Math.Max (width, 0), container.HeadersAlignment)
+                                    : string.Empty
+                              : BuildRowText (container, null, r, true, width);
+            container.Move (Math.Max (col - viewportX, 0), line + r);
+            RenderString (container, text, width, viewportX);
+        }
     }
 
     private void RenderMultiLine (ListView container, int item, int col, int line, int width, int viewportX)

@@ -119,16 +119,14 @@ public partial class ListView
         // Handle mouse clicks
         Point position = mouse.Position!.Value;
         int row = position.Y;
+        int headerRows = HeaderRowCount;
 
-        if (ShowColumnHeaders)
+        if (row < headerRows)
         {
-            if (row <= 0)
-            {
-                return;
-            }
-
-            row--;
+            return;
         }
+
+        row -= headerRows;
 
         int index = Viewport.Y + row / Math.Max (ItemHeight, 1);
 
