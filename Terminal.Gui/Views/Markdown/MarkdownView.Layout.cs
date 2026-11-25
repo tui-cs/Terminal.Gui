@@ -236,9 +236,7 @@ public partial class Markdown
             //
             // We pass !isDark to GetDimmerColor so the bg shifts *away* from the
             // body background: dark themes get a slightly lighter code block bg,
-            // light themes get a slightly darker one. Passing isDark (the intuitive
-            // direction) caused light-theme code blocks to wash out to medium gray
-            // because white (L≥90) hit the fallback in GetDimmerColor.
+            // light themes get a slightly darker one.
             //
             // We compute the color directly rather than using Scheme/VisualRole.Code
             // because scheme resolution depends on view tree init state, but this
