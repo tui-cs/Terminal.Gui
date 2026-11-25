@@ -196,7 +196,7 @@ public partial class ListView
 
     private Attribute DrawColumnHeader (Attribute current)
     {
-        Attribute headerAttribute = GetAttributeForRole (VisualRole.HotActive);
+        Attribute headerAttribute = GetAttributeForRole (VisualRole.ReadOnly);
 
         if (headerAttribute != current)
         {
