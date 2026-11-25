@@ -44,7 +44,8 @@ namespace Terminal.Gui.Views;
 ///     <para>
 ///         By default each item is one row tall. Set <see cref="ItemHeight"/> to a larger value to give every item
 ///         that many rows. Without column headers, each newline starts a new row, and a line wider than the width
-///         wraps onto the following rows. A line break inside a column stays in that column. Columns stay side by side.
+///         wraps onto the following rows. <see cref="ItemsVerticalAlignment"/> places those lines inside the item.
+///         A line break inside a column stays in that column. Columns stay side by side.
 ///         A list or array item places element <c>i</c> in column <c>i</c>.
 ///         Set <see cref="ColumnHeaders"/> to name those columns, including properties of arbitrary item types.
 ///         <see cref="ShowColumnHeaders"/> pins a header row above the items.
@@ -423,6 +424,19 @@ public partial class ListView : View, IDesignable, IValue<int?>
     ///     Gets or sets the horizontal cell alignment used when a <see cref="ColumnHeader"/> does not set one.
     /// </summary>
     public Alignment ItemsHorizontalAlignment { get; set; } = Alignment.Start;
+
+    /// <summary>Gets or sets how a cell's lines are placed inside <see cref="ItemHeight"/>.</summary>
+    /// <remarks>
+    ///     <para>
+    ///         <see cref="Alignment.Start"/> keeps the first line at the top.
+    ///         <see cref="Alignment.End"/> keeps the last line at the bottom and clips lines that do not fit from the top.
+    ///         <see cref="Alignment.Center"/> centers the lines, and keeps the first lines when they do not fit.
+    ///         <see cref="Alignment.Fill"/> spreads the lines across the item and leaves the extra rows between them.
+    ///         A single line stays at the top. Any remainder after an even split is placed in the later gaps.
+    ///     </para>
+    ///     <para>The alignment applies when <see cref="ItemHeight"/> is greater than one. Each column uses its own lines.</para>
+    /// </remarks>
+    public Alignment ItemsVerticalAlignment { get; set; } = Alignment.Start;
 
     /// <summary>
     ///     Gets or sets the columns used to render items. A list or array item places element <c>i</c> in column

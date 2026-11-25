@@ -3827,6 +3827,7 @@ Five ",
         Assert.Equal (2, listView.ColumnMargin);
         Assert.Equal (Alignment.Start, listView.HeadersAlignment);
         Assert.Equal (Alignment.Start, listView.ItemsHorizontalAlignment);
+        Assert.Equal (Alignment.Start, listView.ItemsVerticalAlignment);
         Assert.Null (listView.ColumnHeaders);
         Assert.Null (header.HeaderName);
         Assert.Equal (Alignment.Center, header.HeaderAlignment);
@@ -4273,6 +4274,118 @@ Five ",
     }
 
     // Grok - Grok 4.7
+    [Theory]
+    [InlineData (Alignment.Start, "L  R\nA  1\n   2\n   3")]
+    [InlineData (Alignment.End, "L  R\n   1\n   2\nA  3")]
+    [InlineData (Alignment.Center, "L  R\n   1\nA  2\n   3")]
+    public void ItemsVerticalAlignment_Places_A_Short_Column (Alignment alignment, string expected)
+    {
+        ListView listView = VerticalPair (alignment, itemHeight: 3, left: "A", right: "1\n2\n3");
+
+        AssertDriver (listView, 4, 4, expected);
+    }
+
+    // Grok - Grok 4.7
+    [Fact]
+    public void ItemsVerticalAlignment_End_Clips_Lines_That_Do_Not_Fit_From_The_Top ()
+    {
+        ListView listView = VerticalPair (Alignment.End, itemHeight: 3, left: "A\nB\nC\nD", right: "1\n2\n3");
+
+        AssertDriver (
+                      listView,
+                      4,
+                      4,
+                      """
+                      L  R
+                      B  1
+                      C  2
+                      D  3
+                      """);
+    }
+
+    // Grok - Grok 4.7
+    [Fact]
+    public void ItemsVerticalAlignment_Center_Keeps_The_First_Lines_When_They_Do_Not_Fit ()
+    {
+        ListView listView = VerticalPair (Alignment.Center, itemHeight: 3, left: "A\nB\nC\nD", right: "1\n2\n3");
+
+        AssertDriver (
+                      listView,
+                      4,
+                      4,
+                      """
+                      L  R
+                      A  1
+                      B  2
+                      C  3
+                      """);
+    }
+
+    // Grok - Grok 4.7
+    [Fact]
+    public void ItemsVerticalAlignment_Fill_Leaves_Extra_Rows_Between_Lines ()
+    {
+        ListView listView = VerticalPair (Alignment.Fill, itemHeight: 3, left: "A\nB", right: "1\n2\n3");
+
+        AssertDriver (
+                      listView,
+                      4,
+                      4,
+                      """
+                      L  R
+                      A  1
+                         2
+                      B  3
+                      """);
+    }
+
+    // Grok - Grok 4.7
+    [Fact]
+    public void ItemsVerticalAlignment_Fill_Puts_The_Remainder_In_The_Later_Gap ()
+    {
+        ListView listView = VerticalPair (Alignment.Fill, itemHeight: 6, left: "A\nB\nC", right: "1\n2\n3\n4\n5\n6");
+
+        AssertDriver (
+                      listView,
+                      4,
+                      7,
+                      """
+                      L  R
+                      A  1
+                         2
+                      B  3
+                         4
+                         5
+                      C  6
+                      """);
+    }
+
+    // Grok - Grok 4.7
+    [Fact]
+    public void ItemsVerticalAlignment_Fill_Spreads_A_Single_Column ()
+    {
+        ListView listView = new ()
+        {
+            Width = 4,
+            Height = 4,
+            ItemHeight = 4,
+            ItemsVerticalAlignment = Alignment.Fill,
+            Source = new ListWrapper<string> (["A\nB"])
+        };
+
+        AssertDriver (
+                      listView,
+                      4,
+                      4,
+                      """
+                      A
+
+
+                      B
+                      """);
+    }
+
+    // Grok - Grok 4.7
     [Fact]
     public void String_Array_Places_Each_Element_In_Its_Column ()
     {
@@ -4418,6 +4531,39 @@ Five ",
                 }
             ],
             Source = new ListWrapper<MarginCells> ([new () { AB = ab, CDE = cde, F = f }])
+        };
+    }
+
+    private static ListView VerticalPair (Alignment alignment, int itemHeight, string left, string right)
+    {
+        return new ListView
+        {
+            Width = 4,
+            Height = itemHeight + 1,
+            ShowColumnHeaders = true,
+            ItemHeight = itemHeight,
+            ColumnMargin = 2,
+            ItemsVerticalAlignment = alignment,
+            ColumnHeaders =
+            [
+                new ListView.ColumnHeader
+                {
+                    HeaderName = "L",
+                    HeaderAlignment = Alignment.Start,
+                    MemberAlignment = Alignment.Start,
+                    MemberName = nameof (TwoColumnRow.Left),
+                    Width = 1
+                },
+                new ListView.ColumnHeader
+                {
+                    HeaderName = "R",
+                    HeaderAlignment = Alignment.Start,
+                    MemberAlignment = Alignment.Start,
+                    MemberName = nameof (TwoColumnRow.Right),
+                    Width = 1
+                }
+            ],
+            Source = new ListWrapper<TwoColumnRow> ([new () { Left = left, Right = right }])
         };
     }
 

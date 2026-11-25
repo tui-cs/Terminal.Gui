@@ -339,7 +339,10 @@ public class ListWrapper<T> : IListDataSource, IListViewLayout
 
             // Newlines start a new row. A line wider than the column wraps onto the rows that remain.
 
-            return Align (WrappedLine (text, width, row), width, listView.ItemsHorizontalAlignment);
+            return Align (
+                          AlignedWrappedLine (text, width, row, listView.ItemHeight, listView.ItemsVerticalAlignment),
+                          width,
+                          listView.ItemsHorizontalAlignment);
         }
 
         StringBuilder builder = new ();
@@ -392,16 +395,29 @@ public class ListWrapper<T> : IListDataSource, IListViewLayout
     }
 
     /// <summary>
-    ///     One wrapped row of <paramref name="text"/>. Newlines stay hard breaks. A line wider than
-    ///     <paramref name="width"/> continues on the following rows.
+    ///     One wrapped row of <paramref name="text"/> after <paramref name="verticalAlignment"/>. Newlines stay hard
+    ///     breaks. A line wider than <paramref name="width"/> continues on the following rows.
     /// </summary>
-    private static string WrappedLine (string? text, int width, int line)
+    private static string AlignedWrappedLine (string? text, int width, int row, int height, Alignment verticalAlignment)
     {
-        if (width <= 0 || line < 0)
+        if (width <= 0 || row < 0 || height <= 0)
         {
             return string.Empty;
         }
 
+        List<string> lines = WrapLines (text, width);
+        int index = ContentLineIndex (lines.Count, height, row, verticalAlignment);
+
+        if (index < 0 || index >= lines.Count)
+        {
+            return string.Empty;
+        }
+
+        return lines [index];
+    }
+
+    private static List<string> WrapLines (string? text, int width)
+    {
         text ??= string.Empty;
         List<string> lines = [];
 
@@ -417,12 +433,89 @@ public class ListWrapper<T> : IListDataSource, IListViewLayout
             lines.AddRange (TextFormatter.Format (paragraph, width, justify: false, wordWrap: true));
         }
 
-        if (line >= lines.Count)
+        return lines;
+    }
+
+    /// <summary>Maps a row inside an item to a content line, or -1 when that row is padding.</summary>
+    private static int ContentLineIndex (int lineCount, int height, int row, Alignment alignment)
+    {
+        if (row < 0 || row >= height || lineCount <= 0)
         {
-            return string.Empty;
+            return -1;
         }
 
-        return lines [line];
+        if (alignment == Alignment.End)
+        {
+            int index = row - (height - lineCount);
+
+            if (index < 0 || index >= lineCount)
+            {
+                return -1;
+            }
+
+            return index;
+        }
+
+        if (alignment == Alignment.Center && lineCount <= height)
+        {
+            int index = row - ((height - lineCount) / 2);
+
+            if (index < 0 || index >= lineCount)
+            {
+                return -1;
+            }
+
+            return index;
+        }
+
+        if (alignment == Alignment.Fill && lineCount > 1 && lineCount <= height)
+        {
+            return FilledLineIndex (lineCount, height, row);
+        }
+
+        if (row >= lineCount)
+        {
+            return -1;
+        }
+
+        return row;
+    }
+
+    /// <summary>
+    ///     Spreads <paramref name="lineCount"/> lines across <paramref name="height"/> rows. Extra rows sit between the
+    ///     lines, and any remainder goes to the later gaps.
+    /// </summary>
+    private static int FilledLineIndex (int lineCount, int height, int row)
+    {
+        int extra = height - lineCount;
+        int gaps = lineCount - 1;
+        int baseGap = extra / gaps;
+        int remainder = extra % gaps;
+        int cursor = 0;
+
+        for (int i = 0; i < lineCount; i++)
+        {
+            if (cursor == row)
+            {
+                return i;
+            }
+
+            if (i == lineCount - 1)
+            {
+                break;
+            }
+
+            int gap = baseGap;
+
+            if (i >= gaps - remainder)
+            {
+                gap++;
+            }
+
+            cursor += 1 + gap;
+        }
+
+        return -1;
     }
 
     /// <summary>
@@ -433,7 +526,7 @@ public class ListWrapper<T> : IListDataSource, IListViewLayout
     {
         if (listView.ItemHeight > 1 && TryGetColumnText (listView, value, column, out string columnText))
         {
-            return WrappedLine (columnText, width, line);
+            return AlignedWrappedLine (columnText, width, line, listView.ItemHeight, listView.ItemsVerticalAlignment);
         }
 
         return CellLine (listView, value, column, line);

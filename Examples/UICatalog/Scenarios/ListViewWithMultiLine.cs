@@ -25,7 +25,8 @@ public class ListViewWithMultiLine : Scenario
     private TextField? _itemHeightField;
     private Label? _modeLabel;
     private Label? _headerAlignLabel;
-    private Label? _itemAlignLabel;
+    private Label? _itemHorizontalAlignLabel;
+    private Label? _itemVerticalAlignLabel;
     private int _mode;
     private bool _updatingHeight;
     private ObservableCollection<Scenario>? _scenarios;
@@ -202,27 +203,49 @@ public class ListViewWithMultiLine : Scenario
         };
         appWindow.Add (_headerAlignLabel);
 
-        Button itemAlign = new ()
+        Button itemHorizontalAlign = new ()
         {
             X = Pos.Right (_headerAlignLabel) + 1,
             Y = Pos.Top (heightLabel),
-            Text = "Item a_lign"
+            Text = "Item _H align"
         };
-        itemAlign.Accepting += (_, e) =>
-                               {
-                                   e.Handled = true;
-                                   CycleAlignment (header: false);
-                               };
-        appWindow.Add (itemAlign);
+        itemHorizontalAlign.Accepting += (_, e) =>
+                                         {
+                                             e.Handled = true;
+                                             CycleAlignment (header: false);
+                                         };
+        appWindow.Add (itemHorizontalAlign);
 
-        _itemAlignLabel = new Label
+        _itemHorizontalAlignLabel = new Label
         {
-            X = Pos.Right (itemAlign) + 1,
+            X = Pos.Right (itemHorizontalAlign) + 1,
             Y = Pos.Top (heightLabel),
             Width = 6,
             Text = nameof (Alignment.Start)
         };
-        appWindow.Add (_itemAlignLabel);
+        appWindow.Add (_itemHorizontalAlignLabel);
+
+        Button itemVerticalAlign = new ()
+        {
+            X = Pos.Right (_itemHorizontalAlignLabel) + 1,
+            Y = Pos.Top (heightLabel),
+            Text = "Item _V align"
+        };
+        itemVerticalAlign.Accepting += (_, e) =>
+                                       {
+                                           e.Handled = true;
+                                           CycleVerticalAlignment ();
+                                       };
+        appWindow.Add (itemVerticalAlign);
+
+        _itemVerticalAlignLabel = new Label
+        {
+            X = Pos.Right (itemVerticalAlign) + 1,
+            Y = Pos.Top (heightLabel),
+            Width = 6,
+            Text = nameof (Alignment.Start)
+        };
+        appWindow.Add (_itemVerticalAlignLabel);
 
         _listView = new ListView
         {
@@ -436,6 +459,18 @@ public class ListViewWithMultiLine : Scenario
         _listView.SetNeedsDraw ();
     }
 
+    private void CycleVerticalAlignment ()
+    {
+        if (_listView is null)
+        {
+            return;
+        }
+
+        _listView.ItemsVerticalAlignment = Next (_listView.ItemsVerticalAlignment);
+        ShowAlignment ();
+        _listView.SetNeedsDraw ();
+    }
+
     private void ShowAlignment ()
     {
         if (_listView is null)
@@ -448,10 +483,9 @@ public class ListViewWithMultiLine : Scenario
             _headerAlignLabel.Text = _listView.HeadersAlignment.ToString ();
         }
 
-        if (_itemAlignLabel is not null)
-        {
-            _itemAlignLabel.Text = _listView.ItemsHorizontalAlignment.ToString ();
-        }
+        _itemHorizontalAlignLabel?.Text = _listView.ItemsHorizontalAlignment.ToString ();
+
+        _itemVerticalAlignLabel?.Text = _listView.ItemsVerticalAlignment.ToString ();
     }
 
     private static Alignment Next (Alignment alignment)
