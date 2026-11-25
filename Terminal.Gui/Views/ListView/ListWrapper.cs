@@ -339,7 +339,7 @@ public class ListWrapper<T> : IListDataSource, IListViewLayout
 
             // Newlines start a new row. A line wider than the column wraps onto the rows that remain.
 
-            return Align (WrappedLine (text, width, row), width, listView.ItemsAlignment);
+            return Align (WrappedLine (text, width, row), width, listView.ItemsHorizontalAlignment);
         }
 
         StringBuilder builder = new ();
@@ -361,7 +361,7 @@ public class ListWrapper<T> : IListDataSource, IListViewLayout
                               : CellText (listView, value, c, row, contentWidth);
             Alignment alignment = header
                                       ? columnHeader?.HeaderAlignment ?? listView.HeadersAlignment
-                                      : columnHeader?.MemberAlignment ?? listView.ItemsAlignment;
+                                      : columnHeader?.MemberAlignment ?? listView.ItemsHorizontalAlignment;
             builder.Append (Align (text, contentWidth, alignment));
 
             if (gap > 0)

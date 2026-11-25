@@ -393,7 +393,7 @@ public class ListViewWithMultiLine : Scenario
         }
 
         _listView.HeadersAlignment = headers [0].HeaderAlignment;
-        _listView.ItemsAlignment = headers [0].MemberAlignment;
+        _listView.ItemsHorizontalAlignment = headers [0].MemberAlignment;
     }
 
     private void CycleAlignment (bool header)
@@ -409,7 +409,7 @@ public class ListViewWithMultiLine : Scenario
         }
         else
         {
-            _listView.ItemsAlignment = Next (_listView.ItemsAlignment);
+            _listView.ItemsHorizontalAlignment = Next (_listView.ItemsHorizontalAlignment);
         }
 
         ShowAlignment ();
@@ -429,7 +429,7 @@ public class ListViewWithMultiLine : Scenario
             }
             else
             {
-                columnHeader.MemberAlignment = _listView.ItemsAlignment;
+                columnHeader.MemberAlignment = _listView.ItemsHorizontalAlignment;
             }
         }
 
@@ -450,7 +450,7 @@ public class ListViewWithMultiLine : Scenario
 
         if (_itemAlignLabel is not null)
         {
-            _itemAlignLabel.Text = _listView.ItemsAlignment.ToString ();
+            _itemAlignLabel.Text = _listView.ItemsHorizontalAlignment.ToString ();
         }
     }
 

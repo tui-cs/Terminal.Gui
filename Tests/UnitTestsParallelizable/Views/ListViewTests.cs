@@ -3826,7 +3826,7 @@ Five ",
         Assert.False (listView.ShowColumnHeaders);
         Assert.Equal (2, listView.ColumnMargin);
         Assert.Equal (Alignment.Start, listView.HeadersAlignment);
-        Assert.Equal (Alignment.Start, listView.ItemsAlignment);
+        Assert.Equal (Alignment.Start, listView.ItemsHorizontalAlignment);
         Assert.Null (listView.ColumnHeaders);
         Assert.Null (header.HeaderName);
         Assert.Equal (Alignment.Center, header.HeaderAlignment);
@@ -4123,7 +4123,7 @@ Five ",
             ShowColumnHeaders = true,
             ColumnMargin = 2,
             HeadersAlignment = alignment,
-            ItemsAlignment = alignment,
+            ItemsHorizontalAlignment = alignment,
             ColumnHeaders =
             [
                 new ListView.ColumnHeader

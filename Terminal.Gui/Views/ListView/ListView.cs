@@ -419,8 +419,10 @@ public partial class ListView : View, IDesignable, IValue<int?>
     /// <summary>Gets or sets the header alignment used when a <see cref="ColumnHeader"/> does not set one.</summary>
     public Alignment HeadersAlignment { get; set; } = Alignment.Start;
 
-    /// <summary>Gets or sets the cell alignment used when a <see cref="ColumnHeader"/> does not set one.</summary>
-    public Alignment ItemsAlignment { get; set; } = Alignment.Start;
+    /// <summary>
+    ///     Gets or sets the horizontal cell alignment used when a <see cref="ColumnHeader"/> does not set one.
+    /// </summary>
+    public Alignment ItemsHorizontalAlignment { get; set; } = Alignment.Start;
 
     /// <summary>
     ///     Gets or sets the columns used to render items. A list or array item places element <c>i</c> in column
