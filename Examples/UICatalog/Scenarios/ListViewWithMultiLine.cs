@@ -186,9 +186,26 @@ public class ListViewWithMultiLine : Scenario
         _itemHeightField.TextChanged += (_, _) => OnItemHeightChanged ();
         appWindow.Add (_itemHeightField);
 
+        CheckBox itemAutoHeight = new ()
+        {
+            X = Pos.Right (_itemHeightField) + 1,
+            Y = Pos.Top (heightLabel),
+            Text = "Item _auto height"
+        };
+        itemAutoHeight.ValueChanging += (_, e) =>
+                                        {
+                                            if (_listView is null)
+                                            {
+                                                return;
+                                            }
+
+                                            _listView.ItemAutoHeight = e.NewValue == CheckState.Checked;
+                                        };
+        appWindow.Add (itemAutoHeight);
+
         Button itemHorizontalAlign = new ()
         {
-            X = Pos.Right (_itemHeightField) + 2,
+            X = Pos.Right (itemAutoHeight) + 2,
             Y = Pos.Top (heightLabel),
             Text = "Item _H align"
         };

@@ -43,7 +43,9 @@ namespace Terminal.Gui.Views;
 ///     </para>
 ///     <para>
 ///         By default each item is one row tall. Set <see cref="ItemHeight"/> to a larger value to give every item
-///         that many rows. Without column headers, each newline starts a new row, and a line wider than the width
+///         that many rows. Set <see cref="ItemAutoHeight"/> to size each visible item from its own lines instead.
+///         Each of those items is at least one row, and <see cref="ItemHeight"/> is not used.
+///         Without column headers, each newline starts a new row, and a line wider than the width
 ///         wraps onto the following rows. <see cref="ItemsVerticalAlignment"/> places those lines inside the item.
 ///         A line break inside a column stays in that column. Columns stay side by side.
 ///         A list or array item places element <c>i</c> in column <c>i</c>.
@@ -366,7 +368,8 @@ public partial class ListView : View, IDesignable, IValue<int?>
     #region Item height and columns
 
     /// <summary>
-    ///     Gets or sets how many rows each item occupies. The default is one.
+    ///     Gets or sets how many rows each item occupies when <see cref="ItemAutoHeight"/> is <see langword="false"/>.
+    ///     The default is one.
     /// </summary>
     /// <exception cref="ArgumentOutOfRangeException">The value is less than one.</exception>
     public int ItemHeight
@@ -388,8 +391,39 @@ public partial class ListView : View, IDesignable, IValue<int?>
         }
     } = 1;
 
+    /// <summary>
+    ///     Gets or sets whether each visible item grows to fit its lines. The default is <see langword="false"/>.
+    /// </summary>
+    /// <remarks>
+    ///     <para>
+    ///         When <see langword="false"/>, every item occupies <see cref="ItemHeight"/> rows.
+    ///         When <see langword="true"/>, a visible item is as tall as its wrapped lines and is at least one row.
+    ///         <see cref="ItemHeight"/> does not change that height.
+    ///     </para>
+    ///     <para>
+    ///         Heights are measured for the items in the viewport, and for the trailing page that keeps the last item
+    ///         reachable. The rest of the list is not measured.
+    ///     </para>
+    /// </remarks>
+    public bool ItemAutoHeight
+    {
+        get;
+        set
+        {
+            if (field == value)
+            {
+                return;
+            }
+
+            field = value;
+            UpdateContentSize ();
+            EnsureSelectedItemVisible ();
+            SetNeedsDraw ();
+        }
+    }
+
     /// <summary>Gets the number of items that fit in the viewport.</summary>
-    public int VisibleItems => ItemHeight <= 1 && !ShowColumnHeaders ? Viewport.Height : VisibleItemCount;
+    public int VisibleItems => !ItemAutoHeight && ItemHeight <= 1 && !ShowColumnHeaders ? Viewport.Height : VisibleItemCount;
 
     /// <summary>Gets or sets whether a header row is pinned above the items.</summary>
     public bool ShowColumnHeaders
@@ -563,12 +597,48 @@ public partial class ListView : View, IDesignable, IValue<int?>
         {
             int rows = Math.Max (0, Viewport.Height - HeaderRowCount);
 
-            if (ItemHeight <= 1)
+            if (!ItemAutoHeight)
             {
-                return rows;
+                if (ItemHeight <= 1)
+                {
+                    return rows;
+                }
+
+                return rows / ItemHeight;
             }
 
-            return rows / ItemHeight;
+            int total = Source?.Count ?? 0;
+
+            if (rows == 0 || total == 0)
+            {
+                return 0;
+            }
+
+            PrepareItemHeights ();
+            int index = Math.Max (0, Viewport.Y);
+            int used = 0;
+            int count = 0;
+
+            while (index < total)
+            {
+                int height = RowsForItem (index);
+
+                if (used + height > rows)
+                {
+                    if (count == 0)
+                    {
+                        return 1;
+                    }
+
+                    break;
+                }
+
+                used += height;
+                count++;
+                index++;
+            }
+
+            return count;
         }
     }
 
@@ -580,7 +650,7 @@ public partial class ListView : View, IDesignable, IValue<int?>
     {
         get
         {
-            if (ItemHeight <= 1 && !ShowColumnHeaders)
+            if (!ItemAutoHeight && ItemHeight <= 1 && !ShowColumnHeaders)
             {
                 return Viewport.Height;
             }
@@ -593,12 +663,149 @@ public partial class ListView : View, IDesignable, IValue<int?>
     {
         int count = Source?.Count ?? 0;
 
-        if (count == 0 || (ItemHeight <= 1 && !ShowColumnHeaders))
+        if (!ItemAutoHeight)
         {
-            return count;
+            if (count == 0 || (ItemHeight <= 1 && !ShowColumnHeaders))
+            {
+                return count;
+            }
+
+            return Math.Max (count, count - VisibleItemCount + Viewport.Height);
         }
 
-        return Math.Max (count, count - VisibleItemCount + Viewport.Height);
+        if (count == 0)
+        {
+            return 0;
+        }
+
+        // Viewport.Y is an item index. The trailing page is measured so the last item can sit on screen.
+        return Math.Max (count, LastPageTop () + Math.Max (Viewport.Height, 1));
+    }
+
+    /// <summary>Measures the layout used by per-item heights. Safe to call more than once for the same width.</summary>
+    private void PrepareItemHeights ()
+    {
+        if (Source is not IListViewLayout layout)
+        {
+            return;
+        }
+
+        layout.PrepareRender (this, Math.Max (0, Viewport.Width - MarkWidth));
+    }
+
+    /// <summary>Rows occupied by one item. <see cref="ItemHeight"/> when automatic height is off.</summary>
+    private int RowsForItem (int item)
+    {
+        if (!ItemAutoHeight)
+        {
+            return Math.Max (ItemHeight, 1);
+        }
+
+        if (Source is null || item < 0 || item >= Source.Count)
+        {
+            return 1;
+        }
+
+        if (Source is not IListViewLayout layout)
+        {
+            return Math.Max (ItemHeight, 1);
+        }
+
+        return Math.Max (1, layout.MeasureItemHeight (this, item));
+    }
+
+    /// <summary>Item index at a content row below the header, measured from <see cref="View.Viewport"/>.</summary>
+    private int ItemIndexAtRow (int row)
+    {
+        int index = Math.Max (0, Viewport.Y);
+        int remaining = Math.Max (0, row);
+        int count = Source?.Count ?? 0;
+
+        while (index < count)
+        {
+            int height = RowsForItem (index);
+
+            if (remaining < height)
+            {
+                return index;
+            }
+
+            remaining -= height;
+            index++;
+        }
+
+        return index;
+    }
+
+    /// <summary>First item of the page that still includes the last item.</summary>
+    private int LastPageTop ()
+    {
+        int count = Source?.Count ?? 0;
+        int rows = Math.Max (0, Viewport.Height - HeaderRowCount);
+
+        if (count == 0 || rows <= 0)
+        {
+            return 0;
+        }
+
+        PrepareItemHeights ();
+        int used = 0;
+        int top = count;
+
+        while (top > 0)
+        {
+            int height = RowsForItem (top - 1);
+
+            if (used > 0 && used + height > rows)
+            {
+                break;
+            }
+
+            used += height;
+            top--;
+
+            if (used >= rows)
+            {
+                break;
+            }
+        }
+
+        return top;
+    }
+
+    /// <summary>Scroll origin that keeps <paramref name="item"/> on screen.</summary>
+    private int TopIndexShowing (int item)
+    {
+        int rows = Math.Max (0, Viewport.Height - HeaderRowCount);
+
+        if (rows <= 0)
+        {
+            return item;
+        }
+
+        PrepareItemHeights ();
+        int used = 0;
+        int top = item + 1;
+
+        while (top > 0)
+        {
+            int height = RowsForItem (top - 1);
+
+            if (used > 0 && used + height > rows)
+            {
+                break;
+            }
+
+            used += height;
+            top--;
+
+            if (used >= rows)
+            {
+                break;
+            }
+        }
+
+        return top;
     }
 
     private void UpdateContentSize ()

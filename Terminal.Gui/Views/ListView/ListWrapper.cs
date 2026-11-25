@@ -61,12 +61,51 @@ public class ListWrapper<T> : IListDataSource, IListViewLayout
     /// <inheritdoc/>
     public void PrepareRender (ListView listView, int width)
     {
-        if (listView.ItemHeight <= 1 && listView.ColumnHeaders is not { Count: > 0 })
+        width = Math.Max (width, 0);
+
+        if (listView.ColumnHeaders is not { Count: > 0 })
         {
-            return;
+            if (!listView.ItemAutoHeight && listView.ItemHeight <= 1)
+            {
+                return;
+            }
+
+            // A list with no columns wraps each item into the viewport, so the content is not wider than that.
+            if (listView.ItemAutoHeight)
+            {
+                MaxItemLength = width;
+
+                return;
+            }
         }
 
-        MeasureColumns (listView, Math.Max (width, 0));
+        MeasureColumns (listView, width);
+    }
+
+    /// <inheritdoc/>
+    public int MeasureItemHeight (ListView listView, int item)
+    {
+        if (_source is null || item < 0 || item >= _source.Count)
+        {
+            return 1;
+        }
+
+        int available = Math.Max (0, listView.Viewport.Width - (listView.ShowMarks ? 2 : 0));
+
+        if (listView.ColumnHeaders is not { Count: > 0 })
+        {
+            object? value = _source [item];
+            string text = value as string ?? value?.ToString () ?? string.Empty;
+
+            return LineCount (text, available);
+        }
+
+        if (_columnWidths.Length == 0)
+        {
+            MeasureColumns (listView, available);
+        }
+
+        return ColumnLineCount (listView, _source [item]);
     }
 
     /// <inheritdoc/>
@@ -79,7 +118,7 @@ public class ListWrapper<T> : IListDataSource, IListViewLayout
             return;
         }
 
-        if (container.ItemHeight <= 1 && container.ColumnHeaders is not { Count: > 0 })
+        if (!container.ItemAutoHeight && container.ItemHeight <= 1 && container.ColumnHeaders is not { Count: > 0 })
         {
             container.Move (Math.Max (col - viewportX, 0), line);
 
@@ -319,7 +358,7 @@ public class ListWrapper<T> : IListDataSource, IListViewLayout
         return clipped + new string (' ', pad);
     }
 
-    private string BuildRowText (ListView listView, object? value, int row, bool header, int width)
+    private string BuildRowText (ListView listView, object? value, int row, bool header, int width, int itemHeight)
     {
         int columnCount = ColumnCount (listView);
 
@@ -330,7 +369,7 @@ public class ListWrapper<T> : IListDataSource, IListViewLayout
                 return " ";
             }
 
-            if (listView.ItemHeight <= 1)
+            if (!listView.ItemAutoHeight && listView.ItemHeight <= 1)
             {
                 return CellLine (listView, value, 0, row);
             }
@@ -340,7 +379,7 @@ public class ListWrapper<T> : IListDataSource, IListViewLayout
             // Newlines start a new row. A line wider than the column wraps onto the rows that remain.
 
             return Align (
-                          AlignedWrappedLine (text, width, row, listView.ItemHeight, listView.ItemsVerticalAlignment),
+                          AlignedWrappedLine (text, width, row, itemHeight, listView.ItemsVerticalAlignment),
                           width,
                           listView.ItemsHorizontalAlignment);
         }
@@ -361,7 +400,7 @@ public class ListWrapper<T> : IListDataSource, IListViewLayout
             ListView.ColumnHeader? columnHeader = HeaderAt (listView, c);
             string text = header
                               ? HeaderLine (listView, columnHeader, c, row, contentWidth)
-                              : CellText (listView, value, c, row, contentWidth);
+                              : CellText (listView, value, c, row, contentWidth, itemHeight);
             Alignment alignment = header
                                       ? columnHeader?.HeaderHorizontalAlignment ?? listView.HeadersAlignment
                                       : columnHeader?.MemberHorizontalAlignment ?? listView.ItemsHorizontalAlignment;
@@ -574,18 +613,61 @@ public class ListWrapper<T> : IListDataSource, IListViewLayout
     ///     Cell text before alignment. A column value wider than its width wraps when <see cref="ListView.ItemHeight"/>
     ///     is greater than one.
     /// </summary>
-    private static string CellText (ListView listView, object? value, int column, int line, int width)
+    private static string CellText (ListView listView, object? value, int column, int line, int width, int itemHeight)
     {
-        if (listView.ItemHeight > 1 && TryGetColumnText (listView, value, column, out string columnText))
+        if (itemHeight > 1 && TryGetColumnText (listView, value, column, out string columnText))
         {
             Alignment vertical = HeaderAt (listView, column) is { } header
                                      ? header.MemberVerticalAlignment
                                      : listView.ItemsVerticalAlignment;
 
-            return AlignedWrappedLine (columnText, width, line, listView.ItemHeight, vertical);
+            return AlignedWrappedLine (columnText, width, line, itemHeight, vertical);
         }
 
         return CellLine (listView, value, column, line);
+    }
+
+    /// <summary>Wrapped rows of <paramref name="text"/> at <paramref name="width"/>, or hard breaks when the width is unknown.</summary>
+    private static int LineCount (string? text, int width)
+    {
+        if (string.IsNullOrEmpty (text))
+        {
+            return 1;
+        }
+
+        if (width <= 0)
+        {
+            return Math.Max (1, TextFormatter.SplitNewLine (text).Count);
+        }
+
+        return Math.Max (1, WrapLines (text, width).Count);
+    }
+
+    /// <summary>Tallest wrapped column of one item. The item is at least one row.</summary>
+    private int ColumnLineCount (ListView listView, object? value)
+    {
+        int columnCount = Math.Min (ColumnCount (listView), _columnWidths.Length);
+        int margin = Math.Max (0, listView.ColumnMargin);
+        int height = 1;
+
+        for (int c = 0; c < columnCount; c++)
+        {
+            if (c < _columnStarts.Length && _columnStarts [c] < 0)
+            {
+                continue;
+            }
+
+            if (!TryGetColumnText (listView, value, c, out string columnText))
+            {
+                continue;
+            }
+
+            int gap = c < columnCount - 1 ? margin : 0;
+            int contentWidth = Math.Max (0, _columnWidths [c] - gap);
+            height = Math.Max (height, LineCount (columnText, contentWidth));
+        }
+
+        return height;
     }
 
     /// <summary>
@@ -787,7 +869,8 @@ public class ListWrapper<T> : IListDataSource, IListViewLayout
                 continue;
             }
 
-            int contentWidth = MeasureCell (listView, c, height);
+            bool wrapInsideViewport = listView.ItemAutoHeight || listView.ItemHeight > 1;
+            int contentWidth = header is null || header.Width == 0 ? MeasureCell (listView, c, height) : 0;
             int columnWidth;
             int remaining = Math.Max (0, width - used);
 
@@ -799,7 +882,7 @@ public class ListWrapper<T> : IListDataSource, IListViewLayout
 
                     // A tall item can show the rest of a long value on its extra rows. Keep the last auto
                     // column inside the viewport so that text wraps instead of widening the list.
-                    if (listView.ItemHeight > 1 && remaining > 0 && columnWidth > remaining)
+                    if (wrapInsideViewport && remaining > 0 && columnWidth > remaining)
                     {
                         columnWidth = remaining;
                     }
@@ -808,7 +891,7 @@ public class ListWrapper<T> : IListDataSource, IListViewLayout
                 {
                     columnWidth = contentWidth;
 
-                    if (listView.ItemHeight > 1 && columnWidth > 0)
+                    if (wrapInsideViewport && columnWidth > 0)
                     {
                         int later = columnCount - c - 1;
                         int reserved = later * (1 + margin);
@@ -852,6 +935,13 @@ public class ListWrapper<T> : IListDataSource, IListViewLayout
 
         for (int i = 0; i < _source.Count; i++)
         {
+            if (listView.ItemAutoHeight && TryGetColumnText (listView, _source [i], column, out string columnText))
+            {
+                max = Math.Max (max, TextFormatter.GetWidestLineLength (columnText));
+
+                continue;
+            }
+
             for (int line = 0; line < height; line++)
             {
                 max = Math.Max (max, CellLine (listView, _source [i], column, line).GetColumns ());
@@ -881,7 +971,7 @@ public class ListWrapper<T> : IListDataSource, IListViewLayout
                               ? r == 0
                                     ? Align ("Col0", Math.Max (width, 0), container.HeadersAlignment)
                                     : string.Empty
-                              : BuildRowText (container, null, r, true, width);
+                              : BuildRowText (container, null, r, true, width, 1);
             container.Move (Math.Max (col - viewportX, 0), line + r);
             RenderString (container, text, width, viewportX);
         }
@@ -889,13 +979,16 @@ public class ListWrapper<T> : IListDataSource, IListViewLayout
 
     private void RenderMultiLine (ListView container, int item, int col, int line, int width, int viewportX)
     {
-        if (_columnWidths.Length == 0 && (container.ColumnHeaders is { Count: > 0 } || container.ItemHeight > 1))
+        if (_columnWidths.Length == 0
+            && (container.ColumnHeaders is { Count: > 0 } || (!container.ItemAutoHeight && container.ItemHeight > 1)))
         {
             MeasureColumns (container, Math.Max (width, 0));
         }
 
         object? value = _source is not null && item >= 0 && item < _source.Count ? _source [item] : null;
-        int height = Math.Max (1, container.ItemHeight);
+        int height = container.ItemAutoHeight
+                         ? Math.Max (1, MeasureItemHeight (container, item))
+                         : Math.Max (1, container.ItemHeight);
 
         for (int r = 0; r < height; r++)
         {
@@ -905,7 +998,7 @@ public class ListWrapper<T> : IListDataSource, IListViewLayout
             }
 
             container.Move (Math.Max (col - viewportX, 0), line + r);
-            RenderString (container, BuildRowText (container, value, r, false, width), width, viewportX);
+            RenderString (container, BuildRowText (container, value, r, false, width, height), width, viewportX);
         }
     }
 

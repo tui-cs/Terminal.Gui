@@ -11,4 +11,13 @@ internal interface IListViewLayout
     /// <param name="listView">The <see cref="ListView"/> that is about to draw.</param>
     /// <param name="width">The width available for item content, excluding mark columns.</param>
     void PrepareRender (ListView listView, int width);
+
+    /// <summary>
+    ///     Gets how many rows <paramref name="item"/> needs when <see cref="ListView.ItemAutoHeight"/> is
+    ///     <see langword="true"/>. The result is at least one.
+    /// </summary>
+    /// <param name="listView">The <see cref="ListView"/> that is measuring the item.</param>
+    /// <param name="item">The item index.</param>
+    /// <returns>The row count for that item.</returns>
+    int MeasureItemHeight (ListView listView, int item);
 }

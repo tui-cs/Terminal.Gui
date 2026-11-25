@@ -219,7 +219,8 @@ public partial class ListView
         }
         else if (Viewport.Height > 0 && SelectedItem >= Viewport.Y + PageSize)
         {
-            Viewport = Viewport with { Y = SelectedItem.Value - PageSize + 1 };
+            int top = ItemAutoHeight ? TopIndexShowing (SelectedItem.Value) : SelectedItem.Value - PageSize + 1;
+            Viewport = Viewport with { Y = Math.Max (top, 0) };
         }
     }
 

@@ -3518,6 +3518,221 @@ Five ",
 
     // Grok - Grok 4.7
     [Fact]
+    public void ItemAutoHeight_Defaults_To_False ()
+    {
+        ListView listView = new ();
+
+        Assert.False (listView.ItemAutoHeight);
+    }
+
+    // Grok - Grok 4.7
+    [Fact]
+    public void ItemAutoHeight_Grows_For_Newlines_And_Places_The_Next_Item_Below ()
+    {
+        ListView listView = new ()
+        {
+            Width = 10,
+            Height = 3,
+            ItemHeight = 1,
+            ItemAutoHeight = true,
+            Source = new ListWrapper<string> (["Alpha\nBeta", "Gamma"])
+        };
+
+        AssertDriver (
+                      listView,
+                      10,
+                      3,
+                      """
+                      Alpha
+                      Beta
+                      Gamma
+                      """);
+    }
+
+    // Grok - Grok 4.7
+    [Fact]
+    public void ItemAutoHeight_Ignores_ItemHeight ()
+    {
+        ListView listView = new ()
+        {
+            Width = 6,
+            Height = 2,
+            ItemHeight = 4,
+            ItemAutoHeight = true,
+            Source = new ListWrapper<string> (["A", "B"])
+        };
+
+        AssertDriver (
+                      listView,
+                      6,
+                      2,
+                      """
+                      A
+                      B
+                      """);
+    }
+
+    // Grok - Grok 4.7
+    [Fact]
+    public void ItemAutoHeight_Wraps_To_The_Viewport ()
+    {
+        ListView listView = new ()
+        {
+            Width = 5,
+            Height = 3,
+            ItemHeight = 1,
+            ItemAutoHeight = true,
+            Source = new ListWrapper<string> (["Hello World", "Go"])
+        };
+
+        AssertDriver (
+                      listView,
+                      5,
+                      3,
+                      """
+                      Hello
+                      World
+                      Go
+                      """);
+    }
+
+    // Grok - Grok 4.7
+    [Fact]
+    public void ItemAutoHeight_Row_Is_As_Tall_As_The_Tallest_Column ()
+    {
+        ListView listView = new ()
+        {
+            Width = 6,
+            Height = 4,
+            ShowColumnHeaders = true,
+            ItemHeight = 1,
+            ItemAutoHeight = true,
+            ColumnMargin = 2,
+            ColumnHeaders =
+            [
+                new ListView.ColumnHeader
+                {
+                    HeaderName = "L",
+                    HeaderHorizontalAlignment = Alignment.Start,
+                    MemberHorizontalAlignment = Alignment.Start,
+                    MemberName = nameof (TwoColumnRow.Left),
+                    Width = 1
+                },
+                new ListView.ColumnHeader
+                {
+                    HeaderName = "R",
+                    HeaderHorizontalAlignment = Alignment.Start,
+                    MemberHorizontalAlignment = Alignment.Start,
+                    MemberName = nameof (TwoColumnRow.Right),
+                    Width = 3
+                }
+            ],
+            Source = new ListWrapper<TwoColumnRow> (
+            [
+                new () { Left = "A", Right = "Hello" },
+                new () { Left = "B", Right = "Y" }
+            ])
+        };
+
+        AssertDriver (
+                      listView,
+                      6,
+                      4,
+                      """
+                      L  R
+                      A  Hel
+                         lo
+                      B  Y
+                      """);
+    }
+
+    // Grok - Grok 4.7
+    [Fact]
+    public void ItemAutoHeight_Mouse_Selects_The_Item_Under_The_Row ()
+    {
+        ListView listView = new ()
+        {
+            Width = 8,
+            Height = 3,
+            ItemAutoHeight = true,
+            Source = new ListWrapper<string> (["A\nB", "C"])
+        };
+
+        UseList (listView, 8, 3, app =>
+        {
+            app.Mouse.RaiseMouseEvent (new Mouse { ScreenPosition = new Point (0, 0), Flags = MouseFlags.LeftButtonClicked });
+            Assert.Equal (0, listView.SelectedItem);
+
+            app.Mouse.RaiseMouseEvent (new Mouse { ScreenPosition = new Point (0, 1), Flags = MouseFlags.LeftButtonClicked });
+            Assert.Equal (0, listView.SelectedItem);
+
+            app.Mouse.RaiseMouseEvent (new Mouse { ScreenPosition = new Point (0, 2), Flags = MouseFlags.LeftButtonClicked });
+            Assert.Equal (1, listView.SelectedItem);
+        });
+    }
+
+    // Grok - Grok 4.7
+    [Fact]
+    public void ItemAutoHeight_PageDown_Moves_By_The_Visible_Items ()
+    {
+        ListView listView = new ()
+        {
+            Width = 8,
+            Height = 4,
+            ItemAutoHeight = true,
+            Source = new ListWrapper<string> (["A\nB", "C\nD", "E\nF", "G\nH"])
+        };
+
+        UseList (listView, 8, 4, _ =>
+        {
+            Assert.True (listView.MovePageDown ());
+            Assert.Equal (2, listView.SelectedItem);
+        });
+    }
+
+    // Grok - Grok 4.7
+    [Fact]
+    public void ItemAutoHeight_Content_Height_Reaches_The_Last_Item ()
+    {
+        ListView listView = new ()
+        {
+            Width = 8,
+            Height = 2,
+            ItemAutoHeight = true,
+            Source = new ListWrapper<string> (["A", "B", "C\nD\nE"])
+        };
+
+        UseList (listView, 8, 2, _ =>
+        {
+            Assert.Equal (4, listView.GetContentSize ().Height);
+        });
+    }
+
+    // Grok - Grok 4.7
+    [Fact]
+    public void ItemAutoHeight_False_Keeps_ItemHeight ()
+    {
+        ListView listView = new ()
+        {
+            Width = 10,
+            Height = 2,
+            ItemHeight = 1,
+            ItemAutoHeight = false,
+            Source = new ListWrapper<string> (["Alpha\nBeta", "Gamma"])
+        };
+
+        AssertDriver (
+                      listView,
+                      10,
+                      2,
+                      """
+                      Alpha
+                      Gamma
+                      """);
+    }
+
+    // Grok - Grok 4.7
+    [Fact]
     public void ItemHeight_One_Shows_Only_The_First_Newline_Line ()
     {
         ListView listView = new ()

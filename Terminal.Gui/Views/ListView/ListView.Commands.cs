@@ -128,7 +128,12 @@ public partial class ListView
 
         row -= headerRows;
 
-        int index = Viewport.Y + row / Math.Max (ItemHeight, 1);
+        if (ItemAutoHeight)
+        {
+            PrepareItemHeights ();
+        }
+
+        int index = ItemAutoHeight ? ItemIndexAtRow (row) : Viewport.Y + row / Math.Max (ItemHeight, 1);
 
         if (Source is null || index >= Source.Count)
         {

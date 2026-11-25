@@ -21,7 +21,6 @@ public partial class ListView
 
         // Reserve mark glyph + separator column. If a configured mark glyph is wide, it can consume the separator.
         int reservedMarkColumns = ShowMarks ? 2 : 0;
-        int rowStep = Math.Max (ItemHeight, 1);
         int row = 0;
         Move (0, 0);
 
@@ -36,8 +35,9 @@ public partial class ListView
             return base.OnDrawingContent (context);
         }
 
-        for (; row < Viewport.Height; row += rowStep, item++)
+        for (; row < Viewport.Height; item++)
         {
+            int rowStep = RowsForItem (item);
             bool isSelected = item == SelectedItem;
             bool isMarked = item < Source?.Count && Source?.IsMarked (item) is true;
 
@@ -189,6 +189,8 @@ public partial class ListView
                 int contentCol = reservedMarkColumns > 0 ? reservedMarkColumns : markWidth;
                 Source.Render (this, isSelected, item, contentCol, row, Viewport.Width - contentCol, Viewport.X);
             }
+
+            row += rowStep;
         }
 
         return true;
