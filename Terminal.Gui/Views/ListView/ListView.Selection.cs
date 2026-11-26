@@ -70,7 +70,7 @@ public partial class ListView
             // Recalculate content size since mark columns affect effective width
             if (Source is { })
             {
-                SetContentSize (new Size (EffectiveMaxItemLength, Source.Count));
+                UpdateContentSize ();
             }
 
             SetNeedsDraw ();
@@ -217,9 +217,10 @@ public partial class ListView
         {
             Viewport = Viewport with { Y = SelectedItem.Value };
         }
-        else if (Viewport.Height > 0 && SelectedItem >= Viewport.Y + Viewport.Height)
+        else if (Viewport.Height > 0 && SelectedItem >= Viewport.Y + PageSize)
         {
-            Viewport = Viewport with { Y = SelectedItem.Value - Viewport.Height + 1 };
+            int top = ItemAutoHeight ? TopIndexShowing (SelectedItem.Value) : SelectedItem.Value - PageSize + 1;
+            Viewport = Viewport with { Y = Math.Max (top, 0) };
         }
     }
 

@@ -37,10 +37,10 @@ public partial class ListView
             // Can move down by one.
             newItem = SelectedItem.Value + 1;
         }
-        else if (Viewport.Height > 0 && SelectedItem >= Viewport.Y + Viewport.Height)
+        else if (Viewport.Height > 0 && SelectedItem >= Viewport.Y + PageSize)
         {
             // Just scroll viewport
-            Viewport = Viewport with { Y = Source.Count - Viewport.Height };
+            Viewport = Viewport with { Y = Source.Count - PageSize };
 
             return true;
         }
@@ -57,7 +57,7 @@ public partial class ListView
 
         SetSelection (newItem, extend);
 
-        if (SelectedItem >= Viewport.Y + Viewport.Height)
+        if (SelectedItem >= Viewport.Y + PageSize)
         {
             Viewport = Viewport with { Y = Viewport.Y + 1 };
         }
@@ -86,14 +86,16 @@ public partial class ListView
         int newItem = Source.Count - 1;
         SetSelection (newItem, extend);
 
-        if (Viewport.Y + SelectedItem > Viewport.Height - 1)
+        if (Viewport.Y + SelectedItem > PageSize - 1)
         {
             Viewport = Viewport with
             {
-                Y = SelectedItem < Viewport.Height - 1
-                        ? Math.Max (Viewport.Height - SelectedItem!.Value + 1, 0)
-                        : Math.Max (SelectedItem!.Value - Viewport.Height + 1, 0)
+                Y = SelectedItem < PageSize - 1
+                        ? Math.Max (PageSize - SelectedItem!.Value + 1, 0)
+                        : Math.Max (SelectedItem!.Value - PageSize + 1, 0)
             };
+
+            EnsureSelectedItemVisible ();
         }
 
         return true;
@@ -136,7 +138,7 @@ public partial class ListView
             return false;
         }
 
-        int newItem = (SelectedItem ?? 0) + Viewport.Height;
+        int newItem = (SelectedItem ?? 0) + PageSize;
 
         if (newItem >= Source.Count)
         {
@@ -150,7 +152,7 @@ public partial class ListView
 
         SetSelection (newItem, extend);
 
-        if (Source.Count >= Viewport.Height)
+        if (Source.Count >= PageSize)
         {
             Viewport = Viewport with { Y = SelectedItem!.Value };
         }
@@ -176,7 +178,7 @@ public partial class ListView
             return false;
         }
 
-        int newItem = (SelectedItem ?? 0) - Viewport.Height;
+        int newItem = (SelectedItem ?? 0) - PageSize;
 
         if (newItem < 0)
         {
@@ -257,9 +259,9 @@ public partial class ListView
         {
             Viewport = Viewport with { Y = SelectedItem!.Value };
         }
-        else if (SelectedItem > Viewport.Y + Viewport.Height)
+        else if (SelectedItem > Viewport.Y + PageSize)
         {
-            Viewport = Viewport with { Y = SelectedItem!.Value - Viewport.Height + 1 };
+            Viewport = Viewport with { Y = SelectedItem!.Value - PageSize + 1 };
         }
 
         return true;

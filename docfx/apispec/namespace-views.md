@@ -16,6 +16,8 @@ The `Views` namespace contains the complete collection of built-in UI controls d
 **Data Display**
 - ListView, TableView, TreeView
 
+`ListView` supports multi-line items, column headers, header-driven sorting, and column footers. See [ListView](~/docs/listview.md).
+
 **Containers**
 - Window, Dialog, FrameView, TabView, TileView
 

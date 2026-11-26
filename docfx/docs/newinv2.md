@@ -567,6 +567,7 @@ See the [Views Overview](views.md) for a complete catalog.
 - **[FileDialog](~/api/Terminal.Gui.Views.FileDialog.yml)** - TreeView navigation, Unicode icons, search, history
 - **[ScrollBar](~/api/Terminal.Gui.Views.ScrollBar.yml)** - Clean implementation with auto-show
 - **[StatusBar](~/api/Terminal.Gui.Views.StatusBar.yml)** - Rebuilt on Bar infrastructure
+- **[ListView](~/api/Terminal.Gui.Views.ListView.yml)** - Multi-line items, automatic item height, aligned columns, clickable sorting headers, and footers. See the [ListView Deep Dive](listview.md).
 - **[TableView](~/api/Terminal.Gui.Views.TableView.yml)** - Generic collections, checkboxes, tree structures, custom rendering
 - **[MenuBar](~/api/Terminal.Gui.Views.MenuBar.yml)** / **[PopoverMenu](~/api/Terminal.Gui.Views.PopoverMenu.yml)** - Redesigned menu system
 

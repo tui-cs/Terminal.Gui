@@ -7,6 +7,7 @@ namespace Terminal.Gui.Views;
 /// <summary>
 ///     Provides a scrollable list of data where each item can be activated to perform an
 ///     action.
+///     <a href="../docs/listview.md">See the ListView Deep Dive for more</a>.
 /// </summary>
 /// <remarks>
 /// <img src="../images/views/ListView.gif" alt="ListView demo"/>
@@ -40,6 +41,28 @@ namespace Terminal.Gui.Views;
 ///     <para>
 ///         Searching the ListView with the keyboard is supported. Users type the first characters of an item, and the
 ///         first item that starts with what the user types will be selected.
+///     </para>
+///     <para>
+///         By default each item is one row tall. Set <see cref="ItemHeight"/> to a larger value to give every item
+///         that many rows. Set <see cref="ItemAutoHeight"/> to size each visible item from its own lines instead.
+///         Each of those items is at least one row, and <see cref="ItemHeight"/> is not used.
+///         Without column headers, each newline starts a new row, and a line wider than the width
+///         wraps onto the following rows. <see cref="ItemsVerticalAlignment"/> places those lines inside the item.
+///         A line break inside a column stays in that column. Columns stay side by side.
+///         A list or array item places element <c>i</c> in column <c>i</c>.
+///         Set <see cref="ColumnHeaders"/> to name those columns, including properties of arbitrary item types.
+///         <see cref="ShowColumnHeaders"/> draws a header band.
+///         <see cref="HeaderPlacement"/> pins that band to the top of the <see cref="ListView"/> or draws it on the
+///         rows before the first item. <see cref="ColumnHeader.Height"/> sets
+///         how many rows that column's header uses, and the band is as tall as the tallest header. A line break in a
+///         header starts another row of that header. A line wider than the column wraps when that header is taller
+///         than one row. <see cref="ColumnHeader.HeaderVerticalAlignment"/> places those lines inside the header.
+///         <see cref="ShowColumnFooters"/> draws a <see cref="ColumnFooter"/> band. When no
+///         <see cref="ColumnFooters"/> are set, that band is one row tall and shows <c>Footer0</c>.
+///         <see cref="FooterPlacement"/> pins that band to the bottom of the <see cref="ListView"/> or draws it on the
+///         rows after the last item. A footer uses the column header's
+///         <see cref="ColumnHeader.MemberHorizontalAlignment"/>, <see cref="ColumnHeader.MemberVerticalAlignment"/>,
+///         and <see cref="ColumnHeader.MemberFormat"/> unless that footer sets its own.
 ///     </para>
 ///     <para>Default key bindings:</para>
 ///     <list type="table">
@@ -114,6 +137,12 @@ public partial class ListView : View, IDesignable, IValue<int?>
     /// <inheritdoc/>
     protected override void Dispose (bool disposing)
     {
+        if (disposing)
+        {
+            DetachColumnHeaders ();
+            DetachColumnFooters ();
+        }
+
         Source?.Dispose ();
         base.Dispose (disposing);
     }
@@ -269,7 +298,7 @@ public partial class ListView : View, IDesignable, IValue<int?>
             if (field is { })
             {
                 field.CollectionChanged += SourceOnCollectionChanged;
-                SetContentSize (new Size (EffectiveMaxItemLength, field?.Count ?? Viewport.Height));
+                UpdateContentSize ();
                 KeystrokeNavigator?.Collection = field?.ToList ();
             }
             else
@@ -277,7 +306,7 @@ public partial class ListView : View, IDesignable, IValue<int?>
                 // No source: empty content; ensure selection stays null even if setter was picky.
                 // (SelectedItem setter fix should make SelectedItem = null above sufficient;
                 //  setting field = null here is belt-and-braces if you assign via a private path.)
-                SetContentSize (new Size (0, Viewport.Height)); // or existing empty-size policy
+                UpdateContentSize ();
                 KeystrokeNavigator?.Collection = null;
             }
 
@@ -307,7 +336,12 @@ public partial class ListView : View, IDesignable, IValue<int?>
     // TODO: Make CollectionChange follow the CWP
     private void SourceOnCollectionChanged (object? sender, NotifyCollectionChangedEventArgs e)
     {
-        SetContentSize (new Size (EffectiveMaxItemLength, Source?.Count ?? Viewport.Height));
+        if (Source is IListViewSortable { IsSorted: true } sortable)
+        {
+            SelectedItem = sortable.RestoreSelection (SelectedItem);
+        }
+
+        UpdateContentSize ();
         KeystrokeNavigator?.Collection = Source?.ToList ();
 
         if (Source is { Count: > 0 } && SelectedItem.HasValue && SelectedItem > Source.Count - 1)
@@ -346,10 +380,459 @@ public partial class ListView : View, IDesignable, IValue<int?>
 
     #endregion IListDataSource
 
+    #region Item height and columns
+
+    /// <summary>
+    ///     Gets or sets whether clicking a column header sorts the built-in <see cref="ListWrapper{T}"/> source.
+    ///     The default is <see langword="false"/>.
+    /// </summary>
+    /// <remarks>
+    ///     A first click sorts ascending. A second click on the same header sorts descending. Clicking a different
+    ///     header starts with ascending order. Setting this property to <see langword="false"/> restores source order.
+    ///     Custom <see cref="IListDataSource"/> implementations retain their own order.
+    /// </remarks>
+    public bool AllowsSorting
+    {
+        get;
+        set
+        {
+            if (field == value)
+            {
+                return;
+            }
+
+            field = value;
+
+            if (!field && Source is IListViewSortable sortable)
+            {
+                sortable.ClearSort ();
+                SelectedItem = sortable.RestoreSelection (SelectedItem);
+            }
+
+            UpdateContentSize ();
+            EnsureSelectedItemVisible ();
+            SetNeedsDraw ();
+        }
+    }
+
+    /// <summary>
+    ///     Gets or sets how many rows each item occupies when <see cref="ItemAutoHeight"/> is <see langword="false"/>.
+    ///     The default is one.
+    /// </summary>
+    /// <exception cref="ArgumentOutOfRangeException">The value is less than one.</exception>
+    public int ItemHeight
+    {
+        get;
+        set
+        {
+            ArgumentOutOfRangeException.ThrowIfLessThan (value, 1);
+
+            if (field == value)
+            {
+                return;
+            }
+
+            field = value;
+            UpdateContentSize ();
+            EnsureSelectedItemVisible ();
+            SetNeedsDraw ();
+        }
+    } = 1;
+
+    /// <summary>
+    ///     Gets or sets whether each visible item grows to fit its lines. The default is <see langword="false"/>.
+    /// </summary>
+    /// <remarks>
+    ///     <para>
+    ///         When <see langword="false"/>, every item occupies <see cref="ItemHeight"/> rows.
+    ///         When <see langword="true"/>, a visible item is as tall as its wrapped lines and is at least one row.
+    ///         <see cref="ItemHeight"/> does not change that height.
+    ///     </para>
+    ///     <para>
+    ///         Heights are measured for the items in the viewport, and for the trailing page that keeps the last item
+    ///         reachable. The rest of the list is not measured.
+    ///     </para>
+    ///     <para>
+    ///         Changing this property measures the content width again. Wrapped items are no wider than the
+    ///         viewport, so <see cref="View.HorizontalScrollBar"/> follows that width.
+    ///     </para>
+    /// </remarks>
+    public bool ItemAutoHeight
+    {
+        get;
+        set
+        {
+            if (field == value)
+            {
+                return;
+            }
+
+            field = value;
+            RefreshMeasuredWidth ();
+            UpdateContentSize ();
+            ClampHorizontalOffset ();
+            EnsureSelectedItemVisible ();
+            SetNeedsDraw ();
+        }
+    }
+
+    /// <summary>Gets the number of items that fit in the viewport.</summary>
+    public int VisibleItems =>
+        !ItemAutoHeight && ItemHeight <= 1 && !ShowColumnHeaders && PinnedFooterRows == 0 && TrailingFooterRows == 0
+            ? Viewport.Height
+            : VisibleItemCount;
+
+    /// <summary>Gets or sets whether a header band is drawn.</summary>
+    /// <remarks>
+    ///     <para>
+    ///         <see cref="ColumnHeaderPlacement.Top"/> pins the band to the top of the <see cref="ListView"/>.
+    ///         <see cref="ColumnHeaderPlacement.BeforeFirstItem"/> draws it on the rows before the first item.
+    ///     </para>
+    ///     <para>
+    ///         When <see cref="ColumnHeaders"/> is empty, the band is one row tall and shows <c>Col0</c>.
+    ///         <see cref="HeadersAlignment"/> places that text.
+    ///     </para>
+    /// </remarks>
+    public bool ShowColumnHeaders
+    {
+        get;
+        set
+        {
+            if (field == value)
+            {
+                return;
+            }
+
+            field = value;
+            UpdateContentSize ();
+            EnsureSelectedItemVisible ();
+            SetNeedsDraw ();
+        }
+    }
+
+    /// <summary>Gets or sets whether the header band is pinned to the top or drawn before the first item.</summary>
+    public ColumnHeaderPlacement HeaderPlacement
+    {
+        get;
+        set
+        {
+            if (field == value)
+            {
+                return;
+            }
+
+            field = value;
+            UpdateContentSize ();
+            EnsureSelectedItemVisible ();
+            SetNeedsDraw ();
+        }
+    } = ColumnHeaderPlacement.Top;
+
+    /// <summary>Gets or sets whether a footer band is drawn.</summary>
+    /// <remarks>
+    ///     <para>
+    ///         <see cref="ColumnFooterPlacement.Bottom"/> pins the band to the bottom of the <see cref="ListView"/>.
+    ///         <see cref="ColumnFooterPlacement.AfterLastItem"/> draws it on the rows after the last item.
+    ///     </para>
+    ///     <para>
+    ///         When <see cref="ColumnFooters"/> is empty, the band is one row tall and shows <c>Footer0</c>.
+    ///         <see cref="FootersHorizontalAlignment"/> places that text.
+    ///     </para>
+    ///     <para>
+    ///         A <see cref="ColumnFooter"/> uses the matching <see cref="ColumnHeader"/> member alignment and format
+    ///         unless that footer sets its own.
+    ///     </para>
+    /// </remarks>
+    public bool ShowColumnFooters
+    {
+        get;
+        set
+        {
+            if (field == value)
+            {
+                return;
+            }
+
+            field = value;
+            UpdateContentSize ();
+            EnsureSelectedItemVisible ();
+            SetNeedsDraw ();
+        }
+    }
+
+    /// <summary>Gets or sets whether the footer band is pinned to the bottom or drawn after the last item.</summary>
+    public ColumnFooterPlacement FooterPlacement
+    {
+        get;
+        set
+        {
+            if (field == value)
+            {
+                return;
+            }
+
+            field = value;
+            UpdateContentSize ();
+            EnsureSelectedItemVisible ();
+            SetNeedsDraw ();
+        }
+    } = ColumnFooterPlacement.Bottom;
+
+    /// <summary>Gets or sets the number of columns between columns. The default is 2.</summary>
+    public int ColumnMargin
+    {
+        get;
+        set
+        {
+            if (field == value)
+            {
+                return;
+            }
+
+            field = value;
+            SetNeedsDraw ();
+        }
+    } = 2;
+
+    /// <summary>
+    ///     Gets or sets the horizontal header alignment used when a <see cref="ColumnHeader"/> is not set.
+    /// </summary>
+    public Alignment HeadersAlignment { get; set; } = Alignment.Start;
+
+    /// <summary>
+    ///     Gets or sets how header lines are placed when a <see cref="ColumnHeader"/> is not set.
+    /// </summary>
+    /// <remarks>
+    ///     Placement matches <see cref="ItemsVerticalAlignment"/>. A header band with no <see cref="ColumnHeaders"/> is
+    ///     one row tall and shows <c>Col0</c>.
+    /// </remarks>
+    public Alignment HeadersVerticalAlignment { get; set; } = Alignment.Start;
+
+    /// <summary>
+    ///     Gets or sets the horizontal cell alignment used when a <see cref="ColumnHeader"/> is not set.
+    /// </summary>
+    /// <remarks>
+    ///     When a <see cref="ColumnHeader"/> is set, <see cref="ColumnHeader.MemberHorizontalAlignment"/> is used instead.
+    /// </remarks>
+    public Alignment ItemsHorizontalAlignment { get; set; } = Alignment.Start;
+
+    /// <summary>Gets or sets how a cell's lines are placed inside <see cref="ItemHeight"/>.</summary>
+    /// <remarks>
+    ///     <para>
+    ///         <see cref="Alignment.Start"/> keeps the first line at the top.
+    ///         <see cref="Alignment.End"/> keeps the last line at the bottom and clips lines that do not fit from the top.
+    ///         <see cref="Alignment.Center"/> centers the lines, and keeps the first lines when they do not fit.
+    ///         <see cref="Alignment.Fill"/> spreads the lines across the item and leaves the extra rows between them.
+    ///         A single line stays at the top. Any remainder after an even split is placed in the later gaps.
+    ///     </para>
+    ///     <para>
+    ///         The alignment applies when <see cref="ItemHeight"/> is greater than one. Each column uses its own lines.
+    ///         When a <see cref="ColumnHeader"/> is set, <see cref="ColumnHeader.MemberVerticalAlignment"/> is used instead.
+    ///     </para>
+    /// </remarks>
+    public Alignment ItemsVerticalAlignment { get; set; } = Alignment.Start;
+
+    /// <summary>
+    ///     Gets or sets the horizontal footer alignment used when a <see cref="ColumnFooter"/> does not set one and no
+    ///     <see cref="ColumnHeader"/> is available. It also places <c>Footer0</c> when no <see cref="ColumnFooters"/> are
+    ///     set.
+    /// </summary>
+    public Alignment FootersHorizontalAlignment { get; set; } = Alignment.Start;
+
+    /// <summary>
+    ///     Gets or sets how footer lines are placed when a <see cref="ColumnFooter"/> does not set one and no
+    ///     <see cref="ColumnHeader"/> is available.
+    /// </summary>
+    public Alignment FootersVerticalAlignment { get; set; } = Alignment.Start;
+
+    /// <summary>
+    ///     Gets or sets the columns used to render items. A list or array item places element <c>i</c> in column
+    ///     <c>i</c>. A line break in a column value starts another row of that column. Other items are read through
+    ///     each header's <see cref="ColumnHeader.MemberName"/>.
+    /// </summary>
+    public List<ColumnHeader>? ColumnHeaders
+    {
+        get;
+        set
+        {
+            DetachColumnHeaders ();
+            field = value;
+            AttachColumnHeaders ();
+            UpdateContentSize ();
+            SetNeedsDraw ();
+        }
+    }
+
+    /// <summary>Rows occupied by the header band. Zero when headers are hidden.</summary>
+    internal int HeaderRowCount
+    {
+        get
+        {
+            if (!ShowColumnHeaders)
+            {
+                return 0;
+            }
+
+            if (ColumnHeaders is not { Count: > 0 } headers)
+            {
+                return 1;
+            }
+
+            int height = 1;
+
+            foreach (ColumnHeader header in headers)
+            {
+                height = Math.Max (height, header.Height);
+            }
+
+            return height;
+        }
+    }
+
+    /// <summary>
+    ///     Gets or sets the footer shown for each column when <see cref="ShowColumnFooters"/> is
+    ///     <see langword="true"/>. Index <c>i</c> is the footer for column <c>i</c>.
+    /// </summary>
+    public List<ColumnFooter>? ColumnFooters
+    {
+        get;
+        set
+        {
+            DetachColumnFooters ();
+            field = value;
+            AttachColumnFooters ();
+            UpdateContentSize ();
+            SetNeedsDraw ();
+        }
+    }
+
+    /// <summary>
+    ///     Rows occupied by the footer band. Zero when footers are hidden. One when footers are shown and none are set.
+    /// </summary>
+    internal int FooterRowCount
+    {
+        get
+        {
+            if (!ShowColumnFooters)
+            {
+                return 0;
+            }
+
+            if (ColumnFooters is not { Count: > 0 } footers)
+            {
+                return 1;
+            }
+
+            int height = 1;
+
+            foreach (ColumnFooter footer in footers)
+            {
+                height = Math.Max (height, footer.Height);
+            }
+
+            return height;
+        }
+    }
+
+    /// <summary>Rows reserved at the top when the header is pinned there.</summary>
+    private int PinnedHeaderRows =>
+        ShowColumnHeaders && HeaderPlacement == ColumnHeaderPlacement.Top ? HeaderRowCount : 0;
+
+    /// <summary>Rows drawn before the first item. They stay out of the item area once scrolled past item 0.</summary>
+    private int LeadingHeaderRows =>
+        ShowColumnHeaders && HeaderPlacement == ColumnHeaderPlacement.BeforeFirstItem ? HeaderRowCount : 0;
+
+    /// <summary>Rows currently occupied by the header band at the top of the viewport.</summary>
+    internal int VisibleHeaderRows =>
+        PinnedHeaderRows > 0
+            ? PinnedHeaderRows
+            : Viewport.Y <= 0
+                ? LeadingHeaderRows
+                : 0;
+
+    /// <summary>Rows reserved at the bottom when the footer is pinned there.</summary>
+    private int PinnedFooterRows =>
+        ShowColumnFooters && FooterPlacement == ColumnFooterPlacement.Bottom ? FooterRowCount : 0;
+
+    /// <summary>Rows drawn after the last item. They stay out of the item area.</summary>
+    private int TrailingFooterRows =>
+        ShowColumnFooters && FooterPlacement == ColumnFooterPlacement.AfterLastItem ? FooterRowCount : 0;
+
+    /// <summary>Rows of the viewport left for items after the visible header and a pinned footer.</summary>
+    private int ItemAreaRows => Math.Max (0, Viewport.Height - VisibleHeaderRows - PinnedFooterRows);
+
+    private void AttachColumnHeaders ()
+    {
+        if (ColumnHeaders is not { } headers)
+        {
+            return;
+        }
+
+        foreach (ColumnHeader header in headers)
+        {
+            header.HeightChanged += OnColumnHeaderHeightChanged;
+        }
+    }
+
+    private void DetachColumnHeaders ()
+    {
+        if (ColumnHeaders is not { } headers)
+        {
+            return;
+        }
+
+        foreach (ColumnHeader header in headers)
+        {
+            header.HeightChanged -= OnColumnHeaderHeightChanged;
+        }
+    }
+
+    private void OnColumnHeaderHeightChanged (object? sender, EventArgs args)
+    {
+        UpdateContentSize ();
+        EnsureSelectedItemVisible ();
+        SetNeedsDraw ();
+    }
+
+    private void AttachColumnFooters ()
+    {
+        if (ColumnFooters is not { } footers)
+        {
+            return;
+        }
+
+        foreach (ColumnFooter footer in footers)
+        {
+            footer.HeightChanged += OnColumnFooterHeightChanged;
+        }
+    }
+
+    private void DetachColumnFooters ()
+    {
+        if (ColumnFooters is not { } footers)
+        {
+            return;
+        }
+
+        foreach (ColumnFooter footer in footers)
+        {
+            footer.HeightChanged -= OnColumnFooterHeightChanged;
+        }
+    }
+
+    private void OnColumnFooterHeightChanged (object? sender, EventArgs args)
+    {
+        UpdateContentSize ();
+        EnsureSelectedItemVisible ();
+        SetNeedsDraw ();
+    }
+
+    #endregion Item height and columns
+
     #region Viewport/ContentSize Management
 
     /// <inheritdoc/>
-    protected override void OnViewportChanged (DrawEventArgs e) => SetContentSize (new Size (EffectiveMaxItemLength, Source?.Count ?? Viewport.Height));
+    protected override void OnViewportChanged (DrawEventArgs e) => UpdateContentSize ();
 
     /// <summary>
     ///     INTERNAL: Gets the columns reserved for mark rendering (mark glyph + separator column). Wide glyphs may
@@ -359,6 +842,342 @@ public partial class ListView : View, IDesignable, IValue<int?>
 
     /// <summary>INTERNAL: Gets the effective content width including mark columns when <see cref="ShowMarks"/> is true.</summary>
     private int EffectiveMaxItemLength => MaxItemLength + MarkWidth;
+
+    /// <summary>Rows available for items after a pinned header and a pinned footer.</summary>
+    private int VisibleItemCount
+    {
+        get
+        {
+            int rows = ItemAreaRows;
+
+            if (!ItemAutoHeight)
+            {
+                if (ItemHeight <= 1)
+                {
+                    return rows;
+                }
+
+                return rows / ItemHeight;
+            }
+
+            int total = Source?.Count ?? 0;
+
+            if (rows == 0 || total == 0)
+            {
+                return 0;
+            }
+
+            PrepareItemHeights ();
+            int index = Math.Max (0, Viewport.Y);
+            int used = 0;
+            int count = 0;
+
+            while (index < total)
+            {
+                int height = RowsForItem (index);
+
+                if (used + height > rows)
+                {
+                    if (count == 0)
+                    {
+                        return 1;
+                    }
+
+                    break;
+                }
+
+                used += height;
+                count++;
+                index++;
+            }
+
+            return count;
+        }
+    }
+
+    /// <summary>
+    ///     Number of items treated as one page. Equals <see cref="View.Viewport"/> height when every item is one row and
+    ///     no header row is pinned.
+    /// </summary>
+    private int PageSize
+    {
+        get
+        {
+            if (!ItemAutoHeight && ItemHeight <= 1 && !ShowColumnHeaders && PinnedFooterRows == 0 && TrailingFooterRows == 0)
+            {
+                return Viewport.Height;
+            }
+
+            return Math.Max (VisibleItemCount, 1);
+        }
+    }
+
+    private int CalculateContentHeight ()
+    {
+        int count = Source?.Count ?? 0;
+
+        if (!ItemAutoHeight)
+        {
+            if (count == 0 || (ItemHeight <= 1 && !ShowColumnHeaders && PinnedFooterRows == 0 && TrailingFooterRows == 0))
+            {
+                return count;
+            }
+
+            int itemHeight = Math.Max (ItemHeight, 1);
+
+            if (LeadingHeaderRows > 0)
+            {
+                int unpinnedViewport = Math.Max (0, Viewport.Height - PinnedHeaderRows - PinnedFooterRows);
+
+                if (LeadingHeaderRows + (count * itemHeight) + TrailingFooterRows <= unpinnedViewport)
+                {
+                    return count;
+                }
+
+                int scrolledRows = Math.Max (0, unpinnedViewport - TrailingFooterRows);
+                int scrolledVisible = itemHeight <= 1 ? scrolledRows : scrolledRows / itemHeight;
+                int minTop = count > 1 || TrailingFooterRows > 0 ? 1 : 0;
+                int maxTop = Math.Max (minTop, count - scrolledVisible);
+
+                return Math.Max (count, maxTop + Viewport.Height);
+            }
+
+            int visible = VisibleItemCount;
+
+            if (TrailingFooterRows > 0)
+            {
+                int sharing = Math.Max (0, ItemAreaRows - TrailingFooterRows);
+                visible = ItemHeight <= 1 ? sharing : sharing / itemHeight;
+            }
+
+            return Math.Max (count, count - visible + Viewport.Height);
+        }
+
+        if (count == 0)
+        {
+            return 0;
+        }
+
+        // Viewport.Y is an item index. The trailing page is measured so the last item can sit on screen.
+        return Math.Max (count, LastPageTop () + Math.Max (Viewport.Height, 1));
+    }
+
+    /// <summary>Measures the layout used by per-item heights. Safe to call more than once for the same width.</summary>
+    private void PrepareItemHeights ()
+    {
+        if (Source is not IListViewLayout layout)
+        {
+            return;
+        }
+
+        layout.PrepareRender (this, Math.Max (0, Viewport.Width - MarkWidth));
+    }
+
+    /// <summary>Rows occupied by one item. <see cref="ItemHeight"/> when automatic height is off.</summary>
+    private int RowsForItem (int item)
+    {
+        if (!ItemAutoHeight)
+        {
+            return Math.Max (ItemHeight, 1);
+        }
+
+        if (Source is null || item < 0 || item >= Source.Count)
+        {
+            return 1;
+        }
+
+        if (Source is not IListViewLayout layout)
+        {
+            return Math.Max (ItemHeight, 1);
+        }
+
+        return Math.Max (1, layout.MeasureItemHeight (this, item));
+    }
+
+    /// <summary>Item index at a content row below the header, measured from <see cref="View.Viewport"/>.</summary>
+    private int ItemIndexAtRow (int row)
+    {
+        int index = Math.Max (0, Viewport.Y);
+        int remaining = Math.Max (0, row);
+        int count = Source?.Count ?? 0;
+
+        while (index < count)
+        {
+            int height = RowsForItem (index);
+
+            if (remaining < height)
+            {
+                return index;
+            }
+
+            remaining -= height;
+            index++;
+        }
+
+        return index;
+    }
+
+    /// <summary>True when <paramref name="row"/> is inside the pinned footer band.</summary>
+    private bool IsPinnedFooterRow (int row) => PinnedFooterRows > 0 && row >= Viewport.Height - PinnedFooterRows;
+
+    /// <summary>
+    ///     True when <paramref name="rowBelowHeader"/> falls on the footer drawn after the last item.
+    /// </summary>
+    private bool IsTrailingFooterRow (int rowBelowHeader)
+    {
+        if (TrailingFooterRows <= 0)
+        {
+            return false;
+        }
+
+        int count = Source?.Count ?? 0;
+        int index = Math.Max (0, Viewport.Y);
+        int remaining = Math.Max (0, rowBelowHeader);
+
+        if (ItemAutoHeight)
+        {
+            PrepareItemHeights ();
+        }
+
+        while (index < count)
+        {
+            int height = RowsForItem (index);
+
+            if (remaining < height)
+            {
+                return false;
+            }
+
+            remaining -= height;
+            index++;
+        }
+
+        return remaining < FooterRowCount;
+    }
+
+    /// <summary>First item of the page that still includes the last item.</summary>
+    private int LastPageTop ()
+    {
+        int count = Source?.Count ?? 0;
+        int unpinnedRows = Math.Max (0, Viewport.Height - PinnedHeaderRows - PinnedFooterRows);
+        int rows = Math.Max (0, unpinnedRows - TrailingFooterRows);
+
+        if (count == 0 || rows <= 0)
+        {
+            return 0;
+        }
+
+        PrepareItemHeights ();
+        int used = 0;
+        int top = count;
+
+        while (top > 0)
+        {
+            int height = RowsForItem (top - 1);
+
+            if (used > 0 && used + height > rows)
+            {
+                break;
+            }
+
+            used += height;
+            top--;
+
+            if (used >= rows)
+            {
+                break;
+            }
+        }
+
+        if (top == 0 && (count > 1 || TrailingFooterRows > 0) && LeadingHeaderRows > 0 && used + LeadingHeaderRows > rows)
+        {
+            return 1;
+        }
+
+        return top;
+    }
+
+    /// <summary>Scroll origin that keeps <paramref name="item"/> on screen.</summary>
+    private int TopIndexShowing (int item)
+    {
+        int rows = Math.Max (0, Viewport.Height - PinnedHeaderRows - PinnedFooterRows);
+
+        if (rows <= 0)
+        {
+            return item;
+        }
+
+        PrepareItemHeights ();
+        int used = 0;
+        int top = item + 1;
+
+        while (top > 0)
+        {
+            int height = RowsForItem (top - 1);
+
+            if (used > 0 && used + height > rows)
+            {
+                break;
+            }
+
+            used += height;
+            top--;
+
+            if (used >= rows)
+            {
+                break;
+            }
+        }
+
+        if (top == 0 && item > 0 && LeadingHeaderRows > 0 && used + LeadingHeaderRows > rows)
+        {
+            return 1;
+        }
+
+        return top;
+    }
+
+    private void UpdateContentSize ()
+    {
+        if (Source is null)
+        {
+            SetContentSize (new Size (0, Viewport.Height));
+
+            return;
+        }
+
+        SetContentSize (new Size (EffectiveMaxItemLength, CalculateContentHeight ()));
+    }
+
+    /// <summary>Measures column and item width before <see cref="UpdateContentSize"/>.</summary>
+    private void RefreshMeasuredWidth ()
+    {
+        if (Source is not IListViewLayout layout)
+        {
+            return;
+        }
+
+        layout.PrepareRender (this, Math.Max (0, Viewport.Width - MarkWidth));
+    }
+
+    /// <summary>Pulls a horizontal offset back inside the content after the content width changes.</summary>
+    private void ClampHorizontalOffset ()
+    {
+        int visible = Math.Max (Viewport.Width, 0);
+        int maxX = Math.Max (0, GetContentWidth () - visible);
+
+        if (Viewport.Width > GetContentWidth ())
+        {
+            maxX = 0;
+        }
+
+        if (Viewport.X <= maxX)
+        {
+            return;
+        }
+
+        Viewport = Viewport with { X = maxX };
+    }
 
     #endregion Viewport/ContentSize Management
 

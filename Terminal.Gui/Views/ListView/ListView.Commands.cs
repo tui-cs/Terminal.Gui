@@ -118,17 +118,51 @@ public partial class ListView
 
         // Handle mouse clicks
         Point position = mouse.Position!.Value;
-        int index = Viewport.Y + position.Y;
-
-        if (Source is null || index >= Source.Count)
-        {
-            return;
-        }
+        int row = position.Y;
         bool shift = mouse.Flags.FastHasFlags (MouseFlags.Shift);
         bool ctrl = mouse.Flags.FastHasFlags (MouseFlags.Ctrl);
         bool leftButton = mouse.Flags.FastHasFlags (MouseFlags.LeftButtonClicked);
         bool rightButton = mouse.Flags.FastHasFlags (MouseFlags.RightButtonClicked);
 
+        if (IsPinnedFooterRow (row))
+        {
+            return;
+        }
+
+        int headerRows = VisibleHeaderRows;
+
+        if (row < headerRows)
+        {
+            if (!AllowsSorting || !leftButton || Source is not IListViewSortable sortable)
+            {
+                return;
+            }
+
+            SelectedItem = sortable.SortHeaderAt (this, position.X, SelectedItem);
+            EnsureSelectedItemVisible ();
+            SetNeedsDraw ();
+
+            return;
+        }
+
+        row -= headerRows;
+
+        if (IsTrailingFooterRow (row))
+        {
+            return;
+        }
+
+        if (ItemAutoHeight)
+        {
+            PrepareItemHeights ();
+        }
+
+        int index = ItemAutoHeight ? ItemIndexAtRow (row) : Viewport.Y + row / Math.Max (ItemHeight, 1);
+
+        if (Source is null || index >= Source.Count)
+        {
+            return;
+        }
         // Allow marking if: ShowMarks=true OR MarkMultiple=true
         bool allowMarking = ShowMarks || MarkMultiple;
 

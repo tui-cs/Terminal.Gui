@@ -264,7 +264,7 @@ Displays a clickable hyperlink with optional display text and a target URL.
 
 ## [ListView](xref:Terminal.Gui.Views.ListView)
 
-Provides a scrollable list of data where each item can be activated to perform an action.
+Provides a scrollable list of data where each item can be activated to perform an action. Items can occupy more than one row, columns can show a header and a footer, and header clicks can sort the built-in collection source. See [ListView](listview.md) for item height, automatic item height, alignment, wrapping, sorting, and column footers.
 
 
 ![ListView](../images/views/ListView.gif)

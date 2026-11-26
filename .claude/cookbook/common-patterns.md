@@ -156,6 +156,39 @@ public sealed class ListWindow : Runnable
 }
 ```
 
+### Multi-line columns
+
+To show wrapped columns with a header and a footer, set `ItemHeight` or `ItemAutoHeight`, `ColumnHeaders`, and `ColumnFooters`. A `string[]` item places element `i` in column `i`. A line break stays in that column. See [ListView](../../docfx/docs/listview.md).
+
+```csharp
+ListView listView = new ()
+{
+    Width = Dim.Fill (),
+    Height = Dim.Fill (),
+    ItemHeight = 2,
+    ShowColumnHeaders = true,
+    ShowColumnFooters = true,
+    ColumnHeaders =
+    [
+        new ListView.ColumnHeader { HeaderName = "Name", Width = 16 },
+        new ListView.ColumnHeader { HeaderName = "Notes", Width = 24 }
+    ],
+    ColumnFooters =
+    [
+        new ListView.ColumnFooter { FooterName = "Rows" },
+        new ListView.ColumnFooter { FooterName = "2" }
+    ]
+};
+
+ObservableCollection<string []> rows =
+[
+    ["Alpha", "First item"],
+    ["Beta", "Second item\nwith another line"]
+];
+
+listView.SetSource (rows);
+```
+
 ---
 
 ## Menu Bar Application
