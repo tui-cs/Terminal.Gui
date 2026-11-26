@@ -19,14 +19,21 @@ public abstract class AdornmentImpl : IAdornment
         get;
         set
         {
+            field?.VerifyAccessIfEnabled (nameof (Parent));
+            value?.VerifyAccessIfEnabled (nameof (Parent));
+            View?.VerifyAssociationAccess (value?.App, nameof (Parent));
+
             if (field == value)
             {
                 return;
             }
 
             field?.FrameChanged -= ParentOnFrameChanged;
+            field?.AdjustExplicitApplicationCount (-(View?.ExplicitApplicationCount ?? 0));
             field = value;
+            field?.AdjustExplicitApplicationCount (View?.ExplicitApplicationCount ?? 0);
             field?.FrameChanged += ParentOnFrameChanged;
+            View?.RefreshThreadAccessApplication ();
 
             if (Parent is { })
             {
@@ -43,6 +50,8 @@ public abstract class AdornmentImpl : IAdornment
         get;
         set
         {
+            Parent?.VerifyAccessIfEnabled (nameof (Thickness));
+
             if (value == field)
             {
                 return;
@@ -93,6 +102,8 @@ public abstract class AdornmentImpl : IAdornment
         {
             return View;
         }
+
+        Parent?.VerifyAccessIfEnabled (nameof (GetOrCreateView));
 
         // Capture field-backed ViewportSettings before creating View, since the getter
         // switches to reading from View once View is non-null.

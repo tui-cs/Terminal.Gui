@@ -64,6 +64,8 @@ public partial class View // Text Property APIs
         get => _text;
         set
         {
+            VerifyAccessIfEnabled ();
+
             if (_text == value)
             {
                 return;
