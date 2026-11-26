@@ -101,7 +101,8 @@ Tenets higher in the list have precedence over tenets lower in the list.
 | **Single click** | Item selected on click | **1** | **0** | Selection happens immediately |
 | **Double-click** | Selected on first click | **1** (first click) | **1** (second click) | Standard file browser behavior |
 | **Enter key** | No change (already selected) | **0** | **1** | Keyboard equivalent of double-click |
-| **Click on a header or footer row** | No change | **0** | **0** | The row is not an item. See [ListView](listview.md). |
+| **Click on a header row** | Selected source item is preserved; display index may change | **0** | **0** | Sorts when `AllowsSorting` is enabled and the header belongs to a supported column; otherwise no action. See [ListView](listview.md#sorting). |
+| **Click on a footer row** | No change | **0** | **0** | The row is not an item. See [ListView](listview.md). |
 
 With `ItemAutoHeight`, a click selects the item that owns that visual row, including a later wrapped line of the same item.
 

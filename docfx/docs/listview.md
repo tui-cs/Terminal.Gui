@@ -2,7 +2,7 @@
 
 [ListView](xref:Terminal.Gui.Views.ListView) shows a scrollable list. Each item can be selected and activated. By default every item is one row and the text comes from `ToString`.
 
-To give items, headers, and footers more than one row, use the APIs on this page. A cell is painted as text. It is not a subview, so it does not take focus or receive mouse input on its own.
+To give items, headers, and footers more than one row, or to sort items by clicking a column header, use the APIs on this page. A cell is painted as text. It is not a subview, so it does not take focus or receive mouse input on its own.
 
 The UICatalog scenario **ListView With MultiLine** exercises these APIs.
 
@@ -12,6 +12,7 @@ The UICatalog scenario **ListView With MultiLine** exercises these APIs.
 - [Cell text](#cell-text)
 - [Alignment](#alignment)
 - [Column headers](#column-headers)
+- [Sorting](#sorting)
 - [Column footers](#column-footers)
 - [Scrolling and the mouse](#scrolling-and-the-mouse)
 - [Custom data sources](#custom-data-sources)
@@ -112,13 +113,10 @@ With no `ColumnHeaders`, the band is one row and shows `Col0`. `HeadersAlignment
 | `MemberFormat` | `null` | Composite format, for example `{0:N2}`. |
 | `MemberHorizontalAlignment` | `Start` | Horizontal alignment of the cells. |
 | `MemberVerticalAlignment` | `Start` | Vertical placement of the cell lines. |
-| `AllowsSorting` | `false` | Lets header clicks sort a built-in `ListWrapper<T>` source without changing the caller's collection. |
 
 The band is as tall as the tallest `Height`, and at least one row when headers are shown and no columns are configured. Rows past a shorter column are blank.
 
 A line break in `HeaderName` starts another header row when `Height` is greater than 1. A height of one shows only the first line and clips a wider title. When `Height` is greater than 1 and the column is narrower than the title, the title wraps. A line break stays a hard break.
-
-Set `AllowsSorting` to `true` to sort a source supplied with `SetSource`. The first left click on a header sorts that column ascending and shows <xref:Terminal.Gui.Drawing.Glyphs.UpArrow>. A second click on the same header sorts descending and shows <xref:Terminal.Gui.Drawing.Glyphs.DownArrow>. Clicking another header starts an ascending sort. The sort is stable, uses the current culture for text, preserves the selected item and marks, and does not reorder the caller's `ObservableCollection<T>`. Disabling `AllowsSorting` restores source order and removes the glyph. Custom `IListDataSource` implementations keep their own order.
 
 `SetSource<T>(null)` still clears the source, using the same rules as before. Drawing still paints the header, and the footer when footers are shown, and then stops. Assign `Source = null` to detach every data source.
 
@@ -136,6 +134,39 @@ listView.ColumnHeaders =
     }
 ];
 ```
+
+## Sorting
+
+Set <xref:Terminal.Gui.Views.ListView.AllowsSorting> to `true` to let a left click on a configured column header sort a source supplied with `SetSource` or `SetSourceAsync`. The property defaults to `false`.
+
+Sorting requires `ShowColumnHeaders` and at least one `ColumnHeader`. The first click on a header sorts that column ascending and displays <xref:Terminal.Gui.Drawing.Glyphs.UpArrow>. A second click on the same header sorts descending and displays <xref:Terminal.Gui.Drawing.Glyphs.DownArrow>. Clicking another header starts a new ascending sort. Clicking a footer or a header while `AllowsSorting` is `false` does not change the selection or order.
+
+The column value follows the same rules as cell text. String items use column 0, list and array items use the element at the column index, and other items use `ColumnHeader.MemberName`. `MemberType` converts the value before comparison, which lets a numeric column sort by number rather than by its formatted text. Equal values retain source order. Same-type values that implement <xref:System.IComparable> use that comparison; otherwise the current culture compares the values as text. `MemberFormat` controls display only and does not control sorting.
+
+Sorting changes the display order exposed by `ListWrapper<T>.ToList`; it does not reorder the caller's `ObservableCollection<T>`. Selection and marks follow the corresponding source items, including after collection changes. The active sort is reapplied when the source collection changes. Set `AllowsSorting` to `false` to restore source order and remove the direction glyph.
+
+```csharp
+ObservableCollection<string> items = ["Beta", "Alpha", "Gamma"];
+
+ListView listView = new ()
+{
+    AllowsSorting = true,
+    ShowColumnHeaders = true,
+    ColumnHeaders =
+    [
+        new ListView.ColumnHeader
+        {
+            HeaderName = "Name",
+            HeaderHorizontalAlignment = Alignment.Start,
+            Width = 12
+        }
+    ]
+};
+
+listView.SetSource (items);
+```
+
+Only the built-in `ListWrapper<T>` installed by `SetSource` supports this behavior. A custom `IListDataSource` is responsible for its own ordering.
 
 ## Column footers
 
@@ -192,8 +223,8 @@ The second footer leaves `Format` unset, so it inherits `{0:00}` and `int`. The 
 
 `Viewport.Y` is the index of the top item, not a screen row. Header rows and a footer pinned to the bottom are subtracted from the item area. Page down, the last page, and mouse hit-testing use that area. An `AfterLastItem` footer does not take rows away from the items. The content height grows so that footer can scroll into view.
 
-A click on a header row or a footer row does not change `SelectedItem`. With `ItemAutoHeight`, a click selects the item that owns that visual row, including a later wrapped line of the same item.
+A click on a footer row does not change `SelectedItem`. A header click does not select the header row; when `AllowsSorting` is `true`, the selected source item follows the sort to its new display index. With `ItemAutoHeight`, a click selects the item that owns that visual row, including a later wrapped line of the same item.
 
 ## Custom data sources
 
-`SetSource` and `ListWrapper<T>` provide the column, wrap, header, and footer layout on this page. A custom `IListDataSource` still draws through `Render`. For that source, `ItemAutoHeight` keeps `ItemHeight` as the row height.
+`SetSource` and `ListWrapper<T>` provide the column, wrap, header, footer, and sorting behavior on this page. A custom `IListDataSource` still draws through `Render` and controls its own order. For that source, `ItemAutoHeight` keeps `ItemHeight` as the row height.
