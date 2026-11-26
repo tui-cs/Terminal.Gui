@@ -129,7 +129,7 @@ public partial class ListView
             return;
         }
 
-        int headerRows = HeaderRowCount;
+        int headerRows = VisibleHeaderRows;
 
         if (row < headerRows)
         {

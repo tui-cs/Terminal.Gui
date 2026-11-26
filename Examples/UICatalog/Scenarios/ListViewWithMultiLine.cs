@@ -30,6 +30,7 @@ public class ListViewWithMultiLine : Scenario
     private Label? _modeLabel;
     private Label? _headerAlignLabel;
     private Label? _headerVerticalAlignLabel;
+    private Label? _headerPlaceLabel;
     private Label? _itemHorizontalAlignLabel;
     private Label? _itemVerticalAlignLabel;
     private Label? _footerAlignLabel;
@@ -349,6 +350,28 @@ public class ListViewWithMultiLine : Scenario
             Text = nameof (Alignment.Start)
         };
         appWindow.Add (_headerVerticalAlignLabel);
+
+        Button headerPlace = new ()
+        {
+            X = Pos.Right (_headerVerticalAlignLabel) + 1,
+            Y = Pos.Top (headerHeightLabel),
+            Text = "Header pla_ce"
+        };
+        headerPlace.Accepting += (_, e) =>
+                                 {
+                                     e.Handled = true;
+                                     CycleHeaderPlacement ();
+                                 };
+        appWindow.Add (headerPlace);
+
+        _headerPlaceLabel = new Label
+        {
+            X = Pos.Right (headerPlace) + 1,
+            Y = Pos.Top (headerHeightLabel),
+            Width = 11,
+            Text = "Top"
+        };
+        appWindow.Add (_headerPlaceLabel);
 
         Label footerHeightLabel = new ()
         {
@@ -851,6 +874,19 @@ public class ListViewWithMultiLine : Scenario
         ShowAlignment ();
     }
 
+    private void CycleHeaderPlacement ()
+    {
+        if (_listView is null)
+        {
+            return;
+        }
+
+        _listView.HeaderPlacement = _listView.HeaderPlacement == ListView.ColumnHeaderPlacement.Top
+                                        ? ListView.ColumnHeaderPlacement.BeforeFirstItem
+                                        : ListView.ColumnHeaderPlacement.Top;
+        ShowAlignment ();
+    }
+
     private void CycleFooterAlignment ()
     {
         if (_listView is null)
@@ -1005,11 +1041,22 @@ public class ListViewWithMultiLine : Scenario
         }
 
         _headerVerticalAlignLabel?.Text = _listView.HeadersVerticalAlignment.ToString ();
+        _headerPlaceLabel?.Text = HeaderPlaceText (_listView.HeaderPlacement);
         _itemHorizontalAlignLabel?.Text = _listView.ItemsHorizontalAlignment.ToString ();
         _itemVerticalAlignLabel?.Text = _listView.ItemsVerticalAlignment.ToString ();
         _footerAlignLabel?.Text = CurrentFooterHorizontalAlignment ().ToString ();
         _footerVerticalAlignLabel?.Text = CurrentFooterVerticalAlignment ().ToString ();
         _footerPlaceLabel?.Text = FooterPlaceText (_listView.FooterPlacement);
+    }
+
+    private static string HeaderPlaceText (ListView.ColumnHeaderPlacement placement)
+    {
+        if (placement == ListView.ColumnHeaderPlacement.BeforeFirstItem)
+        {
+            return "Before item";
+        }
+
+        return "Top";
     }
 
     private static string FooterPlaceText (ListView.ColumnFooterPlacement placement)

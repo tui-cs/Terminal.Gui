@@ -51,7 +51,9 @@ namespace Terminal.Gui.Views;
 ///         A line break inside a column stays in that column. Columns stay side by side.
 ///         A list or array item places element <c>i</c> in column <c>i</c>.
 ///         Set <see cref="ColumnHeaders"/> to name those columns, including properties of arbitrary item types.
-///         <see cref="ShowColumnHeaders"/> pins a header band above the items. <see cref="ColumnHeader.Height"/> sets
+///         <see cref="ShowColumnHeaders"/> draws a header band.
+///         <see cref="HeaderPlacement"/> pins that band to the top of the <see cref="ListView"/> or draws it on the
+///         rows before the first item. <see cref="ColumnHeader.Height"/> sets
 ///         how many rows that column's header uses, and the band is as tall as the tallest header. A line break in a
 ///         header starts another row of that header. A line wider than the column wraps when that header is taller
 ///         than one row. <see cref="ColumnHeader.HeaderVerticalAlignment"/> places those lines inside the header.
@@ -480,7 +482,17 @@ public partial class ListView : View, IDesignable, IValue<int?>
             ? Viewport.Height
             : VisibleItemCount;
 
-    /// <summary>Gets or sets whether a header row is pinned above the items.</summary>
+    /// <summary>Gets or sets whether a header band is drawn.</summary>
+    /// <remarks>
+    ///     <para>
+    ///         <see cref="ColumnHeaderPlacement.Top"/> pins the band to the top of the <see cref="ListView"/>.
+    ///         <see cref="ColumnHeaderPlacement.BeforeFirstItem"/> draws it on the rows before the first item.
+    ///     </para>
+    ///     <para>
+    ///         When <see cref="ColumnHeaders"/> is empty, the band is one row tall and shows <c>Col0</c>.
+    ///         <see cref="HeadersAlignment"/> places that text.
+    ///     </para>
+    /// </remarks>
     public bool ShowColumnHeaders
     {
         get;
@@ -497,6 +509,24 @@ public partial class ListView : View, IDesignable, IValue<int?>
             SetNeedsDraw ();
         }
     }
+
+    /// <summary>Gets or sets whether the header band is pinned to the top or drawn before the first item.</summary>
+    public ColumnHeaderPlacement HeaderPlacement
+    {
+        get;
+        set
+        {
+            if (field == value)
+            {
+                return;
+            }
+
+            field = value;
+            UpdateContentSize ();
+            EnsureSelectedItemVisible ();
+            SetNeedsDraw ();
+        }
+    } = ColumnHeaderPlacement.Top;
 
     /// <summary>Gets or sets whether a footer band is drawn.</summary>
     /// <remarks>
@@ -633,7 +663,7 @@ public partial class ListView : View, IDesignable, IValue<int?>
         }
     }
 
-    /// <summary>Rows occupied by the pinned header band. Zero when headers are hidden.</summary>
+    /// <summary>Rows occupied by the header band. Zero when headers are hidden.</summary>
     internal int HeaderRowCount
     {
         get
@@ -704,6 +734,22 @@ public partial class ListView : View, IDesignable, IValue<int?>
         }
     }
 
+    /// <summary>Rows reserved at the top when the header is pinned there.</summary>
+    private int PinnedHeaderRows =>
+        ShowColumnHeaders && HeaderPlacement == ColumnHeaderPlacement.Top ? HeaderRowCount : 0;
+
+    /// <summary>Rows drawn before the first item. They stay out of the item area once scrolled past item 0.</summary>
+    private int LeadingHeaderRows =>
+        ShowColumnHeaders && HeaderPlacement == ColumnHeaderPlacement.BeforeFirstItem ? HeaderRowCount : 0;
+
+    /// <summary>Rows currently occupied by the header band at the top of the viewport.</summary>
+    internal int VisibleHeaderRows =>
+        PinnedHeaderRows > 0
+            ? PinnedHeaderRows
+            : Viewport.Y <= 0
+                ? LeadingHeaderRows
+                : 0;
+
     /// <summary>Rows reserved at the bottom when the footer is pinned there.</summary>
     private int PinnedFooterRows =>
         ShowColumnFooters && FooterPlacement == ColumnFooterPlacement.Bottom ? FooterRowCount : 0;
@@ -712,8 +758,8 @@ public partial class ListView : View, IDesignable, IValue<int?>
     private int TrailingFooterRows =>
         ShowColumnFooters && FooterPlacement == ColumnFooterPlacement.AfterLastItem ? FooterRowCount : 0;
 
-    /// <summary>Rows of the viewport left for items after a pinned header and a pinned footer.</summary>
-    private int ItemAreaRows => Math.Max (0, Viewport.Height - HeaderRowCount - PinnedFooterRows);
+    /// <summary>Rows of the viewport left for items after the visible header and a pinned footer.</summary>
+    private int ItemAreaRows => Math.Max (0, Viewport.Height - VisibleHeaderRows - PinnedFooterRows);
 
     private void AttachColumnHeaders ()
     {
@@ -877,12 +923,31 @@ public partial class ListView : View, IDesignable, IValue<int?>
                 return count;
             }
 
+            int itemHeight = Math.Max (ItemHeight, 1);
+
+            if (LeadingHeaderRows > 0)
+            {
+                int unpinnedViewport = Math.Max (0, Viewport.Height - PinnedHeaderRows - PinnedFooterRows);
+
+                if (LeadingHeaderRows + (count * itemHeight) + TrailingFooterRows <= unpinnedViewport)
+                {
+                    return count;
+                }
+
+                int scrolledRows = Math.Max (0, unpinnedViewport - TrailingFooterRows);
+                int scrolledVisible = itemHeight <= 1 ? scrolledRows : scrolledRows / itemHeight;
+                int minTop = count > 1 || TrailingFooterRows > 0 ? 1 : 0;
+                int maxTop = Math.Max (minTop, count - scrolledVisible);
+
+                return Math.Max (count, maxTop + Viewport.Height);
+            }
+
             int visible = VisibleItemCount;
 
             if (TrailingFooterRows > 0)
             {
                 int sharing = Math.Max (0, ItemAreaRows - TrailingFooterRows);
-                visible = ItemHeight <= 1 ? sharing : sharing / Math.Max (ItemHeight, 1);
+                visible = ItemHeight <= 1 ? sharing : sharing / itemHeight;
             }
 
             return Math.Max (count, count - visible + Viewport.Height);
@@ -994,7 +1059,8 @@ public partial class ListView : View, IDesignable, IValue<int?>
     private int LastPageTop ()
     {
         int count = Source?.Count ?? 0;
-        int rows = Math.Max (0, ItemAreaRows - TrailingFooterRows);
+        int unpinnedRows = Math.Max (0, Viewport.Height - PinnedHeaderRows - PinnedFooterRows);
+        int rows = Math.Max (0, unpinnedRows - TrailingFooterRows);
 
         if (count == 0 || rows <= 0)
         {
@@ -1023,13 +1089,18 @@ public partial class ListView : View, IDesignable, IValue<int?>
             }
         }
 
+        if (top == 0 && (count > 1 || TrailingFooterRows > 0) && LeadingHeaderRows > 0 && used + LeadingHeaderRows > rows)
+        {
+            return 1;
+        }
+
         return top;
     }
 
     /// <summary>Scroll origin that keeps <paramref name="item"/> on screen.</summary>
     private int TopIndexShowing (int item)
     {
-        int rows = ItemAreaRows;
+        int rows = Math.Max (0, Viewport.Height - PinnedHeaderRows - PinnedFooterRows);
 
         if (rows <= 0)
         {
@@ -1056,6 +1127,11 @@ public partial class ListView : View, IDesignable, IValue<int?>
             {
                 break;
             }
+        }
+
+        if (top == 0 && item > 0 && LeadingHeaderRows > 0 && used + LeadingHeaderRows > rows)
+        {
+            return 1;
         }
 
         return top;

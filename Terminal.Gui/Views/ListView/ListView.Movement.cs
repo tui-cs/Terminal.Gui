@@ -94,6 +94,8 @@ public partial class ListView
                         ? Math.Max (PageSize - SelectedItem!.Value + 1, 0)
                         : Math.Max (SelectedItem!.Value - PageSize + 1, 0)
             };
+
+            EnsureSelectedItemVisible ();
         }
 
         return true;

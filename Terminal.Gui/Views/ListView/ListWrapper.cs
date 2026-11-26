@@ -132,7 +132,7 @@ public class ListWrapper<T> : IListDataSource, IListViewLayout, IListViewSortabl
     /// <inheritdoc/>
     public void Render (ListView container, bool marked, int item, int col, int line, int width, int viewportX = 0)
     {
-        if (container.ShowColumnHeaders && line == 0)
+        if (container.VisibleHeaderRows > 0 && line == 0)
         {
             RenderHeader (container, col, line, width, viewportX);
 

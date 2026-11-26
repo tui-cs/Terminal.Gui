@@ -1,4 +1,4 @@
-﻿using System.Collections;
+using System.Collections;
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
 using System.Text;
@@ -6817,6 +6817,499 @@ Five ",
             ],
             Source = new ListWrapper<TwoColumnRow> ([new () { Left = "One\nTwo", Right = "Right" }])
         };
+    }
+
+    // Antigravity - Gemini
+    [Fact]
+    public void HeaderPlacement_Defaults_To_Top ()
+    {
+        ListView listView = new ();
+
+        Assert.Equal (0, (int)ListView.ColumnHeaderPlacement.Top);
+        Assert.Equal (ListView.ColumnHeaderPlacement.Top, listView.HeaderPlacement);
+    }
+
+    // Antigravity - Gemini
+    [Fact]
+    public void HeaderPlacement_Top_Pins_Header_When_Scrolled ()
+    {
+        ListView listView = new ()
+        {
+            Width = 6,
+            Height = 3,
+            ShowColumnHeaders = true,
+            HeaderPlacement = ListView.ColumnHeaderPlacement.Top,
+            ColumnHeaders = [new ListView.ColumnHeader { HeaderName = "Name", HeaderHorizontalAlignment = Alignment.Start }],
+            Source = new ListWrapper<string> (["A", "B", "C", "D"])
+        };
+
+        UseList (listView, 6, 3, app =>
+        {
+            listView.Viewport = listView.Viewport with { Y = 1 };
+            app.LayoutAndDraw ();
+
+            DriverAssert.AssertDriverContentsWithFrameAre (
+                                                           """
+                                                           Name
+                                                           B
+                                                           C
+                                                           """,
+                                                           _output,
+                                                           app.Driver);
+        });
+    }
+
+    // Antigravity - Gemini
+    [Fact]
+    public void HeaderPlacement_BeforeFirstItem_Draws_Before_First_Item_At_Top ()
+    {
+        ListView listView = new ()
+        {
+            Width = 6,
+            Height = 4,
+            ShowColumnHeaders = true,
+            HeaderPlacement = ListView.ColumnHeaderPlacement.BeforeFirstItem,
+            ColumnHeaders = [new ListView.ColumnHeader { HeaderName = "Name", HeaderHorizontalAlignment = Alignment.Start }],
+            Source = new ListWrapper<string> (["A", "B"])
+        };
+
+        AssertDriver (
+                      listView,
+                      6,
+                      4,
+                      """
+                      Name
+                      A
+                      B
+                      """);
+    }
+
+    // Antigravity - Gemini
+    [Fact]
+    public void HeaderPlacement_BeforeFirstItem_Draws_Fallback_Col0_Before_First_Item ()
+    {
+        ListView listView = new ()
+        {
+            Width = 6,
+            Height = 3,
+            ShowColumnHeaders = true,
+            HeaderPlacement = ListView.ColumnHeaderPlacement.BeforeFirstItem,
+            Source = new ListWrapper<string> (["A", "B", "C"])
+        };
+
+        UseList (listView, 6, 3, app =>
+        {
+            DriverAssert.AssertDriverContentsWithFrameAre (
+                                                           """
+                                                           Col0
+                                                           A
+                                                           B
+                                                           """,
+                                                           _output,
+                                                           app.Driver);
+
+            listView.Viewport = listView.Viewport with { Y = 1 };
+            app.LayoutAndDraw ();
+
+            DriverAssert.AssertDriverContentsWithFrameAre (
+                                                           """
+                                                           B
+                                                           C
+                                                           """,
+                                                           _output,
+                                                           app.Driver);
+        });
+    }
+
+    // Antigravity - Gemini
+    [Fact]
+    public void HeaderPlacement_BeforeFirstItem_Scrolls_Header_Off_When_Scrolled ()
+    {
+        ListView listView = new ()
+        {
+            Width = 6,
+            Height = 4,
+            ShowColumnHeaders = true,
+            HeaderPlacement = ListView.ColumnHeaderPlacement.BeforeFirstItem,
+            ColumnHeaders =
+            [
+                new ListView.ColumnHeader
+                {
+                    HeaderName = "Line1\nLine2",
+                    HeaderHorizontalAlignment = Alignment.Start,
+                    Height = 2
+                }
+            ],
+            Source = new ListWrapper<string> (["A", "B", "C", "D", "E"])
+        };
+
+        UseList (listView, 6, 4, app =>
+        {
+            DriverAssert.AssertDriverContentsWithFrameAre (
+                                                           """
+                                                           Line1
+                                                           Line2
+                                                           A
+                                                           B
+                                                           """,
+                                                           _output,
+                                                           app.Driver);
+
+            listView.Viewport = listView.Viewport with { Y = 1 };
+            app.LayoutAndDraw ();
+
+            DriverAssert.AssertDriverContentsWithFrameAre (
+                                                           """
+                                                           B
+                                                           C
+                                                           D
+                                                           E
+                                                           """,
+                                                           _output,
+                                                           app.Driver);
+        });
+    }
+
+    // Antigravity - Gemini
+    [Fact]
+    public void HeaderPlacement_BeforeFirstItem_Ignored_When_ShowColumnHeaders_Is_False ()
+    {
+        ListView listView = new ()
+        {
+            Width = 6,
+            Height = 3,
+            ShowColumnHeaders = false,
+            HeaderPlacement = ListView.ColumnHeaderPlacement.BeforeFirstItem,
+            ColumnHeaders = [new ListView.ColumnHeader { HeaderName = "Name", HeaderHorizontalAlignment = Alignment.Start }],
+            Source = new ListWrapper<string> (["A", "B", "C"])
+        };
+
+        UseList (listView, 6, 3, app =>
+        {
+            Assert.Equal (3, listView.GetContentSize ().Height);
+            Assert.Equal (3, listView.VisibleItems);
+
+            DriverAssert.AssertDriverContentsWithFrameAre (
+                                                           """
+                                                           A
+                                                           B
+                                                           C
+                                                           """,
+                                                           _output,
+                                                           app.Driver);
+        });
+    }
+
+    // Antigravity - Gemini
+    [Fact]
+    public void HeaderPlacement_BeforeFirstItem_Content_Height_Allows_Reaching_Last_Item ()
+    {
+        ListView fits = new ()
+        {
+            Width = 6,
+            Height = 4,
+            ShowColumnHeaders = true,
+            HeaderPlacement = ListView.ColumnHeaderPlacement.BeforeFirstItem,
+            ColumnHeaders = [new ListView.ColumnHeader { HeaderName = "Name" }],
+            Source = new ListWrapper<string> (["A", "B", "C"])
+        };
+
+        ListView spillsByHeader = new ()
+        {
+            Width = 6,
+            Height = 4,
+            ShowColumnHeaders = true,
+            HeaderPlacement = ListView.ColumnHeaderPlacement.BeforeFirstItem,
+            ColumnHeaders = [new ListView.ColumnHeader { HeaderName = "Name" }],
+            Source = new ListWrapper<string> (["A", "B", "C", "D"])
+        };
+
+        ListView fillsWhenScrolled = new ()
+        {
+            Width = 6,
+            Height = 4,
+            ShowColumnHeaders = true,
+            HeaderPlacement = ListView.ColumnHeaderPlacement.BeforeFirstItem,
+            ColumnHeaders = [new ListView.ColumnHeader { HeaderName = "Name" }],
+            Source = new ListWrapper<string> (["A", "B", "C", "D", "E"])
+        };
+
+        UseList (fits, 6, 4, _ => Assert.Equal (3, fits.GetContentSize ().Height));
+        UseList (spillsByHeader, 6, 4, _ => Assert.Equal (5, spillsByHeader.GetContentSize ().Height));
+        UseList (fillsWhenScrolled, 6, 4, _ => Assert.Equal (5, fillsWhenScrolled.GetContentSize ().Height));
+    }
+
+    // Antigravity - Gemini
+    [Fact]
+    public void HeaderPlacement_BeforeFirstItem_MoveDown_MoveUp_MoveEnd_MoveHome_Keep_Selection_Visible ()
+    {
+        ListView listView = new ()
+        {
+            Width = 6,
+            Height = 4,
+            ShowColumnHeaders = true,
+            HeaderPlacement = ListView.ColumnHeaderPlacement.BeforeFirstItem,
+            ColumnHeaders = [new ListView.ColumnHeader { HeaderName = "Name", HeaderHorizontalAlignment = Alignment.Start }],
+            Source = new ListWrapper<string> (["A", "B", "C", "D"])
+        };
+
+        UseList (listView, 6, 4, app =>
+        {
+            listView.SelectedItem = 2;
+            Assert.Equal (0, listView.Viewport.Y);
+            Assert.Equal (3, listView.VisibleItems);
+
+            Assert.True (listView.MoveDown ());
+            Assert.Equal (3, listView.SelectedItem);
+            Assert.Equal (1, listView.Viewport.Y);
+            Assert.Equal (4, listView.VisibleItems);
+
+            app.LayoutAndDraw ();
+            DriverAssert.AssertDriverContentsWithFrameAre (
+                                                           """
+                                                           B
+                                                           C
+                                                           D
+                                                           """,
+                                                           _output,
+                                                           app.Driver);
+
+            Assert.True (listView.MoveHome ());
+            Assert.Equal (0, listView.SelectedItem);
+            Assert.Equal (0, listView.Viewport.Y);
+            Assert.Equal (3, listView.VisibleItems);
+
+            Assert.True (listView.MoveEnd ());
+            Assert.Equal (3, listView.SelectedItem);
+            Assert.Equal (1, listView.Viewport.Y);
+
+            Assert.True (listView.MoveUp ());
+            Assert.True (listView.MoveUp ());
+            Assert.True (listView.MoveUp ());
+            Assert.Equal (0, listView.SelectedItem);
+            Assert.Equal (0, listView.Viewport.Y);
+        });
+    }
+
+    // Antigravity - Gemini
+    [Fact]
+    public void HeaderPlacement_BeforeFirstItem_With_ItemAutoHeight_Scrolls_Last_Item_Into_View ()
+    {
+        ListView listView = new ()
+        {
+            Width = 6,
+            Height = 4,
+            ItemAutoHeight = true,
+            ShowColumnHeaders = true,
+            HeaderPlacement = ListView.ColumnHeaderPlacement.BeforeFirstItem,
+            ColumnHeaders = [new ListView.ColumnHeader { HeaderName = "Name", HeaderHorizontalAlignment = Alignment.Start }],
+            Source = new ListWrapper<string> (["A", "B", "C", "D"])
+        };
+
+        UseList (listView, 6, 4, app =>
+        {
+            Assert.Equal (5, listView.GetContentSize ().Height);
+            listView.SelectedItem = 3;
+            Assert.Equal (1, listView.Viewport.Y);
+
+            app.LayoutAndDraw ();
+            DriverAssert.AssertDriverContentsWithFrameAre (
+                                                           """
+                                                           B
+                                                           C
+                                                           D
+                                                           """,
+                                                           _output,
+                                                           app.Driver);
+        });
+    }
+
+    // Antigravity - Gemini
+    [Fact]
+    public void HeaderPlacement_BeforeFirstItem_Mouse_Hits_Items_On_Row_Zero_Once_Scrolled ()
+    {
+        ListView listView = new ()
+        {
+            Width = 8,
+            Height = 3,
+            AllowsSorting = true,
+            ShowColumnHeaders = true,
+            HeaderPlacement = ListView.ColumnHeaderPlacement.BeforeFirstItem,
+            ColumnHeaders = [new ListView.ColumnHeader { HeaderName = "Name", HeaderHorizontalAlignment = Alignment.Start }]
+        };
+        listView.SetSource (new ObservableCollection<string> (["Beta", "Alpha", "Gamma", "Delta"]));
+
+        UseList (listView, 8, 3, app =>
+        {
+            // At Viewport.Y == 0, row 0 is the header and sorts when clicked.
+            app.Mouse.RaiseMouseEvent (new Mouse { ScreenPosition = new Point (0, 0), Flags = MouseFlags.LeftButtonClicked });
+            Assert.Null (listView.SelectedItem);
+            Assert.Equal (["Alpha", "Beta", "Delta", "Gamma"], listView.Source!.ToList ().Cast<string> ());
+
+            // Row 1 is item 0 ("Alpha").
+            app.Mouse.RaiseMouseEvent (new Mouse { ScreenPosition = new Point (0, 1), Flags = MouseFlags.LeftButtonClicked });
+            Assert.Equal (0, listView.SelectedItem);
+
+            // Scroll past item 0; the header is now off-screen and row 0 is item 1 ("Beta").
+            listView.Viewport = listView.Viewport with { Y = 1 };
+            app.LayoutAndDraw ();
+
+            app.Mouse.RaiseMouseEvent (new Mouse { ScreenPosition = new Point (0, 0), Flags = MouseFlags.LeftButtonClicked });
+            Assert.Equal (1, listView.SelectedItem);
+            Assert.Equal (["Alpha", "Beta", "Delta", "Gamma"], listView.Source!.ToList ().Cast<string> ());
+        });
+    }
+
+    // Antigravity - Gemini
+    [Fact]
+    public void HeaderPlacement_BeforeFirstItem_Combines_With_AfterLastItem_And_Bottom_Footers ()
+    {
+        ListView trailing = new ()
+        {
+            Width = 6,
+            Height = 3,
+            ShowColumnHeaders = true,
+            HeaderPlacement = ListView.ColumnHeaderPlacement.BeforeFirstItem,
+            ColumnHeaders = [new ListView.ColumnHeader { HeaderName = "Name", HeaderHorizontalAlignment = Alignment.Start }],
+            ShowColumnFooters = true,
+            FooterPlacement = ListView.ColumnFooterPlacement.AfterLastItem,
+            ColumnFooters = [new ListView.ColumnFooter { FooterName = "End", HorizontalAlignment = Alignment.Start }],
+            Source = new ListWrapper<string> (["A", "B", "C"])
+        };
+
+        UseList (trailing, 6, 3, app =>
+        {
+            Assert.Equal (4, trailing.GetContentSize ().Height);
+
+            DriverAssert.AssertDriverContentsWithFrameAre (
+                                                           """
+                                                           Name
+                                                           A
+                                                           B
+                                                           """,
+                                                           _output,
+                                                           app.Driver);
+
+            trailing.Viewport = trailing.Viewport with { Y = 1 };
+            app.LayoutAndDraw ();
+
+            DriverAssert.AssertDriverContentsWithFrameAre (
+                                                           """
+                                                           B
+                                                           C
+                                                           End
+                                                           """,
+                                                           _output,
+                                                           app.Driver);
+        });
+
+        ListView pinnedBottom = new ()
+        {
+            Width = 6,
+            Height = 3,
+            ShowColumnHeaders = true,
+            HeaderPlacement = ListView.ColumnHeaderPlacement.BeforeFirstItem,
+            ColumnHeaders = [new ListView.ColumnHeader { HeaderName = "Name", HeaderHorizontalAlignment = Alignment.Start }],
+            ShowColumnFooters = true,
+            FooterPlacement = ListView.ColumnFooterPlacement.Bottom,
+            ColumnFooters = [new ListView.ColumnFooter { FooterName = "End", HorizontalAlignment = Alignment.Start }],
+            Source = new ListWrapper<string> (["A", "B", "C"])
+        };
+
+        UseList (pinnedBottom, 6, 3, app =>
+        {
+            DriverAssert.AssertDriverContentsWithFrameAre (
+                                                           """
+                                                           Name
+                                                           A
+                                                           End
+                                                           """,
+                                                           _output,
+                                                           app.Driver);
+
+            pinnedBottom.Viewport = pinnedBottom.Viewport with { Y = 1 };
+            app.LayoutAndDraw ();
+
+            DriverAssert.AssertDriverContentsWithFrameAre (
+                                                           """
+                                                           B
+                                                           C
+                                                           End
+                                                           """,
+                                                           _output,
+                                                           app.Driver);
+        });
+    }
+
+    // Antigravity - Gemini
+    [Fact]
+    public void HeaderPlacement_BeforeFirstItem_Draws_When_Source_Is_Null ()
+    {
+        ListView listView = new ()
+        {
+            Width = 6,
+            Height = 3,
+            ShowColumnHeaders = true,
+            HeaderPlacement = ListView.ColumnHeaderPlacement.BeforeFirstItem,
+            ColumnHeaders = [new ListView.ColumnHeader { HeaderName = "Name", HeaderHorizontalAlignment = Alignment.Start }],
+            ShowColumnFooters = true,
+            FooterPlacement = ListView.ColumnFooterPlacement.AfterLastItem,
+            ColumnFooters = [new ListView.ColumnFooter { FooterName = "End", HorizontalAlignment = Alignment.Start }],
+            Source = null
+        };
+
+        AssertDriver (
+                      listView,
+                      6,
+                      3,
+                      """
+                      Name
+                      End
+                      """);
+    }
+
+    // Antigravity - Gemini
+    [Fact]
+    public void HeaderPlacement_Changing_Mode_Updates_Visible_Header_And_Selection ()
+    {
+        ListView listView = new ()
+        {
+            Width = 6,
+            Height = 3,
+            ShowColumnHeaders = true,
+            HeaderPlacement = ListView.ColumnHeaderPlacement.BeforeFirstItem,
+            ColumnHeaders = [new ListView.ColumnHeader { HeaderName = "Name", HeaderHorizontalAlignment = Alignment.Start }],
+            Source = new ListWrapper<string> (["A", "B", "C", "D"])
+        };
+
+        UseList (listView, 6, 3, app =>
+        {
+            listView.Viewport = listView.Viewport with { Y = 1 };
+            listView.SelectedItem = 3;
+            app.LayoutAndDraw ();
+
+            DriverAssert.AssertDriverContentsWithFrameAre (
+                                                           """
+                                                           B
+                                                           C
+                                                           D
+                                                           """,
+                                                           _output,
+                                                           app.Driver);
+
+            listView.HeaderPlacement = ListView.ColumnHeaderPlacement.Top;
+            app.LayoutAndDraw ();
+
+            Assert.Equal (2, listView.Viewport.Y);
+            DriverAssert.AssertDriverContentsWithFrameAre (
+                                                           """
+                                                           Name
+                                                           C
+                                                           D
+                                                           """,
+                                                           _output,
+                                                           app.Driver);
+        });
     }
 
     private sealed class MarginCells

@@ -98,12 +98,13 @@ A set `ColumnHeader` uses `MemberHorizontalAlignment` and `MemberVerticalAlignme
 
 ## Column headers
 
-Set `ShowColumnHeaders` to pin a header band above the items. The default is `false`.
+Set `ShowColumnHeaders` to draw a header band. The default is `false`. Set `HeaderPlacement` to `Top` (the default) to pin the band to the top of the `ListView`, or `BeforeFirstItem` to draw it on the rows before the first item so it scrolls off once `Viewport.Y` moves past the first item.
 
 With no `ColumnHeaders`, the band is one row and shows `Col0`. `HeadersAlignment` and `HeadersVerticalAlignment` (both `Start`) place that fallback. They do not apply once a `ColumnHeader` is set.
 
 | API | Default | Role |
 | --- | --- | --- |
+| `HeaderPlacement` | `Top` | `Top` pins the band and removes those rows from the item area. `BeforeFirstItem` draws it before the first item and scrolls it off when `Viewport.Y > 0`. |
 | `HeaderName` | `null` | Header text. An empty name uses `MemberName`, then `Col{index}`. |
 | `HeaderHorizontalAlignment` | `Center` | Horizontal alignment of each header line. |
 | `HeaderVerticalAlignment` | `Start` | Vertical placement inside `Height`. |
@@ -122,6 +123,7 @@ A line break in `HeaderName` starts another header row when `Height` is greater 
 
 ```csharp
 listView.ShowColumnHeaders = true;
+listView.HeaderPlacement = ListView.ColumnHeaderPlacement.Top;
 listView.ColumnHeaders =
 [
     new ListView.ColumnHeader
@@ -221,9 +223,9 @@ The second footer leaves `Format` unset, so it inherits `{0:00}` and `int`. The 
 
 ## Scrolling and the mouse
 
-`Viewport.Y` is the index of the top item, not a screen row. Header rows and a footer pinned to the bottom are subtracted from the item area. Page down, the last page, and mouse hit-testing use that area. An `AfterLastItem` footer does not take rows away from the items. The content height grows so that footer can scroll into view.
+`Viewport.Y` is the index of the top item, not a screen row. A `Top` header and a `Bottom` footer are subtracted from the item area. A `BeforeFirstItem` header shares the viewport only while `Viewport.Y == 0` and scrolls off the top when `Viewport.Y > 0`. Page down, the last page, and mouse hit-testing use that area. An `AfterLastItem` footer does not take rows away from the items. The content height grows so that trailing footer or leading header items can scroll into view.
 
-A click on a footer row does not change `SelectedItem`. A header click does not select the header row; when `AllowsSorting` is `true`, the selected source item follows the sort to its new display index. With `ItemAutoHeight`, a click selects the item that owns that visual row, including a later wrapped line of the same item.
+A click on a footer row does not change `SelectedItem`. A click on a visible header row does not select the header row; when `AllowsSorting` is `true`, the selected source item follows the sort to its new display index. Once a `BeforeFirstItem` header has scrolled off-screen (`Viewport.Y > 0`), clicking the top row selects the item drawn there. With `ItemAutoHeight`, a click selects the item that owns that visual row, including a later wrapped line of the same item.
 
 ## Custom data sources
 

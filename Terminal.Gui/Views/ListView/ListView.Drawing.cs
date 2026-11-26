@@ -21,13 +21,14 @@ public partial class ListView
 
         // Reserve mark glyph + separator column. If a configured mark glyph is wide, it can consume the separator.
         int reservedMarkColumns = ShowMarks ? 2 : 0;
+        int headerRows = VisibleHeaderRows;
         int row = 0;
         Move (0, 0);
 
-        if (ShowColumnHeaders && Viewport.Height > 0)
+        if (headerRows > 0 && Viewport.Height > 0)
         {
             current = DrawColumnHeader (current);
-            row = HeaderRowCount;
+            row = headerRows;
         }
 
         if (Source is null)
@@ -38,7 +39,7 @@ public partial class ListView
         }
 
         int itemBottom = PinnedFooterRows > 0
-                             ? Math.Max (HeaderRowCount, Viewport.Height - PinnedFooterRows)
+                             ? Math.Max (headerRows, Viewport.Height - PinnedFooterRows)
                              : Viewport.Height;
         bool drewTrailingFooter = false;
 
@@ -213,7 +214,7 @@ public partial class ListView
 
         if (PinnedFooterRows > 0)
         {
-            int footerRow = Math.Max (HeaderRowCount, Viewport.Height - PinnedFooterRows);
+            int footerRow = Math.Max (headerRows, Viewport.Height - PinnedFooterRows);
 
             if (footerRow < Viewport.Height)
             {
@@ -231,9 +232,10 @@ public partial class ListView
             return;
         }
 
+        int headerRows = VisibleHeaderRows;
         int footerRow = FooterPlacement == ColumnFooterPlacement.Bottom
-                            ? Math.Max (HeaderRowCount, Viewport.Height - FooterRowCount)
-                            : HeaderRowCount;
+                            ? Math.Max (headerRows, Viewport.Height - FooterRowCount)
+                            : headerRows;
 
         if (footerRow >= Viewport.Height)
         {
