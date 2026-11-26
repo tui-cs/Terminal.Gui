@@ -1,8 +1,8 @@
 using System.Collections;
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
+using System.Globalization;
 using System.Reflection;
-using System.Text;
 
 namespace Terminal.Gui.Views;
 
@@ -10,7 +10,7 @@ namespace Terminal.Gui.Views;
 ///     Provides a default implementation of <see cref="IListDataSource"/> that renders <see cref="ListView"/> items
 ///     using <see cref="object.ToString()"/>.
 /// </summary>
-public class ListWrapper<T> : IListDataSource, IListViewLayout
+public class ListWrapper<T> : IListDataSource, IListViewLayout, IListViewSortable
 {
     /// <summary>
     ///     Creates a new instance of <see cref="ListWrapper{T}"/> that wraps the specified
@@ -27,6 +27,7 @@ public class ListWrapper<T> : IListDataSource, IListViewLayout
         _marks = new BitArray (_count);
         _source = source;
         _source.CollectionChanged += Source_CollectionChanged;
+        RebuildDisplayOrder ();
         MaxItemLength = GetMaxLengthItem ();
     }
 
@@ -35,6 +36,13 @@ public class ListWrapper<T> : IListDataSource, IListViewLayout
     private readonly ObservableCollection<T>? _source;
     private int _count;
     private BitArray? _marks;
+    private int [] _displayOrder = [];
+    private int [] _previousDisplayOrder = [];
+    private List<T> _sourceItems = [];
+    private List<T> _previousSourceItems = [];
+    private int _sortColumn = -1;
+    private bool _sortDescending;
+    private ListView? _listView;
 
     /// <inheritdoc/>
     public event NotifyCollectionChangedEventHandler? CollectionChanged;
@@ -44,6 +52,9 @@ public class ListWrapper<T> : IListDataSource, IListViewLayout
 
     /// <inheritdoc/>
     public int MaxItemLength { get; private set; }
+
+    /// <inheritdoc/>
+    public bool IsSorted => _sortColumn >= 0;
 
     /// <inheritdoc/>
     public bool SuspendCollectionChangedEvent
@@ -63,6 +74,7 @@ public class ListWrapper<T> : IListDataSource, IListViewLayout
     /// <inheritdoc/>
     public void PrepareRender (ListView listView, int width)
     {
+        _listView = listView;
         width = Math.Max (width, 0);
 
         if (listView.ColumnHeaders is not { Count: > 0 })
@@ -103,7 +115,7 @@ public class ListWrapper<T> : IListDataSource, IListViewLayout
 
         if (listView.ColumnHeaders is not { Count: > 0 })
         {
-            object? value = _source [item];
+            object? value = _source [GetSourceIndex (item)];
             string text = value as string ?? value?.ToString () ?? string.Empty;
 
             return LineCount (text, available);
@@ -136,7 +148,7 @@ public class ListWrapper<T> : IListDataSource, IListViewLayout
                 return;
             }
 
-            object? t = _source [item];
+            object? t = _source [GetSourceIndex (item)];
 
             switch (t)
             {
@@ -165,9 +177,11 @@ public class ListWrapper<T> : IListDataSource, IListViewLayout
     /// <inheritdoc/>
     public bool IsMarked (int item)
     {
-        if (item >= 0 && item < _count)
+        int sourceIndex = GetSourceIndex (item);
+
+        if (sourceIndex >= 0 && sourceIndex < _count)
         {
-            return _marks! [item];
+            return _marks! [sourceIndex];
         }
 
         return false;
@@ -176,14 +190,93 @@ public class ListWrapper<T> : IListDataSource, IListViewLayout
     /// <inheritdoc/>
     public void SetMark (int item, bool value)
     {
-        if (item >= 0 && item < _count)
+        int sourceIndex = GetSourceIndex (item);
+
+        if (sourceIndex >= 0 && sourceIndex < _count)
         {
-            _marks! [item] = value;
+            _marks! [sourceIndex] = value;
         }
     }
 
     /// <inheritdoc/>
-    public IList ToList () => _source ?? [];
+    public IList ToList ()
+    {
+        if (_source is null)
+        {
+            List<T> empty = [];
+
+            return empty;
+        }
+
+        List<T> items = [];
+
+        foreach (int sourceIndex in _displayOrder)
+        {
+            items.Add (_source [sourceIndex]);
+        }
+
+        return items;
+    }
+
+    /// <inheritdoc/>
+    public void ClearSort ()
+    {
+        if (_sortColumn < 0)
+        {
+            return;
+        }
+
+        _previousDisplayOrder = _displayOrder;
+        _previousSourceItems = _sourceItems;
+        _sortColumn = -1;
+        RebuildDisplayOrder ();
+    }
+
+    /// <inheritdoc/>
+    public int? RestoreSelection (int? selectedItem)
+    {
+        if (!selectedItem.HasValue || selectedItem < 0 || selectedItem >= _previousDisplayOrder.Length)
+        {
+            return selectedItem;
+        }
+
+        int sourceIndex = _previousDisplayOrder [(int)selectedItem];
+
+        if (sourceIndex < 0 || sourceIndex >= _previousSourceItems.Count)
+        {
+            return null;
+        }
+
+        T selectedValue = _previousSourceItems [sourceIndex];
+        int currentSourceIndex = FindSourceIndex (selectedValue);
+
+        if (currentSourceIndex < 0)
+        {
+            return null;
+        }
+
+        return Array.IndexOf (_displayOrder, currentSourceIndex);
+    }
+
+    /// <inheritdoc/>
+    public int? SortHeaderAt (ListView listView, int x, int? selectedItem)
+    {
+        int column = HeaderColumnAt (listView, x);
+
+        if (column < 0)
+        {
+            return selectedItem;
+        }
+
+        int sourceIndex = GetSourceIndex (selectedItem ?? -1);
+        _previousDisplayOrder = _displayOrder;
+        _previousSourceItems = _sourceItems;
+        _sortDescending = _sortColumn == column && !_sortDescending;
+        _sortColumn = column;
+        RebuildDisplayOrder (listView);
+
+        return sourceIndex < 0 ? null : Array.IndexOf (_displayOrder, sourceIndex);
+    }
 
     /// <inheritdoc/>
     /// <remarks>
@@ -247,19 +340,33 @@ public class ListWrapper<T> : IListDataSource, IListViewLayout
 
     private void CheckAndResizeMarksIfRequired ()
     {
-        if (_source == null || _count == _source.Count || _marks is null)
+        if (_source is null || _marks is null)
         {
             return;
         }
-        _count = _source.Count;
-        var newMarks = new BitArray (_count);
 
-        for (var i = 0; i < Math.Min (_marks.Length, newMarks.Length); i++)
+        BitArray marks = new (_source.Count);
+        bool [] matched = new bool [_sourceItems.Count];
+        EqualityComparer<T> comparer = EqualityComparer<T>.Default;
+
+        for (int sourceIndex = 0; sourceIndex < _source.Count; sourceIndex++)
         {
-            newMarks [i] = _marks [i];
+            for (int previousIndex = 0; previousIndex < _sourceItems.Count; previousIndex++)
+            {
+                if (matched [previousIndex] || !comparer.Equals (_source [sourceIndex], _sourceItems [previousIndex]))
+                {
+                    continue;
+                }
+
+                marks [sourceIndex] = _marks [previousIndex];
+                matched [previousIndex] = true;
+
+                break;
+            }
         }
 
-        _marks = newMarks;
+        _count = _source.Count;
+        _marks = marks;
 
         MaxItemLength = GetMaxLengthItem ();
     }
@@ -853,12 +960,21 @@ public class ListWrapper<T> : IListDataSource, IListViewLayout
     ///     Header text for one row inside <see cref="ListView.ColumnHeader.Height"/>. A line wider than
     ///     <paramref name="width"/> wraps when the header is taller than one row. Later rows of a taller band are blank.
     /// </summary>
-    private static string HeaderLine (ListView listView, ListView.ColumnHeader? columnHeader, int column, int row, int width)
+    private string HeaderLine (ListView listView, ListView.ColumnHeader? columnHeader, int column, int row, int width)
     {
         int height = Math.Max (1, columnHeader?.Height ?? 1);
         Alignment vertical = columnHeader?.HeaderVerticalAlignment ?? listView.HeadersVerticalAlignment;
+        bool sorted = _sortColumn == column;
+        int textWidth = sorted ? Math.Max (0, width - 1) : width;
+        string line = HeaderTextLine (HeaderTitle (columnHeader, column), row, height, textWidth, vertical);
 
-        return HeaderTextLine (HeaderTitle (columnHeader, column), row, height, width, vertical);
+        if (!sorted || row != 0 || width <= 0)
+        {
+            return line;
+        }
+
+        return Align (line, textWidth, columnHeader?.HeaderHorizontalAlignment ?? listView.HeadersAlignment)
+               + (_sortDescending ? Glyphs.DownArrow : Glyphs.UpArrow);
     }
 
     private void MeasureColumns (ListView listView, int width)
@@ -1121,7 +1237,8 @@ public class ListWrapper<T> : IListDataSource, IListViewLayout
             MeasureColumns (container, Math.Max (width, 0));
         }
 
-        object? value = _source is not null && item >= 0 && item < _source.Count ? _source [item] : null;
+        int sourceIndex = GetSourceIndex (item);
+        object? value = _source is not null && sourceIndex >= 0 && sourceIndex < _source.Count ? _source [sourceIndex] : null;
         int height = container.ItemAutoHeight
                          ? Math.Max (1, MeasureItemHeight (container, item))
                          : Math.Max (1, container.ItemHeight);
@@ -1144,7 +1261,176 @@ public class ListWrapper<T> : IListDataSource, IListViewLayout
         {
             return;
         }
+
+        _previousDisplayOrder = _displayOrder;
+        _previousSourceItems = _sourceItems;
         CheckAndResizeMarksIfRequired ();
+        RebuildDisplayOrder (_listView);
         CollectionChanged?.Invoke (sender, e);
+    }
+
+    private int FindSourceIndex (T value)
+    {
+        if (_source is null)
+        {
+            return -1;
+        }
+
+        EqualityComparer<T> comparer = EqualityComparer<T>.Default;
+
+        for (int i = 0; i < _source.Count; i++)
+        {
+            if (comparer.Equals (_source [i], value))
+            {
+                return i;
+            }
+        }
+
+        return -1;
+    }
+
+    private int GetSourceIndex (int displayIndex) =>
+        displayIndex >= 0 && displayIndex < _displayOrder.Length ? _displayOrder [displayIndex] : -1;
+
+    private int HeaderColumnAt (ListView listView, int x)
+    {
+        if (listView.ColumnHeaders is not { Count: > 0 })
+        {
+            return -1;
+        }
+
+        if (_columnWidths.Length == 0)
+        {
+            MeasureColumns (listView, Math.Max (0, listView.Viewport.Width - (listView.ShowMarks ? 2 : 0)));
+        }
+
+        int contentX = x + listView.Viewport.X - (listView.ShowMarks ? 2 : 0);
+
+        for (int i = 0; i < _columnStarts.Length; i++)
+        {
+            if (_columnStarts [i] < 0 || contentX < _columnStarts [i] || contentX >= _columnStarts [i] + _columnWidths [i])
+            {
+                continue;
+            }
+
+            return i;
+        }
+
+        return -1;
+    }
+
+    private void RebuildDisplayOrder (ListView? listView = null)
+    {
+        if (_source is null)
+        {
+            _displayOrder = [];
+            _sourceItems = [];
+
+            return;
+        }
+
+        List<T> sourceItems = [];
+
+        for (int i = 0; i < _source.Count; i++)
+        {
+            sourceItems.Add (_source [i]);
+        }
+
+        _sourceItems = sourceItems;
+        _displayOrder = [.. Enumerable.Range (0, _source.Count)];
+
+        if (_sortColumn < 0 || listView is null)
+        {
+            return;
+        }
+
+        Array.Sort (_displayOrder, (left, right) => CompareSourceItems (listView, left, right));
+    }
+
+    private int CompareSourceItems (ListView listView, int left, int right)
+    {
+        object? leftValue = GetColumnValue (listView, _source! [left], _sortColumn);
+        object? rightValue = GetColumnValue (listView, _source [right], _sortColumn);
+        int result = CompareValues (leftValue, rightValue);
+
+        if (_sortDescending)
+        {
+            result = -result;
+        }
+
+        return result != 0 ? result : left.CompareTo (right);
+    }
+
+    private static int CompareValues (object? left, object? right)
+    {
+        if (ReferenceEquals (left, right))
+        {
+            return 0;
+        }
+
+        if (left is null)
+        {
+            return -1;
+        }
+
+        if (right is null)
+        {
+            return 1;
+        }
+
+        if (left is IComparable comparable && left.GetType () == right.GetType ())
+        {
+            return comparable.CompareTo (right);
+        }
+
+        return CultureInfo.CurrentCulture.CompareInfo.Compare (left.ToString (), right.ToString (), CompareOptions.None);
+    }
+
+    private static object? GetColumnValue (ListView listView, object? value, int column)
+    {
+        if (value is null)
+        {
+            return null;
+        }
+
+        ListView.ColumnHeader? header = HeaderAt (listView, column);
+        object? raw = value;
+
+        if (value is not string && header is { MemberName.Length: > 0 })
+        {
+#pragma warning disable IL2075 // MemberName is an app-supplied public property.
+            raw = value.GetType ().GetProperty (header.MemberName)?.GetValue (value);
+#pragma warning restore IL2075
+        }
+        else if (value is string && column != 0)
+        {
+            return null;
+        }
+        else if (value is IList cells)
+        {
+            raw = column >= 0 && column < cells.Count ? cells [column] : null;
+        }
+
+        if (raw is null || header is null)
+        {
+            return raw;
+        }
+
+        try
+        {
+            return Convert.ChangeType (raw, header.MemberType, CultureInfo.CurrentCulture);
+        }
+        catch (InvalidCastException)
+        {
+            return raw;
+        }
+        catch (FormatException)
+        {
+            return raw;
+        }
+        catch (OverflowException)
+        {
+            return raw;
+        }
     }
 }

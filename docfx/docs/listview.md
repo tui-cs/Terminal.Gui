@@ -112,10 +112,13 @@ With no `ColumnHeaders`, the band is one row and shows `Col0`. `HeadersAlignment
 | `MemberFormat` | `null` | Composite format, for example `{0:N2}`. |
 | `MemberHorizontalAlignment` | `Start` | Horizontal alignment of the cells. |
 | `MemberVerticalAlignment` | `Start` | Vertical placement of the cell lines. |
+| `AllowsSorting` | `false` | Lets header clicks sort a built-in `ListWrapper<T>` source without changing the caller's collection. |
 
 The band is as tall as the tallest `Height`, and at least one row when headers are shown and no columns are configured. Rows past a shorter column are blank.
 
 A line break in `HeaderName` starts another header row when `Height` is greater than 1. A height of one shows only the first line and clips a wider title. When `Height` is greater than 1 and the column is narrower than the title, the title wraps. A line break stays a hard break.
+
+Set `AllowsSorting` to `true` to sort a source supplied with `SetSource`. The first left click on a header sorts that column ascending and shows <xref:Terminal.Gui.Drawing.Glyphs.UpArrow>. A second click on the same header sorts descending and shows <xref:Terminal.Gui.Drawing.Glyphs.DownArrow>. Clicking another header starts an ascending sort. The sort is stable, uses the current culture for text, preserves the selected item and marks, and does not reorder the caller's `ObservableCollection<T>`. Disabling `AllowsSorting` restores source order and removes the glyph. Custom `IListDataSource` implementations keep their own order.
 
 `SetSource<T>(null)` still clears the source, using the same rules as before. Drawing still paints the header, and the footer when footers are shown, and then stops. Assign `Source = null` to detach every data source.
 

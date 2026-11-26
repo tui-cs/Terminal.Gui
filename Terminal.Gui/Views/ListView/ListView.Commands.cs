@@ -119,6 +119,10 @@ public partial class ListView
         // Handle mouse clicks
         Point position = mouse.Position!.Value;
         int row = position.Y;
+        bool shift = mouse.Flags.FastHasFlags (MouseFlags.Shift);
+        bool ctrl = mouse.Flags.FastHasFlags (MouseFlags.Ctrl);
+        bool leftButton = mouse.Flags.FastHasFlags (MouseFlags.LeftButtonClicked);
+        bool rightButton = mouse.Flags.FastHasFlags (MouseFlags.RightButtonClicked);
 
         if (IsPinnedFooterRow (row))
         {
@@ -129,6 +133,15 @@ public partial class ListView
 
         if (row < headerRows)
         {
+            if (!AllowsSorting || !leftButton || Source is not IListViewSortable sortable)
+            {
+                return;
+            }
+
+            SelectedItem = sortable.SortHeaderAt (this, position.X, SelectedItem);
+            EnsureSelectedItemVisible ();
+            SetNeedsDraw ();
+
             return;
         }
 
@@ -150,11 +163,6 @@ public partial class ListView
         {
             return;
         }
-        bool shift = mouse.Flags.FastHasFlags (MouseFlags.Shift);
-        bool ctrl = mouse.Flags.FastHasFlags (MouseFlags.Ctrl);
-        bool leftButton = mouse.Flags.FastHasFlags (MouseFlags.LeftButtonClicked);
-        bool rightButton = mouse.Flags.FastHasFlags (MouseFlags.RightButtonClicked);
-
         // Allow marking if: ShowMarks=true OR MarkMultiple=true
         bool allowMarking = ShowMarks || MarkMultiple;
 

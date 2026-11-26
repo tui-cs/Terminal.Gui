@@ -110,9 +110,26 @@ public class ListViewWithMultiLine : Scenario
                                       };
         appWindow.Add (_showFooters);
 
-        CheckBox showMarks = new ()
+        CheckBox allowsSorting = new ()
         {
             X = Pos.Right (_showFooters) + 1,
+            Y = Pos.Top (_showHeaders),
+            Text = "Allow _sorting"
+        };
+        allowsSorting.ValueChanging += (_, e) =>
+                                      {
+                                          if (_listView is null)
+                                          {
+                                              return;
+                                          }
+
+                                          _listView.AllowsSorting = e.NewValue == CheckState.Checked;
+                                      };
+        appWindow.Add (allowsSorting);
+
+        CheckBox showMarks = new ()
+        {
+            X = Pos.Right (allowsSorting) + 1,
             Y = Pos.Top (_showHeaders),
             Text = "Show mar_ks"
         };

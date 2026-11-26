@@ -6486,6 +6486,147 @@ Five ",
         UseList (listView, width, height, app => DriverAssert.AssertDriverContentsWithFrameAre (expected, _output, app.Driver));
     }
 
+    // Codex - GPT-5
+    [Fact]
+    public void AllowsSorting_Header_Click_Sorts_Without_Reordering_The_Source ()
+    {
+        ObservableCollection<string> source = ["Beta", "Alpha", "Gamma"];
+        ListView listView = new ()
+        {
+            Width = 8,
+            Height = 4,
+            AllowsSorting = true,
+            ShowColumnHeaders = true,
+            ColumnHeaders = [new ListView.ColumnHeader { HeaderName = "Name", HeaderHorizontalAlignment = Alignment.Start }]
+        };
+        listView.SetSource (source);
+
+        UseList (listView, 8, 4, app =>
+        {
+            listView.SelectedItem = 0;
+            listView.Source!.SetMark (0, true);
+            app.Mouse.RaiseMouseEvent (new Mouse { ScreenPosition = new Point (0, 0), Flags = MouseFlags.LeftButtonClicked });
+            app.LayoutAndDraw ();
+
+            Assert.Equal (["Alpha", "Beta", "Gamma"], listView.Source.ToList ().Cast<string> ());
+            Assert.Equal (["Beta", "Alpha", "Gamma"], source);
+            Assert.Equal (1, listView.SelectedItem);
+            Assert.True (listView.Source.IsMarked (1));
+            DriverAssert.AssertDriverContentsWithFrameAre (
+                                                           """
+                                                           Name   ▲
+                                                           Alpha
+                                                           Beta
+                                                           Gamma
+                                                           """,
+                                                           _output,
+                                                           app.Driver);
+
+            app.Mouse.RaiseMouseEvent (new Mouse { ScreenPosition = new Point (0, 0), Flags = MouseFlags.LeftButtonClicked });
+            Assert.Equal (["Gamma", "Beta", "Alpha"], listView.Source.ToList ().Cast<string> ());
+            Assert.Equal (1, listView.SelectedItem);
+            Assert.True (listView.Source.IsMarked (1));
+        });
+    }
+
+    // Codex - GPT-5
+    [Fact]
+    public void AllowsSorting_Disabling_Restores_Source_Order_And_Removes_Glyph ()
+    {
+        ObservableCollection<string> source = ["Beta", "Alpha"];
+        ListView listView = new ()
+        {
+            Width = 8,
+            Height = 3,
+            AllowsSorting = true,
+            ShowColumnHeaders = true,
+            ColumnHeaders = [new ListView.ColumnHeader { HeaderName = "Name", HeaderHorizontalAlignment = Alignment.Start }]
+        };
+        listView.SetSource (source);
+
+        UseList (listView, 8, 3, app =>
+        {
+            app.Mouse.RaiseMouseEvent (new Mouse { ScreenPosition = new Point (0, 0), Flags = MouseFlags.LeftButtonClicked });
+            listView.AllowsSorting = false;
+            app.LayoutAndDraw ();
+
+            Assert.Equal (["Beta", "Alpha"], listView.Source!.ToList ().Cast<string> ());
+            DriverAssert.AssertDriverContentsWithFrameAre (
+                                                           """
+                                                           Name
+                                                           Beta
+                                                           Alpha
+                                                           """,
+                                                           _output,
+                                                           app.Driver);
+        });
+    }
+
+    // Codex - GPT-5
+    [Fact]
+    public void AllowsSorting_Uses_The_Column_MemberType ()
+    {
+        ObservableCollection<QuantityRow> source =
+        [
+            new () { Name = "Ten", Qty = 10 },
+            new () { Name = "Two", Qty = 2 },
+            new () { Name = "Three", Qty = 3 }
+        ];
+        ListView listView = new ()
+        {
+            Width = 8,
+            Height = 4,
+            AllowsSorting = true,
+            ShowColumnHeaders = true,
+            ColumnHeaders =
+            [
+                new ListView.ColumnHeader
+                {
+                    HeaderName = "Qty",
+                    MemberName = nameof (QuantityRow.Qty),
+                    MemberType = typeof (int),
+                    HeaderHorizontalAlignment = Alignment.Start
+                }
+            ]
+        };
+        listView.SetSource (source);
+
+        UseList (listView, 8, 4, app =>
+        {
+            app.Mouse.RaiseMouseEvent (new Mouse { ScreenPosition = new Point (0, 0), Flags = MouseFlags.LeftButtonClicked });
+
+            Assert.Equal ([2, 3, 10], listView.Source!.ToList ().Cast<QuantityRow> ().Select (row => row.Qty));
+        });
+    }
+
+    // Codex - GPT-5
+    [Fact]
+    public void AllowsSorting_Reapplies_Sort_After_Collection_Changes ()
+    {
+        ObservableCollection<string> source = ["Beta", "Alpha", "Gamma"];
+        ListView listView = new ()
+        {
+            Width = 8,
+            Height = 4,
+            AllowsSorting = true,
+            ShowColumnHeaders = true,
+            ColumnHeaders = [new ListView.ColumnHeader { HeaderName = "Name", HeaderHorizontalAlignment = Alignment.Start }]
+        };
+        listView.SetSource (source);
+
+        UseList (listView, 8, 4, app =>
+        {
+            listView.SelectedItem = 0;
+            listView.Source!.SetMark (0, true);
+            app.Mouse.RaiseMouseEvent (new Mouse { ScreenPosition = new Point (0, 0), Flags = MouseFlags.LeftButtonClicked });
+            source.Add ("Aardvark");
+
+            Assert.Equal (["Aardvark", "Alpha", "Beta", "Gamma"], listView.Source.ToList ().Cast<string> ());
+            Assert.Equal (2, listView.SelectedItem);
+            Assert.True (listView.Source.IsMarked (2));
+        });
+    }
+
     private static void UseList (ListView listView, int width, int height, Action<IApplication> assert)
     {
         IApplication app = Application.Create ();

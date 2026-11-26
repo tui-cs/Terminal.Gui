@@ -334,6 +334,11 @@ public partial class ListView : View, IDesignable, IValue<int?>
     // TODO: Make CollectionChange follow the CWP
     private void SourceOnCollectionChanged (object? sender, NotifyCollectionChangedEventArgs e)
     {
+        if (Source is IListViewSortable { IsSorted: true } sortable)
+        {
+            SelectedItem = sortable.RestoreSelection (SelectedItem);
+        }
+
         UpdateContentSize ();
         KeystrokeNavigator?.Collection = Source?.ToList ();
 
@@ -374,6 +379,39 @@ public partial class ListView : View, IDesignable, IValue<int?>
     #endregion IListDataSource
 
     #region Item height and columns
+
+    /// <summary>
+    ///     Gets or sets whether clicking a column header sorts the built-in <see cref="ListWrapper{T}"/> source.
+    ///     The default is <see langword="false"/>.
+    /// </summary>
+    /// <remarks>
+    ///     A first click sorts ascending. A second click on the same header sorts descending. Clicking a different
+    ///     header starts with ascending order. Setting this property to <see langword="false"/> restores source order.
+    ///     Custom <see cref="IListDataSource"/> implementations retain their own order.
+    /// </remarks>
+    public bool AllowsSorting
+    {
+        get;
+        set
+        {
+            if (field == value)
+            {
+                return;
+            }
+
+            field = value;
+
+            if (!field && Source is IListViewSortable sortable)
+            {
+                sortable.ClearSort ();
+                SelectedItem = sortable.RestoreSelection (SelectedItem);
+            }
+
+            UpdateContentSize ();
+            EnsureSelectedItemVisible ();
+            SetNeedsDraw ();
+        }
+    }
 
     /// <summary>
     ///     Gets or sets how many rows each item occupies when <see cref="ItemAutoHeight"/> is <see langword="false"/>.
