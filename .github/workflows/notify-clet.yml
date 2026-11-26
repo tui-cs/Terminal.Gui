@@ -31,7 +31,7 @@ jobs:
     if: ${{ github.event.workflow_run.conclusion == 'success' }}
     steps:
       - name: Download published-version artifact
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: published-version
           run-id: ${{ github.event.workflow_run.id }}
@@ -71,7 +71,7 @@ jobs:
           exit 1
 
       - name: Dispatch to tui-cs/clet
-        uses: peter-evans/repository-dispatch@v3
+        uses: peter-evans/repository-dispatch@v4
         with:
           token: ${{ secrets.CLET_DISPATCH_PAT }}
           repository: tui-cs/clet
