@@ -4,6 +4,7 @@ public partial class ListView
 {
     /// <summary>
     ///     Describes the text shown for one column when <see cref="ShowColumnFooters"/> is <see langword="true"/>.
+    ///     <a href="../docs/listview.md">See the ListView Deep Dive for more</a>.
     /// </summary>
     /// <remarks>
     ///     <para>

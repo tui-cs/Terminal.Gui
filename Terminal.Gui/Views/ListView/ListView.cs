@@ -7,6 +7,7 @@ namespace Terminal.Gui.Views;
 /// <summary>
 ///     Provides a scrollable list of data where each item can be activated to perform an
 ///     action.
+///     <a href="../docs/listview.md">See the ListView Deep Dive for more</a>.
 /// </summary>
 /// <remarks>
 /// <img src="../images/views/ListView.gif" alt="ListView demo"/>

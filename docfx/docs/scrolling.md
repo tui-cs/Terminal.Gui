@@ -74,7 +74,7 @@ These `UI Catalog` Scenarios illustrate Terminal.Gui scrolling:
 * *ScrollBar Demo* - Demonstrates using <xref:Terminal.Gui.Views.ScrollBar> view in a standalone manner.
 * *ViewportSettings* - Demonstrates the various <xref:Terminal.Gui.ViewBase.ViewportSettingsFlags> (see below) in an interactive manner. Used by the development team to visually verify that convoluted View layout and arrangement scenarios scroll properly.
 * *Character Map* - Demonstrates a sophisticated scrolling use-case. The entire set of Unicode code-points can be scrolled and searched. From a scrolling perspective, this Scenario illustrates how to manually configure Viewport, Content Area, and Viewport Settings to enable horizontal and vertical headers (as might appear in a spreadsheet), full keyboard and mouse support, and more. 
-* *ListView* and *HexEdit* - The source code to these built-in Views are good references for how to support scrolling and ScrollBars in a re-usable View sub-class. 
+* *ListView* and *HexEdit* - The source code to these built-in Views are good references for how to support scrolling and ScrollBars in a re-usable View sub-class. In `ListView`, `Viewport.Y` is the index of the top item. See [ListView](listview.md) for multi-line items and the horizontal scrollbar. 
 
 ## ViewportSettings
 

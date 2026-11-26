@@ -4,6 +4,7 @@ public partial class ListView
 {
     /// <summary>
     ///     Describes one column shown by <see cref="ListView"/> when <see cref="ColumnHeaders"/> is set.
+    ///     <a href="../docs/listview.md">See the ListView Deep Dive for more</a>.
     /// </summary>
     /// <remarks>
     ///     <para>

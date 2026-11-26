@@ -131,7 +131,7 @@ Width = Dim.Percent (50);   // Percentage of SuperView
 | `TextView` | Multi-line text editor | |
 | `CheckBox` | Boolean toggle | `CheckedState` property |
 | `OptionSelector` | Single selection from options | Replaces v1 `RadioGroup` |
-| `ListView` | Scrollable list | Use `ListWrapper<T>` for data |
+| `ListView` | Scrollable list | `SetSource` / `ListWrapper<T>`. `ItemHeight` and `ItemAutoHeight` for multi-line rows. `ColumnHeaders` and `ColumnFooters` for columns. See `docfx/docs/listview.md`. |
 | `TableView` | Tabular data display | Use `DataTableSource` |
 | `TreeView<T>` | Hierarchical data | Use `DelegateTreeBuilder<T>` |
 | `Dialog` | Modal dialog window | |

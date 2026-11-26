@@ -205,6 +205,7 @@ See `.claude/cookbook/` for common UI patterns:
 [Components]
 |views.md|Complete catalog of built-in views
 |menus.md|MenuBar,ContextMenu,MenuItem
+|listview.md|ListView multi-line items,column headers,column footers
 |tableview.md|TableView data binding
 |treeview.md|TreeView hierarchical data
 |prompt.md|MessageBox,input dialogs
@@ -258,13 +259,13 @@ See `.claude/cookbook/` for common UI patterns:
 |Configuration:{AttributeJsonConverter.cs,ColorJsonConverter.cs,ConcurrentDictionaryJsonConverter.cs,DictionaryJsonConverter.cs,KeyArrayJsonConverter.cs,KeyCodeJsonConverter.cs,KeyJsonConverter.cs,MouseFlagsArrayJsonConverter.cs,RuneJsonConverter.cs,SchemeJsonConverter.cs,SchemeManager.cs,SourceGenerationContext.cs,ThemeManager.cs,TraceCategoryJsonConverter.cs,TuiJsonErrors.cs,TuiSerializerContext.cs}
 |Configuration/Settings:{ApplicationSettings.cs,ButtonSettings.cs,CharMapSettings.cs,CheckBoxSettings.cs,ConfigurationSectionJson.cs,DialogSettings.cs,DriverSettings.cs,FileDialogSettings.cs,FileDialogStyleSettings.cs,FrameViewSettings.cs,GlyphSettings.cs,HexViewSettings.cs,ISchemeManager.cs,IThemeManager.cs,JsonMerge.cs,KeyBindingConfiguration.cs,KeySettings.cs,LinearRangeSettings.cs,MecThemeManager.cs,MenuBarSettings.cs,MenuSettings.cs,MessageBoxSettings.cs,NerdFontsSettings.cs,PopoverMenuSettings.cs,SelectorBaseSettings.cs,StatusBarSettings.cs,TextFieldSettings.cs,TextViewSettings.cs,ThemeCatalog.cs,ThemeChanges.cs,ThemeSettings.cs,TraceSettings.cs,TuiConfigurationBuilder.cs,TuiConfigurationExtensions.cs,WindowSettings.cs}
 |Drawing:{Attribute.cs,Cell.cs,CellEventArgs.cs,FillPair.cs,Glyphs.cs,Gradient.cs,GradientFill.cs,GraphemeHelper.cs,IFill.cs,InlineOutputLine.cs,InlineOutputSpan.cs,Region.cs,RegionOp.cs,Ruler.cs,Scheme.cs,Schemes.cs,SolidFill.cs,TextStyle.cs,Thickness.cs,VisualRole.cs,VisualRoleEventArgs.cs}
-|Drawing/Color:{AnsiColorCode.cs,Color.ColorExtensions.cs,Color.ColorName.cs,Color.ColorParseException.cs,Color.cs,Color.Formatting.cs,Color.Operators.cs,ColorModel.cs,ColorQuantizer.cs,ColorStrings.cs,IColorDistance.cs,IColorNameResolver.cs,ICustomColorFormatter.cs,StandardColor.cs,StandardColors.cs,StandardColorsNameResolver.cs}
+|Drawing/Color:{AnsiColorCode.cs,Color.ColorExtensions.cs,Color.ColorName.cs,Color.ColorParseException.cs,Color.Contrast.cs,Color.cs,Color.Formatting.cs,Color.Operators.cs,ColorModel.cs,ColorQuantizer.cs,ColorStrings.cs,IColorDistance.cs,IColorNameResolver.cs,ICustomColorFormatter.cs,StandardColor.cs,StandardColors.cs,StandardColorsNameResolver.cs}
 |Drawing/Kitty:{KittyGraphicsEncoder.cs,KittyGraphicsSupportDetector.cs,KittyGraphicsSupportResult.cs}
 |Drawing/LineCanvas:{IntersectionDefinition.cs,IntersectionRuneType.cs,IntersectionType.cs,LineCanvas.cs,LineDirections.cs,LineStyle.cs,StraightLine.cs,StraightLineExtensions.cs}
 |Drawing/Markdown:{ISyntaxHighlighter.cs,MarkdownAttributeHelper.cs,MarkdownStyleRole.cs,StyledSegment.cs,TextMateSyntaxHighlighter.cs}
 |Drawing/Quant:{EuclideanColorDistance.cs,IPaletteBuilder.cs,IStaticPaletteBuilder.cs,PopularityPaletteWithThreshold.cs}
 |Drawing/Sixel:{SixelEncoder.cs,SixelSupportDetector.cs,SixelSupportResult.cs,SixelToRender.cs}
-|Drivers:{ComponentFactoryImpl.cs,Cursor.cs,CursorStyle.cs,Driver.cs,DriverImpl.cs,DriverRegistry.cs,IComponentFactory.cs,IDriver.cs,ISizeMonitor.cs,PlatformDetection.cs,SizeDetectionMode.cs,SizeMonitorImpl.cs,TerminalDevice.cs,TuiPlatform.cs}
+|Drivers:{ComponentFactoryImpl.cs,Cursor.cs,CursorStyle.cs,Driver.cs,DriverImpl.cs,DriverRegistry.cs,IComponentFactory.cs,ICursorApplyReporter.cs,IDriver.cs,ISizeMonitor.cs,PlatformDetection.cs,SizeDetectionMode.cs,SizeMonitorImpl.cs,TerminalDevice.cs,TuiPlatform.cs}
 |Drivers/AnsiDriver:{AnsiComponentFactory.cs,AnsiInput.cs,AnsiInputProcessor.cs,AnsiOutput.cs,AnsiOutput.InlineOutput.cs,AnsiPlatform.cs,AnsiSizeMonitor.cs,AnsiTerminalHelper.cs,FakeClipboard.cs}
 |Drivers/AnsiHandling:{AnsiEscapeSequence.cs,AnsiEscapeSequenceRequest.cs,AnsiKeyboardEncoder.cs,AnsiKeyboardParser.cs,AnsiKeyboardParserPattern.cs,AnsiKeyConverter.cs,AnsiMouseEncoder.cs,AnsiMouseParser.cs,AnsiRequestScheduler.cs,AnsiResponseExpectation.cs,AnsiResponseParser.cs,AnsiResponseParserBase.cs,AnsiResponseParserState.cs,AnsiResponseParserTInputRecord.cs,AnsiStartupGate.cs,AnsiStartupQuery.cs,CsiCursorPattern.cs,CsiKeyPattern.cs,EscAsAltPattern.cs,GenericHeld.cs,IAnsiResponseParser.cs,IAnsiStartupGate.cs,IHeld.cs,KittyKeyboardCapabilities.cs,KittyKeyboardFlags.cs,KittyKeyboardPattern.cs,KittyKeyboardProtocolDetector.cs,Osc8UrlLinker.cs,ProgressIndicator.cs,ReasonCannotSend.cs,Ss3Pattern.cs,StringHeld.cs,TerminalColorDetector.cs}
 |Drivers/AnsiHandling/EscSeqUtils:{EscSeqReqStatus.cs,EscSeqRequests.cs,EscSeqUtils.cs}
@@ -301,8 +302,8 @@ See `.claude/cookbook/` for common UI patterns:
 |Views/GraphView:{Axis.cs,AxisIncrementToRender.cs,BarSeriesBar.cs,GraphCellToRender.cs,GraphView.cs,HorizontalAxis.cs,IAnnotation.cs,ISeries.cs,LegendAnnotation.cs,LineF.cs,MultiBarSeries.cs,PathAnnotation.cs,ScatterSeries.cs,Series.cs,TextAnnotation.cs,VerticalAxis.cs}
 |Views/ImageView:{ImageView.cs,ImageView.Drawing.cs,ImageView.Geometry.cs,ImageView.Input.cs,ImageView.Lifecycle.cs,ImageView.Render.cs,ImageView.Scaling.cs}
 |Views/LinearRange:{LinearMultiSelector.cs,LinearMultiSelectorT.cs,LinearRange.cs,LinearRangeAttributes.cs,LinearRangeConfiguration.cs,LinearRangeDefaults.cs,LinearRangeEventArgs.cs,LinearRangeOption.cs,LinearRangeOptionEventArgs.cs,LinearRangeRenderMode.cs,LinearRangeSpan.cs,LinearRangeSpanKind.cs,LinearRangeStyle.cs,LinearRangeT.cs,LinearRangeViewBase.cs,LinearSelector.cs,LinearSelectorT.cs}
-|Views/ListView:{IListDataSource.cs,ListView.Commands.cs,ListView.cs,ListView.Drawing.cs,ListView.Movement.cs,ListView.Selection.cs,ListViewEventArgs.cs,ListViewT.cs,ListWrapper.cs}
-|Views/Markdown:{InlineRun.cs,IntermediateBlock.cs,Markdown.cs,MarkdownCodeBlock.cs,MarkdownImageResolver.cs,MarkdownInlineParser.cs,MarkdownLinkEventArgs.cs,MarkdownTable.cs,MarkdownView.Ansi.cs,MarkdownView.Drawing.cs,MarkdownView.Layout.cs,MarkdownView.Mouse.cs,MarkdownView.Parsing.cs,MarkdownView.Selection.cs,RenderedLine.cs,TableData.cs}
+|Views/ListView:{ColumnFooter.cs,ColumnFooterPlacement.cs,ColumnHeader.cs,IListDataSource.cs,IListViewLayout.cs,ListView.Commands.cs,ListView.cs,ListView.Drawing.cs,ListView.Movement.cs,ListView.Selection.cs,ListViewEventArgs.cs,ListViewT.cs,ListWrapper.cs}
+|Views/Markdown:{InlineRun.cs,IntermediateBlock.cs,Markdown.cs,MarkdownCodeBlock.cs,MarkdownImageResolver.cs,MarkdownInlineParser.cs,MarkdownLinkEventArgs.cs,MarkdownTable.cs,MarkdownTableCellContent.cs,MarkdownTableCellLayout.cs,MarkdownTableCellParser.cs,MarkdownTableContent.cs,MarkdownTableGlyph.cs,MarkdownTableLayout.cs,MarkdownTableLayoutEngine.cs,MarkdownTableLink.cs,MarkdownTableSerializer.cs,MarkdownTableSource.cs,MarkdownView.Ansi.cs,MarkdownView.Drawing.cs,MarkdownView.Layout.cs,MarkdownView.Mouse.cs,MarkdownView.Parsing.cs,MarkdownView.Selection.cs,RenderedLine.cs,TableCellData.cs,TableColumnData.cs,TableData.cs,TableData.Grid.cs,TableRowData.cs}
 |Views/Menu:{IMenuBarEntry.cs,Menu.cs,MenuBar.cs,MenuBarItem.cs,MenuItem.cs,PopoverMenu.cs}
 |Views/Runnable:{Runnable.cs,RunnableTResult.cs,RunnableWrapper.cs}
 |Views/ScrollBar:{ScrollBar.cs,ScrollBarVisibilityMode.cs,ScrollButton.cs,ScrollSlider.cs}
@@ -410,7 +411,7 @@ Implementing `IValue<T>` requires `ValueChanging`, `ValueChanged`, and `ValueCha
 |Wizard|Class|Multi-step,AddStep,CurrentStep
 
 [Lists & Data]
-|ListView|Class|Source,SelectedItem,AllowsMarking
+|ListView|Class|Source,SelectedItem,ItemHeight,ItemAutoHeight,ColumnHeaders,ColumnFooters
 |TableView|Class|Table,SelectedRow,SelectedColumn
 |TreeView|Class|Objects,AddObject,SelectedObject
 |TreeView<T>|Class|Generic tree
@@ -515,6 +516,7 @@ Implementing `IValue<T>` requires `ValueChanging`, `ValueChanged`, and `ValueCha
 |IFileOperations|Interface|GetFiles,GetDirectories,Exists
 |FileSystemTreeBuilder|Class|Build file trees
 ```
+
 
 
 

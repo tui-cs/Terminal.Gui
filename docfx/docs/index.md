@@ -35,6 +35,7 @@ Welcome to the Terminal.Gui documentation! This comprehensive guide covers every
 - [Input Injection](~/docs/input-injection.md) - Testing support for simulating keyboard and mouse input
 - [Keyboard](~/docs/keyboard.md) - Key handling, bindings, commands, and shortcuts
 - [Layout](~/docs/layout.md) - View positioning, sizing, and arrangement
+- [ListView](~/docs/listview.md) - Multi-line items, column headers, column footers, and alignment
 - [Logging](~/docs/logging.md) - Comprehensive logging and performance monitoring
 - [Menus](~/docs/menus.md) - Menu system architecture including MenuBar, MenuItem, and PopoverMenu
 - [Mouse](~/docs/mouse.md) - Mouse event handling and interaction patterns
