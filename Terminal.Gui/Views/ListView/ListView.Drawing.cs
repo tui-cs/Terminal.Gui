@@ -32,11 +32,29 @@ public partial class ListView
 
         if (Source is null)
         {
+            DrawDetachedFooter (current);
+
             return base.OnDrawingContent (context);
         }
 
-        for (; row < Viewport.Height; item++)
+        int itemBottom = PinnedFooterRows > 0
+                             ? Math.Max (HeaderRowCount, Viewport.Height - PinnedFooterRows)
+                             : Viewport.Height;
+        bool drewTrailingFooter = false;
+
+        for (; row < itemBottom; item++)
         {
+            if (!drewTrailingFooter
+                && TrailingFooterRows > 0
+                && item >= (Source?.Count ?? 0))
+            {
+                drewTrailingFooter = true;
+                current = DrawColumnFooter (current, row);
+                row += FooterRowCount;
+
+                continue;
+            }
+
             int rowStep = RowsForItem (item);
             bool isSelected = item == SelectedItem;
             bool isMarked = item < Source?.Count && Source?.IsMarked (item) is true;
@@ -193,7 +211,36 @@ public partial class ListView
             row += rowStep;
         }
 
+        if (PinnedFooterRows > 0)
+        {
+            int footerRow = Math.Max (HeaderRowCount, Viewport.Height - PinnedFooterRows);
+
+            if (footerRow < Viewport.Height)
+            {
+                DrawColumnFooter (current, footerRow);
+            }
+        }
+
         return true;
+    }
+
+    private void DrawDetachedFooter (Attribute current)
+    {
+        if (!ShowColumnFooters || FooterRowCount <= 0)
+        {
+            return;
+        }
+
+        int footerRow = FooterPlacement == ColumnFooterPlacement.Bottom
+                            ? Math.Max (HeaderRowCount, Viewport.Height - FooterRowCount)
+                            : HeaderRowCount;
+
+        if (footerRow >= Viewport.Height)
+        {
+            return;
+        }
+
+        DrawColumnFooter (current, footerRow);
     }
 
     private Attribute DrawColumnHeader (Attribute current)
@@ -233,6 +280,156 @@ public partial class ListView
         return current;
     }
 
+    private Attribute DrawColumnFooter (Attribute current, int row)
+    {
+        Attribute footerAttribute = GetAttributeForRole (VisualRole.ReadOnly);
+
+        if (footerAttribute != current)
+        {
+            SetAttribute (footerAttribute);
+            current = footerAttribute;
+        }
+
+        int band = FooterRowCount;
+
+        if (ShowMarks)
+        {
+            for (int r = 0; r < band && row + r < Viewport.Height; r++)
+            {
+                Move (0, row + r);
+                AddRune ((Rune)' ');
+                AddRune ((Rune)' ');
+            }
+        }
+
+        int contentCol = MarkWidth;
+        int footerWidth = Math.Max (0, Viewport.Width - contentCol);
+
+        if (Source is IListViewLayout layout)
+        {
+            layout.RenderColumnFooter (this, contentCol, row, footerWidth, Viewport.X);
+
+            return current;
+        }
+
+        WriteDetachedFooter (contentCol, row, footerWidth, Viewport.X);
+
+        return current;
+    }
+
+    /// <summary>
+    ///     Footer band used when <see cref="Source"/> is null or does not measure columns.
+    /// </summary>
+    private void WriteDetachedFooter (int col, int row, int width, int viewportX)
+    {
+        int band = FooterRowCount;
+
+        for (int r = 0; r < band && row + r < Viewport.Height; r++)
+        {
+            string text = FormatDetachedFooter (width, r);
+            Move (Math.Max (col - viewportX, 0), row + r);
+            WriteHeaderText (text, width, viewportX);
+        }
+    }
+
+    private string FormatDetachedFooter (int width, int row)
+    {
+        if (ColumnFooters is not { Count: > 0 } footers)
+        {
+            if (row > 0)
+            {
+                return string.Empty;
+            }
+
+            return AlignHeaderText ("Footer0", Math.Max (width, 0), FootersHorizontalAlignment);
+        }
+
+        if (ColumnHeaders is not { Count: > 0 } headers)
+        {
+            return FormatDetachedFooterCell (footers [0], null, width, row);
+        }
+
+        (int [] starts, int [] widths) = LayoutDetachedColumns (width);
+        int columnCount = headers.Count;
+        int margin = Math.Max (0, ColumnMargin);
+        string rowText = string.Empty;
+
+        for (int c = 0; c < columnCount; c++)
+        {
+            if (c >= starts.Length || starts [c] < 0)
+            {
+                continue;
+            }
+
+            int gap = c < columnCount - 1 ? margin : 0;
+            int contentWidth = Math.Max (0, widths [c] - gap);
+            ColumnFooter? footer = c < footers.Count ? footers [c] : null;
+            rowText += footer is null
+                           ? AlignHeaderText (string.Empty, contentWidth, FootersHorizontalAlignment)
+                           : FormatDetachedFooterCell (footer, headers [c], contentWidth, row);
+
+            if (gap > 0)
+            {
+                rowText += new string (' ', gap);
+            }
+        }
+
+        return rowText;
+    }
+
+    private string FormatDetachedFooterCell (ColumnFooter footer, ColumnHeader? header, int width, int row)
+    {
+        int footerHeight = Math.Max (1, footer.Height);
+
+        if (row < 0 || row >= footerHeight || width <= 0)
+        {
+            return AlignHeaderText (string.Empty, Math.Max (width, 0), footer.ResolveHorizontalAlignment (header, FootersHorizontalAlignment));
+        }
+
+        string formatted = FormatFooterText (footer, header);
+        string line = ListWrapper<string>.HeaderTextLine (
+                                                           formatted,
+                                                           row,
+                                                           footerHeight,
+                                                           width,
+                                                           footer.ResolveVerticalAlignment (header, FootersVerticalAlignment));
+
+        return AlignHeaderText (line, width, footer.ResolveHorizontalAlignment (header, FootersHorizontalAlignment));
+    }
+
+    /// <summary>
+    ///     Footer text after the resolved format. A format set on the footer wins. Otherwise the header's
+    ///     <see cref="ColumnHeader.MemberFormat"/> is used. A value that cannot be converted is left unchanged.
+    /// </summary>
+    internal static string FormatFooterText (ColumnFooter footer, ColumnHeader? header)
+    {
+        string text = footer.FooterName ?? string.Empty;
+        string? format = footer.ResolveFormat (header);
+
+        if (string.IsNullOrEmpty (format))
+        {
+            return text;
+        }
+
+        try
+        {
+            Type memberType = header?.MemberType ?? typeof (string);
+
+            if (memberType == typeof (string))
+            {
+                return string.Format (format, text);
+            }
+
+            object converted = Convert.ChangeType (text, memberType);
+
+            return string.Format (format, converted);
+        }
+        catch (Exception ex) when (ex is FormatException or InvalidCastException or OverflowException or ArgumentException or NotSupportedException)
+        {
+            return text;
+        }
+    }
+
     /// <summary>
     ///     Header row used when <see cref="Source"/> is null. Column widths come from the headers, because there are no
     ///     items to measure.
@@ -249,16 +446,12 @@ public partial class ListView
         }
     }
 
-    private string FormatDetachedHeader (int width, int row)
+    /// <summary>Column starts and widths for a header or footer drawn without a source.</summary>
+    private (int [] Starts, int [] Widths) LayoutDetachedColumns (int width)
     {
         if (ColumnHeaders is not { Count: > 0 } headers)
         {
-            if (row > 0)
-            {
-                return string.Empty;
-            }
-
-            return AlignHeaderText ("Col0", Math.Max (width, 0), HeadersAlignment);
+            return ([0], [Math.Max (width, 0)]);
         }
 
         int columnCount = headers.Count;
@@ -322,6 +515,24 @@ public partial class ListView
             used += widths [c];
         }
 
+        return (starts, widths);
+    }
+
+    private string FormatDetachedHeader (int width, int row)
+    {
+        if (ColumnHeaders is not { Count: > 0 } headers)
+        {
+            if (row > 0)
+            {
+                return string.Empty;
+            }
+
+            return AlignHeaderText ("Col0", Math.Max (width, 0), HeadersAlignment);
+        }
+
+        int columnCount = headers.Count;
+        int margin = Math.Max (0, ColumnMargin);
+        (int [] starts, int [] widths) = LayoutDetachedColumns (width);
         string rowText = string.Empty;
 
         for (int c = 0; c < columnCount; c++)

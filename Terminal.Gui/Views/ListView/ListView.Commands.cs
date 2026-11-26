@@ -119,6 +119,12 @@ public partial class ListView
         // Handle mouse clicks
         Point position = mouse.Position!.Value;
         int row = position.Y;
+
+        if (IsPinnedFooterRow (row))
+        {
+            return;
+        }
+
         int headerRows = HeaderRowCount;
 
         if (row < headerRows)
@@ -127,6 +133,11 @@ public partial class ListView
         }
 
         row -= headerRows;
+
+        if (IsTrailingFooterRow (row))
+        {
+            return;
+        }
 
         if (ItemAutoHeight)
         {

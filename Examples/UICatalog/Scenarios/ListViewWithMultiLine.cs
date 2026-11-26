@@ -1,6 +1,7 @@
 #nullable enable
 
 using System.Collections.ObjectModel;
+using System.Globalization;
 
 namespace UICatalog.Scenarios;
 
@@ -17,7 +18,7 @@ public class ListViewWithMultiLine : Scenario
         "Typed columns",
         "String array columns",
         "Empty list",
-        "Headers only",
+        "Headers/Footers only",
         "Column wrap"
     ];
 
@@ -25,15 +26,21 @@ public class ListViewWithMultiLine : Scenario
     private ListView? _listView;
     private TextField? _itemHeightField;
     private TextField? _headerHeightField;
+    private TextField? _footerHeightField;
     private Label? _modeLabel;
     private Label? _headerAlignLabel;
     private Label? _headerVerticalAlignLabel;
     private Label? _itemHorizontalAlignLabel;
     private Label? _itemVerticalAlignLabel;
+    private Label? _footerAlignLabel;
+    private Label? _footerVerticalAlignLabel;
+    private Label? _footerPlaceLabel;
     private CheckBox? _showHeaders;
+    private CheckBox? _showFooters;
     private int _mode;
     private bool _updatingHeight;
     private bool _updatingHeaderHeight;
+    private bool _updatingFooterHeight;
     private ObservableCollection<Scenario>? _scenarios;
 
     /// <inheritdoc/>
@@ -86,9 +93,26 @@ public class ListViewWithMultiLine : Scenario
                                      };
         appWindow.Add (_showHeaders);
 
-        CheckBox showMarks = new ()
+        _showFooters = new CheckBox
         {
             X = Pos.Right (_showHeaders) + 1,
+            Y = Pos.Top (_showHeaders),
+            Text = "Show _footers"
+        };
+        _showFooters.ValueChanging += (_, e) =>
+                                      {
+                                          if (_listView is null)
+                                          {
+                                              return;
+                                          }
+
+                                          _listView.ShowColumnFooters = e.NewValue == CheckState.Checked;
+                                      };
+        appWindow.Add (_showFooters);
+
+        CheckBox showMarks = new ()
+        {
+            X = Pos.Right (_showFooters) + 1,
             Y = Pos.Top (_showHeaders),
             Text = "Show mar_ks"
         };
@@ -309,10 +333,94 @@ public class ListViewWithMultiLine : Scenario
         };
         appWindow.Add (_headerVerticalAlignLabel);
 
-        _listView = new ListView
+        Label footerHeightLabel = new ()
         {
             X = 0,
             Y = Pos.Bottom (headerHeightLabel),
+            Text = "Footer h_eight:"
+        };
+        appWindow.Add (footerHeightLabel);
+
+        _footerHeightField = new TextField
+        {
+            X = Pos.Right (footerHeightLabel) + 1,
+            Y = Pos.Top (footerHeightLabel),
+            Width = 4,
+            Text = "1"
+        };
+        _footerHeightField.TextChanged += (_, _) => OnFooterHeightChanged ();
+        appWindow.Add (_footerHeightField);
+
+        Button footerAlign = new ()
+        {
+            X = Pos.Right (_footerHeightField) + 2,
+            Y = Pos.Top (footerHeightLabel),
+            Text = "Footer _H align"
+        };
+        footerAlign.Accepting += (_, e) =>
+                                 {
+                                     e.Handled = true;
+                                     CycleFooterAlignment ();
+                                 };
+        appWindow.Add (footerAlign);
+
+        _footerAlignLabel = new Label
+        {
+            X = Pos.Right (footerAlign) + 1,
+            Y = Pos.Top (footerHeightLabel),
+            Width = 6,
+            Text = nameof (Alignment.Start)
+        };
+        appWindow.Add (_footerAlignLabel);
+
+        Button footerVerticalAlign = new ()
+        {
+            X = Pos.Right (_footerAlignLabel) + 1,
+            Y = Pos.Top (footerHeightLabel),
+            Text = "Footer _V align"
+        };
+        footerVerticalAlign.Accepting += (_, e) =>
+                                         {
+                                             e.Handled = true;
+                                             CycleFooterVerticalAlignment ();
+                                         };
+        appWindow.Add (footerVerticalAlign);
+
+        _footerVerticalAlignLabel = new Label
+        {
+            X = Pos.Right (footerVerticalAlign) + 1,
+            Y = Pos.Top (footerHeightLabel),
+            Width = 6,
+            Text = nameof (Alignment.Start)
+        };
+        appWindow.Add (_footerVerticalAlignLabel);
+
+        Button footerPlace = new ()
+        {
+            X = Pos.Right (_footerVerticalAlignLabel) + 1,
+            Y = Pos.Top (footerHeightLabel),
+            Text = "Footer _place"
+        };
+        footerPlace.Accepting += (_, e) =>
+                                 {
+                                     e.Handled = true;
+                                     CycleFooterPlacement ();
+                                 };
+        appWindow.Add (footerPlace);
+
+        _footerPlaceLabel = new Label
+        {
+            X = Pos.Right (footerPlace) + 1,
+            Y = Pos.Top (footerHeightLabel),
+            Width = 10,
+            Text = "Bottom"
+        };
+        appWindow.Add (_footerPlaceLabel);
+
+        _listView = new ListView
+        {
+            X = 0,
+            Y = Pos.Bottom (footerHeightLabel),
             Width = Dim.Fill (),
             Height = Dim.Fill ()
         };
@@ -344,6 +452,8 @@ public class ListViewWithMultiLine : Scenario
                 }
 
                 _showHeaders?.Value = CheckState.UnChecked;
+                _showFooters?.Value = CheckState.UnChecked;
+                _listView.ItemsHorizontalAlignment = Alignment.Start;
                 _listView.ItemHeight = 2;
                 _listView.ColumnHeaders = null;
                 _listView.SetSource (colLines);
@@ -360,29 +470,43 @@ public class ListViewWithMultiLine : Scenario
 
             case 2:
                 ObservableCollection<ScenarioLine> lines = [];
+                int descriptionChars = 0;
 
                 foreach (Scenario scenario in _scenarios)
                 {
-                    lines.Add (new ScenarioLine { Name = scenario.GetName (), Description = scenario.GetDescription () });
+                    string description = scenario.GetDescription ();
+                    descriptionChars += description.Length;
+                    lines.Add (new ScenarioLine { Name = scenario.GetName (), Description = description });
                 }
 
                 _showHeaders?.Value = CheckState.Checked;
+                _showFooters?.Value = CheckState.Checked;
                 _listView.ItemHeight = 2;
                 _listView.ColumnHeaders =
                 [
                     new ListView.ColumnHeader { HeaderName = "Scenario\nName", MemberName = "Name" },
                     new ListView.ColumnHeader { HeaderName = "Description\nText", MemberName = "Description" }
                 ];
+                EnableFooters (
+                [
+                    new ListView.ColumnFooter { FooterName = $"Names\n{lines.Count}" },
+                    new ListView.ColumnFooter { FooterName = $"Chars\n{descriptionChars}" }
+                ]);
                 _listView.SetSource (lines);
 
                 break;
 
             case 3:
                 ObservableCollection<NumericLine> numbers = [];
+                int intSum = 0;
+                float floatSum = 0;
+                double doubleSum = 0;
+                decimal decimalSum = 0;
+                decimal currencySum = 0;
 
                 for (int i = 0; i < 40; i++)
                 {
-                    numbers.Add (new NumericLine
+                    NumericLine line = new ()
                     {
                         Item = $"Item{i}",
                         IntValue = i,
@@ -390,7 +514,13 @@ public class ListViewWithMultiLine : Scenario
                         DoubleValue = i / 3d,
                         DecimalValue = i / 4m,
                         CurrencyValue = i / 5m
-                    });
+                    };
+                    intSum += line.IntValue;
+                    floatSum += line.FloatValue;
+                    doubleSum += line.DoubleValue;
+                    decimalSum += line.DecimalValue;
+                    currencySum += line.CurrencyValue;
+                    numbers.Add (line);
                 }
 
                 _showHeaders?.Value = CheckState.Checked;
@@ -416,6 +546,18 @@ public class ListViewWithMultiLine : Scenario
                         MemberName = "CurrencyValue", MemberType = typeof (decimal), MemberFormat = "{0:C2}", MemberHorizontalAlignment = Alignment.End
                     }
                 ];
+
+                EnableFooters (
+                [
+                    new ListView.ColumnFooter { FooterName = "Total" },
+                    new ListView.ColumnFooter { FooterName = intSum.ToString () },
+                    // ReSharper disable InvocationIsCultureSensitive
+                    new ListView.ColumnFooter { FooterName = floatSum.ToString () },
+                    new ListView.ColumnFooter { FooterName = doubleSum.ToString () },
+                    new ListView.ColumnFooter { FooterName = decimalSum.ToString () },
+                    new ListView.ColumnFooter { FooterName = currencySum.ToString () }
+                    // ReSharper restore InvocationIsCultureSensitive
+                ]);
                 _listView.SetSource (numbers);
 
                 break;
@@ -423,10 +565,18 @@ public class ListViewWithMultiLine : Scenario
             case 4:
                 ObservableCollection<string []> strings = [];
                 int index = 0;
+                int indexSum = 0;
+                int nameChars = 0;
+                int textChars = 0;
 
                 foreach (Scenario scenario in _scenarios)
                 {
-                    strings.Add ([$"{index}", $"{scenario.GetName ()}", $"{scenario.GetDescription ()}"]);
+                    string name = scenario.GetName ();
+                    string description = scenario.GetDescription ();
+                    strings.Add ([$"{index}", name, description]);
+                    indexSum += index;
+                    nameChars += name.Length;
+                    textChars += description.Length;
                     index++;
                 }
 
@@ -445,12 +595,19 @@ public class ListViewWithMultiLine : Scenario
                     new ListView.ColumnHeader { HeaderName = "Scenario\nName", HeaderHorizontalAlignment = Alignment.Center },
                     new ListView.ColumnHeader { HeaderName = "Description\nText", HeaderHorizontalAlignment = Alignment.Center }
                 ];
+                EnableFooters (
+                [
+                    new ListView.ColumnFooter { FooterName = $"Sum\n{indexSum:00}", Format = "" },
+                    new ListView.ColumnFooter { FooterName = $"Names\n{nameChars}" },
+                    new ListView.ColumnFooter { FooterName = $"Text\n{textChars}" }
+                ]);
                 _listView.SetSource (strings);
 
                 break;
 
             case 5:
                 _showHeaders?.Value = CheckState.UnChecked;
+                _showFooters?.Value = CheckState.UnChecked;
                 _listView.ItemHeight = 1;
                 _listView.ColumnHeaders = null;
                 _listView.SetSource<string> (null);
@@ -465,6 +622,11 @@ public class ListViewWithMultiLine : Scenario
                     new ListView.ColumnHeader { HeaderName = "Name\nCol", HeaderHorizontalAlignment = Alignment.Center },
                     new ListView.ColumnHeader { HeaderName = "Description\nText", HeaderHorizontalAlignment = Alignment.Center }
                 ];
+                EnableFooters (
+                [
+                    new ListView.ColumnFooter { FooterName = "Rows\n0" },
+                    new ListView.ColumnFooter { FooterName = "Text\n0" }
+                ]);
                 _listView.SetSource<string> (null);
 
                 break;
@@ -472,16 +634,21 @@ public class ListViewWithMultiLine : Scenario
             case 7:
                 ObservableCollection<string []> wrapped = [];
                 int wrappedIndex = 0;
+                int wrappedNameChars = 0;
+                int wrappedTextChars = 0;
 
                 foreach (Scenario scenario in _scenarios)
                 {
-                    wrapped.Add ([$"{wrappedIndex}", scenario.GetName (), scenario.GetDescription ()]);
+                    string name = scenario.GetName ();
+                    string description = scenario.GetDescription ();
+                    wrapped.Add ([$"{wrappedIndex}", name, description]);
+                    wrappedNameChars += name.Length;
+                    wrappedTextChars += description.Length;
                     wrappedIndex++;
                 }
 
-                // Width is narrower than HeaderName, and Height is 2, so each title wraps.
+                // Width is narrower than the header and footer text, and Height is 2, so each one wraps.
                 _listView.ItemHeight = 2;
-                _showHeaders?.Value = CheckState.Checked;
                 _listView.ColumnHeaders =
                 [
                     new ListView.ColumnHeader
@@ -509,6 +676,12 @@ public class ListViewWithMultiLine : Scenario
                         HeaderHorizontalAlignment = Alignment.Start
                     }
                 ];
+                EnableFooters (
+                [
+                    new ListView.ColumnFooter { FooterName = $"Total rows {wrapped.Count}", Format = "", Height = 2 },
+                    new ListView.ColumnFooter { FooterName = $"Name chars {wrappedNameChars}", Format = "", Height = 2 },
+                    new ListView.ColumnFooter { FooterName = $"Description chars {wrappedTextChars}", Format = "", Height = 2 }
+                ]);
                 _listView.SetSource (wrapped);
 
                 if (_headerHeightField is not null)
@@ -516,6 +689,13 @@ public class ListViewWithMultiLine : Scenario
                     _updatingHeaderHeight = true;
                     _headerHeightField.Text = "2";
                     _updatingHeaderHeight = false;
+                }
+
+                if (_footerHeightField is not null)
+                {
+                    _updatingFooterHeight = true;
+                    _footerHeightField.Text = "2";
+                    _updatingFooterHeight = false;
                 }
 
                 _showHeaders?.Value = CheckState.Checked;
@@ -527,8 +707,37 @@ public class ListViewWithMultiLine : Scenario
         _itemHeightField.Text = _listView.ItemHeight.ToString ();
         _updatingHeight = false;
         ApplyHeaderHeightFromField ();
+        ApplyFooterHeightFromField ();
         AdoptColumnAlignment ();
         ShowAlignment ();
+    }
+
+    private void EnableFooters (ListView.ColumnFooter [] footers)
+    {
+        if (_listView is null)
+        {
+            return;
+        }
+
+        _listView.ColumnFooters = [.. footers];
+        _showFooters?.Value = CheckState.Checked;
+    }
+
+    private void ApplyFooterHeightFromField ()
+    {
+        if (_listView is null || _footerHeightField is null || !int.TryParse (_footerHeightField.Text, out int height))
+        {
+            return;
+        }
+
+        try
+        {
+            ApplyFooterHeight (height);
+        }
+        catch (ArgumentOutOfRangeException)
+        {
+            // OnFooterHeightChanged reports a height typed while the scenario is running.
+        }
     }
 
     private void ApplyHeaderHeightFromField ()
@@ -625,6 +834,103 @@ public class ListViewWithMultiLine : Scenario
         ShowAlignment ();
     }
 
+    private void CycleFooterAlignment ()
+    {
+        if (_listView is null)
+        {
+            return;
+        }
+
+        Alignment next = Next (CurrentFooterHorizontalAlignment ());
+        _listView.FootersHorizontalAlignment = next;
+        ApplyFooterHorizontalAlignment (next);
+        ShowAlignment ();
+    }
+
+    private void CycleFooterVerticalAlignment ()
+    {
+        if (_listView is null)
+        {
+            return;
+        }
+
+        Alignment next = Next (CurrentFooterVerticalAlignment ());
+        _listView.FootersVerticalAlignment = next;
+        ApplyFooterVerticalAlignment (next);
+        ShowAlignment ();
+    }
+
+    private void CycleFooterPlacement ()
+    {
+        if (_listView is null)
+        {
+            return;
+        }
+
+        _listView.FooterPlacement = _listView.FooterPlacement == ListView.ColumnFooterPlacement.Bottom
+                                        ? ListView.ColumnFooterPlacement.AfterLastItem
+                                        : ListView.ColumnFooterPlacement.Bottom;
+        ShowAlignment ();
+    }
+
+    private void ApplyFooterHorizontalAlignment (Alignment alignment)
+    {
+        if (_listView?.ColumnFooters is not { } footers)
+        {
+            _listView?.SetNeedsDraw ();
+
+            return;
+        }
+
+        foreach (ListView.ColumnFooter footer in footers)
+        {
+            footer.HorizontalAlignment = alignment;
+        }
+
+        _listView.SetNeedsDraw ();
+    }
+
+    private void ApplyFooterVerticalAlignment (Alignment alignment)
+    {
+        if (_listView?.ColumnFooters is not { } footers)
+        {
+            _listView?.SetNeedsDraw ();
+
+            return;
+        }
+
+        foreach (ListView.ColumnFooter footer in footers)
+        {
+            footer.VerticalAlignment = alignment;
+        }
+
+        _listView.SetNeedsDraw ();
+    }
+
+    private Alignment CurrentFooterHorizontalAlignment ()
+    {
+        if (_listView?.ColumnFooters is { Count: > 0 } footers)
+        {
+            ListView.ColumnHeader? header = _listView.ColumnHeaders is { Count: > 0 } headers ? headers [0] : null;
+
+            return footers [0].ResolveHorizontalAlignment (header, _listView.FootersHorizontalAlignment);
+        }
+
+        return _listView?.FootersHorizontalAlignment ?? Alignment.Start;
+    }
+
+    private Alignment CurrentFooterVerticalAlignment ()
+    {
+        if (_listView?.ColumnFooters is { Count: > 0 } footers)
+        {
+            ListView.ColumnHeader? header = _listView.ColumnHeaders is { Count: > 0 } headers ? headers [0] : null;
+
+            return footers [0].ResolveVerticalAlignment (header, _listView.FootersVerticalAlignment);
+        }
+
+        return _listView?.FootersVerticalAlignment ?? Alignment.Start;
+    }
+
     private void ApplyMemberVerticalAlignment ()
     {
         if (_listView is null)
@@ -684,6 +990,19 @@ public class ListViewWithMultiLine : Scenario
         _headerVerticalAlignLabel?.Text = _listView.HeadersVerticalAlignment.ToString ();
         _itemHorizontalAlignLabel?.Text = _listView.ItemsHorizontalAlignment.ToString ();
         _itemVerticalAlignLabel?.Text = _listView.ItemsVerticalAlignment.ToString ();
+        _footerAlignLabel?.Text = CurrentFooterHorizontalAlignment ().ToString ();
+        _footerVerticalAlignLabel?.Text = CurrentFooterVerticalAlignment ().ToString ();
+        _footerPlaceLabel?.Text = FooterPlaceText (_listView.FooterPlacement);
+    }
+
+    private static string FooterPlaceText (ListView.ColumnFooterPlacement placement)
+    {
+        if (placement == ListView.ColumnFooterPlacement.AfterLastItem)
+        {
+            return "After item";
+        }
+
+        return "Bottom";
     }
 
     private static Alignment Next (Alignment alignment)
@@ -742,6 +1061,56 @@ public class ListViewWithMultiLine : Scenario
             _headerHeightField.Text = CurrentHeaderHeight ().ToString ();
             _updatingHeaderHeight = false;
         }
+    }
+
+    private void OnFooterHeightChanged ()
+    {
+        if (_updatingFooterHeight || _listView is null || _footerHeightField is null || _app is null)
+        {
+            return;
+        }
+
+        if (!int.TryParse (_footerHeightField.Text, out int height))
+        {
+            return;
+        }
+
+        try
+        {
+            ApplyFooterHeight (height);
+        }
+        catch (ArgumentOutOfRangeException ex)
+        {
+            MessageBox.ErrorQuery (_app, "Error", ex.Message, "Ok");
+            _updatingFooterHeight = true;
+            _footerHeightField.Text = CurrentFooterHeight ().ToString ();
+            _updatingFooterHeight = false;
+        }
+    }
+
+    private void ApplyFooterHeight (int height)
+    {
+        if (_listView?.ColumnFooters is not { Count: > 0 } footers)
+        {
+            ArgumentOutOfRangeException.ThrowIfLessThan (height, 1);
+
+            return;
+        }
+
+        foreach (ListView.ColumnFooter footer in footers)
+        {
+            footer.Height = height;
+        }
+    }
+
+    private int CurrentFooterHeight ()
+    {
+        if (_listView?.ColumnFooters is { Count: > 0 } footers)
+        {
+            return footers [0].Height;
+        }
+
+        return 1;
     }
 
     private void ApplyHeaderHeight (int height)

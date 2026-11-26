@@ -3733,6 +3733,894 @@ Five ",
 
     // Grok - Grok 4.7
     [Fact]
+    public void ItemAutoHeight_Updates_The_Horizontal_ScrollBar_And_Keeps_The_Mouse ()
+    {
+        ListView listView = new ()
+        {
+            Width = 6,
+            Height = 5,
+            ItemHeight = 1,
+            ViewportSettings = ViewportSettingsFlags.HasHorizontalScrollBar,
+            Source = new ListWrapper<string> (["Hello World", "Go"])
+        };
+
+        UseList (listView, 6, 5, app =>
+        {
+            Assert.True (listView.HorizontalScrollBar.Visible);
+            Assert.True (listView.GetContentSize ().Width > listView.Viewport.Width);
+
+            Assert.Equal (true, listView.ScrollHorizontal (2));
+            app.LayoutAndDraw ();
+            Assert.Equal (2, listView.Viewport.X);
+
+            listView.ItemAutoHeight = true;
+
+            Assert.False (listView.HorizontalScrollBar.Visible);
+            Assert.True (listView.GetContentSize ().Width <= listView.Viewport.Width);
+            Assert.Equal (0, listView.Viewport.X);
+
+            app.LayoutAndDraw ();
+
+            app.Mouse.RaiseMouseEvent (new Mouse { ScreenPosition = new Point (0, 0), Flags = MouseFlags.LeftButtonClicked });
+            Assert.Equal (0, listView.SelectedItem);
+
+            app.Mouse.RaiseMouseEvent (new Mouse { ScreenPosition = new Point (0, 1), Flags = MouseFlags.LeftButtonClicked });
+            Assert.Equal (0, listView.SelectedItem);
+
+            app.Mouse.RaiseMouseEvent (new Mouse { ScreenPosition = new Point (0, 2), Flags = MouseFlags.LeftButtonClicked });
+            Assert.Equal (1, listView.SelectedItem);
+        });
+    }
+
+    // Grok - Grok 4.7
+    [Fact]
+    public void ItemAutoHeight_False_Restores_The_Horizontal_ScrollBar ()
+    {
+        ListView listView = new ()
+        {
+            Width = 6,
+            Height = 4,
+            ItemHeight = 1,
+            ViewportSettings = ViewportSettingsFlags.HasHorizontalScrollBar,
+            Source = new ListWrapper<string> (["Hello World", "Go"])
+        };
+
+        UseList (listView, 6, 4, app =>
+        {
+            listView.ItemAutoHeight = true;
+            app.LayoutAndDraw ();
+            Assert.False (listView.HorizontalScrollBar.Visible);
+
+            listView.ItemAutoHeight = false;
+            app.LayoutAndDraw ();
+
+            Assert.True (listView.HorizontalScrollBar.Visible);
+            Assert.True (listView.GetContentSize ().Width > listView.Viewport.Width);
+
+            app.Mouse.RaiseMouseEvent (new Mouse { ScreenPosition = new Point (0, 0), Flags = MouseFlags.LeftButtonClicked });
+            Assert.Equal (0, listView.SelectedItem);
+
+            app.Mouse.RaiseMouseEvent (new Mouse { ScreenPosition = new Point (0, 1), Flags = MouseFlags.LeftButtonClicked });
+            Assert.Equal (1, listView.SelectedItem);
+        });
+    }
+
+    // Grok - Grok 4.7
+    [Fact]
+    public void ShowColumnFooters_Defaults_To_False ()
+    {
+        ListView listView = new ();
+
+        Assert.False (listView.ShowColumnFooters);
+        Assert.Null (listView.ColumnFooters);
+        Assert.Equal (ListView.ColumnFooterPlacement.Bottom, listView.FooterPlacement);
+        Assert.Equal (Alignment.Start, listView.FootersHorizontalAlignment);
+        Assert.Equal (Alignment.Start, listView.FootersVerticalAlignment);
+    }
+
+    // Grok - Grok 4.7
+    [Fact]
+    public void ColumnFooter_Height_Rejects_Values_Below_One ()
+    {
+        ListView.ColumnFooter footer = new ();
+
+        Assert.Equal (1, footer.Height);
+        Assert.Null (footer.HorizontalAlignment);
+        Assert.Null (footer.VerticalAlignment);
+        Assert.Null (footer.Format);
+        Assert.Throws<ArgumentOutOfRangeException> (() => footer.Height = 0);
+    }
+
+    // Grok - Grok 4.7
+    [Fact]
+    public void ColumnFooter_Uses_Header_Member_Alignment_And_Format_Until_Set ()
+    {
+        ListView.ColumnHeader header = new ()
+        {
+            MemberHorizontalAlignment = Alignment.End,
+            MemberVerticalAlignment = Alignment.End,
+            MemberFormat = "{0:00}"
+        };
+        ListView.ColumnFooter footer = new ();
+
+        Assert.Equal (Alignment.End, footer.ResolveHorizontalAlignment (header, Alignment.Start));
+        Assert.Equal (Alignment.End, footer.ResolveVerticalAlignment (header, Alignment.Start));
+        Assert.Equal ("{0:00}", footer.ResolveFormat (header));
+        Assert.Equal (Alignment.Start, footer.ResolveHorizontalAlignment (null, Alignment.Start));
+        Assert.Null (footer.ResolveFormat (null));
+
+        footer.HorizontalAlignment = Alignment.Start;
+        footer.VerticalAlignment = Alignment.Center;
+        footer.Format = "{0:0}";
+
+        Assert.Equal (Alignment.Start, footer.ResolveHorizontalAlignment (header, Alignment.End));
+        Assert.Equal (Alignment.Center, footer.ResolveVerticalAlignment (header, Alignment.End));
+        Assert.Equal ("{0:0}", footer.ResolveFormat (header));
+    }
+
+    // Grok - Grok 4.7
+    [Fact]
+    public void ColumnFooter_Inherits_Member_Format_And_Alignment ()
+    {
+        ListView listView = new ()
+        {
+            Width = 4,
+            Height = 2,
+            ShowColumnHeaders = false,
+            ShowColumnFooters = true,
+            ColumnHeaders =
+            [
+                new ListView.ColumnHeader
+                {
+                    MemberHorizontalAlignment = Alignment.End,
+                    MemberType = typeof (int),
+                    MemberFormat = "{0:00}"
+                }
+            ],
+            ColumnFooters = [new ListView.ColumnFooter { FooterName = "3" }],
+            Source = new ListWrapper<string> (["1"])
+        };
+
+        AssertDriver (
+                      listView,
+                      4,
+                      2,
+                      """
+                         1
+                        03
+                      """);
+    }
+
+    // Grok - Grok 4.7
+    [Fact]
+    public void ColumnFooter_Explicit_Alignment_And_Format_Win ()
+    {
+        ListView listView = new ()
+        {
+            Width = 4,
+            Height = 2,
+            ShowColumnHeaders = false,
+            ShowColumnFooters = true,
+            ColumnHeaders =
+            [
+                new ListView.ColumnHeader
+                {
+                    MemberHorizontalAlignment = Alignment.End,
+                    MemberType = typeof (int),
+                    MemberFormat = "{0:00}"
+                }
+            ],
+            ColumnFooters =
+            [
+                new ListView.ColumnFooter
+                {
+                    FooterName = "3",
+                    HorizontalAlignment = Alignment.Start,
+                    Format = "{0}"
+                }
+            ],
+            Source = new ListWrapper<string> (["1"])
+        };
+
+        AssertDriver (
+                      listView,
+                      4,
+                      2,
+                      """
+                         1
+                      3
+                      """);
+    }
+
+    // Grok - Grok 4.7
+    [Fact]
+    public void ShowColumnFooters_False_Does_Not_Draw_A_Footer ()
+    {
+        ListView listView = new ()
+        {
+            Width = 4,
+            Height = 2,
+            ShowColumnFooters = false,
+            ColumnFooters = [new ListView.ColumnFooter { FooterName = "Sum" }],
+            Source = new ListWrapper<string> (["A", "B"])
+        };
+
+        AssertDriver (
+                      listView,
+                      4,
+                      2,
+                      """
+                      A
+                      B
+                      """);
+    }
+
+    // Grok - Grok 4.7
+    [Fact]
+    public void ShowColumnFooters_Draws_The_Fallback_Footer ()
+    {
+        ListView listView = new ()
+        {
+            Width = 8,
+            Height = 3,
+            ShowColumnFooters = true,
+            ColumnFooters = [],
+            Source = new ListWrapper<string> (["Go"])
+        };
+
+        AssertDriver (
+                      listView,
+                      8,
+                      3,
+                      """
+                      Go
+
+                      Footer0
+                      """);
+    }
+
+    // Grok - Grok 4.7
+    [Fact]
+    public void ShowColumnFooters_Draws_The_Fallback_Footer_When_Source_Is_Null ()
+    {
+        ListView listView = new ()
+        {
+            Width = 8,
+            Height = 2,
+            ShowColumnHeaders = true,
+            ShowColumnFooters = true
+        };
+
+        AssertDriver (
+                      listView,
+                      8,
+                      2,
+                      """
+                      Col0
+                      Footer0
+                      """);
+    }
+
+    // Grok - Grok 4.7
+    [Fact]
+    public void ShowColumnFooters_Draws_The_Fallback_Footer_When_Columns_Are_Set ()
+    {
+        ListView listView = new ()
+        {
+            Width = 10,
+            Height = 3,
+            ShowColumnHeaders = true,
+            ShowColumnFooters = true,
+            ColumnMargin = 2,
+            ColumnHeaders =
+            [
+                new ListView.ColumnHeader
+                {
+                    HeaderName = "Name",
+                    HeaderHorizontalAlignment = Alignment.Start,
+                    MemberHorizontalAlignment = Alignment.Start,
+                    Width = 4
+                },
+                new ListView.ColumnHeader
+                {
+                    HeaderName = "Text",
+                    HeaderHorizontalAlignment = Alignment.Start,
+                    MemberHorizontalAlignment = Alignment.Start,
+                    Width = 4
+                }
+            ],
+            Source = new ListWrapper<string []> ([["A", "B"]])
+        };
+
+        AssertDriver (
+                      listView,
+                      10,
+                      3,
+                      """
+                      Name  Text
+                      A     B
+                      Footer0
+                      """);
+    }
+
+    // Grok - Grok 4.7
+    [Fact]
+    public void ShowColumnFooters_Fallback_Footer_Uses_Horizontal_Alignment ()
+    {
+        ListView listView = new ()
+        {
+            Width = 10,
+            Height = 2,
+            ShowColumnFooters = true,
+            FootersHorizontalAlignment = Alignment.End,
+            Source = new ListWrapper<string> (["A"])
+        };
+
+        AssertDriver (
+                      listView,
+                      10,
+                      2,
+                      """
+                      A
+                         Footer0
+                      """);
+    }
+
+    // Grok - Grok 4.7
+    [Fact]
+    public void ShowColumnFooters_Fallback_Footer_Draws_After_The_Last_Item ()
+    {
+        ListView listView = new ()
+        {
+            Width = 8,
+            Height = 3,
+            ShowColumnFooters = true,
+            FooterPlacement = ListView.ColumnFooterPlacement.AfterLastItem,
+            Source = new ListWrapper<string> (["Go"])
+        };
+
+        AssertDriver (
+                      listView,
+                      8,
+                      3,
+                      """
+                      Go
+                      Footer0
+                      """);
+    }
+
+    // Grok - Grok 4.7
+    [Fact]
+    public void ShowColumnFooters_Fallback_Footer_Keeps_A_Content_Row ()
+    {
+        ListView listView = new ()
+        {
+            Width = 4,
+            Height = 3,
+            ShowColumnFooters = true,
+            Source = new ListWrapper<string> (["A", "B", "C"])
+        };
+
+        UseList (listView, 4, 3, _ => Assert.Equal (4, listView.GetContentSize ().Height));
+    }
+
+    // Grok - Grok 4.7
+    [Fact]
+    public void ShowColumnFooters_Fallback_Footer_Mouse_Does_Not_Select ()
+    {
+        ListView listView = new ()
+        {
+            Width = 4,
+            Height = 3,
+            ShowColumnFooters = true,
+            Source = new ListWrapper<string> (["A", "B", "C"])
+        };
+
+        UseList (listView, 4, 3, app =>
+        {
+            app.Mouse.RaiseMouseEvent (new Mouse { ScreenPosition = new Point (0, 2), Flags = MouseFlags.LeftButtonClicked });
+            Assert.Null (listView.SelectedItem);
+
+            app.Mouse.RaiseMouseEvent (new Mouse { ScreenPosition = new Point (0, 0), Flags = MouseFlags.LeftButtonClicked });
+            Assert.Equal (0, listView.SelectedItem);
+        });
+    }
+
+    // Grok - Grok 4.7
+    [Fact]
+    public void ColumnFooter_Pins_To_The_Bottom ()
+    {
+        ListView listView = new ()
+        {
+            Width = 4,
+            Height = 4,
+            ShowColumnFooters = true,
+            ColumnFooters = [new ListView.ColumnFooter { FooterName = "Sum" }],
+            Source = new ListWrapper<string> (["A", "B"])
+        };
+
+        AssertDriver (
+                      listView,
+                      4,
+                      4,
+                      """
+                      A
+                      B
+
+                      Sum
+                      """);
+    }
+
+    // Grok - Grok 4.7
+    [Fact]
+    public void ColumnFooter_Pinned_Footer_Covers_The_Bottom_Row ()
+    {
+        ListView listView = new ()
+        {
+            Width = 4,
+            Height = 3,
+            ShowColumnFooters = true,
+            ColumnFooters = [new ListView.ColumnFooter { FooterName = "Sum" }],
+            Source = new ListWrapper<string> (["A", "B", "C"])
+        };
+
+        AssertDriver (
+                      listView,
+                      4,
+                      3,
+                      """
+                      A
+                      B
+                      Sum
+                      """);
+    }
+
+    // Grok - Grok 4.7
+    [Fact]
+    public void ColumnFooter_Draws_After_The_Last_Item ()
+    {
+        ListView listView = new ()
+        {
+            Width = 4,
+            Height = 4,
+            ShowColumnFooters = true,
+            FooterPlacement = ListView.ColumnFooterPlacement.AfterLastItem,
+            ColumnFooters = [new ListView.ColumnFooter { FooterName = "Sum" }],
+            Source = new ListWrapper<string> (["A", "B"])
+        };
+
+        AssertDriver (
+                      listView,
+                      4,
+                      4,
+                      """
+                      A
+                      B
+                      Sum
+                      """);
+    }
+
+    // Grok - Grok 4.7
+    [Fact]
+    public void ColumnFooter_After_Last_Item_Scrolls_Into_View ()
+    {
+        ListView listView = new ()
+        {
+            Width = 4,
+            Height = 3,
+            ShowColumnFooters = true,
+            FooterPlacement = ListView.ColumnFooterPlacement.AfterLastItem,
+            ColumnFooters = [new ListView.ColumnFooter { FooterName = "Sum" }],
+            Source = new ListWrapper<string> (["A", "B", "C"])
+        };
+
+        UseList (listView, 4, 3, app =>
+        {
+            DriverAssert.AssertDriverContentsWithFrameAre (
+                                                           """
+                                                           A
+                                                           B
+                                                           C
+                                                           """,
+                                                           _output,
+                                                           app.Driver);
+
+            listView.Viewport = listView.Viewport with { Y = 1 };
+            listView.SetNeedsDraw ();
+            app.LayoutAndDraw ();
+
+            DriverAssert.AssertDriverContentsWithFrameAre (
+                                                           """
+                                                           B
+                                                           C
+                                                           Sum
+                                                           """,
+                                                           _output,
+                                                           app.Driver);
+        });
+    }
+
+    // Grok - Grok 4.7
+    [Fact]
+    public void ColumnFooter_Content_Height_Includes_The_Footer ()
+    {
+        ListView pinned = new ()
+        {
+            Width = 4,
+            Height = 3,
+            ShowColumnFooters = true,
+            ColumnFooters = [new ListView.ColumnFooter { FooterName = "Sum" }],
+            Source = new ListWrapper<string> (["A", "B", "C"])
+        };
+        ListView trailing = new ()
+        {
+            Width = 4,
+            Height = 3,
+            ShowColumnFooters = true,
+            FooterPlacement = ListView.ColumnFooterPlacement.AfterLastItem,
+            ColumnFooters = [new ListView.ColumnFooter { FooterName = "Sum" }],
+            Source = new ListWrapper<string> (["A", "B", "C"])
+        };
+
+        UseList (pinned, 4, 3, _ => Assert.Equal (4, pinned.GetContentSize ().Height));
+        UseList (trailing, 4, 3, _ => Assert.Equal (4, trailing.GetContentSize ().Height));
+    }
+
+    // Grok - Grok 4.7
+    [Fact]
+    public void ColumnFooter_Vertical_Alignment_Inherits_From_The_Header ()
+    {
+        ListView listView = new ()
+        {
+            Width = 4,
+            Height = 3,
+            ShowColumnHeaders = false,
+            ShowColumnFooters = true,
+            ColumnHeaders = [new ListView.ColumnHeader { MemberVerticalAlignment = Alignment.End }],
+            ColumnFooters = [new ListView.ColumnFooter { FooterName = "Yo", Height = 2 }],
+            Source = new ListWrapper<string> (["Go"])
+        };
+
+        AssertDriver (
+                      listView,
+                      4,
+                      3,
+                      """
+                      Go
+
+                      Yo
+                      """);
+    }
+
+    // Grok - Grok 4.7
+    [Fact]
+    public void ColumnFooter_Wraps_When_Taller_Than_One_Row ()
+    {
+        ListView listView = new ()
+        {
+            Width = 5,
+            Height = 3,
+            ShowColumnFooters = true,
+            ColumnFooters = [new ListView.ColumnFooter { FooterName = "Hello World", Height = 2 }],
+            Source = new ListWrapper<string> (["Go"])
+        };
+
+        AssertDriver (
+                      listView,
+                      5,
+                      3,
+                      """
+                      Go
+                      Hello
+                      World
+                      """);
+    }
+
+    // Grok - Grok 4.7
+    [Fact]
+    public void ColumnFooter_Height_One_Shows_Only_The_First_Line ()
+    {
+        ListView listView = new ()
+        {
+            Width = 4,
+            Height = 2,
+            ShowColumnFooters = true,
+            ColumnFooters = [new ListView.ColumnFooter { FooterName = "Hi\nYo" }],
+            Source = new ListWrapper<string> (["Go"])
+        };
+
+        AssertDriver (
+                      listView,
+                      4,
+                      2,
+                      """
+                      Go
+                      Hi
+                      """);
+    }
+
+    // Grok - Grok 4.7
+    [Fact]
+    public void ColumnFooter_Splits_FooterName_On_Newlines ()
+    {
+        ListView listView = new ()
+        {
+            Width = 4,
+            Height = 3,
+            ShowColumnFooters = true,
+            ColumnFooters = [new ListView.ColumnFooter { FooterName = "Hi\nYo", Height = 2 }],
+            Source = new ListWrapper<string> (["Go"])
+        };
+
+        AssertDriver (
+                      listView,
+                      4,
+                      3,
+                      """
+                      Go
+                      Hi
+                      Yo
+                      """);
+    }
+
+    // Grok - Grok 4.7
+    [Fact]
+    public void ColumnFooter_HorizontalAlignment_Applies_To_Each_Split_Line ()
+    {
+        ListView listView = new ()
+        {
+            Width = 4,
+            Height = 3,
+            ShowColumnFooters = true,
+            ColumnFooters =
+            [
+                new ListView.ColumnFooter
+                {
+                    FooterName = "Hi\nYo",
+                    HorizontalAlignment = Alignment.End,
+                    Height = 2
+                }
+            ],
+            Source = new ListWrapper<string> (["Go"])
+        };
+
+        AssertDriver (
+                      listView,
+                      4,
+                      3,
+                      """
+                      Go
+                        Hi
+                        Yo
+                      """);
+    }
+
+    // Grok - Grok 4.7
+    [Fact]
+    public void ColumnFooter_VerticalAlignment_End_Clips_Lines_From_The_Top ()
+    {
+        ListView listView = new ()
+        {
+            Width = 1,
+            Height = 3,
+            ShowColumnFooters = true,
+            ColumnFooters =
+            [
+                new ListView.ColumnFooter
+                {
+                    FooterName = "A\nB\nC\nD",
+                    VerticalAlignment = Alignment.End,
+                    Height = 2
+                }
+            ],
+            Source = new ListWrapper<string> (["X"])
+        };
+
+        AssertDriver (
+                      listView,
+                      1,
+                      3,
+                      """
+                      X
+                      C
+                      D
+                      """);
+    }
+
+    // Grok - Grok 4.7
+    [Fact]
+    public void ColumnFooter_Wraps_A_Line_After_A_Newline ()
+    {
+        ListView listView = new ()
+        {
+            Width = 5,
+            Height = 4,
+            ShowColumnFooters = true,
+            ColumnFooters = [new ListView.ColumnFooter { FooterName = "Hello World\nYo", Height = 3 }],
+            Source = new ListWrapper<string> (["Go"])
+        };
+
+        AssertDriver (
+                      listView,
+                      5,
+                      4,
+                      """
+                      Go
+                      Hello
+                      World
+                      Yo
+                      """);
+    }
+
+    // Grok - Grok 4.7
+    [Fact]
+    public void ColumnFooter_Newline_Stays_In_Its_Column ()
+    {
+        ListView listView = new ()
+        {
+            Width = 5,
+            Height = 3,
+            ShowColumnFooters = true,
+            ColumnMargin = 1,
+            ColumnHeaders =
+            [
+                new ListView.ColumnHeader
+                {
+                    Width = 2,
+                    HeaderHorizontalAlignment = Alignment.Start,
+                    MemberHorizontalAlignment = Alignment.Start
+                },
+                new ListView.ColumnHeader
+                {
+                    Width = 2,
+                    HeaderHorizontalAlignment = Alignment.Start,
+                    MemberHorizontalAlignment = Alignment.Start
+                }
+            ],
+            ColumnFooters =
+            [
+                new ListView.ColumnFooter { FooterName = "A\nB", Height = 2, HorizontalAlignment = Alignment.Start },
+                new ListView.ColumnFooter { FooterName = "1\n2", Height = 2, HorizontalAlignment = Alignment.Start }
+            ],
+            Source = new ListWrapper<string []> ([["X", "Y"]])
+        };
+
+        AssertDriver (
+                      listView,
+                      5,
+                      3,
+                      """
+                      X  Y
+                      A  1
+                      B  2
+                      """);
+    }
+
+    // Grok - Grok 4.7
+    [Fact]
+    public void ColumnFooter_Null_Source_Splits_FooterName_On_Newlines ()
+    {
+        ListView listView = new ()
+        {
+            Width = 4,
+            Height = 3,
+            ShowColumnHeaders = true,
+            ShowColumnFooters = true,
+            ColumnFooters = [new ListView.ColumnFooter { FooterName = "Hi\nYo", Height = 2 }],
+            Source = null
+        };
+
+        AssertDriver (
+                      listView,
+                      4,
+                      3,
+                      """
+                      Col0
+                      Hi
+                      Yo
+                      """);
+    }
+
+    // Grok - Grok 4.7
+    [Fact]
+    public void ColumnFooter_Mouse_Does_Not_Select_The_Pinned_Row ()
+    {
+        ListView listView = new ()
+        {
+            Width = 4,
+            Height = 3,
+            ShowColumnFooters = true,
+            ColumnFooters = [new ListView.ColumnFooter { FooterName = "Sum" }],
+            Source = new ListWrapper<string> (["A", "B", "C"])
+        };
+
+        UseList (listView, 4, 3, app =>
+        {
+            app.Mouse.RaiseMouseEvent (new Mouse { ScreenPosition = new Point (0, 2), Flags = MouseFlags.LeftButtonClicked });
+            Assert.Null (listView.SelectedItem);
+
+            app.Mouse.RaiseMouseEvent (new Mouse { ScreenPosition = new Point (0, 0), Flags = MouseFlags.LeftButtonClicked });
+            Assert.Equal (0, listView.SelectedItem);
+
+            app.Mouse.RaiseMouseEvent (new Mouse { ScreenPosition = new Point (0, 1), Flags = MouseFlags.LeftButtonClicked });
+            Assert.Equal (1, listView.SelectedItem);
+        });
+    }
+
+    // Grok - Grok 4.7
+    [Fact]
+    public void ColumnFooter_PageDown_Uses_The_Item_Area ()
+    {
+        ObservableCollection<string> source = ["A", "B", "C", "D", "E", "F"];
+        ListView listView = new ()
+        {
+            Width = 4,
+            Height = 4,
+            ShowColumnFooters = true,
+            ColumnFooters = [new ListView.ColumnFooter { FooterName = "Sum" }],
+            Source = new ListWrapper<string> (source)
+        };
+
+        UseList (listView, 4, 4, _ =>
+        {
+            Assert.True (listView.MovePageDown ());
+            Assert.Equal (3, listView.SelectedItem);
+        });
+    }
+
+    // Grok - Grok 4.7
+    [Fact]
+    public void ColumnFooter_Draws_When_Source_Is_Null ()
+    {
+        ListView listView = new ()
+        {
+            Width = 6,
+            Height = 3,
+            ShowColumnHeaders = true,
+            ShowColumnFooters = true,
+            ColumnFooters = [new ListView.ColumnFooter { FooterName = "Sum" }],
+            Source = null
+        };
+
+        AssertDriver (
+                      listView,
+                      6,
+                      3,
+                      """
+                      Col0
+
+                      Sum
+                      """);
+    }
+
+    // Grok - Grok 4.7
+    [Fact]
+    public void ColumnFooter_And_ItemAutoHeight_Keep_Separate_Rows ()
+    {
+        ListView listView = new ()
+        {
+            Width = 8,
+            Height = 4,
+            ItemAutoHeight = true,
+            ShowColumnFooters = true,
+            ColumnFooters = [new ListView.ColumnFooter { FooterName = "Sum" }],
+            Source = new ListWrapper<string> (["A\nB", "C"])
+        };
+
+        AssertDriver (
+                      listView,
+                      8,
+                      4,
+                      """
+                      A
+                      B
+                      C
+                      Sum
+                      """);
+    }
+
+    // Grok - Grok 4.7
+    [Fact]
     public void ItemHeight_One_Shows_Only_The_First_Newline_Line ()
     {
         ListView listView = new ()

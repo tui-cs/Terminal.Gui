@@ -30,6 +30,8 @@ public class ListWrapper<T> : IListDataSource, IListViewLayout
         MaxItemLength = GetMaxLengthItem ();
     }
 
+    private int _widestItemLength;
+
     private readonly ObservableCollection<T>? _source;
     private int _count;
     private BitArray? _marks;
@@ -67,13 +69,20 @@ public class ListWrapper<T> : IListDataSource, IListViewLayout
         {
             if (!listView.ItemAutoHeight && listView.ItemHeight <= 1)
             {
+                // One row and no wrap. Restore the widest item so a previous auto-height pass
+                // does not leave the content clamped to the viewport.
+                MaxItemLength = _widestItemLength;
+
                 return;
             }
 
-            // A list with no columns wraps each item into the viewport, so the content is not wider than that.
+            // Wrapped lines stay inside the viewport, so the content is not wider than that.
             if (listView.ItemAutoHeight)
             {
-                MaxItemLength = width;
+                if (width > 0)
+                {
+                    MaxItemLength = width;
+                }
 
                 return;
             }
@@ -257,8 +266,10 @@ public class ListWrapper<T> : IListDataSource, IListViewLayout
 
     private int GetMaxLengthItem ()
     {
-        if (_source is null || _source?.Count == 0)
+        if (_source is null || _source.Count == 0)
         {
+            _widestItemLength = 0;
+
             return 0;
         }
 
@@ -280,6 +291,8 @@ public class ListWrapper<T> : IListDataSource, IListViewLayout
                 maxLength = l;
             }
         }
+
+        _widestItemLength = maxLength;
 
         return maxLength;
     }
@@ -928,6 +941,12 @@ public class ListWrapper<T> : IListDataSource, IListViewLayout
             max = TextFormatter.GetWidestLineLength (HeaderTitle (header, column));
         }
 
+        if (listView.ShowColumnFooters && FooterAt (listView, column) is { } footer)
+        {
+            string formatted = ListView.FormatFooterText (footer, header);
+            max = Math.Max (max, TextFormatter.GetWidestLineLength (formatted));
+        }
+
         if (_source is null)
         {
             return max;
@@ -975,6 +994,123 @@ public class ListWrapper<T> : IListDataSource, IListViewLayout
             container.Move (Math.Max (col - viewportX, 0), line + r);
             RenderString (container, text, width, viewportX);
         }
+    }
+
+    /// <inheritdoc/>
+    public void RenderColumnFooter (ListView listView, int col, int line, int width, int viewportX)
+    {
+        if (_columnWidths.Length == 0 && listView.ColumnHeaders is { Count: > 0 })
+        {
+            MeasureColumns (listView, Math.Max (width, 0));
+        }
+
+        int band = listView.FooterRowCount;
+
+        for (int r = 0; r < band; r++)
+        {
+            if (line + r >= listView.Viewport.Height)
+            {
+                break;
+            }
+
+            listView.Move (Math.Max (col - viewportX, 0), line + r);
+            RenderString (listView, FooterRowText (listView, r, width), width, viewportX);
+        }
+    }
+
+    private string FooterRowText (ListView listView, int row, int width)
+    {
+        List<ListView.ColumnFooter>? footers = listView.ColumnFooters;
+
+        if (footers is not { Count: > 0 })
+        {
+            if (row > 0)
+            {
+                return string.Empty;
+            }
+
+            return Align ("Footer0", Math.Max (width, 0), listView.FootersHorizontalAlignment);
+        }
+
+        if (listView.ColumnHeaders is not { Count: > 0 } || _columnWidths.Length == 0)
+        {
+            ListView.ColumnFooter footer = footers [0];
+            ListView.ColumnHeader? header = HeaderAt (listView, 0);
+            int footerHeight = Math.Max (1, footer.Height);
+
+            if (row < 0 || row >= footerHeight)
+            {
+                return Align (string.Empty, width, footer.ResolveHorizontalAlignment (header, listView.FootersHorizontalAlignment));
+            }
+
+            string formatted = ListView.FormatFooterText (footer, header);
+            string line = HeaderTextLine (
+                                           formatted,
+                                           row,
+                                           footerHeight,
+                                           width,
+                                           footer.ResolveVerticalAlignment (header, listView.FootersVerticalAlignment));
+
+            return Align (line, width, footer.ResolveHorizontalAlignment (header, listView.FootersHorizontalAlignment));
+        }
+
+        StringBuilder builder = new ();
+        int columnCount = ColumnCount (listView);
+        int margin = Math.Max (0, listView.ColumnMargin);
+
+        for (int c = 0; c < columnCount && c < _columnWidths.Length; c++)
+        {
+            if (c < _columnStarts.Length && _columnStarts [c] < 0)
+            {
+                continue;
+            }
+
+            int columnWidth = _columnWidths [c];
+            int gap = c < columnCount - 1 ? margin : 0;
+            int contentWidth = Math.Max (0, columnWidth - gap);
+            ListView.ColumnHeader? columnHeader = HeaderAt (listView, c);
+            ListView.ColumnFooter? footer = c < footers.Count ? footers [c] : null;
+            string line = string.Empty;
+            Alignment horizontal = listView.FootersHorizontalAlignment;
+
+            if (footer is not null)
+            {
+                int footerHeight = Math.Max (1, footer.Height);
+                horizontal = footer.ResolveHorizontalAlignment (columnHeader, listView.FootersHorizontalAlignment);
+
+                if (row >= 0 && row < footerHeight)
+                {
+                    string formatted = ListView.FormatFooterText (footer, columnHeader);
+                    line = HeaderTextLine (
+                                            formatted,
+                                            row,
+                                            footerHeight,
+                                            contentWidth,
+                                            footer.ResolveVerticalAlignment (columnHeader, listView.FootersVerticalAlignment));
+                }
+            }
+
+            builder.Append (Align (line, contentWidth, horizontal));
+
+            if (gap > 0)
+            {
+                builder.Append (new string (' ', gap));
+            }
+        }
+
+        return builder.ToString ();
+    }
+
+    private static ListView.ColumnFooter? FooterAt (ListView listView, int index)
+    {
+        List<ListView.ColumnFooter>? footers = listView.ColumnFooters;
+
+        if (footers is not { Count: > 0 } || index < 0 || index >= footers.Count)
+        {
+            return null;
+        }
+
+        return footers [index];
     }
 
     private void RenderMultiLine (ListView container, int item, int col, int line, int width, int viewportX)
