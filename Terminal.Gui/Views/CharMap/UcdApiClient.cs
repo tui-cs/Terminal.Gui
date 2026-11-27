@@ -1,43 +1,21 @@
 namespace Terminal.Gui.Views;
 
 /// <summary>
-///     A helper class for accessing the ucdapi.org API.
+///     A helper class for accessing the Unicode API.
 /// </summary>
 internal class UcdApiClient
 {
-    public const string BaseUrl = "https://ucdapi.org/unicode/latest/";
+    public const string BaseUrl = "https://unicode-api.aaronluna.dev/v1/";
     private static readonly HttpClient _httpClient = new ();
 
-    public async Task<string> GetChars (string chars)
-    {
-        HttpResponseMessage response = await _httpClient.GetAsync ($"{BaseUrl}chars/{Uri.EscapeDataString (chars)}").ConfigureAwait (false);
-        response.EnsureSuccessStatusCode ();
-
-        return await response.Content.ReadAsStringAsync ().ConfigureAwait (false);
-    }
-
-    public async Task<string> GetCharsName (string chars)
-    {
-        HttpResponseMessage response =
-            await _httpClient.GetAsync ($"{BaseUrl}chars/{Uri.EscapeDataString (chars)}/name").ConfigureAwait (false);
-        response.EnsureSuccessStatusCode ();
-
-        return await response.Content.ReadAsStringAsync ().ConfigureAwait (false);
-    }
+    internal static string GetCodepointUrl (int codepoint) => $"{BaseUrl}codepoints/{codepoint:X}?show_props=all";
 
     public async Task<string> GetCodepointDec (int dec)
     {
-        HttpResponseMessage response = await _httpClient.GetAsync ($"{BaseUrl}codepoint/dec/{dec}").ConfigureAwait (false);
+        using HttpResponseMessage response = await _httpClient.GetAsync (GetCodepointUrl (dec)).ConfigureAwait (false);
         response.EnsureSuccessStatusCode ();
 
         return await response.Content.ReadAsStringAsync ().ConfigureAwait (false);
     }
 
-    public async Task<string> GetCodepointHex (string hex)
-    {
-        HttpResponseMessage response = await _httpClient.GetAsync ($"{BaseUrl}codepoint/hex/{hex}").ConfigureAwait (false);
-        response.EnsureSuccessStatusCode ();
-
-        return await response.Content.ReadAsStringAsync ().ConfigureAwait (false);
-    }
 }

@@ -594,6 +594,28 @@ public class OutputBaseTests
         Assert.Equal (afterStart, visibleUrlIdx);
     }
 
+    // Codex - GPT-5
+    [Fact]
+    public void ToAnsi_AutoDetectedUrl_BeforeDialogBorder_ExcludesTrailingColonAndBorder ()
+    {
+        // Arrange
+        const string url = "https://codepoints.net/codepoint/65";
+        AnsiOutput output = new ();
+        IOutputBuffer buffer = output.GetLastBuffer ()!;
+        buffer.SetSize (url.Length + 8, 1);
+        buffer.AddStr ($"Info: {url}:┃");
+
+        // Act
+        output.ToAnsi (buffer);
+
+        // Assert
+        int urlStart = "Info: ".Length;
+        Assert.Equal (url, buffer.GetCellUrl (urlStart, 0));
+        Assert.Equal (url, buffer.GetCellUrl (urlStart + url.Length - 1, 0));
+        Assert.Null (buffer.GetCellUrl (urlStart + url.Length, 0));
+        Assert.Null (buffer.GetCellUrl (urlStart + url.Length + 1, 0));
+    }
+
     // Claude - Opus 4.7
     // Regression coverage for stale _rowsWithUrls tracking on resize. After a SetSize call
     // the buffer's URL maps are wiped, so OutputBase must drop its row tracking too.
