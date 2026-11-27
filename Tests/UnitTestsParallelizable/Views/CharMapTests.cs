@@ -10,6 +10,20 @@ namespace ViewsTests;
 /// </summary>
 public class CharMapTests : TestDriverBase
 {
+    // Codex - GPT-6.1
+    [Theory]
+    [InlineData (0xD7FF, 0xD800, 0xE000)]
+    [InlineData (0xE000, 0xDFFF, 0xD7FF)]
+    [InlineData (0xD7F0, 0xDC00, 0xE000)]
+    public void SelectedCodePoint_SkipsSurrogates (int initial, int requested, int expected)
+    {
+        using CharMap charMap = new () { SelectedCodePoint = initial };
+
+        charMap.SelectedCodePoint = requested;
+
+        Assert.Equal (expected, charMap.SelectedCodePoint);
+        Assert.Equal (expected, charMap.Value.Value);
+    }
     // Copilot
     [Fact]
     [RequiresUnreferencedCode ("AOT")]

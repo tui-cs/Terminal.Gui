@@ -354,7 +354,13 @@ internal static class Osc8UrlLinker
 
     private static bool IsUrlTerminator (char c)
     {
-        return char.IsWhiteSpace (c) || c == '<' || c == '>' || c == '"' || c == '\'' || c == '\x1B';
+        return char.IsWhiteSpace (c)
+               || c == '<'
+               || c == '>'
+               || c == '"'
+               || c == '\''
+               || c == '\x1B'
+               || c is >= '\u2500' and <= '\u257F';
     }
 
     private static int TrimTrailingPunctuation (ReadOnlySpan<char> span, int start, int end)

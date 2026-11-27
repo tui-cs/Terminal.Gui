@@ -349,6 +349,16 @@ public class CharMap : View, IDesignable, IValue<Rune>
             int oldSelectedCodePoint = field;
             int newSelectedCodePoint = Math.Clamp (value, 0, MAX_CODE_POINT);
 
+            if (newSelectedCodePoint is >= 0xD800 and <= 0xDFFF)
+            {
+                newSelectedCodePoint = newSelectedCodePoint > oldSelectedCodePoint ? 0xE000 : 0xD7FF;
+            }
+
+            if (newSelectedCodePoint == oldSelectedCodePoint)
+            {
+                return;
+            }
+
             Rune oldValue = new (oldSelectedCodePoint);
             Rune newValue = new (newSelectedCodePoint);
 
@@ -656,7 +666,8 @@ public class CharMap : View, IDesignable, IValue<Rune>
 
         label = new Label
         {
-            Text = $"{Strings.charMapInfoDlgInfoLabel} {UcdApiClient.BaseUrl}codepoint/dec/{SelectedCodePoint}:", X = 0, Y = Pos.Bottom (label)
+            HotKeySpecifier = (Rune)'\xffff',
+            Text = $"{Strings.charMapInfoDlgInfoLabel} {UcdApiClient.GetCodepointUrl (SelectedCodePoint)}:", X = 0, Y = Pos.Bottom (label)
         };
         dlg.Add (label);
 
